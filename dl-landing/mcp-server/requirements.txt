@@ -1,2 +1,2 @@
-fastmcp==2.10.0
+fastmcp==2.13.0
 openai>=1.50.0
