@@ -16,6 +16,10 @@ function normalizePath(pathname) {
   return clean.replace(/\/+/g, '/')
 }
 
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
 function setActiveNav() {
   const current = normalizePath(window.location.pathname)
   document.querySelectorAll('[data-nav-link]').forEach((link) => {
@@ -64,10 +68,10 @@ function setupMobileMenu() {
 }
 
 function setupReveal() {
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reduceMotion = prefersReducedMotion()
   const items = document.querySelectorAll('[data-reveal]')
 
-  if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+  if (reduceMotion || !('IntersectionObserver' in window)) {
     items.forEach((item) => {
       item.classList.add('is-visible')
       item.querySelectorAll('.card, .proof-item, .timeline-step, .faq-item, .feature-pill').forEach((child) => {
@@ -99,6 +103,136 @@ function setupReveal() {
   items.forEach((item) => observer.observe(item))
 }
 
+function setupCardTilt() {
+  const canHover = window.matchMedia('(hover: hover)').matches
+  if (!canHover || prefersReducedMotion()) return
+
+  document.querySelectorAll('.card').forEach((card) => {
+    let frameId = 0
+    let nextTransform = ''
+
+    const applyTransform = () => {
+      frameId = 0
+      card.style.transform = nextTransform
+    }
+
+    card.addEventListener('mousemove', (event) => {
+      const rect = card.getBoundingClientRect()
+      const x = (event.clientX - rect.left) / rect.width
+      const y = (event.clientY - rect.top) / rect.height
+      const rotateY = (x - 0.5) * 8
+      const rotateX = -(y - 0.5) * 8
+
+      const isFeatured = card.classList.contains('card--featured')
+      const scaleStr = isFeatured ? ' scale(1.03)' : ''
+      nextTransform = `perspective(800px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-4px)${scaleStr}`
+
+      if (!frameId) {
+        frameId = requestAnimationFrame(applyTransform)
+      }
+    })
+
+    card.addEventListener('mouseleave', () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId)
+        frameId = 0
+      }
+
+      nextTransform = ''
+      card.style.transform = ''
+    })
+  })
+}
+
+function setupCountUp() {
+  const proofGrid = document.querySelector('.proof-grid')
+  if (!proofGrid || prefersReducedMotion()) return
+
+  const statNodes = Array.from(proofGrid.querySelectorAll('[data-stat]'))
+  if (statNodes.length === 0) return
+
+  const animateStats = () => {
+    statNodes.forEach((node) => {
+      const rawValue = node.textContent?.trim() ?? ''
+      const target = Number.parseInt(rawValue.replace(/\./g, ''), 10)
+
+      if (!rawValue || rawValue === '—' || Number.isNaN(target)) return
+
+      const startTime = performance.now()
+      const duration = 1500
+
+      const tick = (now) => {
+        const progress = Math.min((now - startTime) / duration, 1)
+        const eased = 1 - Math.pow(1 - progress, 3)
+        const value = Math.round(target * eased)
+
+        node.textContent = value.toLocaleString('de-DE')
+
+        if (progress < 1) {
+          requestAnimationFrame(tick)
+        }
+      }
+
+      node.textContent = '0'
+      requestAnimationFrame(tick)
+    })
+  }
+
+  if (!('IntersectionObserver' in window)) {
+    animateStats()
+    return
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return
+
+        animateStats()
+        observer.unobserve(entry.target)
+      })
+    },
+    { threshold: 0.25 },
+  )
+
+  observer.observe(proofGrid)
+}
+
+function setupParallax() {
+  const showcase = document.querySelector('.hero-showcase')
+  const canHover = window.matchMedia('(hover: hover)').matches
+
+  if (!showcase || !canHover || prefersReducedMotion()) return
+
+  let ticking = false
+
+  const updateParallax = () => {
+    ticking = false
+
+    if (window.scrollY <= 0) {
+      showcase.style.transform = ''
+      return
+    }
+
+    if (window.scrollY < 800) {
+      showcase.style.transform = `translateY(${window.scrollY * -0.08}px)`
+    } else {
+      showcase.style.transform = 'translateY(-64px)'
+    }
+  }
+
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (ticking) return
+
+      ticking = true
+      requestAnimationFrame(updateParallax)
+    },
+    { passive: true },
+  )
+}
+
 function syncYear() {
   document.querySelectorAll('[data-current-year]').forEach((node) => {
     node.textContent = String(new Date().getFullYear())
@@ -116,21 +250,24 @@ async function fetchLiveStats() {
 
   try {
     const res = await fetch('/api/public/guild-stats')
-    if (!res.ok) return
-    const data = await res.json()
+    if (res.ok) {
+      const data = await res.json()
 
-    if (data.member_count && statElements.members) {
-      statElements.members.textContent = data.member_count.toLocaleString('de-DE')
-    }
-    if (data.online_count !== undefined && statElements.online) {
-      statElements.online.textContent = data.online_count.toLocaleString('de-DE')
-    }
-    if (data.voice_count !== undefined && statElements.voice) {
-      statElements.voice.textContent = data.voice_count.toLocaleString('de-DE')
+      if (data.member_count && statElements.members) {
+        statElements.members.textContent = data.member_count.toLocaleString('de-DE')
+      }
+      if (data.online_count !== undefined && statElements.online) {
+        statElements.online.textContent = data.online_count.toLocaleString('de-DE')
+      }
+      if (data.voice_count !== undefined && statElements.voice) {
+        statElements.voice.textContent = data.voice_count.toLocaleString('de-DE')
+      }
     }
   } catch {
     // Silently fail — stats will show "—" as fallback
   }
+
+  setupCountUp()
 }
 
 function boot() {
@@ -138,6 +275,8 @@ function boot() {
   setActiveNav()
   setupMobileMenu()
   setupReveal()
+  setupCardTilt()
+  setupParallax()
   syncYear()
   fetchLiveStats()
 }
