@@ -2,12 +2,9 @@ import './site.css'
 
 const ACTIVE_PATHS = {
   home: '/',
-  community: '/community/',
-  features: '/features/',
+  mitspieler: '/mitspieler/',
   coaching: '/coaching/',
   streamer: '/streamer/',
-  guides: '/guides/',
-  join: '/beitreten/',
 }
 
 function normalizePath(pathname) {
@@ -74,7 +71,7 @@ function setupReveal() {
   if (reduceMotion || !('IntersectionObserver' in window)) {
     items.forEach((item) => {
       item.classList.add('is-visible')
-      item.querySelectorAll('.card, .proof-item, .timeline-step, .faq-item, .feature-pill').forEach((child) => {
+      item.querySelectorAll('.card, .pillar, .usp-card, .proof-item, .timeline-step, .faq-item, .feature-pill, .step-card').forEach((child) => {
         child.style.opacity = '1'
         child.style.transform = 'translateY(0)'
       })
@@ -86,7 +83,7 @@ function setupReveal() {
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          const children = entry.target.querySelectorAll('.card, .proof-item, .timeline-step, .faq-item, .feature-pill')
+          const children = entry.target.querySelectorAll('.card, .pillar, .usp-card, .proof-item, .timeline-step, .faq-item, .feature-pill, .step-card')
           if (children.length > 0) {
             children.forEach((child, i) => {
               child.style.transitionDelay = `${i * 80}ms`
@@ -107,7 +104,7 @@ function setupCardTilt() {
   const canHover = window.matchMedia('(hover: hover)').matches
   if (!canHover || prefersReducedMotion()) return
 
-  document.querySelectorAll('.card').forEach((card) => {
+  document.querySelectorAll('.card, .pillar').forEach((card) => {
     let frameId = 0
     let nextTransform = ''
 
@@ -145,7 +142,7 @@ function setupCardTilt() {
 }
 
 function setupCountUp() {
-  const proofGrid = document.querySelector('.proof-grid')
+  const proofGrid = document.querySelector('.hero-stats') || document.querySelector('.proof-grid')
   if (!proofGrid || prefersReducedMotion()) return
 
   const statNodes = Array.from(proofGrid.querySelectorAll('[data-stat]'))
@@ -199,7 +196,7 @@ function setupCountUp() {
 }
 
 function setupParallax() {
-  const showcase = document.querySelector('.hero-showcase')
+  const showcase = document.querySelector('.hero-bg')
   const canHover = window.matchMedia('(hover: hover)').matches
 
   if (!showcase || !canHover || prefersReducedMotion()) return
@@ -215,9 +212,9 @@ function setupParallax() {
     }
 
     if (window.scrollY < 800) {
-      showcase.style.transform = `translateY(${window.scrollY * -0.08}px)`
+      showcase.style.transform = `translateY(${window.scrollY * 0.15}px)`
     } else {
-      showcase.style.transform = 'translateY(-64px)'
+      showcase.style.transform = 'translateY(120px)'
     }
   }
 
@@ -253,13 +250,13 @@ async function fetchLiveStats() {
     if (res.ok) {
       const data = await res.json()
 
-      if (data.member_count && statElements.members) {
+      if (typeof data.member_count === 'number' && statElements.members) {
         statElements.members.textContent = data.member_count.toLocaleString('de-DE')
       }
-      if (data.online_count !== undefined && statElements.online) {
+      if (typeof data.online_count === 'number' && statElements.online) {
         statElements.online.textContent = data.online_count.toLocaleString('de-DE')
       }
-      if (data.voice_count !== undefined && statElements.voice) {
+      if (typeof data.voice_count === 'number' && statElements.voice) {
         statElements.voice.textContent = data.voice_count.toLocaleString('de-DE')
       }
     }

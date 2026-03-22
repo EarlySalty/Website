@@ -8,16 +8,13 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       input: {
         home: 'index.html',
-        community: 'community/index.html',
-        features: 'features/index.html',
+        mitspieler: 'mitspieler/index.html',
         coaching: 'coaching/index.html',
         streamer: 'streamer/index.html',
-        guides: 'guides/index.html',
-        join: 'beitreten/index.html',
       },
     },
   },
