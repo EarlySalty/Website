@@ -1,12 +1,411 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="de">
-  <head>`r`n  <link rel="stylesheet" href="/assets/tailwind.min.css" />
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deadlock Community Hub</title>
-    <script type="module" crossorigin src="/assets/index-InZLJgPI.js"></script>
+    <title>Deutsche Deadlock Community | Deadlock Discord Deutsch bei EarlySalty</title>
+    <meta
+      name="description"
+      content="Deadlock Discord Deutsch für Mitspieler, Voice-Lanes, Coaching, Guides, Patchnotes und Streamer. Finde eine aktive deutsche Deadlock Community bei EarlySalty."
+    />
+    <link rel="canonical" href="https://earlysalty.de/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Deutsche Deadlock Community | EarlySalty" />
+    <meta
+      property="og:description"
+      content="Die deutsche Deadlock Community für Mitspieler, Coaching, Voice-Lanes, Guides und Streamer."
+    />
+    <meta name="theme-color" content="#07151d" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "EarlySalty Deadlock Community",
+        "url": "https://earlysalty.de/",
+        "description": "Deutsche Deadlock Community mit Discord, Mitspielersuche, Coaching, Voice-Lanes und Streamer-Bereich.",
+        "inLanguage": "de-DE"
+      }
+    </script>
+    <script type="module" src="/src/site.js"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div class="site-shell">
+      <header class="site-header">
+        <div class="container">
+          <div class="header-row">
+            <a class="brand" href="/">
+              <span class="brand-mark">EarlySalty</span>
+              <span class="brand-copy">Deadlock Community</span>
+            </a>
+            <nav class="nav-links" aria-label="Hauptnavigation">
+              <a class="nav-link" data-nav-link href="/">Start</a>
+              <a class="nav-link" data-nav-link href="/community/">Community</a>
+              <a class="nav-link" data-nav-link href="/features/">Features</a>
+              <a class="nav-link" data-nav-link href="/coaching/">Coaching</a>
+              <a class="nav-link" data-nav-link href="/streamer/">Streamer</a>
+              <a class="nav-link" data-nav-link href="/guides/">Guides</a>
+              <a class="nav-link" data-nav-link href="/beitreten/">Beitreten</a>
+            </nav>
+            <div class="header-actions">
+              <a class="button button-secondary" href="/streamer/">Twitch &amp; Streamer</a>
+              <a class="button button-primary" href="https://dc.earlysalty.com" target="_blank" rel="noopener noreferrer">Community beitreten</a>
+              <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="mobile-menu" aria-label="Menü öffnen">
+                <svg class="icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="mobile-menu" id="mobile-menu" data-mobile-menu hidden>
+            <div class="mobile-menu-panel">
+              <a class="nav-link" href="/">Start</a>
+              <a class="nav-link" href="/community/">Community</a>
+              <a class="nav-link" href="/features/">Features</a>
+              <a class="nav-link" href="/coaching/">Coaching</a>
+              <a class="nav-link" href="/streamer/">Streamer</a>
+              <a class="nav-link" href="/guides/">Guides</a>
+              <a class="nav-link" href="/beitreten/">Beitreten</a>
+              <a class="button button-primary" href="https://dc.earlysalty.com" target="_blank" rel="noopener noreferrer">Community beitreten</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="container hero-grid">
+            <div class="hero-copy" data-reveal>
+              <span class="eyebrow">Deadlock Discord Deutsch</span>
+              <h1>
+                Die <span class="hero-highlight">deutsche Deadlock Community</span>
+                <br />
+                für Mitspieler, Coaching und Streamer.
+              </h1>
+              <p>
+                Wenn du nach einer aktiven <strong>Deadlock Community in Deutsch</strong> suchst,
+                bist du hier richtig. Bei EarlySalty findest du Mitspieler, Voice-Lanes,
+                Coaching, Patchnotes, Guides und einen eigenen Bereich für Streamer auf einem
+                Server, der auf Deadlock zugeschnitten ist.
+              </p>
+              <div class="hero-actions">
+                <a class="button button-primary" href="https://dc.earlysalty.com" target="_blank" rel="noopener noreferrer">Community beitreten</a>
+                <a class="button button-secondary" href="/community/">Server entdecken</a>
+              </div>
+              <div class="hero-keywords" aria-label="Schwerpunkte">
+                <span>Mitspieler finden</span>
+                <span>Ranked &amp; Chill Lanes</span>
+                <span>Deadlock Coaching Deutsch</span>
+                <span>Patchnotes &amp; Guides</span>
+                <span>Streamer-Unterstützung</span>
+              </div>
+            </div>
+
+            <aside class="hero-panel hero-showcase" data-reveal>
+              <div class="showcase-grid">
+                <div class="feature-pill" data-reveal>
+                  <div class="card-icon card-icon--primary">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  </div>
+                  <div>
+                    <strong>Mitspieler finden</strong>
+                    <span class="muted">Spieler-Suche &amp; Voice-Lanes</span>
+                  </div>
+                </div>
+                <div class="feature-pill" data-reveal>
+                  <div class="card-icon card-icon--accent">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                  </div>
+                  <div>
+                    <strong>Voice-Lanes</strong>
+                    <span class="muted">Chill, Competitive &amp; Coaching</span>
+                  </div>
+                </div>
+                <div class="feature-pill" data-reveal>
+                  <div class="card-icon card-icon--primary">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 2 6 2s6-.9 6-2v-5"/></svg>
+                  </div>
+                  <div>
+                    <strong>Coaching</strong>
+                    <span class="muted">Strukturierte Hilfe für jedes Level</span>
+                  </div>
+                </div>
+                <div class="feature-pill" data-reveal>
+                  <div class="card-icon card-icon--accent">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14v-4z"/><rect x="2" y="6" width="13" height="12" rx="2"/></svg>
+                  </div>
+                  <div>
+                    <strong>Streamer</strong>
+                    <span class="muted">Live-Posts &amp; Twitch-Anbindung</span>
+                  </div>
+                </div>
+                <div class="feature-pill" data-reveal>
+                  <div class="card-icon card-icon--primary">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                  </div>
+                  <div>
+                    <strong>Guides &amp; Patchnotes</strong>
+                    <span class="muted">Aktuell und auf Deutsch</span>
+                  </div>
+                </div>
+                <div class="feature-pill" data-reveal>
+                  <div class="card-icon card-icon--accent">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                  </div>
+                  <div>
+                    <strong>Steam Verified</strong>
+                    <span class="muted">Verknüpfung &amp; Verifizierung</span>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="section section--alt section--proof">
+          <div class="container">
+            <div class="proof-grid" data-reveal>
+              <div class="proof-item">
+                <span class="proof-number" data-stat="members">&mdash;</span>
+                <span class="proof-label">Mitglieder</span>
+              </div>
+              <div class="proof-item">
+                <span class="proof-number" data-stat="online">&mdash;</span>
+                <span class="proof-label">Gerade online</span>
+              </div>
+              <div class="proof-item">
+                <span class="proof-number" data-stat="voice">&mdash;</span>
+                <span class="proof-label">In Voice-Lanes</span>
+              </div>
+              <div class="proof-item">
+                <span class="proof-number">100%</span>
+                <span class="proof-label">Auf Deutsch</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="container">
+            <div class="section-heading" data-reveal>
+              <h2>Nicht nur ein Discord-Server. Eine Deadlock-Basis für Deutschland.</h2>
+              <p>
+                Viele Server sind nur Chat plus Invite-Link. Hier ist die Community selbst ein
+                Produkt: mit Onboarding, Voice-Struktur, Deadlock-spezifischen Tools,
+                Coaching-Flow und einer Streamer-Schiene, die nicht nur Deko ist.
+              </p>
+            </div>
+            <div class="section-grid" data-reveal>
+              <article class="card card--icon">
+                <div class="card-icon card-icon--primary">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <span class="meta">Mitspieler</span>
+                <h3>Von Duo bis Full Stack</h3>
+                <p>
+                  Spieler-Suche, Chill Lanes, Competitive Lanes und neue Spielerbereiche sorgen
+                  dafür, dass du nicht erst zehn Nachrichten schreiben musst, um eine Runde zu
+                  finden.
+                </p>
+              </article>
+              <article class="card card--icon">
+                <div class="card-icon card-icon--accent">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 2 6 2s6-.9 6-2v-5"/></svg>
+                </div>
+                <span class="meta">Lernen</span>
+                <h3>Coaching, Builds, Clips, Patchnotes</h3>
+                <p>
+                  Wer besser werden will, findet nicht nur allgemeines Gerede, sondern echte
+                  Einstiegspunkte: Guides, Coaching-Anfragen, Clip-Besprechungen und aktuelle
+                  Deadlock Patchnotes auf Deutsch.
+                </p>
+              </article>
+              <article class="card card--icon">
+                <div class="card-icon card-icon--primary">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14v-4z"/><rect x="2" y="6" width="13" height="12" rx="2"/></svg>
+                </div>
+                <span class="meta">Creator</span>
+                <h3>Streamer werden sichtbar</h3>
+                <p>
+                  Wenn du Deadlock streamst, bekommst du einen eigenen Bereich, Streamer-Austausch
+                  und eine Anbindung an die Twitch-Seite von EarlySalty.
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section--alt">
+          <div class="container split-layout">
+            <div class="panel" data-reveal>
+              <span class="meta">So funktioniert der Einstieg</span>
+              <h2 class="mt-sm">Deadlock Community beitreten und direkt zurechtfinden</h2>
+              <div class="timeline mt-xl">
+                <div class="timeline-step" data-step="1">
+                  <h3>Server joinen und Regeln bestätigen</h3>
+                  <p>
+                    Der Eingangsbereich ist klar getrennt von den aktiven Bereichen. Du startest
+                    mit Regelwerk, Ankündigungen und Patchnotes statt sofortigem Chaos.
+                  </p>
+                </div>
+                <div class="timeline-step" data-step="2">
+                  <h3>Deinen Weg wählen</h3>
+                  <p>
+                    Danach entscheidest du, was du brauchst: Mitspieler, neue Spieler Lanes,
+                    Competitive Lanes, Coaching oder Streamer-Support.
+                  </p>
+                </div>
+                <div class="timeline-step" data-step="3">
+                  <h3>Deadlock-spezifische Features nutzen</h3>
+                  <p>
+                    Verified via Steam, flexible TempVoice-Lanes, Coaching-Anfragen, Live-Posts
+                    und Community-Tools sind nicht später geplant, sondern bereits Teil des
+                    Server-Alltags.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="stack" data-reveal>
+              <article class="card card--icon">
+                <div class="card-icon card-icon--accent">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <span class="meta">Wofür Leute kommen</span>
+                <h3>Deadlock Mitspieler Deutsch</h3>
+                <p>
+                  Die meisten suchen genau das: Leute zum Spielen. Deshalb ist Mitspielersuche
+                  hier kein Nebenpunkt, sondern ein zentraler Bestandteil der Community.
+                </p>
+              </article>
+              <article class="card card--icon">
+                <div class="card-icon card-icon--primary">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                </div>
+                <span class="meta">Wofür Leute bleiben</span>
+                <h3>Struktur statt Zufall</h3>
+                <p>
+                  Voice-Lanes, Coaching, Guides, Twitch-Anbindung und Community-Routinen schaffen
+                  Wiedererkennung. Das ist der Unterschied zwischen Join und echter Bindung.
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="container">
+            <div class="section-heading" data-reveal>
+              <h2>Drei Wege in die Community</h2>
+              <p>
+                Egal ob du Mitspieler suchst, besser werden willst oder als Streamer sichtbar sein möchtest — hier findest du den passenden Einstieg.
+              </p>
+            </div>
+            <div class="section-grid" data-reveal>
+              <article class="card card--icon">
+                <div class="card-icon card-icon--primary">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <span class="meta">Mitspielen</span>
+                <h3>Für Leute, die einfach Deadlock zocken wollen</h3>
+                <p>
+                  Spieler-Suche, Voice-Lanes, neue Spielerbereiche und schnelle Orientierung für
+                  alle, die nicht lange herumfragen wollen.
+                </p>
+                <div class="channel-list">
+                  <span>#spieler-suche</span>
+                  <span>Chill Lanes</span>
+                  <span>Neue Spieler Lanes</span>
+                </div>
+              </article>
+              <article class="card card--icon">
+                <div class="card-icon card-icon--accent">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.1 2.7 2 6 2s6-.9 6-2v-5"/></svg>
+                </div>
+                <span class="meta">Besser werden</span>
+                <h3>Für Ranked, Lernen und Coaching</h3>
+                <p>
+                  Competitive Lanes, Coaching Lane, Guides und Patchnotes geben dir bessere
+                  Einstiegspunkte als ein bloßer Sammelchat.
+                </p>
+                <div class="channel-list">
+                  <span>Competitive Lanes</span>
+                  <span>#ich-brauch-einen-coach</span>
+                  <span>#game-guides-und-tipps</span>
+                </div>
+              </article>
+              <article class="card card--icon">
+                <div class="card-icon card-icon--primary">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14v-4z"/><rect x="2" y="6" width="13" height="12" rx="2"/></svg>
+                </div>
+                <span class="meta">Sichtbarkeit</span>
+                <h3>Für Deadlock Streamer und Creator</h3>
+                <p>
+                  Streamer Only, Twitch-Liveposts und die Brücke zur Twitch-Plattform machen die
+                  Community auch für Creator sinnvoll.
+                </p>
+                <div class="channel-list">
+                  <span>Streamer Only</span>
+                  <span>#twitch</span>
+                  <span>Streamer-Austausch</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section--alt">
+          <div class="container" data-reveal>
+            <div class="cta-strip">
+              <div>
+                <h3>Deadlock Discord Deutsch gefunden?</h3>
+                <p>
+                  Dann geh nicht nur auf gut Glück irgendwo rein. Starte in einer Community, die
+                  Deadlock wirklich als Kern hat und nicht nur als Nebenrolle.
+                </p>
+              </div>
+              <div class="hero-actions mt-0">
+                <a class="button button-primary" href="https://dc.earlysalty.com" target="_blank" rel="noopener noreferrer">Jetzt beitreten</a>
+                <a class="button button-ghost" href="/beitreten/">Zum Join-Guide</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="container">
+          <div class="footer-grid">
+            <section>
+              <h3>EarlySalty Deadlock Community</h3>
+              <p class="mt-md">
+                Deutsche Deadlock Community für Mitspieler, Coaching, Voice-Lanes, Guides,
+                Patchnotes und Streamer.
+              </p>
+            </section>
+            <section>
+              <h3>Navigation</h3>
+              <nav class="footer-links mt-md">
+                <a href="/">Start</a>
+                <a href="/community/">Community</a>
+                <a href="/features/">Features</a>
+                <a href="/coaching/">Coaching</a>
+                <a href="/streamer/">Streamer</a>
+                <a href="/guides/">Guides</a>
+                <a href="/beitreten/">Beitreten</a>
+              </nav>
+            </section>
+            <section>
+              <h3>Recht &amp; Links</h3>
+              <nav class="footer-links mt-md">
+                <a href="https://dc.earlysalty.com" target="_blank" rel="noopener noreferrer">Discord</a>
+                <a href="https://twitch.earlysalty.com/twitch/onboarding" target="_blank" rel="noopener noreferrer">Twitch Onboarding</a>
+                <a href="https://twitch.earlysalty.com/twitch/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
+                <a href="https://twitch.earlysalty.com/twitch/datenschutz" target="_blank" rel="noopener noreferrer">Datenschutz</a>
+              </nav>
+            </section>
+          </div>
+          <div class="footer-bottom">© <span data-current-year></span> EarlySalty</div>
+        </div>
+      </footer>
+    </div>
   </body>
 </html>

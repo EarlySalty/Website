@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+
+# OpenAI search discovery for ChatGPT Search / search surfaces.
+User-agent: OAI-SearchBot
+Allow: /
+
+# Block model-training crawler while keeping AI search open.
+User-agent: GPTBot
+Disallow: /
+
+# Anthropic search/user fetchers stay allowed for public discovery.
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+# Block Anthropic model-training crawler.
+User-agent: ClaudeBot
+Disallow: /
+
+Sitemap: https://earlysalty.de/sitemap.xml

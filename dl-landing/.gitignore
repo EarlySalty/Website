@@ -4,6 +4,8 @@
 __pycache__
 /Backup
 /logs
+/dist
+/node_modules
 
 tempvoice_interface.json
 *.json
