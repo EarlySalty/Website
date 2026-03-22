@@ -7,8 +7,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$websiteTarget = Join-Path $SiteRoot "website"
-$browserUrl = "http://127.0.0.1:4888/website/"
+$websiteTarget = $SiteRoot
+$browserUrl = "https://earlysalty.de/"
 
 if (-not $SkipBuild) {
     Push-Location $repoRoot
@@ -28,8 +28,7 @@ if ($LASTEXITCODE -gt 7) {
     throw "robocopy failed with exit code $LASTEXITCODE"
 }
 
-Copy-Item -Path (Join-Path $repoRoot "dist\\robots.txt") -Destination (Join-Path $SiteRoot "robots.txt") -Force
-Copy-Item -Path (Join-Path $repoRoot "dist\\sitemap.xml") -Destination (Join-Path $SiteRoot "sitemap.xml") -Force
+# robots.txt and sitemap.xml are already in the dist root via Vite public folder
 
 Write-Host "IIS deploy finished."
 Write-Host "Source: $repoRoot\\dist"
