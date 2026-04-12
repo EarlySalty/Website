@@ -1,24 +1,32 @@
-.env
-.env.worker
-.env.*
-__pycache__
-/Backup
-/logs
-/dist
-/node_modules
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-tempvoice_interface.json
-*.json
-install_windows_service.py
-*.db
-*__pycache__
-*pyc
-*sqlite3-wal
-*sqlite3
-*sqlite3-shm
-*env*
-*.env*
-*.json
-*.db-shm
-*.db-wal
-*.db
+# Build output
+dist/
+*.local
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Vite
+.vite/
+
+# Logs
+logs/
+*.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Misc
+*.bak
+*.tmp
+*.temp

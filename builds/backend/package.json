@@ -1,0 +1,26 @@
+{
+  "name": "dl-meta-backend",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "uvicorn app.main:app --reload --port 8000",
+    "start": "uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "init-db": "python -m app.init_db"
+  },
+  "dependencies": {
+    "fastapi": "^0.111.0",
+    "uvicorn": "^0.30.1",
+    "sqlalchemy": "^2.0.31",
+    "aiosqlite": "^0.20.0",
+    "pydantic": "^2.8.2",
+    "python-jose": "^3.3.0",
+    "passlib": "^1.7.4",
+    "bcrypt": "^4.2.0",
+    "httpx": "^0.27.0",
+    "python-multipart": "^0.0.9",
+    "keyring": "^24.3.1"
+  },
+  "devDependencies": {
+    "python": "^3.12"
+  }
+}
