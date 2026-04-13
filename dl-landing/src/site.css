@@ -92,11 +92,11 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
   background-size: 36px 36px;
-  mask-image: radial-gradient(ellipse at top, black 36%, transparent 78%);
-  opacity: 0.35;
+  mask-image: radial-gradient(ellipse at top, black 50%, transparent 90%);
+  opacity: 0.55;
   z-index: 0;
 }
 
@@ -162,7 +162,7 @@ ol {
 }
 
 .section--dark {
-  background: rgba(7, 21, 29, 0.95);
+  background: rgba(14, 26, 50, 0.95);
 }
 
 .section--alt {
