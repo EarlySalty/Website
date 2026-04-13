@@ -31,22 +31,19 @@ function setActiveNav() {
   })
 }
 
-function setupMobileMenu() {
+function setupNavDrawer() {
   const toggle = document.querySelector('[data-menu-toggle]')
-  const panel = document.querySelector('[data-mobile-menu]')
-  if (!toggle || !panel) return
+  const drawer = document.getElementById('nav-drawer')
+  if (!toggle || !drawer) return
 
   const iconMenu = toggle.querySelector('.icon-menu')
   const iconClose = toggle.querySelector('.icon-close')
 
-  function setMenuState(open) {
+  function setDrawerState(open) {
     toggle.setAttribute('aria-expanded', String(open))
     toggle.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen')
-    if (open) {
-      panel.removeAttribute('hidden')
-    } else {
-      panel.setAttribute('hidden', '')
-    }
+    drawer.classList.toggle('is-open', open)
+    drawer.setAttribute('aria-hidden', String(!open))
     document.body.classList.toggle('menu-open', open)
     if (iconMenu && iconClose) {
       iconMenu.style.display = open ? 'none' : ''
@@ -55,12 +52,22 @@ function setupMobileMenu() {
   }
 
   toggle.addEventListener('click', () => {
-    const expanded = toggle.getAttribute('aria-expanded') === 'true'
-    setMenuState(!expanded)
+    const isOpen = drawer.classList.contains('is-open')
+    setDrawerState(!isOpen)
   })
 
-  panel.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => setMenuState(false))
+  drawer.querySelectorAll('[data-menu-close]').forEach((el) => {
+    el.addEventListener('click', () => setDrawerState(false))
+  })
+
+  drawer.querySelectorAll('.nav-drawer-link, .nav-drawer-cta').forEach((link) => {
+    link.addEventListener('click', () => setDrawerState(false))
+  })
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+      setDrawerState(false)
+    }
   })
 }
 
@@ -270,7 +277,7 @@ async function fetchLiveStats() {
 function boot() {
   document.documentElement.classList.add('js')
   setActiveNav()
-  setupMobileMenu()
+  setupNavDrawer()
   setupReveal()
   setupCardTilt()
   setupParallax()

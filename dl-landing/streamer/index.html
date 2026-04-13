@@ -35,37 +35,56 @@
 <body>
   <a href="#main" class="sr-only">Zum Inhalt springen</a>
   <div class="site-shell">
+    <!-- HEADER -->
     <header class="site-header">
       <div class="container">
         <div class="header-row">
-          <a class="brand" href="/">
-            <span class="brand-mark">Deadlock Community</span>
-            <span class="brand-badge">DE</span>
-          </a>
-          <nav class="nav-links" aria-label="Hauptnavigation">
-            <a class="nav-link" data-nav-link href="/mitspieler/">Mitspieler</a>
-            <a class="nav-link" data-nav-link href="/coaching/">Coaching</a>
-            <a class="nav-link" data-nav-link href="/streamer/">Streamer</a>
-          </nav>
-          <div class="header-actions">
-            <a class="button button-primary" href="https://dc.earlysalty.com" target="_blank" rel="noopener noreferrer">Beitreten</a>
-            <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="mobile-menu" aria-label="Menü öffnen">
+          <div class="header-left">
+            <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="nav-drawer" aria-label="Menü öffnen">
               <svg class="icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
+            <a class="brand" href="/">
+              <span class="brand-mark">Deutsche Deadlock Community</span>
+            </a>
           </div>
-        </div>
-        <div class="mobile-menu" id="mobile-menu" data-mobile-menu hidden>
-          <div class="mobile-menu-panel">
-            <a class="nav-link" href="/">Start</a>
-            <a class="nav-link" href="/mitspieler/">Mitspieler</a>
-            <a class="nav-link" href="/coaching/">Coaching</a>
-            <a class="nav-link" href="/streamer/">Streamer</a>
-            <a class="button button-primary" href="https://dc.earlysalty.com" target="_blank" rel="noopener noreferrer">Beitreten</a>
+          <div class="header-actions">
+            <a class="button button-primary" href="https://discord.gg/z5TfVHuQq2" target="_blank" rel="noopener noreferrer">Beitreten</a>
           </div>
         </div>
       </div>
     </header>
+
+    <!-- NAV DRAWER -->
+    <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+      <div class="nav-drawer-backdrop" data-menu-close></div>
+      <nav class="nav-drawer-panel" aria-label="Hauptnavigation">
+        <button class="nav-drawer-close" type="button" data-menu-close aria-label="Menü schließen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/">Start</a>
+          <a class="nav-drawer-link" data-nav-link href="/mitspieler/">Mitspieler</a>
+          <a class="nav-drawer-link" data-nav-link href="/coaching/">Coaching</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <span class="nav-drawer-label">Streamer</span>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" data-nav-link href="/streamer/">Streamer-Netzwerk</a>
+          <a class="nav-drawer-link" href="/streamer/onboarding/">Onboarding</a>
+          <a class="nav-drawer-link" href="/streamer/faq/">FAQ</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <span class="nav-drawer-label">Plattformen</span>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/turnier/">Turnierplattform</a>
+          <a class="nav-drawer-link" href="/aktivitaet/">Aktivitäts-Tracker</a>
+          <a class="nav-drawer-link" href="/builds/">Builds &amp; Items</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <a class="button button-primary nav-drawer-cta" href="https://discord.gg/z5TfVHuQq2" target="_blank" rel="noopener noreferrer">Discord beitreten</a>
+      </nav>
+    </div>
 
     <main id="main">
       <!-- HERO -->
@@ -185,11 +204,20 @@
             </nav>
           </section>
           <section>
+            <h3>Plattformen</h3>
+            <nav class="footer-links mt-md" aria-label="Community-Plattformen">
+              <a href="/turnier/">Turnierplattform</a>
+              <a href="/aktivitaet/">Aktivitäts-Tracker</a>
+              <a href="/builds/">Builds &amp; Items</a>
+            </nav>
+          </section>
+          <section>
             <h3>Recht &amp; Links</h3>
             <nav class="footer-links mt-md" aria-label="Rechtliches">
-              <a href="https://dc.earlysalty.com" target="_blank" rel="noopener noreferrer">Discord</a>
-              <a href="https://twitch.earlysalty.com/twitch/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
-              <a href="https://twitch.earlysalty.com/twitch/datenschutz" target="_blank" rel="noopener noreferrer">Datenschutz</a>
+              <a href="https://discord.gg/z5TfVHuQq2" target="_blank" rel="noopener noreferrer">Discord</a>
+              <a href="/twitch/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
+              <a href="/twitch/datenschutz" target="_blank" rel="noopener noreferrer">Datenschutz</a>
+              <a href="/twitch/agb" target="_blank" rel="noopener noreferrer">AGB</a>
             </nav>
           </section>
         </div>

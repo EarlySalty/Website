@@ -1,37 +1,47 @@
-# Website SEO & Bild-Fix
+# Landing-Page Redesign
 
 ## Ziel
-- Website besser in Google gelistet für "Deutsche Deadlock Community" etc.
-- Verzerrte Bilder auf earlysalty.de beheben
-- DLDC.PNG als neues og:image einsetzen
+Die Hauptseite deutsche-deadlock-community.de zum Aushängeschild der Community machen – stylisch, klar navigierbar, alle Community-Tools sauber erreichbar.
 
-## Status: ✅ Erledigt
+## Status
+**In Bearbeitung** – HTML-Worker 1 fertig, CSS/JS offen (2026-04-13)
 
-## Durchgeführte Änderungen
+## Aufgaben
 
-### 1. CSS-Bildverzerrung behoben
-- `.server-preview-visual img` in `src/site.css`: `object-fit: cover` und `height: 340px` hinzugefügt
-- Betrifft alle Seiten mit Server-Vorschau (Startseite, /mitspieler/, /coaching/)
+### HTML (alle 4 Seiten: index, mitspieler, coaching, streamer)
+- [x] Logo → „Deutsche Deadlock Community" als Gradient-Text
+- [x] Header umstrukturieren: Hamburger links | Logo | Beitreten rechts
+- [x] Nav-Drawer HTML einbauen (Slide-In von links, alle Links strukturiert)
+- [x] Services-Hub-Sektion entfernen (nur index.html, Zeilen 232–274)
+- [x] Footer auf 4 Spalten (neu: Plattformen + AGB im Rechtliches-Block)
 
-### 2. SEO-Tags hinzugefügt
-Alle 4 Seiten (index, mitspieler, coaching, streamer):
-- `<meta name="keywords">` mit seitenspezifischen Keywords
-- `<meta property="og:image">` (1200x630)
-- `<meta property="og:image:width/height">`
-- `<meta name="twitter:card">` (summary_large_image)
-- `<meta name="twitter:title/description/image">`
+### CSS (site.css)
+- [x] `.menu-button` immer sichtbar (kein `display: none` mehr)
+- [ ] `.nav-links` im Header entfernen (nav-drawer übernimmt)
+- [x] Nav-Drawer CSS hinzufügen (Backdrop, Panel, Labels, Links)
+- [x] Footer-Grid auf 4 Spalten, Responsive anpassen
+- [x] Button-Shadow: `rgba(255,122,24,...)` → `rgba(6,182,212,...)`
+- [x] Button-Border-Fix: `border: none` auf Primary-Button
 
-### 3. og:image erstellt
-- DLDC.PNG (356x1116) → auf 1200x630 gecroppt (Mitte)
-- Gespeichert in: `public/images/og-image.png` → `dist/images/og-image.png`
+### JS (site.js)
+- [x] `setupMobileMenu` → `setupNavDrawer` mit is-open Klasse, Backdrop-Click, Escape
 
-## Verifiziert
-- [x] Build erfolgreich (`npm run build`)
-- [x] og:image in dist/images/
-- [x] SEO-Tags in dist/index.html
-- [x] CSS mit object-fit in dist/assets/site-BknARHhI.css
+## Fortschritt
+- 2026-04-13: Worker 2 hat `src/site.css` und `src/site.js` für den neuen Nav-Drawer, Footer-Grid und Button/Header-Fixes umgesetzt.
 
-## Nächste Schritte
-- Website deployen (dist/ auf Server)
-- Google Search Console prüfen
-- Eventuell DLDC.PNG als Ersatz für discord-channels.png wenn gewünscht
+## Entscheidungen
+- Drawer slide-in von links, Backdrop-Click schließt ihn
+- Discord-Link: `https://discord.gg/z5TfVHuQq2`
+- Rechtliches Footer: `/twitch/impressum`, `/twitch/datenschutz`, `/twitch/agb`
+- Nav-Drawer Struktur: Community (Start/Mitspieler/Coaching) | Streamer (Netzwerk/Onboarding/FAQ) | Plattformen (Turnier/Aktivität/Builds)
+
+## Relevante Dateien
+- `/home/naniadm/Documents/Website/dl-landing/index.html`
+- `/home/naniadm/Documents/Website/dl-landing/mitspieler/index.html`
+- `/home/naniadm/Documents/Website/dl-landing/coaching/index.html`
+- `/home/naniadm/Documents/Website/dl-landing/streamer/index.html`
+- `/home/naniadm/Documents/Website/dl-landing/src/site.css`
+- `/home/naniadm/Documents/Website/dl-landing/src/site.js`
+
+---
+*Vorheriger Workflow (SEO & Bild-Fix) → abgeschlossen, wurde durch diesen ersetzt*
