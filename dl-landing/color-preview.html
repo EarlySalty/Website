@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DDC Farb-Preview</title>
+  <style>
+    /* ── Base ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+      background: #07151d;
+      color: #e9f1f7;
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    h1.page-title {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #9bb3c5;
+      margin-bottom: 8px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    p.page-sub {
+      text-align: center;
+      color: #5c7a8e;
+      font-size: .9rem;
+      margin-bottom: 48px;
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Variant Panel ── */
+    .variant {
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(194,221,240,0.14);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.4);
+    }
+
+    .variant-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(194,221,240,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .variant-label {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(194,221,240,0.5);
+    }
+
+    .variant-name {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .color-chips {
+      display: flex;
+      gap: 6px;
+    }
+
+    .chip {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .variant-body {
+      padding: 28px 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ── Hero section ── */
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+    }
+
+    .hero-h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -.01em;
+    }
+
+    .hero-h1 span {
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-sub {
+      font-size: .875rem;
+      color: #9bb3c5;
+      line-height: 1.6;
+    }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-size: .875rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: opacity .15s;
+    }
+
+    .btn:hover { opacity: .85; }
+
+    .btn-primary {
+      color: #fff;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: #e9f1f7;
+    }
+
+    /* ── Card ── */
+    .card {
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid rgba(194,221,240,0.14);
+      background: rgba(16,38,53,0.92);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .card-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .card-tag {
+      font-size: .7rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 5px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .card-title {
+      font-size: .95rem;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .card-desc {
+      font-size: .8rem;
+      color: #9bb3c5;
+    }
+
+    /* ── Progress / Stat ── */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+    }
+
+    .stat-label {
+      font-size: .72rem;
+      color: #9bb3c5;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .progress-bar-bg {
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(194,221,240,0.1);
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    /* ── Nav tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(12,35,49,.72);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(194,221,240,0.14);
+      border-radius: 10px;
+      padding: 5px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: #9bb3c5;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all .15s;
+    }
+
+    .tab.active { color: #fff; }
+
+    /* ── Input ── */
+    .input-wrap {
+      position: relative;
+    }
+
+    .input {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 9px;
+      background: rgba(16,38,53,0.92);
+      border: 1px solid rgba(194,221,240,0.18);
+      color: #e9f1f7;
+      font-size: .875rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .input:focus { border-color: var(--p); box-shadow: 0 0 0 3px var(--ps); }
+    .input::placeholder { color: #5c7a8e; }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: rgba(194,221,240,0.1);
+    }
+
+    /* ═══════════════════════════════════════════════
+       VARIANTE A – Lila / Violet
+    ═══════════════════════════════════════════════ */
+    .v-a {
+      --p: #7C3AED;
+      --ps: rgba(124,58,237,0.22);
+      --a: #10B7AD;
+      --as: rgba(16,183,173,0.2);
+      background:
+        radial-gradient(800px 400px at 90% -5%, rgba(124,58,237,0.2), transparent 65%),
+        radial-gradient(600px 350px at 10% -15%, rgba(16,183,173,0.22), transparent 60%),
+        linear-gradient(160deg, #07151d 0%, #081a24 55%, #0a202c 100%);
+    }
+
+    /* ═══════════════════════════════════════════════
+       VARIANTE B – Cyan / Electric Blue
+    ═══════════════════════════════════════════════ */
+    .v-b {
+      --p: #06B6D4;
+      --ps: rgba(6,182,212,0.22);
+      --a: #A855F7;
+      --as: rgba(168,85,247,0.2);
+      background:
+        radial-gradient(800px 400px at 90% -5%, rgba(6,182,212,0.2), transparent 65%),
+        radial-gradient(600px 350px at 10% -15%, rgba(168,85,247,0.22), transparent 60%),
+        linear-gradient(160deg, #07151d 0%, #081a24 55%, #0a202c 100%);
+    }
+
+    /* ═══════════════════════════════════════════════
+       VARIANTE C – Teal Primary + Indigo Akzent
+    ═══════════════════════════════════════════════ */
+    .v-c {
+      --p: #10B7AD;
+      --ps: rgba(16,183,173,0.22);
+      --a: #6D28D9;
+      --as: rgba(109,40,217,0.2);
+      background:
+        radial-gradient(800px 400px at 90% -5%, rgba(16,183,173,0.2), transparent 65%),
+        radial-gradient(600px 350px at 10% -15%, rgba(109,40,217,0.22), transparent 60%),
+        linear-gradient(160deg, #07151d 0%, #081a24 55%, #0a202c 100%);
+    }
+
+    /* Utility classes using CSS custom props per variant */
+    .v-a .hero-badge,
+    .v-b .hero-badge,
+    .v-c .hero-badge {
+      background: var(--ps);
+      border: 1px solid var(--p);
+      color: var(--p);
+    }
+
+    .v-a .hero-h1 span,
+    .v-b .hero-h1 span,
+    .v-c .hero-h1 span {
+      background-image: linear-gradient(135deg, var(--p), var(--a));
+    }
+
+    .v-a .btn-primary,
+    .v-b .btn-primary,
+    .v-c .btn-primary {
+      background: linear-gradient(135deg, var(--p), var(--a));
+      box-shadow: 0 4px 16px var(--ps);
+    }
+
+    .v-a .btn-outline,
+    .v-b .btn-outline,
+    .v-c .btn-outline {
+      border: 1.5px solid rgba(194,221,240,0.28);
+    }
+
+    .v-a .card-icon,
+    .v-b .card-icon,
+    .v-c .card-icon {
+      background: var(--ps);
+    }
+
+    .v-a .card-tag,
+    .v-b .card-tag,
+    .v-c .card-tag {
+      background: var(--as);
+      color: var(--a);
+    }
+
+    .v-a .stat-value,
+    .v-b .stat-value,
+    .v-c .stat-value {
+      background: linear-gradient(135deg, var(--p), var(--a));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .v-a .progress-bar,
+    .v-b .progress-bar,
+    .v-c .progress-bar {
+      background: linear-gradient(90deg, var(--p), var(--a));
+    }
+
+    .v-a .tab.active,
+    .v-b .tab.active,
+    .v-c .tab.active {
+      background: linear-gradient(135deg, var(--p), var(--a));
+      box-shadow: 0 2px 10px var(--ps);
+    }
+
+    .v-a .variant-name,
+    .v-b .variant-name,
+    .v-c .variant-name {
+      color: var(--p);
+    }
+
+    .v-a .variant-header,
+    .v-b .variant-header,
+    .v-c .variant-header {
+      background: var(--ps);
+    }
+
+    .v-a .card-title .accent,
+    .v-b .card-title .accent,
+    .v-c .card-title .accent {
+      color: var(--a);
+    }
+
+    /* Specific chip colors */
+    .v-a .chip-p { background: #7C3AED; }
+    .v-a .chip-a { background: #10B7AD; }
+    .v-b .chip-p { background: #06B6D4; }
+    .v-b .chip-a { background: #A855F7; }
+    .v-c .chip-p { background: #10B7AD; }
+    .v-c .chip-a { background: #6D28D9; }
+
+    /* Bottom note */
+    .note {
+      text-align: center;
+      margin-top: 48px;
+      color: #5c7a8e;
+      font-size: .8rem;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="page-title">DDC Farb-Preview</h1>
+  <p class="page-sub">Deutsche Deadlock Community · Drei Varianten zur Auswahl · Hintergrund bleibt dunkel</p>
+
+  <div class="grid">
+
+    <!-- ═══ VARIANTE A: LILA / VIOLET ═══ -->
+    <div class="variant v-a">
+      <div class="variant-header">
+        <div>
+          <div class="variant-label">Variante A</div>
+          <div class="variant-name">Lila / Violet</div>
+        </div>
+        <div class="color-chips">
+          <div class="chip chip-p" title="#7C3AED"></div>
+          <div class="chip chip-a" title="#10B7AD"></div>
+          <div class="chip" style="background:#0A1E2A;border-color:#e9f1f7" title="#0A1E2A"></div>
+        </div>
+      </div>
+      <div class="variant-body">
+
+        <!-- Hero -->
+        <div>
+          <span class="hero-badge">🎮 Deutsche Deadlock Community</span>
+        </div>
+        <div>
+          <h2 class="hero-h1">Die Heimat der<br><span>deutschen Deadlock-Community</span></h2>
+          <p class="hero-sub" style="margin-top:10px">Turniere, Streamer-Netzwerk, Aktivitäts-Tracking &amp; mehr.</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary">Jetzt beitreten →</button>
+          <button class="btn btn-outline">Mehr erfahren</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Card -->
+        <div class="card">
+          <div class="card-top">
+            <div class="card-icon">🏆</div>
+            <div class="card-tag">Turniere</div>
+          </div>
+          <div class="card-title">Nächstes Turnier <span class="accent">live</span></div>
+          <div class="card-desc">4v4 · Samstag, 19:00 Uhr · 12 Teams angemeldet</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat-value">2.4k</div>
+            <div class="stat-label">Community</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">38</div>
+            <div class="stat-label">Streamer</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">142</div>
+            <div class="stat-label">Turniere</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card-desc" style="margin-bottom:7px">Aktivität diese Woche</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar" style="width:72%"></div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab active">Übersicht</button>
+          <button class="tab">Turniere</button>
+          <button class="tab">Streamer</button>
+          <button class="tab">Builds</button>
+        </div>
+
+        <!-- Input -->
+        <input class="input" type="text" placeholder="Spieler suchen…" />
+
+      </div>
+    </div>
+
+    <!-- ═══ VARIANTE B: CYAN / ELECTRIC BLUE ═══ -->
+    <div class="variant v-b">
+      <div class="variant-header">
+        <div>
+          <div class="variant-label">Variante B</div>
+          <div class="variant-name">Cyan / Electric Blue</div>
+        </div>
+        <div class="color-chips">
+          <div class="chip chip-p" title="#06B6D4"></div>
+          <div class="chip chip-a" title="#A855F7"></div>
+          <div class="chip" style="background:#0A1E2A;border-color:#e9f1f7" title="#0A1E2A"></div>
+        </div>
+      </div>
+      <div class="variant-body">
+
+        <!-- Hero -->
+        <div>
+          <span class="hero-badge">🎮 Deutsche Deadlock Community</span>
+        </div>
+        <div>
+          <h2 class="hero-h1">Die Heimat der<br><span>deutschen Deadlock-Community</span></h2>
+          <p class="hero-sub" style="margin-top:10px">Turniere, Streamer-Netzwerk, Aktivitäts-Tracking &amp; mehr.</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary">Jetzt beitreten →</button>
+          <button class="btn btn-outline">Mehr erfahren</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Card -->
+        <div class="card">
+          <div class="card-top">
+            <div class="card-icon">🏆</div>
+            <div class="card-tag">Turniere</div>
+          </div>
+          <div class="card-title">Nächstes Turnier <span class="accent">live</span></div>
+          <div class="card-desc">4v4 · Samstag, 19:00 Uhr · 12 Teams angemeldet</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat-value">2.4k</div>
+            <div class="stat-label">Community</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">38</div>
+            <div class="stat-label">Streamer</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">142</div>
+            <div class="stat-label">Turniere</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card-desc" style="margin-bottom:7px">Aktivität diese Woche</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar" style="width:72%"></div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab active">Übersicht</button>
+          <button class="tab">Turniere</button>
+          <button class="tab">Streamer</button>
+          <button class="tab">Builds</button>
+        </div>
+
+        <!-- Input -->
+        <input class="input" type="text" placeholder="Spieler suchen…" />
+
+      </div>
+    </div>
+
+    <!-- ═══ VARIANTE C: TEAL + INDIGO ═══ -->
+    <div class="variant v-c">
+      <div class="variant-header">
+        <div>
+          <div class="variant-label">Variante C</div>
+          <div class="variant-name">Teal + Indigo</div>
+        </div>
+        <div class="color-chips">
+          <div class="chip chip-p" title="#10B7AD"></div>
+          <div class="chip chip-a" title="#6D28D9"></div>
+          <div class="chip" style="background:#0A1E2A;border-color:#e9f1f7" title="#0A1E2A"></div>
+        </div>
+      </div>
+      <div class="variant-body">
+
+        <!-- Hero -->
+        <div>
+          <span class="hero-badge">🎮 Deutsche Deadlock Community</span>
+        </div>
+        <div>
+          <h2 class="hero-h1">Die Heimat der<br><span>deutschen Deadlock-Community</span></h2>
+          <p class="hero-sub" style="margin-top:10px">Turniere, Streamer-Netzwerk, Aktivitäts-Tracking &amp; mehr.</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary">Jetzt beitreten →</button>
+          <button class="btn btn-outline">Mehr erfahren</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Card -->
+        <div class="card">
+          <div class="card-top">
+            <div class="card-icon">🏆</div>
+            <div class="card-tag">Turniere</div>
+          </div>
+          <div class="card-title">Nächstes Turnier <span class="accent">live</span></div>
+          <div class="card-desc">4v4 · Samstag, 19:00 Uhr · 12 Teams angemeldet</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat-value">2.4k</div>
+            <div class="stat-label">Community</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">38</div>
+            <div class="stat-label">Streamer</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">142</div>
+            <div class="stat-label">Turniere</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card-desc" style="margin-bottom:7px">Aktivität diese Woche</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar" style="width:72%"></div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab active">Übersicht</button>
+          <button class="tab">Turniere</button>
+          <button class="tab">Streamer</button>
+          <button class="tab">Builds</button>
+        </div>
+
+        <!-- Input -->
+        <input class="input" type="text" placeholder="Spieler suchen…" />
+
+      </div>
+    </div>
+
+  </div>
+
+  <p class="note">
+    Hintergrundfarbe &amp; Typografie bleiben in allen Varianten gleich.
+    Farbwerte: A (#7C3AED / #10B7AD) · B (#06B6D4 / #A855F7) · C (#10B7AD / #6D28D9)
+  </p>
+</body>
+</html>
