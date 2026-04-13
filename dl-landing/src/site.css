@@ -45,10 +45,10 @@
 
 /* ── Custom Properties ── */
 :root {
-  --bg: #122240;
-  --bg-elevated: rgba(6, 13, 28, 0.88);
-  --card: rgba(20, 42, 80, 0.90);
-  --card-strong: rgba(24, 50, 90, 0.95);
+  --bg: #0c1a30;
+  --bg-elevated: rgba(5, 11, 22, 0.88);
+  --card: rgba(13, 26, 52, 0.90);
+  --card-strong: rgba(16, 32, 60, 0.95);
   --border: rgba(194, 221, 240, 0.14);
   --border-strong: rgba(194, 221, 240, 0.28);
   --text: #e9f1f7;
@@ -81,7 +81,7 @@ body {
   min-height: 100vh;
   font-family: 'Manrope', 'Segoe UI', sans-serif;
   color: var(--text);
-  background: linear-gradient(160deg, #122240 0%, #101e38 55%, #122040 100%);
+  background: linear-gradient(160deg, #0c1a30 0%, #091525 55%, #0b1a2e 100%);
   line-height: 1.6;
   overflow-x: hidden;
 }
@@ -162,7 +162,7 @@ ol {
 }
 
 .section--dark {
-  background: rgba(14, 26, 50, 0.95);
+  background: rgba(7, 14, 28, 0.95);
 }
 
 .section--alt {
@@ -175,7 +175,7 @@ ol {
   top: 0;
   z-index: 30;
   backdrop-filter: blur(18px);
-  background: rgba(18, 34, 64, 0.74);
+  background: rgba(12, 26, 48, 0.74);
   border-bottom: 1px solid rgba(194, 221, 240, 0.08);
 }
 
@@ -440,7 +440,7 @@ ol {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(18,34,64,0.85) 100%);
+  background: linear-gradient(180deg, transparent 0%, transparent 30%, rgba(12,26,48,0.88) 100%);
 }
 
 .hero .container {
