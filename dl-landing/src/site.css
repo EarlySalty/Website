@@ -184,8 +184,8 @@ ol {
 
 .site-header .container {
   margin-left: 0.5rem;
-  margin-right: auto;
-  width: calc(100% - 0.5rem);
+  margin-right: 1.5rem;
+  width: calc(100% - 2rem);
 }
 
 .header-row {
@@ -1212,4 +1212,67 @@ ol {
   margin-top: auto;
   padding-top: 0.5rem;
   text-align: center;
+}
+
+/* ── Plattformen-Sektion ── */
+.platforms-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.platform-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(11, 29, 40, 0.6);
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 200ms ease, background 200ms ease;
+}
+
+.platform-card:hover {
+  border-color: var(--primary);
+  background: rgba(6, 182, 212, 0.06);
+}
+
+.platform-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(168, 85, 247, 0.18));
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.platform-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.02em;
+}
+
+.platform-card p {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.platform-arrow {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  transition: color 200ms ease, transform 200ms ease;
+}
+
+.platform-card:hover .platform-arrow {
+  color: var(--primary);
+  transform: translateX(3px);
 }
