@@ -182,6 +182,12 @@ ol {
   border-bottom: 1px solid rgba(194, 221, 240, 0.08);
 }
 
+.site-header .container {
+  margin-left: 0.5rem;
+  margin-right: auto;
+  width: calc(100% - 0.5rem);
+}
+
 .header-row {
   min-height: var(--header-height);
   display: flex;

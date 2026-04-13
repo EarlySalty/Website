@@ -28,6 +28,7 @@ Die Hauptseite deutsche-deadlock-community.de zum Aushängeschild der Community 
 
 ## Fortschritt
 - 2026-04-13: Worker 2 hat `src/site.css` und `src/site.js` für den neuen Nav-Drawer, Footer-Grid und Button/Header-Fixes umgesetzt.
+- 2026-04-13: Nav-Fix linksbündig in `src/site.css` ergänzt, Domains in `mitspieler/`, `coaching/` und `streamer/` aktualisiert sowie `public/robots.txt` und `public/sitemap.xml` für die saubere Build-Ausgabe angepasst; Build/Verifikation erfolgreich.
 
 ## Entscheidungen
 - Drawer slide-in von links, Backdrop-Click schließt ihn

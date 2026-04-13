@@ -20,4 +20,4 @@ Allow: /
 User-agent: ClaudeBot
 Disallow: /
 
-Sitemap: https://earlysalty.de/sitemap.xml
+Sitemap: https://deutsche-deadlock-community.de/sitemap.xml
