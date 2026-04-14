@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 import httpx
@@ -11,10 +13,18 @@ DISCORD_CLIENT_ID = "YOUR_DISCORD_CLIENT_ID"  # TODO: from config
 DISCORD_CLIENT_SECRET = "YOUR_DISCORD_CLIENT_SECRET"  # TODO: from config
 DISCORD_REDIRECT_URI = "http://localhost:8000/api/auth/discord/callback"
 DISCORD_API_BASE = "https://discord.com/api/v10"
-JWT_SECRET = "your-secret-key-change-in-production"
+JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 
 oauth_states: dict[str, dict] = {}
+
+
+def _is_trusted_forward_auth_proxy(request: Request) -> bool:
+    client = request.client
+    if not client:
+        return False
+
+    return client.host in {"127.0.0.1", "::1", "localhost"}
 
 def create_jwt(user_id: str, username: str, role: str) -> str:
     payload = {
@@ -110,6 +120,21 @@ async def discord_callback(request: Request, code: str = None, state: str = None
 
 @router.get("/me")
 async def me(request: Request):
+    if (
+        request.headers.get("X-Admin-Validated") == "1"
+        and _is_trusted_forward_auth_proxy(request)
+    ):
+        username = request.headers.get("X-Admin-User") or "admin"
+        return {
+            "user": {
+                "id": "caddy-validated-admin",
+                "username": username,
+                "displayName": username,
+                "avatarUrl": None,
+                "role": "admin",
+            }
+        }
+
     token = request.cookies.get("auth_token")
     if not token:
         return {"user": None}
