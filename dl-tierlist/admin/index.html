@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin | Deutsche Deadlock Community</title>
+    <meta name="robots" content="noindex,nofollow" />
+    <meta
+      name="description"
+      content="Admin-Editor fuer die Deadlock Tier-Liste der Deutschen Deadlock Community."
+    />
+    <link rel="icon" href="/favicon.svg" />
+    <script type="module" src="/src/admin.js"></script>
+  </head>
+  <body>
+    <div id="login-screen" class="admin-login">
+      <div class="login-card">
+        <h1>Admin – Tier-Liste</h1>
+        <p>Melde dich mit deinem Discord-Account an um die Tier-Liste zu bearbeiten.</p>
+        <a id="discord-login-btn" href="#" class="btn btn-discord">Mit Discord anmelden</a>
+      </div>
+    </div>
+
+    <div id="editor-screen" class="admin-editor" style="display: none">
+      <header class="site-header">
+        <div class="container">
+          <span class="brand-mark">Tier-Liste Editor</span>
+          <div class="admin-toolbar">
+            <button id="save-btn" class="btn btn-primary" type="button">Speichern</button>
+            <button id="export-btn" class="btn btn-secondary" type="button">
+              Als JSON exportieren
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="tier-page">
+        <div class="container">
+          <p class="muted">
+            Hero-Karten per Drag-and-Drop zwischen den Tiers verschieben. Geänderte Heroes
+            werden gelb hervorgehoben.
+          </p>
+          <div id="admin-tierlist-container"></div>
+        </div>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" style="display: none"></div>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "lastUpdated": "2026-04-15T12:00:00Z",
+  "description": "Tier-Liste der Deutschen Deadlock Community. Wird woechentlich aktualisiert.",
+  "tiers": {
+    "S": {
+      "label": "S Tier - Empfohlen",
+      "color": "#FFD700",
+      "heroes": ["haze", "dynamo", "seven", "kelvin", "infernus"]
+    },
+    "A": {
+      "label": "A Tier - Meta-Defining",
+      "color": "#FF8C00",
+      "heroes": ["warden", "ivy", "lady_geist", "abrams", "mirage", "mo_and_krill"]
+    },
+    "B": {
+      "label": "B Tier - Viable",
+      "color": "#3B82F6",
+      "heroes": ["mcginnis", "wraith", "lash", "yamato", "vyper", "vindicta", "calico", "fathom"]
+    },
+    "C": {
+      "label": "C Tier - Situativ",
+      "color": "#06B6D4",
+      "heroes": ["paradox", "pocket", "grey_talon", "viscous", "shiv", "sinclair", "bebop", "holliday"]
+    }
+  }
+}

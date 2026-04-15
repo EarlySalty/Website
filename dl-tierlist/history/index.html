@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verlauf | Deutsche Deadlock Community</title>
+    <meta
+      name="description"
+      content="Aenderungsverlauf der Deadlock Tier-Liste der Deutschen Deadlock Community."
+    />
+    <meta property="og:title" content="Verlauf | Deutsche Deadlock Community" />
+    <meta
+      property="og:description"
+      content="Sieh nach, welche Heroes zwischen den Tiers verschoben wurden."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="de_DE" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Verlauf | Deutsche Deadlock Community" />
+    <meta
+      name="twitter:description"
+      content="Patch fuer Patch dokumentierte Tier-Aenderungen der Deadlock Meta."
+    />
+    <link rel="icon" href="/favicon.svg" />
+    <script type="module" src="/src/history.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a class="brand" href="/">
+          <span class="brand-mark">Deadlock Meta</span>
+          <span class="brand-subtitle">DE Community</span>
+        </a>
+        <nav class="site-nav" aria-label="Hauptnavigation">
+          <a href="/">Tier-Liste</a>
+          <a href="/history/" class="is-active" aria-current="page">Verlauf</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="history-page">
+      <div class="container">
+        <h1>Änderungsverlauf</h1>
+        <div id="history-container">
+          <div class="history-loading">Lade Verlauf…</div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container">© <span id="year"></span> Deutsche Deadlock Community</div>
+    </footer>
+  </body>
+</html>
