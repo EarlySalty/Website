@@ -10,6 +10,8 @@ import HistoryPage from './pages/HistoryPage'
 import FeedbackPage from './pages/FeedbackPage'
 import AdminPage from './pages/AdminPage'
 import LoginPage from './pages/LoginPage'
+import CoachesPage from './pages/CoachesPage'
+import CoachDetailPage from './pages/CoachDetailPage'
 
 export default function App() {
   return (
@@ -31,6 +33,9 @@ export default function App() {
         <Route path="admin/reports" element={<AdminPage />} />
         <Route path="admin/votes" element={<AdminPage />} />
         <Route path="admin/users" element={<AdminPage />} />
+        <Route path="coaching" element={<CoachesPage />} />
+        <Route path="coaching/coaches" element={<CoachesPage />} />
+        <Route path="coaching/coaches/:id" element={<CoachDetailPage />} />
       </Route>
     </Routes>
   )

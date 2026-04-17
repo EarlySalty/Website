@@ -139,6 +139,114 @@ async def init_db():
             )
         """)
 
+        # ========== COACHING SYSTEM ==========
+
+        # Coaches (internal UUID, NO discord_user_id exposure to frontend)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coaches (
+                id TEXT PRIMARY KEY,
+                discord_user_id INTEGER UNIQUE NOT NULL,
+                discord_username TEXT,
+                display_name TEXT,
+                avatar_url TEXT,
+                bio TEXT,
+                specialties_json TEXT DEFAULT '[]',
+                availability_json TEXT DEFAULT '{}',
+                status TEXT DEFAULT 'active',
+                avg_rating REAL DEFAULT 0,
+                total_reviews INTEGER DEFAULT 0,
+                total_sessions INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Coach Reviews
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coach_reviews (
+                id TEXT PRIMARY KEY,
+                coach_id TEXT REFERENCES coaches(id),
+                session_id TEXT,
+                user_display_name TEXT,
+                rating INTEGER CHECK(rating >= 0 AND rating <= 10),
+                feedback_text TEXT,
+                improved_areas TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Coaching Requests
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coaching_requests (
+                id TEXT PRIMARY KEY,
+                discord_user_id INTEGER NOT NULL,
+                discord_username TEXT,
+                rank TEXT NOT NULL,
+                subrank TEXT NOT NULL,
+                hero TEXT,
+                games_played TEXT,
+                hours_played TEXT,
+                availability TEXT,
+                current_problems TEXT,
+                ai_summary TEXT,
+                ai_insights_json TEXT,
+                status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Coaching Sessions
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coaching_sessions (
+                id TEXT PRIMARY KEY,
+                request_id TEXT REFERENCES coaching_requests(id),
+                coach_id TEXT REFERENCES coaches(id),
+                discord_user_id INTEGER NOT NULL,
+                discord_username TEXT,
+                discord_channel_id INTEGER,
+                status TEXT DEFAULT 'active',
+                scheduled_at TIMESTAMP,
+                started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                completed_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Coaching Surveys
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coaching_surveys (
+                id TEXT PRIMARY KEY,
+                session_id TEXT REFERENCES coaching_sessions(id) UNIQUE,
+                rating INTEGER CHECK(rating >= 0 AND rating <= 10),
+                feedback_text TEXT,
+                improved_areas TEXT,
+                unresolved_items TEXT,
+                would_recommend INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Coach Applications
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coach_applications (
+                id TEXT PRIMARY KEY,
+                discord_user_id INTEGER UNIQUE NOT NULL,
+                discord_username TEXT,
+                display_name TEXT,
+                application_text TEXT,
+                experience_text TEXT,
+                rank TEXT,
+                specialties_json TEXT DEFAULT '[]',
+                availability_json TEXT DEFAULT '{}',
+                status TEXT DEFAULT 'pending',
+                reviewed_by TEXT,
+                reviewed_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         await db.commit()
 
         # Insert sample data if empty

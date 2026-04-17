@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aktivität | Deutsche Deadlock Community</title>
+    <meta
+      name="description"
+      content="Leaderboards für Voice- und Textaktivität auf dem Deadlock-Community-Discord. Dein persönliches Aktivitäts-Dashboard nach Discord-Login."
+    />
+    <meta property="og:title" content="Aktivität | Deutsche Deadlock Community" />
+    <meta
+      property="og:description"
+      content="Voice- und Text-Leaderboards plus persönliches Dashboard für den DE-Deadlock-Discord."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="de_DE" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" />
+    <script type="module" src="/src/activity.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a class="brand" href="/">
+          <span class="brand-mark">Deadlock Community</span>
+          <span class="brand-subtitle">Aktivität</span>
+        </a>
+        <nav class="site-nav" aria-label="Hauptnavigation">
+          <a href="/">Start</a>
+          <a href="/tierlist/">Tier-Liste</a>
+          <a href="/aktivitaet/" class="is-active" aria-current="page">Aktivität</a>
+        </nav>
+        <div class="auth-slot" id="auth-slot" aria-live="polite">
+          <span class="auth-placeholder">…</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="activity-page">
+      <section class="hero">
+        <div class="container">
+          <p class="hero-eyebrow">Grind, Gespräche, Glory</p>
+          <h1 class="hero-title">Aktivität auf dem Server</h1>
+          <p class="hero-subtitle">
+            Voice-Zeit und echte Konversationen zählen. Spam nicht. Log dich mit Discord ein,
+            um dein persönliches Dashboard zu sehen — Rang, Verlauf, Heatmap, Co-Player.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" aria-label="Leaderboards">
+        <div class="container">
+          <div class="tabs" role="tablist" aria-label="Leaderboard-Typ">
+            <button class="tab is-active" role="tab" data-tab="voice" aria-selected="true">
+              <span class="tab-icon" aria-hidden="true">🎙️</span> Voice
+            </button>
+            <button class="tab" role="tab" data-tab="text" aria-selected="false">
+              <span class="tab-icon" aria-hidden="true">💬</span> Text
+            </button>
+          </div>
+
+          <div class="leaderboard-card" id="leaderboard-card">
+            <div class="leaderboard-head">
+              <div>
+                <h2 id="leaderboard-title">Voice-Leaderboard</h2>
+                <p class="leaderboard-sub" id="leaderboard-sub">
+                  Nach Punkten, Top 50 · Stand: <span id="leaderboard-updated">–</span>
+                </p>
+              </div>
+              <div class="leaderboard-legend" aria-hidden="true">
+                <span class="legend-chip legend-gold">🥇 Top 3</span>
+                <span class="legend-chip">4–10</span>
+                <span class="legend-chip">11+</span>
+              </div>
+            </div>
+            <div class="leaderboard-body" id="leaderboard-body">
+              <div class="state state-loading">Lade Leaderboard…</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--alt" id="personal-section" aria-label="Persönliches Dashboard">
+        <div class="container">
+          <div class="personal-gate" id="personal-gate">
+            <div class="gate-card">
+              <h2>Dein persönliches Dashboard</h2>
+              <p>
+                Melde dich mit Discord an, um deine Platzierung, deine Aktivitätskurve der
+                letzten 30 Tage, deine Heatmap und deine Top-Mitspieler zu sehen.
+              </p>
+              <a class="button button-primary" id="gate-login" href="#">Mit Discord anmelden</a>
+              <p class="gate-hint" id="gate-hint"></p>
+            </div>
+          </div>
+
+          <div class="personal-panel" id="personal-panel" hidden>
+            <header class="personal-header">
+              <div class="personal-identity">
+                <span class="avatar" id="me-avatar" aria-hidden="true"></span>
+                <div>
+                  <h2 id="me-name">—</h2>
+                  <p id="me-meta" class="muted">—</p>
+                </div>
+              </div>
+              <button class="button button-secondary" id="logout-btn" type="button">
+                Abmelden
+              </button>
+            </header>
+
+            <div class="stat-grid" id="stat-grid">
+              <div class="stat-card">
+                <span class="stat-label">Voice-Rang</span>
+                <span class="stat-value" id="stat-voice-rank">–</span>
+                <span class="stat-meta" id="stat-voice-meta">–</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Text-Rang</span>
+                <span class="stat-value" id="stat-text-rank">–</span>
+                <span class="stat-meta" id="stat-text-meta">–</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Voice (30 Tage)</span>
+                <span class="stat-value" id="stat-voice-30">–</span>
+                <span class="stat-meta" id="stat-voice-30-meta">–</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Text (30 Tage)</span>
+                <span class="stat-value" id="stat-text-30">–</span>
+                <span class="stat-meta" id="stat-text-30-meta">–</span>
+              </div>
+            </div>
+
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-head">
+                  <h3>Voice-Stunden pro Tag</h3>
+                  <span class="chart-note">Letzte 30 Tage</span>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="chart-voice"></canvas>
+                </div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-head">
+                  <h3>Text-Punkte pro Tag</h3>
+                  <span class="chart-note">Letzte 30 Tage</span>
+                </div>
+                <div class="chart-wrapper">
+                  <canvas id="chart-text"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="secondary-grid">
+              <div class="heatmap-card">
+                <div class="chart-head">
+                  <h3>Aktivitäts-Heatmap</h3>
+                  <span class="chart-note">Voice · Wochentag × Stunde</span>
+                </div>
+                <div class="heatmap" id="heatmap" aria-label="Voice-Aktivitäts-Heatmap"></div>
+                <div class="heatmap-legend">
+                  <span>weniger</span>
+                  <span class="heatmap-gradient" aria-hidden="true"></span>
+                  <span>mehr</span>
+                </div>
+              </div>
+              <div class="coplayer-card">
+                <div class="chart-head">
+                  <h3>Top Mitspieler</h3>
+                  <span class="chart-note">Gemeinsame Voice-Sessions</span>
+                </div>
+                <ol class="coplayer-list" id="coplayer-list">
+                  <li class="state state-loading">Lade…</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        © <span id="year"></span> Deutsche Deadlock Community ·
+        <a href="/">Start</a> ·
+        <a href="/tierlist/">Tier-Liste</a> ·
+        <a href="/patch/">Patchnotes</a>
+      </div>
+    </footer>
+  </body>
+</html>

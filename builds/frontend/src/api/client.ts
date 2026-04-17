@@ -92,3 +92,81 @@ export const admin = {
   users: () => request<User[]>('/admin/users'),
   updateUserRole: (id: string, role: string) => request(`/admin/users/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) }),
 }
+
+// Coaching
+export interface CoachProfile {
+  id: string
+  display_name: string
+  discord_username: string
+  avatar_url: string | null
+  bio: string | null
+  specialties: string[]
+  availability: Record<string, string>
+  status: string
+  avg_rating: number
+  total_reviews: number
+  total_sessions: number
+}
+
+export interface CoachReview {
+  id: string
+  coach_id: string
+  user_display_name: string
+  rating: number
+  feedback_text: string | null
+  improved_areas: string | null
+  created_at: string
+}
+
+export interface CoachApplication {
+  discord_user_id: number
+  discord_username: string
+  display_name: string
+  application_text: string
+  experience_text: string
+  rank: string
+  specialties: string[]
+  availability: Record<string, string>
+}
+
+export interface CoachingRequest {
+  id: string
+  discord_username: string
+  rank: string
+  subrank: string
+  hero: string | null
+  games_played: string | null
+  hours_played: string | null
+  availability: string | null
+  current_problems: string | null
+  ai_summary: string | null
+  status: string
+  created_at: string
+}
+
+export const coaching = {
+  // Coaches
+  listCoaches: (params?: { specialty?: string; min_rating?: number }) => {
+    const query = new URLSearchParams(params as Record<string, string>).toString()
+    return request<CoachProfile[]>(`/coaching/coaches${query ? `?${query}` : ''}`)
+  },
+  getCoach: (id: string) => request<CoachProfile>(`/coaching/coaches/${id}`),
+  getCoachReviews: (id: string) => request<CoachReview[]>(`/coaching/coaches/${id}/reviews`),
+
+  // Profile
+  createProfile: (data: Partial<CoachProfile>) =>
+    request<CoachProfile>('/coaching/coaches/profile', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Application
+  applyToBeCoach: (data: CoachApplication) =>
+    request('/coaching/coaches/apply', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Dashboard
+  getDashboard: () => request<{ profile: CoachProfile | null; sessions: any[]; reviews: CoachReview[] }>('/coaching/dashboard'),
+
+  // Requests (internal)
+  listRequests: (status?: string) => {
+    const query = status ? `?status=${status}` : ''
+    return request<CoachingRequest[]>(`/coaching/requests${query}`)
+  },
+}
