@@ -1,0 +1,110 @@
+name: "🔍 Lint & Type Check"
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-quality:
+    name: "⚡ Python Lint & Type Check"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install tools
+        run: pip install ruff mypy
+
+      - name: Run Ruff
+        run: |
+          ruff check builds/backend/ dl-landing/mcp-server/ --output-format=github
+          ruff format builds/backend/ dl-landing/mcp-server/ --check
+
+      - name: Run Ruff SARIF
+        if: always()
+        run: |
+          ruff check builds/backend/ dl-landing/mcp-server/ --output-format=sarif -o ruff.sarif || true
+
+      - name: Upload Ruff SARIF
+        if: always() && hashFiles('ruff.sarif') != ''
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
+        with:
+          sarif_file: ruff.sarif
+          category: ruff
+
+      - name: Run mypy
+        run: |
+          mypy builds/backend/ dl-landing/mcp-server/ \
+            --ignore-missing-imports \
+            --no-error-summary \
+            --show-column-numbers
+
+  frontend-react:
+    name: "🧪 Frontend React CI"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: builds/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: builds/frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: builds/frontend
+        run: npm run lint
+
+      - name: TypeScript type check
+        working-directory: builds/frontend
+        run: npx tsc --noEmit
+
+      - name: Build frontend
+        working-directory: builds/frontend
+        run: npm run build
+
+  frontend-vite-projects:
+    name: "🏗️ Vite Build (${{ matrix.project }})"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - dl-landing
+          - dl-activity
+          - dl-patch
+          - dl-tierlist
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.project }}
+        run: npm ci
+
+      - name: Build
+        working-directory: ${{ matrix.project }}
+        run: npm run build

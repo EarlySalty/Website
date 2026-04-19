@@ -1,0 +1,144 @@
+name: "Security Scan"
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
+  schedule:
+    - cron: "35 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secret-detection:
+    name: "Secret Detection"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Block tracked secret material files
+        run: |
+          forbidden=$(git ls-files | grep -E '(^|/)(\.env(\..*)?|id_rsa|id_dsa|.*\.pem|.*\.key)$' || true)
+          if [ -n "$forbidden" ]; then
+            echo "::error::Tracked secret material files detected:"
+            echo "$forbidden"
+            exit 1
+          fi
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_SUMMARY: true
+
+  python-security:
+    name: "Python SAST + Dependency Audit"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install security tools
+        run: pip install bandit pip-audit
+
+      - name: Run Bandit
+        run: |
+          bandit -r builds/backend dl-landing/mcp-server -ll -ii -f json -o bandit-report.json || true
+          bandit -r builds/backend dl-landing/mcp-server -ll -ii -f sarif -o bandit.sarif || true
+
+      - name: Upload Bandit report
+        if: always() && hashFiles('bandit-report.json') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          if-no-files-found: ignore
+
+      - name: Upload Bandit SARIF
+        if: always() && hashFiles('bandit.sarif') != ''
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
+        with:
+          sarif_file: bandit.sarif
+          category: bandit
+
+      - name: Run pip-audit (builds/backend)
+        run: pip-audit --strict --desc -r builds/backend/requirements.txt
+
+      - name: Run pip-audit (dl-landing/mcp-server)
+        run: pip-audit --strict --desc -r dl-landing/mcp-server/requirements.txt
+
+  javascript-security:
+    name: "JavaScript Dependency Audit (${{ matrix.project }})"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - builds/frontend
+          - dl-landing
+          - dl-activity
+          - dl-patch
+          - dl-tierlist
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: "20"
+
+      - name: npm audit (${{ matrix.project }})
+        working-directory: ${{ matrix.project }}
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+  semgrep-sast:
+    name: "Semgrep SAST"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    container:
+      image: semgrep/semgrep:1.151.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run Semgrep
+        run: |
+          semgrep scan \
+            --config p/default \
+            --config p/python \
+            --error \
+            --exclude node_modules \
+            --exclude .venv \
+            --exclude venv \
+            --output semgrep.sarif \
+            --sarif
+
+      - name: Upload Semgrep SARIF
+        if: always() && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
