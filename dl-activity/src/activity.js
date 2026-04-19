@@ -128,7 +128,7 @@ function bindAuthButtons() {
 }
 
 function loginRedirect() {
-  const url = new URL(`${AUTH_BASE}/auth/discord/login`)
+  const url = new URL(`${AUTH_BASE}/auth/discord/login`, window.location.origin)
   url.searchParams.set('redirect', REDIRECT_AFTER_LOGIN)
   window.location.href = url.toString()
 }
