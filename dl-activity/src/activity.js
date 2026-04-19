@@ -46,18 +46,19 @@ const FALLBACK_RANK_ORDER = [
   'ascendant',
   'eternus',
 ]
+const TABS = ['voice', 'text', 'peaks', 'ich']
 const RANK_COLORS = {
-  initiate: '#cb643b',
-  seeker: '#96c86f',
-  alchemist: '#0e5d8b',
-  arcanist: '#3c591e',
-  ritualist: '#b15926',
-  emissary: '#b73f3c',
-  archon: '#705691',
-  oracle: '#a74905',
-  phantom: '#8d7b69',
-  ascendant: '#c59951',
-  eternus: '#1eb6a7',
+  initiate: '#C8956C',
+  seeker: '#72C04A',
+  alchemist: '#4A8FCC',
+  arcanist: '#3D8A6E',
+  ritualist: '#D4602A',
+  emissary: '#CC3344',
+  archon: '#8855CC',
+  oracle: '#D49610',
+  phantom: '#8899AA',
+  ascendant: '#D4AA40',
+  eternus: '#1ECCC0',
 }
 
 const state = {
@@ -73,6 +74,8 @@ const state = {
   timelineMetric: 'players',
   timelineData: null,
   distributionData: null,
+  distributionInitialized: false,
+  peaksInitialized: false,
 }
 
 document.getElementById('year').textContent = new Date().getFullYear()
@@ -84,7 +87,9 @@ async function init() {
   bindAuthButtons()
   bindTimelineToggle()
   loadLeaderboard('voice')
-  loadInsights()
+  loadTextLeaderboard()
+  loadDistribution()
+  state.distributionInitialized = true
   const me = await fetchMe()
   state.me = me
   renderAuthSlot(me)
@@ -98,18 +103,41 @@ async function init() {
 
 /* ── Tabs ── */
 function bindTabs() {
-  document.querySelectorAll('.tab').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const next = btn.dataset.tab
-      if (next === state.tab) return
-      state.tab = next
-      document.querySelectorAll('.tab').forEach((b) => {
-        const active = b.dataset.tab === next
-        b.classList.toggle('is-active', active)
-        b.setAttribute('aria-selected', active ? 'true' : 'false')
-      })
-      loadLeaderboard(next)
-    })
+  document.querySelectorAll('.page-tab').forEach((btn) => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab))
+  })
+  const hash = location.hash.replace('#', '')
+  if (TABS.includes(hash)) switchTab(hash, false)
+}
+
+function switchTab(tabId, pushHash = true) {
+  if (!TABS.includes(tabId)) tabId = 'voice'
+  TABS.forEach((id) => {
+    document.getElementById(`panel-${id}`).hidden = id !== tabId
+  })
+  document.querySelectorAll('.page-tab').forEach((btn) => {
+    const active = btn.dataset.tab === tabId
+    btn.classList.toggle('is-active', active)
+    btn.setAttribute('aria-selected', active ? 'true' : 'false')
+  })
+  if (pushHash) history.replaceState(null, '', `#${tabId}`)
+  if (tabId === 'voice' && !state.distributionInitialized) {
+    state.distributionInitialized = true
+    loadDistribution()
+  }
+  if (tabId === 'peaks' && !state.peaksInitialized) {
+    state.peaksInitialized = true
+    loadTimeline(state.timelineMetric)
+    loadWeeklyTrend()
+  }
+  ;[
+    state.distributionChart,
+    state.weeklyChart,
+    state.timelineChart,
+    state.voiceChart,
+    state.textChart,
+  ].forEach((chart) => {
+    if (chart) chart.resize()
   })
 }
 
@@ -200,34 +228,42 @@ async function loadLeaderboard(kind) {
   }
 }
 
+async function loadTextLeaderboard() {
+  const body = document.getElementById('text-leaderboard-body')
+  const updated = document.getElementById('text-leaderboard-updated')
+  body.innerHTML = '<div class="state state-loading">Lade Leaderboard…</div>'
+  try {
+    const r = await fetch(`${API_BASE}/api/public/leaderboard/text?limit=50`, { credentials: 'include' })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const data = await r.json()
+    state.textBoard = data
+    if (updated) updated.textContent = data.updated_at ? formatRelative(data.updated_at) : '–'
+    renderBoardInto(body, 'text', data.entries || [])
+  } catch (err) {
+    body.innerHTML = `<div class="state state-error">Leaderboard konnte nicht geladen werden (${escapeHtml(err.message || 'Fehler')}).</div>`
+  }
+}
+
 function renderBoard(kind, entries) {
   const body = document.getElementById('leaderboard-body')
+  renderBoardInto(body, kind, entries)
+  const meId = state.me?.user_id
+  if (meId && entries.length && !entries.some((e) => String(e.user_id) === String(meId)) && state.me) {
+    appendMeStickyRow(kind)
+  }
+}
+
+function renderBoardInto(body, kind, entries) {
   if (!entries.length) {
-    body.innerHTML = '<div class="state">Noch keine Einträge — sei der Erste auf der Liste.</div>'
+    body.innerHTML = '<div class="state">Noch keine Einträge.</div>'
     return
   }
   const meId = state.me?.user_id
-  const meInList = meId && entries.some((e) => String(e.user_id) === String(meId))
-
   const headerHtml = kind === 'voice'
-    ? `<thead><tr>
-        <th>#</th><th>Spieler</th>
-        <th class="num hide-mobile">Zeit</th>
-        <th class="num">Punkte</th>
-      </tr></thead>`
-    : `<thead><tr>
-        <th>#</th><th>Spieler</th>
-        <th class="num hide-mobile">Messages</th>
-        <th class="num">Punkte</th>
-      </tr></thead>`
-
+    ? `<thead><tr><th>#</th><th>Spieler</th><th class="num hide-mobile">Zeit</th><th class="num">Punkte</th></tr></thead>`
+    : `<thead><tr><th>#</th><th>Spieler</th><th class="num hide-mobile">Messages</th><th class="num">Punkte</th></tr></thead>`
   const rowsHtml = entries.map((e) => rowHtml(e, kind, meId)).join('')
-
   body.innerHTML = `<table class="lb-table">${headerHtml}<tbody>${rowsHtml}</tbody></table>`
-
-  if (meId && !meInList && state.me) {
-    appendMeStickyRow(kind)
-  }
 }
 
 function rowHtml(e, kind, meId) {
@@ -282,11 +318,6 @@ function appendMeStickyRow(kind) {
     .catch(() => {})
 }
 
-/* ── Public Insights ── */
-async function loadInsights() {
-  await Promise.all([loadDistribution(), loadTimeline(state.timelineMetric)])
-}
-
 async function loadDistribution() {
   const chipGrid = document.getElementById('rank-chip-grid')
   chipGrid.innerHTML = '<div class="state state-loading">Lade Verteilung…</div>'
@@ -299,6 +330,16 @@ async function loadDistribution() {
     document.getElementById('distribution-total').textContent = '–'
     document.getElementById('distribution-updated').textContent = 'Stand: derzeit nicht verfügbar'
     chipGrid.innerHTML = '<div class="state">Rangverteilung ist aktuell nicht erreichbar.</div>'
+  }
+}
+
+async function loadWeeklyTrend() {
+  try {
+    const data = await fetchJson(`${API_BASE}/api/rank-distribution`)
+    if (!data) throw new Error('Keine Daten')
+    renderWeeklyChart(data)
+  } catch {
+    // Weekly-Chart bleibt leer
   }
 }
 
@@ -372,14 +413,18 @@ function renderDistribution(data) {
       },
     },
   })
+}
 
+function renderWeeklyChart(data) {
+  const rankOrder = data?.rank_order?.length ? data.rank_order : FALLBACK_RANK_ORDER
   const weeklyCanvas = document.getElementById('chart-weekly-ranks')
+  if (!weeklyCanvas) return
   const weekly = data?.weekly_trend || []
   state.weeklyChart?.destroy()
   state.weeklyChart = new Chart(weeklyCanvas, {
     type: 'bar',
     data: {
-      labels: weekly.map((entry, idx) => `Woche ${idx + 1}`),
+      labels: weekly.map((_, idx) => `Woche ${idx + 1}`),
       datasets: rankOrder.map((rank) => ({
         label: prettyRank(rank),
         data: weekly.map((entry) => entry?.data?.[rank] || 0),

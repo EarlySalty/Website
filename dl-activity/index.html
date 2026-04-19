@@ -48,23 +48,78 @@
         </div>
       </section>
 
-      <section class="section" aria-label="Leaderboards">
+      <nav class="page-tabs" role="tablist" aria-label="Bereich wählen">
         <div class="container">
-          <div class="tabs" role="tablist" aria-label="Leaderboard-Typ">
-            <button class="tab is-active" role="tab" data-tab="voice" aria-selected="true">
-              <span class="tab-icon" aria-hidden="true">🎙️</span> Voice
-            </button>
-            <button class="tab" role="tab" data-tab="text" aria-selected="false">
-              <span class="tab-icon" aria-hidden="true">💬</span> Text
-            </button>
-          </div>
+          <button class="page-tab is-active" role="tab" data-tab="voice" aria-selected="true">
+            🎙️ Voice
+          </button>
+          <button class="page-tab" role="tab" data-tab="text" aria-selected="false">
+            💬 Text
+          </button>
+          <button class="page-tab" role="tab" data-tab="peaks" aria-selected="false">
+            📊 Peaks
+          </button>
+          <button class="page-tab" role="tab" data-tab="ich" aria-selected="false">
+            👤 Ich
+          </button>
+        </div>
+      </nav>
 
-          <div class="leaderboard-card" id="leaderboard-card">
+      <div class="tab-panel" id="panel-voice" role="tabpanel">
+        <div class="container">
+          <div class="panel-grid">
+            <div class="panel-main">
+              <div class="leaderboard-card" id="leaderboard-card">
+                <div class="leaderboard-head">
+                  <div>
+                    <h2 id="leaderboard-title">Voice-Leaderboard</h2>
+                    <p class="leaderboard-sub" id="leaderboard-sub">
+                      Nach Voice-Punkten, Top 50 · Stand: <span id="leaderboard-updated">–</span>
+                    </p>
+                  </div>
+                  <div class="leaderboard-legend" aria-hidden="true">
+                    <span class="legend-chip legend-gold">🥇 Top 3</span>
+                    <span class="legend-chip">4–10</span>
+                    <span class="legend-chip">11+</span>
+                  </div>
+                </div>
+                <div class="leaderboard-body" id="leaderboard-body">
+                  <div class="state state-loading">Lade Leaderboard…</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-side">
+              <div class="insight-card">
+                <div class="chart-head">
+                  <h3>Rangverteilung</h3>
+                  <span class="chart-note" id="distribution-updated">Stand: –</span>
+                </div>
+                <div class="donut-shell-vertical">
+                  <div class="donut-stage">
+                    <canvas id="chart-distribution"></canvas>
+                    <div class="donut-center">
+                      <span class="donut-value" id="distribution-total">–</span>
+                      <span class="donut-label">Spieler</span>
+                    </div>
+                  </div>
+                  <div class="rank-chip-grid" id="rank-chip-grid">
+                    <div class="state state-loading">Lade…</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="panel-text" role="tabpanel" hidden>
+        <div class="container">
+          <div class="leaderboard-card">
             <div class="leaderboard-head">
               <div>
-                <h2 id="leaderboard-title">Voice-Leaderboard</h2>
-                <p class="leaderboard-sub" id="leaderboard-sub">
-                  Nach Punkten, Top 50 · Stand: <span id="leaderboard-updated">–</span>
+                <h2>Text-Leaderboard</h2>
+                <p class="leaderboard-sub" id="text-leaderboard-sub">
+                  Nach Konversations-Punkten, Top 50 · Stand: <span id="text-leaderboard-updated">–</span>
                 </p>
               </div>
               <div class="leaderboard-legend" aria-hidden="true">
@@ -73,47 +128,35 @@
                 <span class="legend-chip">11+</span>
               </div>
             </div>
-            <div class="leaderboard-body" id="leaderboard-body">
+            <div class="leaderboard-body" id="text-leaderboard-body">
               <div class="state state-loading">Lade Leaderboard…</div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section class="section" aria-label="Community Insights">
+      <div class="tab-panel" id="panel-peaks" role="tabpanel" hidden>
         <div class="container">
-          <div class="section-head">
-            <div>
-              <p class="section-kicker">Public Insights</p>
-              <h2>Ränge, Peaks und Aktivität nach Uhrzeit</h2>
-            </div>
-            <p class="section-copy">
-              Öffentliche Serverdaten aus Voice-Sessions: Verteilung der verknüpften Ränge,
-              Trend der letzten Wochen und typische Aktivitätsstunden je Rank.
-            </p>
-          </div>
-
-          <div class="insight-grid">
-            <div class="insight-card">
-              <div class="chart-head">
-                <h3>Rangverteilung</h3>
-                <span class="chart-note" id="distribution-updated">Stand: –</span>
-              </div>
-              <div class="donut-shell">
-                <div class="donut-stage">
-                  <canvas id="chart-distribution"></canvas>
-                  <div class="donut-center">
-                    <span class="donut-value" id="distribution-total">–</span>
-                    <span class="donut-label">Verknüpfte Spieler</span>
-                  </div>
+          <div class="peaks-grid">
+            <div class="insight-card insight-card-wide">
+              <div class="chart-head chart-head-wrap">
+                <div>
+                  <h3>Aktivität nach Uhrzeit</h3>
+                  <span class="chart-note">Voice-Sessions nach Rang über 24 Stunden</span>
                 </div>
-                <div class="rank-chip-grid" id="rank-chip-grid">
-                  <div class="state state-loading">Lade Verteilung…</div>
+                <div class="metric-toggle" id="timeline-toggle" role="tablist" aria-label="Metrik wählen">
+                  <button class="metric-btn is-active" type="button" data-metric="players">Spieler</button>
+                  <button class="metric-btn" type="button" data-metric="hours">Stunden</button>
                 </div>
               </div>
+              <div class="chart-wrapper chart-wrapper-xl">
+                <canvas id="chart-rank-timeline"></canvas>
+              </div>
+              <div class="rank-chip-grid rank-chip-grid-wide" id="timeline-rank-legend">
+                <div class="state state-loading">Lade Aktivität…</div>
+              </div>
             </div>
-
-            <div class="insight-card">
+            <div class="insight-card insight-card-wide">
               <div class="chart-head">
                 <h3>Aktive Spieler nach Rang</h3>
                 <span class="chart-note">Letzte 4 Wochen</span>
@@ -123,29 +166,10 @@
               </div>
             </div>
           </div>
-
-          <div class="insight-card insight-card-wide">
-            <div class="chart-head chart-head-wrap">
-              <div>
-                <h3>Aktivität nach Uhrzeit</h3>
-                <span class="chart-note">Voice-Sessions nach Rang über 24 Stunden</span>
-              </div>
-              <div class="metric-toggle" id="timeline-toggle" role="tablist" aria-label="Metrik wählen">
-                <button class="metric-btn is-active" type="button" data-metric="players">Spieler</button>
-                <button class="metric-btn" type="button" data-metric="hours">Stunden</button>
-              </div>
-            </div>
-            <div class="chart-wrapper chart-wrapper-xl">
-              <canvas id="chart-rank-timeline"></canvas>
-            </div>
-            <div class="rank-chip-grid rank-chip-grid-wide" id="timeline-rank-legend">
-              <div class="state state-loading">Lade Aktivität…</div>
-            </div>
-          </div>
         </div>
-      </section>
+      </div>
 
-      <section class="section section--alt" id="personal-section" aria-label="Persönliches Dashboard">
+      <div class="tab-panel" id="panel-ich" role="tabpanel" hidden>
         <div class="container">
           <div class="personal-gate" id="personal-gate">
             <div class="gate-card">
@@ -158,7 +182,6 @@
               <p class="gate-hint" id="gate-hint"></p>
             </div>
           </div>
-
           <div class="personal-panel" id="personal-panel" hidden>
             <header class="personal-header">
               <div class="personal-identity">
@@ -168,11 +191,8 @@
                   <p id="me-meta" class="muted">—</p>
                 </div>
               </div>
-              <button class="button button-secondary" id="logout-btn" type="button">
-                Abmelden
-              </button>
+              <button class="button button-secondary" id="logout-btn" type="button">Abmelden</button>
             </header>
-
             <div class="stat-grid" id="stat-grid">
               <div class="stat-card">
                 <span class="stat-label">Voice-Rang</span>
@@ -195,28 +215,22 @@
                 <span class="stat-meta" id="stat-text-30-meta">–</span>
               </div>
             </div>
-
             <div class="chart-grid">
               <div class="chart-card">
                 <div class="chart-head">
                   <h3>Voice-Stunden pro Tag</h3>
                   <span class="chart-note">Letzte 30 Tage</span>
                 </div>
-                <div class="chart-wrapper">
-                  <canvas id="chart-voice"></canvas>
-                </div>
+                <div class="chart-wrapper"><canvas id="chart-voice"></canvas></div>
               </div>
               <div class="chart-card">
                 <div class="chart-head">
                   <h3>Text-Punkte pro Tag</h3>
                   <span class="chart-note">Letzte 30 Tage</span>
                 </div>
-                <div class="chart-wrapper">
-                  <canvas id="chart-text"></canvas>
-                </div>
+                <div class="chart-wrapper"><canvas id="chart-text"></canvas></div>
               </div>
             </div>
-
             <div class="secondary-grid">
               <div class="heatmap-card">
                 <div class="chart-head">
@@ -242,7 +256,7 @@
             </div>
           </div>
         </div>
-      </section>
+      </div>
     </main>
 
     <footer class="footer">
