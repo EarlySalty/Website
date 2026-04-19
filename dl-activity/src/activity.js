@@ -1,11 +1,64 @@
 import './main.css'
-import { Chart, LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend } from 'chart.js'
+import {
+  Chart,
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Filler,
+  Tooltip,
+  Legend,
+  DoughnutController,
+  ArcElement,
+  BarController,
+  BarElement,
+} from 'chart.js'
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip, Legend)
+Chart.register(
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Filler,
+  Tooltip,
+  Legend,
+  DoughnutController,
+  ArcElement,
+  BarController,
+  BarElement,
+)
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:8768'
-const AUTH_BASE = import.meta.env.VITE_AUTH_BASE ?? API_BASE
+const API_BASE = normalizeBase(import.meta.env.VITE_API_BASE)
+const AUTH_BASE = normalizeBase(import.meta.env.VITE_AUTH_BASE ?? import.meta.env.VITE_API_BASE)
 const REDIRECT_AFTER_LOGIN = '/aktivitaet/'
+const FALLBACK_RANK_ORDER = [
+  'initiate',
+  'seeker',
+  'alchemist',
+  'arcanist',
+  'ritualist',
+  'emissary',
+  'archon',
+  'oracle',
+  'phantom',
+  'ascendant',
+  'eternus',
+]
+const RANK_COLORS = {
+  initiate: '#cb643b',
+  seeker: '#96c86f',
+  alchemist: '#0e5d8b',
+  arcanist: '#3c591e',
+  ritualist: '#b15926',
+  emissary: '#b73f3c',
+  archon: '#705691',
+  oracle: '#a74905',
+  phantom: '#8d7b69',
+  ascendant: '#c59951',
+  eternus: '#1eb6a7',
+}
 
 const state = {
   tab: 'voice',
@@ -14,6 +67,12 @@ const state = {
   textBoard: null,
   voiceChart: null,
   textChart: null,
+  distributionChart: null,
+  weeklyChart: null,
+  timelineChart: null,
+  timelineMetric: 'players',
+  timelineData: null,
+  distributionData: null,
 }
 
 document.getElementById('year').textContent = new Date().getFullYear()
@@ -23,7 +82,9 @@ init()
 async function init() {
   bindTabs()
   bindAuthButtons()
+  bindTimelineToggle()
   loadLeaderboard('voice')
+  loadInsights()
   const me = await fetchMe()
   state.me = me
   renderAuthSlot(me)
@@ -98,6 +159,20 @@ function renderAuthSlot(me) {
     btn.addEventListener('click', loginRedirect)
     slot.appendChild(btn)
   }
+}
+
+function bindTimelineToggle() {
+  document.querySelectorAll('#timeline-toggle .metric-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const metric = btn.dataset.metric
+      if (!metric || metric === state.timelineMetric) return
+      state.timelineMetric = metric
+      document.querySelectorAll('#timeline-toggle .metric-btn').forEach((node) => {
+        node.classList.toggle('is-active', node.dataset.metric === metric)
+      })
+      loadTimeline(metric)
+    })
+  })
 }
 
 /* ── Leaderboard ── */
@@ -205,6 +280,215 @@ function appendMeStickyRow(kind) {
       table.appendChild(innerTr)
     })
     .catch(() => {})
+}
+
+/* ── Public Insights ── */
+async function loadInsights() {
+  await Promise.all([loadDistribution(), loadTimeline(state.timelineMetric)])
+}
+
+async function loadDistribution() {
+  const chipGrid = document.getElementById('rank-chip-grid')
+  chipGrid.innerHTML = '<div class="state state-loading">Lade Verteilung…</div>'
+  try {
+    const data = await fetchJson(`${API_BASE}/api/rank-distribution`)
+    if (!data) throw new Error('Keine Daten')
+    state.distributionData = data
+    renderDistribution(data)
+  } catch {
+    document.getElementById('distribution-total').textContent = '–'
+    document.getElementById('distribution-updated').textContent = 'Stand: derzeit nicht verfügbar'
+    chipGrid.innerHTML = '<div class="state">Rangverteilung ist aktuell nicht erreichbar.</div>'
+  }
+}
+
+async function loadTimeline(metric) {
+  const legend = document.getElementById('timeline-rank-legend')
+  legend.innerHTML = '<div class="state state-loading">Lade Aktivität…</div>'
+  try {
+    const data = await fetchJson(`${API_BASE}/api/timeline?metric=${encodeURIComponent(metric)}`)
+    if (!data) throw new Error('Keine Daten')
+    state.timelineData = data
+    renderTimeline(data)
+  } catch {
+    legend.innerHTML = '<div class="state">Aktivität nach Uhrzeit ist aktuell nicht erreichbar.</div>'
+  }
+}
+
+function renderDistribution(data) {
+  const rankOrder = data?.rank_order?.length ? data.rank_order : FALLBACK_RANK_ORDER
+  const distribution = data?.distribution || {}
+  const total = rankOrder.reduce((sum, rank) => sum + (distribution[rank] || 0), 0)
+  document.getElementById('distribution-total').textContent = formatNum(total)
+  document.getElementById('distribution-updated').textContent =
+    `Stand: ${data?.generated_at ? formatRelative(data.generated_at) : '–'}`
+
+  const chipGrid = document.getElementById('rank-chip-grid')
+  chipGrid.innerHTML = rankOrder.map((rank) => {
+    const value = distribution[rank] || 0
+    const pct = total > 0 ? Math.round((value / total) * 100) : 0
+    return `
+      <div class="rank-chip">
+        <span class="rank-chip-dot" style="background:${rankColor(rank)}"></span>
+        <span class="rank-chip-name">${escapeHtml(prettyRank(rank))}</span>
+        <span class="rank-chip-value">${formatNum(value)} · ${pct}%</span>
+      </div>
+    `
+  }).join('')
+
+  const donutCanvas = document.getElementById('chart-distribution')
+  state.distributionChart?.destroy()
+  state.distributionChart = new Chart(donutCanvas, {
+    type: 'doughnut',
+    data: {
+      labels: rankOrder.map(prettyRank),
+      datasets: [{
+        data: rankOrder.map((rank) => distribution[rank] || 0),
+        backgroundColor: rankOrder.map(rankColor),
+        borderColor: '#10243a',
+        borderWidth: 2,
+        hoverOffset: 6,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5, 11, 22, 0.95)',
+          borderColor: 'rgba(194, 221, 240, 0.28)',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            label: (ctx) => {
+              const value = ctx.raw || 0
+              const pct = total > 0 ? Math.round((value / total) * 100) : 0
+              return `${ctx.label}: ${formatNum(value)} (${pct}%)`
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const weeklyCanvas = document.getElementById('chart-weekly-ranks')
+  const weekly = data?.weekly_trend || []
+  state.weeklyChart?.destroy()
+  state.weeklyChart = new Chart(weeklyCanvas, {
+    type: 'bar',
+    data: {
+      labels: weekly.map((entry, idx) => `Woche ${idx + 1}`),
+      datasets: rankOrder.map((rank) => ({
+        label: prettyRank(rank),
+        data: weekly.map((entry) => entry?.data?.[rank] || 0),
+        backgroundColor: rankColor(rank),
+        borderRadius: 5,
+        borderSkipped: false,
+      })),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5, 11, 22, 0.95)',
+          borderColor: 'rgba(194, 221, 240, 0.28)',
+          borderWidth: 1,
+          padding: 10,
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { color: '#9bb3c5', font: { size: 11 } },
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          grid: { color: 'rgba(194, 221, 240, 0.08)' },
+          ticks: { color: '#9bb3c5', font: { size: 11 }, precision: 0 },
+        },
+      },
+    },
+  })
+}
+
+function renderTimeline(data) {
+  const rankOrder = data?.rank_order?.length ? data.rank_order : FALLBACK_RANK_ORDER
+  const timeline = Array.isArray(data?.timeline) ? data.timeline : []
+  const unit = state.timelineMetric === 'hours' ? 'Stunden' : 'Spieler'
+  const labels = timeline.map((entry) => `${String(entry.hour || 0).padStart(2, '0')}:00`)
+
+  const canvas = document.getElementById('chart-rank-timeline')
+  state.timelineChart?.destroy()
+  state.timelineChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: rankOrder.map((rank) => ({
+        label: prettyRank(rank),
+        data: timeline.map((entry) => entry?.ranks?.[rank] || 0),
+        borderColor: rankColor(rank),
+        backgroundColor: `${rankColor(rank)}22`,
+        borderWidth: 2,
+        tension: 0.32,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        fill: false,
+      })),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5, 11, 22, 0.95)',
+          borderColor: 'rgba(194, 221, 240, 0.28)',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${formatTimelineValue(ctx.raw)} ${unit}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(194, 221, 240, 0.06)' },
+          ticks: { color: '#9bb3c5', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(194, 221, 240, 0.08)' },
+          ticks: { color: '#9bb3c5', font: { size: 11 } },
+        },
+      },
+    },
+  })
+
+  const legend = document.getElementById('timeline-rank-legend')
+  legend.innerHTML = rankOrder.map((rank, idx) => `
+    <button class="rank-chip rank-chip-button" type="button" data-rank-index="${idx}">
+      <span class="rank-chip-dot" style="background:${rankColor(rank)}"></span>
+      <span class="rank-chip-name">${escapeHtml(prettyRank(rank))}</span>
+    </button>
+  `).join('')
+
+  legend.querySelectorAll('.rank-chip-button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.rankIndex)
+      const meta = state.timelineChart?.getDatasetMeta(idx)
+      if (!meta) return
+      meta.hidden = meta.hidden === null ? !state.timelineChart.isDatasetVisible(idx) : null
+      state.timelineChart.update()
+      btn.classList.toggle('is-muted', !state.timelineChart.isDatasetVisible(idx))
+    })
+  })
 }
 
 /* ── Personal Panel ── */
@@ -476,6 +760,30 @@ function formatRelative(iso) {
   } catch {
     return iso
   }
+}
+
+function prettyRank(rank) {
+  const s = String(rank || '').trim()
+  if (!s) return 'Unbekannt'
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+function rankColor(rank) {
+  return RANK_COLORS[String(rank || '').toLowerCase()] || '#06b6d4'
+}
+
+function formatTimelineValue(value) {
+  if (state.timelineMetric === 'hours') {
+    const num = Number(value || 0)
+    return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(num)
+  }
+  return formatNum(value || 0)
+}
+
+function normalizeBase(value) {
+  const raw = String(value ?? '').trim()
+  if (!raw || raw === '/' || raw === '.') return ''
+  return raw.replace(/\/+$/, '')
 }
 
 function escapeHtml(s) {

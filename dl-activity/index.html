@@ -80,6 +80,71 @@
         </div>
       </section>
 
+      <section class="section" aria-label="Community Insights">
+        <div class="container">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Public Insights</p>
+              <h2>Ränge, Peaks und Aktivität nach Uhrzeit</h2>
+            </div>
+            <p class="section-copy">
+              Öffentliche Serverdaten aus Voice-Sessions: Verteilung der verknüpften Ränge,
+              Trend der letzten Wochen und typische Aktivitätsstunden je Rank.
+            </p>
+          </div>
+
+          <div class="insight-grid">
+            <div class="insight-card">
+              <div class="chart-head">
+                <h3>Rangverteilung</h3>
+                <span class="chart-note" id="distribution-updated">Stand: –</span>
+              </div>
+              <div class="donut-shell">
+                <div class="donut-stage">
+                  <canvas id="chart-distribution"></canvas>
+                  <div class="donut-center">
+                    <span class="donut-value" id="distribution-total">–</span>
+                    <span class="donut-label">Verknüpfte Spieler</span>
+                  </div>
+                </div>
+                <div class="rank-chip-grid" id="rank-chip-grid">
+                  <div class="state state-loading">Lade Verteilung…</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="insight-card">
+              <div class="chart-head">
+                <h3>Aktive Spieler nach Rang</h3>
+                <span class="chart-note">Letzte 4 Wochen</span>
+              </div>
+              <div class="chart-wrapper chart-wrapper-lg">
+                <canvas id="chart-weekly-ranks"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="insight-card insight-card-wide">
+            <div class="chart-head chart-head-wrap">
+              <div>
+                <h3>Aktivität nach Uhrzeit</h3>
+                <span class="chart-note">Voice-Sessions nach Rang über 24 Stunden</span>
+              </div>
+              <div class="metric-toggle" id="timeline-toggle" role="tablist" aria-label="Metrik wählen">
+                <button class="metric-btn is-active" type="button" data-metric="players">Spieler</button>
+                <button class="metric-btn" type="button" data-metric="hours">Stunden</button>
+              </div>
+            </div>
+            <div class="chart-wrapper chart-wrapper-xl">
+              <canvas id="chart-rank-timeline"></canvas>
+            </div>
+            <div class="rank-chip-grid rank-chip-grid-wide" id="timeline-rank-legend">
+              <div class="state state-loading">Lade Aktivität…</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="section section--alt" id="personal-section" aria-label="Persönliches Dashboard">
         <div class="container">
           <div class="personal-gate" id="personal-gate">
