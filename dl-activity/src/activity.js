@@ -73,6 +73,7 @@ const state = {
   timelineChart: null,
   overallChart: null,
   timelineMetric: 'players',
+  overallChartType: 'bar',
   timelineData: null,
   distributionData: null,
   distributionInitialized: false,
@@ -201,6 +202,18 @@ function bindTimelineToggle() {
         node.classList.toggle('is-active', node.dataset.metric === metric)
       })
       loadTimeline(metric)
+    })
+  })
+
+  document.querySelectorAll('#overall-type-toggle .metric-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.type
+      if (!type || type === state.overallChartType) return
+      state.overallChartType = type
+      document.querySelectorAll('#overall-type-toggle .metric-btn').forEach((node) => {
+        node.classList.toggle('is-active', node.dataset.type === type)
+      })
+      if (state.timelineData) renderOverallTimeline(state.timelineData)
     })
   })
 }
@@ -346,13 +359,24 @@ async function loadWeeklyTrend() {
 }
 
 async function loadTimeline(metric) {
+  const rankSection = document.getElementById('rank-chart-section')
+  const overallSection = document.getElementById('overall-chart-section')
+  const isOverall = metric === 'overall'
+  rankSection.hidden = isOverall
+  overallSection.hidden = !isOverall
+
+  const apiMetric = isOverall ? 'players' : metric
   const legend = document.getElementById('timeline-rank-legend')
   legend.innerHTML = '<div class="state state-loading">Lade Aktivität…</div>'
   try {
-    const data = await fetchJson(`${API_BASE}/api/timeline?metric=${encodeURIComponent(metric)}`)
+    const data = await fetchJson(`${API_BASE}/api/timeline?metric=${encodeURIComponent(apiMetric)}`)
     if (!data) throw new Error('Keine Daten')
     state.timelineData = data
-    renderTimeline(data)
+    if (isOverall) {
+      renderOverallTimeline(data)
+    } else {
+      renderTimeline(data)
+    }
   } catch {
     legend.innerHTML = '<div class="state">Aktivität nach Uhrzeit ist aktuell nicht erreichbar.</div>'
   }
@@ -537,36 +561,39 @@ function renderTimeline(data) {
     })
   })
 
-  renderOverallTimeline(data)
 }
 
 function renderOverallTimeline(data) {
   const timeline = Array.isArray(data?.timeline) ? data.timeline : []
   const rankOrder = data?.rank_order?.length ? data.rank_order : FALLBACK_RANK_ORDER
-  const unit = state.timelineMetric === 'hours' ? 'Stunden' : 'Spieler'
+  const unit = 'Spieler'
   const labels = timeline.map((entry) => `${String(entry.hour || 0).padStart(2, '0')}:00`)
   const totals = timeline.map((entry) =>
     rankOrder.reduce((sum, rank) => sum + (entry?.ranks?.[rank] || 0), 0),
   )
 
-  const noteEl = document.getElementById('overall-unit')
-  if (noteEl) noteEl.textContent = `${unit} pro Stunde`
+  const chartType = state.overallChartType
+  const isBar = chartType === 'bar'
 
   const canvas = document.getElementById('chart-overall-timeline')
   state.overallChart?.destroy()
   state.overallChart = new Chart(canvas, {
-    type: 'bar',
+    type: chartType,
     data: {
       labels,
       datasets: [
         {
           label: `Gesamt ${unit}`,
           data: totals,
-          backgroundColor: 'rgba(0, 200, 200, 0.55)',
-          borderColor: 'rgba(0, 200, 200, 0.9)',
-          borderWidth: 1,
-          borderRadius: 4,
+          backgroundColor: isBar ? 'rgba(30, 204, 192, 0.5)' : 'rgba(30, 204, 192, 0.15)',
+          borderColor: 'rgba(30, 204, 192, 0.9)',
+          borderWidth: isBar ? 1 : 2,
+          borderRadius: isBar ? 4 : 0,
           borderSkipped: false,
+          tension: 0.32,
+          pointRadius: isBar ? 0 : 2,
+          pointHoverRadius: isBar ? 0 : 4,
+          fill: !isBar,
         },
       ],
     },

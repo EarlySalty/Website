@@ -553,6 +553,9 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   background: linear-gradient(135deg, var(--primary-soft), rgba(168, 85, 247, 0.25));
   color: var(--text);
 }
+.metric-toggle-sm {
+  margin: 1rem 0 0.75rem;
+}
 
 .lb-table {
   width: 100%;
