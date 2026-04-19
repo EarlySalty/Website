@@ -71,6 +71,7 @@ const state = {
   distributionChart: null,
   weeklyChart: null,
   timelineChart: null,
+  overallChart: null,
   timelineMetric: 'players',
   timelineData: null,
   distributionData: null,
@@ -134,6 +135,7 @@ function switchTab(tabId, pushHash = true) {
     state.distributionChart,
     state.weeklyChart,
     state.timelineChart,
+    state.overallChart,
     state.voiceChart,
     state.textChart,
   ].forEach((chart) => {
@@ -533,6 +535,69 @@ function renderTimeline(data) {
       state.timelineChart.update()
       btn.classList.toggle('is-muted', !state.timelineChart.isDatasetVisible(idx))
     })
+  })
+
+  renderOverallTimeline(data)
+}
+
+function renderOverallTimeline(data) {
+  const timeline = Array.isArray(data?.timeline) ? data.timeline : []
+  const rankOrder = data?.rank_order?.length ? data.rank_order : FALLBACK_RANK_ORDER
+  const unit = state.timelineMetric === 'hours' ? 'Stunden' : 'Spieler'
+  const labels = timeline.map((entry) => `${String(entry.hour || 0).padStart(2, '0')}:00`)
+  const totals = timeline.map((entry) =>
+    rankOrder.reduce((sum, rank) => sum + (entry?.ranks?.[rank] || 0), 0),
+  )
+
+  const noteEl = document.getElementById('overall-unit')
+  if (noteEl) noteEl.textContent = `${unit} pro Stunde`
+
+  const canvas = document.getElementById('chart-overall-timeline')
+  state.overallChart?.destroy()
+  state.overallChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: `Gesamt ${unit}`,
+          data: totals,
+          backgroundColor: 'rgba(0, 200, 200, 0.55)',
+          borderColor: 'rgba(0, 200, 200, 0.9)',
+          borderWidth: 1,
+          borderRadius: 4,
+          borderSkipped: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5, 11, 22, 0.95)',
+          borderColor: 'rgba(194, 221, 240, 0.28)',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            label: (ctx) => `Gesamt: ${formatTimelineValue(ctx.raw)} ${unit}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(194, 221, 240, 0.06)' },
+          ticks: { color: '#9bb3c5', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(194, 221, 240, 0.08)' },
+          ticks: { color: '#9bb3c5', font: { size: 11 } },
+        },
+      },
+    },
   })
 }
 

@@ -419,6 +419,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   justify-content: space-between;
   gap: 1rem;
 }
+.chart-wrapper-md { height: 180px; }
 .chart-wrapper-lg { height: 290px; }
 .chart-wrapper-xl { height: 360px; }
 .donut-shell {
