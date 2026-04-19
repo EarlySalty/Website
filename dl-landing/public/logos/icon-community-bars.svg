@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 54 54" role="img" aria-label="Deutsche Deadlock Community — Community Bars">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4"></stop>
+      <stop offset="55%" stop-color="#6D4AE8"></stop>
+      <stop offset="100%" stop-color="#A855F7"></stop>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="46" height="46" rx="13" fill="rgba(6,182,212,0.08)" stroke="url(#g)" stroke-width="1.5"></rect>
+  <rect x="12" y="12" width="8" height="30" rx="4" fill="url(#g)"></rect>
+  <rect x="23" y="18" width="8" height="24" rx="4" fill="url(#g)" opacity="0.75"></rect>
+  <rect x="34" y="24" width="8" height="18" rx="4" fill="url(#g)" opacity="0.5"></rect>
+</svg>

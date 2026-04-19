@@ -129,9 +129,15 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   min-height: var(--header-height);
 }
 .brand {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.brand-logo {
+  display: block;
+  height: 38px;
+  width: auto;
 }
 .brand-mark {
   font-family: 'Sora', sans-serif;

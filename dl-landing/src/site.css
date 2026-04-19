@@ -201,9 +201,15 @@ ol {
 
 .brand {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.45rem;
   text-decoration: none;
+}
+
+.brand-logo {
+  display: block;
+  height: 40px;
+  width: auto;
 }
 
 .brand-mark {

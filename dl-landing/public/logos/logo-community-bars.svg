@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 68" role="img" aria-label="Deutsche Deadlock Community">
+  <defs>
+    <linearGradient id="a1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4"></stop>
+      <stop offset="55%" stop-color="#6D4AE8"></stop>
+      <stop offset="100%" stop-color="#A855F7"></stop>
+    </linearGradient>
+    <linearGradient id="a2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4"></stop>
+      <stop offset="55%" stop-color="#6D4AE8"></stop>
+      <stop offset="100%" stop-color="#A855F7"></stop>
+    </linearGradient>
+  </defs>
+  
+  <rect x="0" y="8" width="10" height="38" rx="5" fill="url(#a1)"></rect>
+  <rect x="14" y="16" width="10" height="30" rx="5" fill="url(#a1)" opacity="0.75"></rect>
+  <rect x="28" y="24" width="10" height="22" rx="5" fill="url(#a1)" opacity="0.5"></rect>
+  
+  <text font-family="&#39;Sora&#39;,&#39;Segoe UI&#39;,sans-serif" font-weight="800" font-size="22" fill="url(#a2)" letter-spacing="-0.5" y="30" x="48">Deutsche Deadlock</text>
+  <rect x="48" y="38" width="226" height="1.5" fill="url(#a2)" rx="1" opacity="0.35"></rect>
+  <text font-family="&#39;Manrope&#39;,&#39;Segoe UI&#39;,sans-serif" font-weight="800" font-size="10.5" fill="url(#a2)" letter-spacing="6" text-anchor="middle" y="56" x="161">COMMUNITY</text>
+</svg>

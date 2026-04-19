@@ -172,6 +172,12 @@ p {
   text-decoration: none;
 }
 
+.brand-logo {
+  display: block;
+  height: 38px;
+  width: auto;
+}
+
 .brand-mark {
   font-family: 'Sora', 'Manrope', sans-serif;
   font-size: 1.05rem;

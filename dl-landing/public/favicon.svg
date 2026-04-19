@@ -1,10 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <defs>
     <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff7a18"/>
-      <stop offset="100%" stop-color="#10b7ad"/>
+      <stop offset="0%" stop-color="#06B6D4"/>
+      <stop offset="55%" stop-color="#6D4AE8"/>
+      <stop offset="100%" stop-color="#A855F7"/>
     </linearGradient>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="1.2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
-  <rect width="32" height="32" rx="8" fill="#07151d"/>
-  <text x="16" y="23" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="20" fill="url(#g)">E</text>
+  <rect width="32" height="32" rx="7" fill="#07151d"/>
+  <polygon points="16,2 30,16 16,30 2,16" fill="rgba(6,182,212,0.10)" stroke="url(#g)" stroke-width="1.5" filter="url(#glow)"/>
+  <polygon points="16,8 24,16 16,24 8,16" fill="none" stroke="url(#g)" stroke-width="0.8" opacity="0.5"/>
+  <circle cx="16" cy="16" r="2" fill="url(#g)" opacity="0.9"/>
 </svg>
