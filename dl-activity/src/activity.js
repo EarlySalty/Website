@@ -48,17 +48,17 @@ const FALLBACK_RANK_ORDER = [
 ]
 const TABS = ['voice', 'text', 'peaks', 'ich']
 const RANK_COLORS = {
-  initiate: '#C8956C',
-  seeker: '#72C04A',
-  alchemist: '#4A8FCC',
-  arcanist: '#3D8A6E',
-  ritualist: '#D4602A',
-  emissary: '#CC3344',
-  archon: '#8855CC',
-  oracle: '#D49610',
-  phantom: '#8899AA',
-  ascendant: '#D4AA40',
-  eternus: '#1ECCC0',
+  initiate:  '#8fa4b4',
+  seeker:    '#72aa5a',
+  alchemist: '#3dbb44',
+  arcanist:  '#18bba8',
+  ritualist: '#2288ee',
+  emissary:  '#5055ee',
+  archon:    '#8833dd',
+  oracle:    '#cc33bb',
+  phantom:   '#dd3344',
+  ascendant: '#ee9922',
+  eternus:   '#f5cc11',
 }
 
 const state = {
@@ -73,6 +73,9 @@ const state = {
   timelineChart: null,
   overallChart: null,
   timelineMetric: 'players',
+  timelineDays: 7,
+  weeklyWeeks: 4,
+  personalRange: 30,
   overallChartType: 'bar',
   timelineData: null,
   distributionData: null,
@@ -88,6 +91,8 @@ async function init() {
   bindTabs()
   bindAuthButtons()
   bindTimelineToggle()
+  bindWeeklyToggle()
+  bindPersonalRangeToggle()
   loadLeaderboard('voice')
   loadTextLeaderboard()
   loadDistribution()
@@ -205,6 +210,18 @@ function bindTimelineToggle() {
     })
   })
 
+  document.querySelectorAll('#timeline-days-toggle .metric-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const days = Number(btn.dataset.days)
+      if (!days || days === state.timelineDays) return
+      state.timelineDays = days
+      document.querySelectorAll('#timeline-days-toggle .metric-btn').forEach((node) => {
+        node.classList.toggle('is-active', Number(node.dataset.days) === days)
+      })
+      loadTimeline(state.timelineMetric)
+    })
+  })
+
   document.querySelectorAll('#overall-type-toggle .metric-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const type = btn.dataset.type
@@ -214,6 +231,34 @@ function bindTimelineToggle() {
         node.classList.toggle('is-active', node.dataset.type === type)
       })
       if (state.timelineData) renderOverallTimeline(state.timelineData)
+    })
+  })
+}
+
+function bindWeeklyToggle() {
+  document.querySelectorAll('#weekly-weeks-toggle .metric-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const weeks = Number(btn.dataset.weeks)
+      if (!weeks || weeks === state.weeklyWeeks) return
+      state.weeklyWeeks = weeks
+      document.querySelectorAll('#weekly-weeks-toggle .metric-btn').forEach((node) => {
+        node.classList.toggle('is-active', Number(node.dataset.weeks) === weeks)
+      })
+      loadWeeklyTrend()
+    })
+  })
+}
+
+function bindPersonalRangeToggle() {
+  document.querySelectorAll('#personal-range-toggle .metric-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const range = Number(btn.dataset.range)
+      if (!range || range === state.personalRange) return
+      state.personalRange = range
+      document.querySelectorAll('#personal-range-toggle .metric-btn').forEach((node) => {
+        node.classList.toggle('is-active', Number(node.dataset.range) === range)
+      })
+      if (state.me) reloadPersonalCharts()
     })
   })
 }
@@ -350,7 +395,7 @@ async function loadDistribution() {
 
 async function loadWeeklyTrend() {
   try {
-    const data = await fetchJson(`${API_BASE}/api/rank-distribution`)
+    const data = await fetchJson(`${API_BASE}/api/rank-distribution?weeks=${state.weeklyWeeks}`)
     if (!data) throw new Error('Keine Daten')
     renderWeeklyChart(data)
   } catch {
@@ -369,7 +414,7 @@ async function loadTimeline(metric) {
   const legend = document.getElementById('timeline-rank-legend')
   legend.innerHTML = '<div class="state state-loading">Lade Aktivität…</div>'
   try {
-    const data = await fetchJson(`${API_BASE}/api/timeline?metric=${encodeURIComponent(apiMetric)}`)
+    const data = await fetchJson(`${API_BASE}/api/timeline?metric=${encodeURIComponent(apiMetric)}&days=${state.timelineDays}`)
     if (!data) throw new Error('Keine Daten')
     state.timelineData = data
     if (isOverall) {
@@ -652,9 +697,9 @@ async function loadPersonal() {
 
   const [stats, voiceHist, textHist, heatmap, coplayers] = await Promise.all([
     fetchJson(`${API_BASE}/api/public/me/stats`),
-    fetchJson(`${API_BASE}/api/public/me/voice-history?range=30&mode=day`),
-    fetchJson(`${API_BASE}/api/public/me/text-history?range=30&mode=day`),
-    fetchJson(`${API_BASE}/api/public/me/heatmap`),
+    fetchJson(`${API_BASE}/api/public/me/voice-history?range=${state.personalRange}&mode=day`),
+    fetchJson(`${API_BASE}/api/public/me/text-history?range=${state.personalRange}&mode=day`),
+    fetchJson(`${API_BASE}/api/public/me/heatmap?days=${state.personalRange}`),
     fetchJson(`${API_BASE}/api/public/me/co-players?limit=15`),
   ])
 
@@ -674,6 +719,19 @@ async function loadPersonal() {
   } else {
     meta.textContent = 'Noch keine Punkte — fang an zu grinden.'
   }
+}
+
+async function reloadPersonalCharts() {
+  if (!state.me) return
+  const range = state.personalRange
+  const [voiceHist, textHist, heatmap] = await Promise.all([
+    fetchJson(`${API_BASE}/api/public/me/voice-history?range=${range}&mode=day`),
+    fetchJson(`${API_BASE}/api/public/me/text-history?range=${range}&mode=day`),
+    fetchJson(`${API_BASE}/api/public/me/heatmap?days=${range}`),
+  ])
+  renderVoiceChart(voiceHist)
+  renderTextChart(textHist)
+  renderHeatmap(heatmap)
 }
 
 function renderStats(stats) {

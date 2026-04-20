@@ -419,6 +419,12 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   justify-content: space-between;
   gap: 1rem;
 }
+.chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
 .chart-wrapper-md { height: 180px; }
 .chart-wrapper-lg { height: 290px; }
 .chart-wrapper-xl { height: 360px; }
@@ -686,6 +692,17 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
+}
+.range-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.range-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 .personal-identity {
   display: flex;

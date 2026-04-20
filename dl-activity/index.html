@@ -144,10 +144,18 @@
                   <h3>Aktivität nach Uhrzeit</h3>
                   <span class="chart-note">Voice-Sessions nach Rang über 24 Stunden</span>
                 </div>
-                <div class="metric-toggle" id="timeline-toggle" role="tablist" aria-label="Metrik wählen">
-                  <button class="metric-btn is-active" type="button" data-metric="players">Spieler</button>
-                  <button class="metric-btn" type="button" data-metric="hours">Stunden</button>
-                  <button class="metric-btn" type="button" data-metric="overall">Gesamt</button>
+                <div class="chart-controls">
+                  <div class="metric-toggle" id="timeline-toggle" role="tablist" aria-label="Metrik wählen">
+                    <button class="metric-btn is-active" type="button" data-metric="players">Spieler</button>
+                    <button class="metric-btn" type="button" data-metric="hours">Stunden</button>
+                    <button class="metric-btn" type="button" data-metric="overall">Gesamt</button>
+                  </div>
+                  <div class="metric-toggle" id="timeline-days-toggle" role="tablist" aria-label="Zeitraum">
+                    <button class="metric-btn is-active" type="button" data-days="7">7T</button>
+                    <button class="metric-btn" type="button" data-days="14">14T</button>
+                    <button class="metric-btn" type="button" data-days="30">30T</button>
+                    <button class="metric-btn" type="button" data-days="90">90T</button>
+                  </div>
                 </div>
               </div>
               <div id="rank-chart-section">
@@ -169,9 +177,17 @@
               </div>
             </div>
             <div class="insight-card insight-card-wide">
-              <div class="chart-head">
-                <h3>Aktive Spieler nach Rang</h3>
-                <span class="chart-note">Letzte 4 Wochen</span>
+              <div class="chart-head chart-head-wrap">
+                <div>
+                  <h3>Aktive Spieler nach Rang</h3>
+                  <span class="chart-note">Letzte Wochen</span>
+                </div>
+                <div class="metric-toggle" id="weekly-weeks-toggle" role="tablist" aria-label="Wochen">
+                  <button class="metric-btn is-active" type="button" data-weeks="4">4W</button>
+                  <button class="metric-btn" type="button" data-weeks="8">8W</button>
+                  <button class="metric-btn" type="button" data-weeks="12">12W</button>
+                  <button class="metric-btn" type="button" data-weeks="24">24W</button>
+                </div>
               </div>
               <div class="chart-wrapper chart-wrapper-lg">
                 <canvas id="chart-weekly-ranks"></canvas>
@@ -205,6 +221,16 @@
               </div>
               <button class="button button-secondary" id="logout-btn" type="button">Abmelden</button>
             </header>
+            <div class="range-bar">
+              <span class="range-label">Zeitraum:</span>
+              <div class="metric-toggle" id="personal-range-toggle" role="tablist" aria-label="Zeitraum wählen">
+                <button class="metric-btn" type="button" data-range="7">7T</button>
+                <button class="metric-btn is-active" type="button" data-range="30">30T</button>
+                <button class="metric-btn" type="button" data-range="90">90T</button>
+                <button class="metric-btn" type="button" data-range="180">180T</button>
+                <button class="metric-btn" type="button" data-range="365">365T</button>
+              </div>
+            </div>
             <div class="stat-grid" id="stat-grid">
               <div class="stat-card">
                 <span class="stat-label">Voice-Rang</span>
