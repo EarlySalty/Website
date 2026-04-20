@@ -58,3 +58,5 @@ env/
 *.tmp
 *.temp
 .superpowers
+docs/superpowers/
+WORKFLOW.md
