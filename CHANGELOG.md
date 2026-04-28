@@ -1,3 +1,11 @@
+## #3 — Tierliste: aufgeräumter Header, neue Tier-Farben, weniger leere Seiten
+
+- Großer Hero-Header oben raus — Patch und Aktualisierungs-Datum stehen jetzt klein und dezent direkt im Seiten-Header
+- Suchleiste und Grid/List-Umschalter sitzen kompakt in einer Zeile statt in einer eigenen Karte
+- Neue, intuitivere Tier-Farben: S+ rot, S orange, A grün, B blau, C grau — statt der bunten Mischung vorher
+- Fix: Seite blieb manchmal leer und ging erst nach STRG+F5 wieder — jetzt revalidiert der Browser die Hauptseite bei jedem Aufruf, Bilder/Code werden langfristig gecacht
+- Fallback bei kurzem Backend-Aussetzer lädt jetzt korrekt die zwischengespeicherten Daten statt 404
+
 ## #2 — Tierliste live auf deutsche-deadlock-community.de/builds
 
 - Neue Tierliste ist jetzt direkt unter `deutsche-deadlock-community.de/builds` erreichbar und ersetzt die alte manuelle Builds-Seite

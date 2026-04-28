@@ -478,13 +478,20 @@ function createHeroCard(hero, tierKey) {
 }
 
 function renderSummary() {
-  qs('patch-date').textContent = formatUnixDate(state.tierlist?.patch_unix)
-  qs('last-updated-date').textContent = formatUnixDateTime(state.tierlist?.last_updated)
-  qs('min-matches').textContent = formatMatches(state.tierlist?.min_matches)
+  const patchEl = qs('patch-date')
+  if (patchEl) patchEl.textContent = formatUnixDate(state.tierlist?.patch_unix)
+
+  const updatedEl = qs('last-updated-date')
+  if (updatedEl) updatedEl.textContent = formatUnixDateTime(state.tierlist?.last_updated)
+
+  const minMatchesEl = qs('min-matches')
+  if (minMatchesEl) minMatchesEl.textContent = formatMatches(state.tierlist?.min_matches)
 
   const description = qs('tierlist-description')
-  const text = String(state.tierlist?.description ?? '').trim()
-  description.textContent = text || 'Automatisch gruppiert nach aktueller Winrate im gewählten Skill-Bucket.'
+  if (description) {
+    const text = String(state.tierlist?.description ?? '').trim()
+    description.textContent = text || 'Automatisch gruppiert nach aktueller Winrate im gewählten Skill-Bucket.'
+  }
 }
 
 function renderTierlist() {

@@ -112,7 +112,7 @@ async function requestJson(url, options = {}) {
 }
 
 async function fetchStaticJson(path) {
-  const response = await fetch(path, {
+  const response = await fetch(resolveAssetUrl(path), {
     credentials: 'include',
   })
 
