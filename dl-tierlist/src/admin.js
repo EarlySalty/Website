@@ -1,7 +1,17 @@
 import './admin.css'
 
-const LOGIN_URL = '/auth/discord/login?next=/admin'
-const STATIC_HEROES_URL = '/data/heroes.json'
+const ASSET_BASE = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '')
+const LOGIN_URL = `${ASSET_BASE}/auth/discord/login?next=${ASSET_BASE}/admin/`
+const STATIC_HEROES_URL = `${ASSET_BASE}/data/heroes.json`
+
+function resolveAssetUrl(url) {
+  if (!url) return ''
+  const value = String(url).trim()
+  if (!value) return ''
+  if (/^https?:\/\//i.test(value) || value.startsWith('data:')) return value
+  if (value.startsWith('/')) return `${ASSET_BASE}${value}`
+  return `${ASSET_BASE}/${value}`
+}
 const TIERLIST_BUCKET = 'all'
 const SECTION_KEYS = ['description', 'streamers', 'builds']
 
@@ -173,7 +183,7 @@ function renderMarkdown(text) {
 }
 
 function formatHeroImage(hero) {
-  return hero.image_url || hero.image || ''
+  return resolveAssetUrl(hero.image_url || hero.image || '')
 }
 
 function createHeroDraft(hero) {
@@ -243,7 +253,7 @@ function normalizeHeroesPayload(payload) {
     hero_id: String(heroId),
     name: item?.name ?? `Hero ${heroId}`,
     slug: item?.slug ?? '',
-    image_url: item?.image_url ?? item?.image ?? '',
+    image_url: resolveAssetUrl(item?.image_url ?? item?.image ?? ''),
   }))
 
   items.sort((left, right) => left.name.localeCompare(right.name, 'de'))
@@ -255,7 +265,7 @@ function normalizeStaticHeroes(payload) {
     hero_id: String(item?.hero_id ?? item?.id ?? heroKey),
     name: item?.name ?? heroKey,
     slug: item?.slug ?? heroKey,
-    image_url: item?.image_url ?? item?.image ?? '',
+    image_url: resolveAssetUrl(item?.image_url ?? item?.image ?? ''),
   }))
 
   items.sort((left, right) => left.name.localeCompare(right.name, 'de'))
@@ -348,7 +358,7 @@ function renderHeroList() {
 
     const image = document.createElement('img')
     image.className = 'hero-avatar'
-    image.src = formatHeroImage(hero) || '/favicon.svg'
+    image.src = formatHeroImage(hero) || `${ASSET_BASE}/favicon.svg`
     image.alt = ''
     image.loading = 'lazy'
     image.decoding = 'async'
@@ -511,7 +521,7 @@ function renderHeroEditor() {
   container.innerHTML = `
     <div class="surface hero-summary">
       <div class="hero-summary-main">
-        <img class="hero-summary-image" src="${escapeHtml(draft.image_url || '/favicon.svg')}" alt="" />
+        <img class="hero-summary-image" src="${escapeHtml(draft.image_url || `${ASSET_BASE}/favicon.svg`)}" alt="" />
         <div>
           <p class="eyebrow">Hero Editor</p>
           <h2>${escapeHtml(draft.name)}</h2>
@@ -588,7 +598,7 @@ function renderHeroEditor() {
   const image = container.querySelector('.hero-summary-image')
   if (image instanceof HTMLImageElement) {
     image.onerror = () => {
-      image.src = '/favicon.svg'
+      image.src = `${ASSET_BASE}/favicon.svg`
     }
   }
 

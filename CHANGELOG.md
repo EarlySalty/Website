@@ -1,3 +1,10 @@
+## #2 — Tierliste live auf deutsche-deadlock-community.de/builds
+
+- Neue Tierliste ist jetzt direkt unter `deutsche-deadlock-community.de/builds` erreichbar und ersetzt die alte manuelle Builds-Seite
+- Verlauf und Admin-Bereich liegen unter `/builds/history` und `/builds/admin`
+- Alle 38 Hero-Portraits werden lokal ausgeliefert — keine Platzhalter mehr
+- Discord-Login auf der Admin-Seite leitet sauber zurück nach `/builds/admin`
+
 ## #1 — Tierlist: automatische Meta-Einteilung statt manueller Pflege
 
 - Tierliste auf `dl-tierlist` baut sich jetzt automatisch aus den aktuellen Winrates pro Hero

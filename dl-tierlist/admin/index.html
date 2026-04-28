@@ -9,6 +9,7 @@
       name="description"
       content="Adminbereich fuer die Deadlock Tierlist der Deutschen Deadlock Community."
     />
+    <meta name="tierlist-api-base" content="/builds" />
     <link rel="icon" href="/favicon.svg" />
     <script type="module" src="/src/admin.js"></script>
   </head>
@@ -26,7 +27,7 @@
           Melde dich mit deinem Discord-Account an, um Heroes, Builds und globale
           Tierlist-Einstellungen zu bearbeiten.
         </p>
-        <a id="discord-login-btn" class="button button-discord" href="/auth/discord/login?next=/admin">
+        <a id="discord-login-btn" class="button button-discord" href="/builds/auth/discord/login?next=/builds/admin/">
           Mit Discord einloggen
         </a>
       </div>
@@ -35,7 +36,7 @@
     <div id="app-shell" class="admin-app" hidden>
       <header class="admin-header">
         <div class="header-inner">
-          <a class="brand" href="/">
+          <a class="brand" href="/builds/">
             <img src="/logos/icon-community-bars.svg" alt="" class="brand-icon" />
             <div>
               <p class="eyebrow">Deadlock Tierlist</p>
@@ -43,7 +44,7 @@
             </div>
           </a>
           <div class="header-meta">
-            <a class="header-link" href="/" target="_blank" rel="noreferrer">Frontend ansehen</a>
+            <a class="header-link" href="/builds/" target="_blank" rel="noreferrer">Frontend ansehen</a>
             <div id="admin-user" class="user-chip"></div>
           </div>
         </div>

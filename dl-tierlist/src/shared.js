@@ -149,6 +149,20 @@ export function buildApiUrl(path) {
   return `${getApiBase()}${path}`
 }
 
+export function resolveAssetUrl(url) {
+  if (!url) return ''
+  const value = String(url).trim()
+  if (!value) return ''
+  if (/^https?:\/\//i.test(value) || value.startsWith('data:')) {
+    return value
+  }
+  const base = (import.meta.env?.BASE_URL ?? '/').replace(/\/$/, '')
+  if (value.startsWith('/')) {
+    return `${base}${value}`
+  }
+  return `${base}/${value}`
+}
+
 export function normalizeBucket(value) {
   return BUCKET_OPTIONS.some((item) => item.value === value) ? value : DEFAULT_BUCKET
 }
@@ -239,7 +253,7 @@ export function resolveHeroCatalog(source) {
 
     const heroId = Number.parseInt(key, 10)
     const slug = String(item.slug ?? item.id ?? key).trim()
-    const imageUrl = String(item.image_url ?? item.image ?? '').trim()
+    const imageUrl = resolveAssetUrl(String(item.image_url ?? item.image ?? '').trim())
     const hero = {
       hero_id: Number.isFinite(heroId) ? heroId : key,
       name: String(item.name ?? 'Unknown Hero'),

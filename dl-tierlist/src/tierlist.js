@@ -14,6 +14,7 @@ import {
   persistBucket,
   persistViewMode,
   postBuildVote,
+  resolveAssetUrl,
   syncBucketInUrl,
 } from './shared.js'
 
@@ -131,10 +132,11 @@ function getHeroInitial(name) {
 }
 
 function createHeroMedia(hero, className = 'tier-card__image') {
-  if (hero.image_url) {
+  const resolved = resolveAssetUrl(hero.image_url)
+  if (resolved) {
     const img = document.createElement('img')
     img.className = className
-    img.src = hero.image_url
+    img.src = resolved
     img.alt = `${hero.name} Portrait`
     img.loading = 'lazy'
     img.decoding = 'async'
