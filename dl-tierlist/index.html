@@ -3,54 +3,126 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tier-Liste | Deutsche Deadlock Community</title>
+    <title>Deadlock Tierliste | Deutsche Deadlock Community</title>
     <meta
       name="description"
-      content="Aktuelle Deadlock Tier-Liste der Deutschen Deadlock Community mit Meta-Einschaetzungen und Hero-Rankings."
+      content="Automatische Deadlock Tierliste der Deutschen Deadlock Community mit Winrates, Build-Empfehlungen und Hero-Details."
     />
-    <meta property="og:title" content="Tier-Liste | Deutsche Deadlock Community" />
+    <meta property="og:title" content="Deadlock Tierliste | Deutsche Deadlock Community" />
     <meta
       property="og:description"
-      content="Die aktuelle Deadlock Tier-Liste der Deutschen Deadlock Community auf einen Blick."
+      content="Aktuelle Deadlock Tierliste mit Patch-Stand, Winrates und empfohlenen Builds."
     />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="de_DE" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Tier-Liste | Deutsche Deadlock Community" />
+    <meta name="twitter:title" content="Deadlock Tierliste | Deutsche Deadlock Community" />
     <meta
       name="twitter:description"
-      content="Aktuelle Hero-Einstufungen und Meta-Entwicklung fuer Deadlock."
+      content="Die aktuelle Meta der Deadlock Heroes auf einen Blick."
     />
+    <meta name="tierlist-api-base" content="" />
     <link rel="icon" href="/favicon.svg" />
     <script type="module" src="/src/tierlist.js"></script>
   </head>
   <body>
     <header class="site-header">
-      <div class="container">
+      <div class="container site-header__inner">
         <a class="brand" href="/">
-          <img src="/ddc-logo.svg" alt="Deutsche Deadlock Community" class="brand-logo" height="38" />
+          <img
+            src="/logos/logo-community-bars.svg"
+            alt="Deutsche Deadlock Community"
+            class="brand-logo"
+          />
+          <span class="brand-copy">
+            <span class="brand-mark">Deadlock Tierlist</span>
+            <span class="brand-subtitle">Deutsche Deadlock Community</span>
+          </span>
         </a>
+
         <nav class="site-nav" aria-label="Hauptnavigation">
-          <a href="/" class="is-active" aria-current="page">Tier-Liste</a>
+          <a href="/" class="is-active" aria-current="page">Tierliste</a>
           <a href="/history/">Verlauf</a>
+          <a href="/admin/">Admin</a>
         </nav>
+
+        <label class="header-field" for="bucket-select">
+          <span class="header-field__label">Skill Bucket</span>
+          <select id="bucket-select" class="select-control">
+            <option value="all">All Skill</option>
+            <option value="phantom_plus">Phantom+</option>
+            <option value="eternus">Eternus</option>
+          </select>
+        </label>
       </div>
     </header>
 
     <main class="tier-page">
-      <div class="container">
-        <div class="tierlist-meta">
-          <span class="last-updated"
-            >Zuletzt aktualisiert: <span id="last-updated-date">-</span></span
-          >
-          <p id="tierlist-description" class="tierlist-description"></p>
-        </div>
+      <div class="container page-stack">
+        <section class="hero-surface">
+          <div class="hero-surface__copy">
+            <p class="eyebrow">Public Meta Snapshot</p>
+            <h1>Deadlock Tierliste</h1>
+            <p class="hero-surface__text">
+              Live-Winrates pro Skill-Bucket, ergänzt um Community-Builds und Spieler, die du
+              dir ansehen solltest.
+            </p>
+          </div>
 
-        <div id="tierlist-container">
-          <div class="tierlist-loading">Lade Tier-Liste…</div>
+          <div class="hero-surface__meta">
+            <div class="meta-chip">
+              <span>Aktueller Patch</span>
+              <strong id="patch-date">—</strong>
+            </div>
+            <div class="meta-chip">
+              <span>Zuletzt aktualisiert</span>
+              <strong id="last-updated-date">—</strong>
+            </div>
+            <div class="meta-chip">
+              <span>Min. Matches</span>
+              <strong id="min-matches">—</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="toolbar-card" aria-label="Filter und Ansicht">
+          <label class="search-field" for="hero-search">
+            <span class="search-field__label">Hero suchen</span>
+            <input
+              id="hero-search"
+              class="text-control"
+              type="search"
+              placeholder="z. B. Infernus, Kelvin, Mirage"
+              autocomplete="off"
+            />
+          </label>
+
+          <div class="view-toggle" role="group" aria-label="Ansicht wechseln">
+            <button
+              id="view-grid"
+              class="view-toggle__button is-active"
+              type="button"
+              data-view-mode="grid"
+            >
+              Grid
+            </button>
+            <button id="view-list" class="view-toggle__button" type="button" data-view-mode="list">
+              List
+            </button>
+          </div>
+        </section>
+
+        <section class="summary-card">
+          <p id="tierlist-description" class="page-description"></p>
+        </section>
+
+        <div id="tierlist-container" class="tierlist-shell" aria-live="polite">
+          <div class="loading-state">Lade Tierliste…</div>
         </div>
       </div>
     </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <footer class="footer">
       <div class="container">© <span id="year"></span> Deutsche Deadlock Community</div>

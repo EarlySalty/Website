@@ -3,48 +3,262 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin | Deutsche Deadlock Community</title>
+    <title>Admin | Deadlock Tierlist</title>
     <meta name="robots" content="noindex,nofollow" />
     <meta
       name="description"
-      content="Admin-Editor fuer die Deadlock Tier-Liste der Deutschen Deadlock Community."
+      content="Adminbereich fuer die Deadlock Tierlist der Deutschen Deadlock Community."
     />
     <link rel="icon" href="/favicon.svg" />
     <script type="module" src="/src/admin.js"></script>
   </head>
   <body>
-    <div id="login-screen" class="admin-login">
+    <section id="login-screen" class="admin-login">
       <div class="login-card">
-        <h1>Admin – Tier-Liste</h1>
-        <p>Melde dich mit deinem Discord-Account an um die Tier-Liste zu bearbeiten.</p>
-        <a id="discord-login-btn" href="#" class="btn btn-discord">Mit Discord anmelden</a>
+        <img
+          src="/logos/logo-community-bars.svg"
+          alt="Deutsche Deadlock Community"
+          class="login-logo"
+        />
+        <p class="eyebrow">Adminbereich</p>
+        <h1>Tierlist verwalten</h1>
+        <p class="login-copy">
+          Melde dich mit deinem Discord-Account an, um Heroes, Builds und globale
+          Tierlist-Einstellungen zu bearbeiten.
+        </p>
+        <a id="discord-login-btn" class="button button-discord" href="/auth/discord/login?next=/admin">
+          Mit Discord einloggen
+        </a>
       </div>
-    </div>
+    </section>
 
-    <div id="editor-screen" class="admin-editor" style="display: none">
-      <header class="site-header">
-        <div class="container">
-          <span class="brand-mark">Tier-Liste Editor</span>
-          <div class="admin-toolbar">
-            <button id="save-btn" class="btn btn-primary" type="button">Speichern</button>
-            <button id="export-btn" class="btn btn-secondary" type="button">
-              Als JSON exportieren
-            </button>
+    <div id="app-shell" class="admin-app" hidden>
+      <header class="admin-header">
+        <div class="header-inner">
+          <a class="brand" href="/">
+            <img src="/logos/icon-community-bars.svg" alt="" class="brand-icon" />
+            <div>
+              <p class="eyebrow">Deadlock Tierlist</p>
+              <h1 class="brand-title">Admin Console</h1>
+            </div>
+          </a>
+          <div class="header-meta">
+            <a class="header-link" href="/" target="_blank" rel="noreferrer">Frontend ansehen</a>
+            <div id="admin-user" class="user-chip"></div>
           </div>
         </div>
       </header>
 
-      <main class="tier-page">
-        <div class="container">
-          <p class="muted">
-            Hero-Karten per Drag-and-Drop zwischen den Tiers verschieben. Geänderte Heroes
-            werden gelb hervorgehoben.
-          </p>
-          <div id="admin-tierlist-container"></div>
+      <main class="admin-main">
+        <div class="tabs" role="tablist" aria-label="Admin-Bereiche">
+          <button
+            id="tab-button-heroes"
+            class="tab-button is-active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="tab-panel-heroes"
+            data-tab="heroes"
+          >
+            Heroes
+          </button>
+          <button
+            id="tab-button-settings"
+            class="tab-button"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="tab-panel-settings"
+            data-tab="settings"
+          >
+            Settings
+          </button>
         </div>
+
+        <section
+          id="tab-panel-heroes"
+          class="tab-panel is-active"
+          role="tabpanel"
+          aria-labelledby="tab-button-heroes"
+        >
+          <div class="heroes-layout">
+            <aside class="heroes-sidebar">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Hero-Auswahl</p>
+                  <h2>Alle Heroes</h2>
+                </div>
+                <span id="hero-count" class="panel-count"></span>
+              </div>
+
+              <label class="field">
+                <span class="field-label">Suchen</span>
+                <input
+                  id="hero-search"
+                  class="field-input"
+                  type="search"
+                  placeholder="Hero filtern"
+                  autocomplete="off"
+                />
+              </label>
+
+              <div id="hero-list" class="hero-list" aria-live="polite"></div>
+            </aside>
+
+            <section class="hero-editor-panel">
+              <div id="hero-editor" class="hero-editor"></div>
+            </section>
+          </div>
+        </section>
+
+        <section
+          id="tab-panel-settings"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="tab-button-settings"
+          hidden
+        >
+          <form id="settings-form" class="settings-form">
+            <div class="settings-grid">
+              <section class="surface">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Tier-Schwellen</p>
+                    <h2>Einstufung</h2>
+                  </div>
+                </div>
+                <div class="field-grid two-columns">
+                  <label class="field">
+                    <span class="field-label">S+ Minimum</span>
+                    <input
+                      id="settings-s-plus"
+                      class="field-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      inputmode="decimal"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">S Minimum</span>
+                    <input
+                      id="settings-s"
+                      class="field-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      inputmode="decimal"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">A Minimum</span>
+                    <input
+                      id="settings-a"
+                      class="field-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      inputmode="decimal"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">B Minimum</span>
+                    <input
+                      id="settings-b"
+                      class="field-input"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      inputmode="decimal"
+                    />
+                  </label>
+                </div>
+                <p id="settings-threshold-error" class="inline-error" hidden></p>
+              </section>
+
+              <section class="surface">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">Refresh & Patch</p>
+                    <h2>Backend-Verhalten</h2>
+                  </div>
+                </div>
+                <div class="field-grid">
+                  <label class="field">
+                    <span class="field-label">Minimale Matches</span>
+                    <input
+                      id="settings-min-matches"
+                      class="field-input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputmode="numeric"
+                    />
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Refresh-Intervall (Sekunden)</span>
+                    <input
+                      id="settings-refresh-interval"
+                      class="field-input"
+                      type="number"
+                      min="1"
+                      step="1"
+                      inputmode="numeric"
+                    />
+                    <span class="field-hint">8h = 28800</span>
+                  </label>
+                </div>
+
+                <label class="toggle-row" for="settings-patch-auto">
+                  <span>
+                    <span class="toggle-title">Patch automatisch erkennen</span>
+                    <span class="field-hint">
+                      Wenn deaktiviert, wird der manuelle Patch-Zeitpunkt gespeichert.
+                    </span>
+                  </span>
+                  <input id="settings-patch-auto" type="checkbox" checked />
+                </label>
+
+                <label class="field">
+                  <span class="field-label">Patch-Override</span>
+                  <input id="settings-patch-date" class="field-input" type="date" disabled />
+                </label>
+                <p id="settings-patch-error" class="inline-error" hidden></p>
+              </section>
+            </div>
+
+            <section class="surface">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Frontend-Text</p>
+                  <h2>About-Text</h2>
+                </div>
+              </div>
+              <label class="field">
+                <span class="field-label">Beschreibung der Tierliste</span>
+                <textarea
+                  id="settings-description"
+                  class="field-input field-textarea"
+                  rows="7"
+                  placeholder="Text fuer den oberen Bereich der Tierliste"
+                ></textarea>
+              </label>
+            </section>
+
+            <div class="actions">
+              <button id="settings-save-btn" class="button button-primary" type="submit">
+                Speichern
+              </button>
+              <button id="refresh-now-btn" class="button button-secondary" type="button">
+                <span class="spinner" aria-hidden="true"></span>
+                <span>Refresh jetzt</span>
+              </button>
+            </div>
+          </form>
+        </section>
       </main>
     </div>
 
-    <div id="toast" class="toast" style="display: none"></div>
+    <div id="toast" class="toast" hidden></div>
   </body>
 </html>

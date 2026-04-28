@@ -3,48 +3,79 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verlauf | Deutsche Deadlock Community</title>
+    <title>Deadlock Verlauf | Deutsche Deadlock Community</title>
     <meta
       name="description"
-      content="Aenderungsverlauf der Deadlock Tier-Liste der Deutschen Deadlock Community."
+      content="Historie der öffentlichen Deadlock Tierliste mit Snapshots pro Skill-Bucket."
     />
-    <meta property="og:title" content="Verlauf | Deutsche Deadlock Community" />
+    <meta property="og:title" content="Deadlock Verlauf | Deutsche Deadlock Community" />
     <meta
       property="og:description"
-      content="Sieh nach, welche Heroes zwischen den Tiers verschoben wurden."
+      content="Die letzten Snapshots der Deadlock Tierliste inklusive Tier- und Winrate-Entwicklung."
     />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="de_DE" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Verlauf | Deutsche Deadlock Community" />
+    <meta name="twitter:title" content="Deadlock Verlauf | Deutsche Deadlock Community" />
     <meta
       name="twitter:description"
-      content="Patch fuer Patch dokumentierte Tier-Aenderungen der Deadlock Meta."
+      content="Timeline der letzten öffentlichen Tierlisten-Snapshots."
     />
+    <meta name="tierlist-api-base" content="" />
     <link rel="icon" href="/favicon.svg" />
     <script type="module" src="/src/history.js"></script>
   </head>
   <body>
     <header class="site-header">
-      <div class="container">
+      <div class="container site-header__inner">
         <a class="brand" href="/">
-          <img src="/ddc-logo.svg" alt="Deutsche Deadlock Community" class="brand-logo" height="38" />
+          <img
+            src="/logos/logo-community-bars.svg"
+            alt="Deutsche Deadlock Community"
+            class="brand-logo"
+          />
+          <span class="brand-copy">
+            <span class="brand-mark">Deadlock Tierlist</span>
+            <span class="brand-subtitle">Deutsche Deadlock Community</span>
+          </span>
         </a>
+
         <nav class="site-nav" aria-label="Hauptnavigation">
-          <a href="/">Tier-Liste</a>
+          <a href="/">Tierliste</a>
           <a href="/history/" class="is-active" aria-current="page">Verlauf</a>
+          <a href="/admin/">Admin</a>
         </nav>
+
+        <label class="header-field" for="history-bucket-select">
+          <span class="header-field__label">Skill Bucket</span>
+          <select id="history-bucket-select" class="select-control">
+            <option value="all">All Skill</option>
+            <option value="phantom_plus">Phantom+</option>
+            <option value="eternus">Eternus</option>
+          </select>
+        </label>
       </div>
     </header>
 
     <main class="history-page">
-      <div class="container">
-        <h1>Änderungsverlauf</h1>
-        <div id="history-container">
-          <div class="history-loading">Lade Verlauf…</div>
+      <div class="container page-stack">
+        <section class="hero-surface hero-surface--history">
+          <div class="hero-surface__copy">
+            <p class="eyebrow">Snapshot Timeline</p>
+            <h1>Tierlisten-Verlauf</h1>
+            <p class="hero-surface__text">
+              Die letzten 30 Snapshots mit Winrates und Tier-Zuordnung pro Hero.
+            </p>
+          </div>
+        </section>
+
+        <div id="history-container" class="history-shell" aria-live="polite">
+          <div class="loading-state">Lade Verlauf…</div>
         </div>
       </div>
     </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <footer class="footer">
       <div class="container">© <span id="year"></span> Deutsche Deadlock Community</div>

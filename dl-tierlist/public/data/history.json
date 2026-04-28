@@ -1,1 +1,56 @@
-[]
+{
+  "bucket": "all",
+  "snapshots": [
+    {
+      "snapshot_id": 12,
+      "fetched_at": 1777337648,
+      "patch_id": "2026-04-24",
+      "heroes": [
+        { "hero_id": 1, "wr": 54.2, "tier": "S+" },
+        { "hero_id": 2, "wr": 52.9, "tier": "S+" },
+        { "hero_id": 3, "wr": 51.6, "tier": "S" },
+        { "hero_id": 4, "wr": 50.8, "tier": "S" },
+        { "hero_id": 5, "wr": 49.7, "tier": "A" },
+        { "hero_id": 6, "wr": 48.8, "tier": "A" },
+        { "hero_id": 7, "wr": 47.1, "tier": "B" },
+        { "hero_id": 8, "wr": 46.4, "tier": "B" },
+        { "hero_id": 9, "wr": 45.5, "tier": "C" },
+        { "hero_id": 10, "wr": 44.8, "tier": "C" }
+      ]
+    },
+    {
+      "snapshot_id": 11,
+      "fetched_at": 1777251248,
+      "patch_id": "2026-04-24",
+      "heroes": [
+        { "hero_id": 1, "wr": 52.8, "tier": "S+" },
+        { "hero_id": 2, "wr": 52.7, "tier": "S+" },
+        { "hero_id": 3, "wr": 50.8, "tier": "S" },
+        { "hero_id": 4, "wr": 51.1, "tier": "S" },
+        { "hero_id": 5, "wr": 49.7, "tier": "A" },
+        { "hero_id": 6, "wr": 48.3, "tier": "A" },
+        { "hero_id": 7, "wr": 47.7, "tier": "B" },
+        { "hero_id": 8, "wr": 46.4, "tier": "B" },
+        { "hero_id": 9, "wr": 46.3, "tier": "B" },
+        { "hero_id": 10, "wr": 45.0, "tier": "C" }
+      ]
+    },
+    {
+      "snapshot_id": 10,
+      "fetched_at": 1777164848,
+      "patch_id": "2026-04-16",
+      "heroes": [
+        { "hero_id": 1, "wr": 52.2, "tier": "S+" },
+        { "hero_id": 2, "wr": 51.9, "tier": "S" },
+        { "hero_id": 3, "wr": 50.2, "tier": "S" },
+        { "hero_id": 4, "wr": 50.7, "tier": "S" },
+        { "hero_id": 5, "wr": 49.2, "tier": "A" },
+        { "hero_id": 6, "wr": 48.1, "tier": "A" },
+        { "hero_id": 7, "wr": 47.9, "tier": "B" },
+        { "hero_id": 8, "wr": 46.8, "tier": "B" },
+        { "hero_id": 9, "wr": 46.1, "tier": "B" },
+        { "hero_id": 10, "wr": 45.4, "tier": "C" }
+      ]
+    }
+  ]
+}

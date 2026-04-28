@@ -1,26 +1,232 @@
 {
-  "lastUpdated": "2026-04-15T12:00:00Z",
-  "description": "Tier-Liste der Deutschen Deadlock Community. Wird woechentlich aktualisiert.",
-  "tiers": {
-    "S": {
-      "label": "S Tier - Empfohlen",
-      "color": "#FFD700",
-      "heroes": ["haze", "dynamo", "seven", "kelvin", "infernus"]
+  "bucket": "all",
+  "patch_id": "2026-04-24",
+  "patch_unix": 1776981600,
+  "last_updated": 1777337648,
+  "description": "Automatische Demo-Tierliste basierend auf Winrates. Live-Daten werden bevorzugt, bei Ausfall nutzt das Frontend diese Fallback-Datei.",
+  "thresholds": {
+    "s_plus_min": 52.0,
+    "s_min": 50.0,
+    "a_min": 48.0,
+    "b_min": 46.0
+  },
+  "min_matches": 500,
+  "tiers": [
+    {
+      "key": "S+",
+      "title": "Overpowered",
+      "min_wr": 52.0,
+      "max_wr": null,
+      "heroes": [
+        {
+          "hero_id": 1,
+          "name": "Infernus",
+          "slug": "infernus",
+          "image_url": "/heroes/infernus.png",
+          "wr": 54.2,
+          "wr_change": 1.4,
+          "matches": 12345,
+          "tier": "S+",
+          "description": "**Lane bully** mit sehr hohem Pressure. Nutze frühe Vorteile aggressiv und halte Rotationen kurz. Gute Video-Beispiele findest du bei [KennKan](https://twitch.tv/kennkan).",
+          "builds": [
+            {
+              "build_id": 280407,
+              "build_name": "Burn Burst Tempo",
+              "author_name": "KennKan",
+              "sort_order": 100,
+              "upvotes": 30,
+              "downvotes": 14
+            },
+            {
+              "build_id": 280512,
+              "build_name": "Objective Pressure",
+              "author_name": "Waffle",
+              "sort_order": 110,
+              "upvotes": 18,
+              "downvotes": 3
+            }
+          ],
+          "streamers": [
+            {
+              "id": 1,
+              "twitch_login": "kennkan",
+              "display_name": "KennKan",
+              "sort_order": 100
+            },
+            {
+              "id": 2,
+              "twitch_login": "waffletime",
+              "display_name": "Waffle",
+              "sort_order": 110
+            }
+          ]
+        },
+        {
+          "hero_id": 2,
+          "name": "Kelvin",
+          "slug": "kelvin",
+          "image_url": "/heroes/kelvin.png",
+          "wr": 52.9,
+          "wr_change": 0.2,
+          "matches": 10984,
+          "tier": "S+",
+          "description": "Starker Teamfight-Controller mit sicherem Setup für Front-to-Back-Kompositionen.",
+          "builds": [],
+          "streamers": []
+        }
+      ]
     },
-    "A": {
-      "label": "A Tier - Meta-Defining",
-      "color": "#FF8C00",
-      "heroes": ["warden", "ivy", "lady_geist", "abrams", "mirage", "mo_and_krill"]
+    {
+      "key": "S",
+      "title": "Meta-Defining",
+      "min_wr": 50.0,
+      "max_wr": 52.0,
+      "heroes": [
+        {
+          "hero_id": 3,
+          "name": "Mirage",
+          "slug": "mirage",
+          "image_url": "/heroes/mirage.png",
+          "wr": 51.6,
+          "wr_change": 0.8,
+          "matches": 8743,
+          "tier": "S",
+          "description": "Kann _schnell_ Snowball erzeugen, braucht aber präzise Timings bei Picks.",
+          "builds": [
+            {
+              "build_id": 281001,
+              "build_name": "Roam Punish",
+              "author_name": "Nova",
+              "sort_order": 100,
+              "upvotes": 21,
+              "downvotes": 5
+            }
+          ],
+          "streamers": [
+            {
+              "id": 3,
+              "twitch_login": "novadlock",
+              "display_name": "Nova",
+              "sort_order": 100
+            }
+          ]
+        },
+        {
+          "hero_id": 4,
+          "name": "Lady Geist",
+          "slug": "lady_geist",
+          "image_url": "/heroes/lady_geist.png",
+          "wr": 50.8,
+          "wr_change": -0.3,
+          "matches": 9630,
+          "tier": "S",
+          "description": "Skaliert verlässlich und bestraft unkoordinierte Dives.",
+          "builds": [],
+          "streamers": []
+        }
+      ]
     },
-    "B": {
-      "label": "B Tier - Viable",
-      "color": "#3B82F6",
-      "heroes": ["mcginnis", "wraith", "lash", "yamato", "vyper", "vindicta", "calico", "fathom"]
+    {
+      "key": "A",
+      "title": "Strong Picks",
+      "min_wr": 48.0,
+      "max_wr": 50.0,
+      "heroes": [
+        {
+          "hero_id": 5,
+          "name": "Abrams",
+          "slug": "abrams",
+          "image_url": "/heroes/abrams.png",
+          "wr": 49.7,
+          "wr_change": 0.0,
+          "matches": 12002,
+          "tier": "A",
+          "description": "Solider Engage-Tank, besonders wertvoll mit koordinierter Follow-Up-Kette.",
+          "builds": [],
+          "streamers": []
+        },
+        {
+          "hero_id": 6,
+          "name": "Ivy",
+          "slug": "ivy",
+          "image_url": "/heroes/ivy.png",
+          "wr": 48.8,
+          "wr_change": 0.5,
+          "matches": 7864,
+          "tier": "A",
+          "description": "Flexibler Utility-Pick mit gutem Midgame-Tempo.",
+          "builds": [],
+          "streamers": []
+        }
+      ]
     },
-    "C": {
-      "label": "C Tier - Situativ",
-      "color": "#06B6D4",
-      "heroes": ["paradox", "pocket", "grey_talon", "viscous", "shiv", "sinclair", "bebop", "holliday"]
+    {
+      "key": "B",
+      "title": "Viable",
+      "min_wr": 46.0,
+      "max_wr": 48.0,
+      "heroes": [
+        {
+          "hero_id": 7,
+          "name": "Bebop",
+          "slug": "bebop",
+          "image_url": "/heroes/bebop.png",
+          "wr": 47.1,
+          "wr_change": -0.6,
+          "matches": 6583,
+          "tier": "B",
+          "description": "Matchup-abhängig, aber mit guten Hooks weiter spielbar.",
+          "builds": [],
+          "streamers": []
+        },
+        {
+          "hero_id": 8,
+          "name": "Wraith",
+          "slug": "wraith",
+          "image_url": "/heroes/wraith.png",
+          "wr": 46.4,
+          "wr_change": null,
+          "matches": 5901,
+          "tier": "B",
+          "description": "Kein klarer Ausreißer, aber in Drafts mit Schutz immer noch solide.",
+          "builds": [],
+          "streamers": []
+        }
+      ]
+    },
+    {
+      "key": "C",
+      "title": "Situational",
+      "min_wr": null,
+      "max_wr": 46.0,
+      "heroes": [
+        {
+          "hero_id": 9,
+          "name": "Pocket",
+          "slug": "pocket",
+          "image_url": "/heroes/pocket.png",
+          "wr": 45.5,
+          "wr_change": -0.8,
+          "matches": 5210,
+          "tier": "C",
+          "description": "Benötigt starkes Makro und profitiert wenig von chaotischen Public-Games.",
+          "builds": [],
+          "streamers": []
+        },
+        {
+          "hero_id": 10,
+          "name": "Paradox",
+          "slug": "paradox",
+          "image_url": "/heroes/paradox.png",
+          "wr": 44.8,
+          "wr_change": -0.2,
+          "matches": 6104,
+          "tier": "C",
+          "description": "Nischenpick mit klaren Spezialfällen.",
+          "builds": [],
+          "streamers": []
+        }
+      ]
     }
-  }
+  ]
 }
