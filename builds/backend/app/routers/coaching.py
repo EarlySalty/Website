@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from app.database import get_db
+from app.routers.auth import require_admin_user, require_authenticated_user
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -236,15 +237,7 @@ async def get_coach_reviews(coach_id: str):
 @router.post("/coaches/profile", response_model=CoachProfile)
 async def create_or_update_coach_profile(profile: CoachProfileCreate, request: Request):
     """Create or update coach profile. Requires Discord auth."""
-    token = request.cookies.get("auth_token")
-    if not token:
-        raise HTTPException(401, "Not authenticated")
-
-    # Simple auth check - user must match
-    from app.routers.auth import decode_jwt
-    user_data = decode_jwt(token)
-    if not user_data:
-        raise HTTPException(401, "Invalid token")
+    user_data = await require_authenticated_user(request)
 
     if str(user_data["sub"]) != str(profile.discord_user_id):
         raise HTTPException(403, "Cannot create profile for another user")
@@ -297,14 +290,10 @@ async def create_or_update_coach_profile(profile: CoachProfileCreate, request: R
 @router.post("/coaches/apply")
 async def apply_to_be_coach(application: CoachApplicationCreate, request: Request):
     """Submit coach application. Requires Discord auth."""
-    token = request.cookies.get("auth_token")
-    if not token:
-        raise HTTPException(401, "Not authenticated")
+    user_data = await require_authenticated_user(request)
 
-    from app.routers.auth import decode_jwt
-    user_data = decode_jwt(token)
-    if not user_data:
-        raise HTTPException(401, "Invalid token")
+    if str(user_data["sub"]) != str(application.discord_user_id):
+        raise HTTPException(403, "Cannot submit application for another user")
 
     db = await get_db()
     try:
@@ -527,14 +516,7 @@ async def submit_survey(
 @router.get("/dashboard")
 async def get_coach_dashboard(request: Request):
     """Get coach's private dashboard data. Requires auth."""
-    token = request.cookies.get("auth_token")
-    if not token:
-        raise HTTPException(401, "Not authenticated")
-
-    from app.routers.auth import decode_jwt
-    user_data = decode_jwt(token)
-    if not user_data:
-        raise HTTPException(401, "Invalid token")
+    user_data = await require_authenticated_user(request)
 
     db = await get_db()
     try:
@@ -580,14 +562,7 @@ async def review_application(
     request: Request,
 ):
     """Admin: Approve or reject coach application."""
-    token = request.cookies.get("auth_token")
-    if not token:
-        raise HTTPException(401, "Not authenticated")
-
-    from app.routers.auth import decode_jwt
-    user_data = decode_jwt(token)
-    if not user_data or user_data.get("role") != "admin":
-        raise HTTPException(403, "Admin only")
+    user_data = await require_admin_user(request)
 
     if status not in ("approved", "rejected"):
         raise HTTPException(400, "Status must be approved or rejected")

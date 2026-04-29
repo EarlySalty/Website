@@ -1,7 +1,8 @@
 import aiosqlite
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "deadlock.db")
+DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "deadlock.db")
+DB_PATH = os.getenv("DB_PATH") or DEFAULT_DB_PATH
 
 async def get_db():
     db = await aiosqlite.connect(DB_PATH)

@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const res = await fetch(`${authBase}/me`)
+      const res = await fetch(`${authBase}/me`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setUser(data.user)
@@ -35,11 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const login = () => {
-    window.location.href = `${authBase}/discord/login`
+    const next = `${window.location.pathname}${window.location.search}${window.location.hash}`
+    const url = new URL(`${authBase}/discord/login`, window.location.origin)
+    url.searchParams.set('next', next)
+    window.location.href = url.toString()
   }
 
   const logout = async () => {
-    await fetch(`${authBase}/logout`, { method: 'POST' })
+    await fetch(`${authBase}/logout`, { method: 'POST', credentials: 'include' })
     setUser(null)
   }
 
