@@ -1,3 +1,9 @@
+## #4 — Automatische Dependency-Updates eingerichtet
+
+- Dependabot überwacht ab jetzt alle GitHub Actions und npm-Pakete in allen Teilprojekten auf veraltete Versionen
+- Dependabot-PRs werden automatisch gemerged, sobald keine Workflow-Dateien betroffen sind
+- Keine manuelle Arbeit mehr für Routine-Dependency-Updates
+
 ## #3 — Tierliste: aufgeräumter Header, neue Tier-Farben, weniger leere Seiten
 
 - Großer Hero-Header oben raus — Patch und Aktualisierungs-Datum stehen jetzt klein und dezent direkt im Seiten-Header
