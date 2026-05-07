@@ -1,3 +1,9 @@
+## #9 — Website-Joins werden jetzt sauber gezählt
+
+- Alle "Discord beitreten"-Buttons auf der Website laufen jetzt über einen eigenen Tracking-Invite
+- Im Discord lässt sich mit einem Befehl auswerten, wie viele Member über die Website kommen — unabhängig von Discord-Listings, persönlichen Einladungen und Twitch-Streamern
+- Vanity-URL (discord.gg/z5TfVHuQq2) bleibt für Direkt-Eingaben und externe Listings als Backup erhalten
+
 ## #8 — "Live aus der Community"-Sektion auf der Startseite
 
 - Neue Sektion direkt unter dem Hero zeigt drei Live-Kacheln: aktive Voice-Lanes mit Live-Personenzahl, eine Avatar-Wand der gerade-online-Spieler und eine Patchnotes-Kachel
