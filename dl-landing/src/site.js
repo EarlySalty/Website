@@ -351,7 +351,19 @@ function syncYear() {
 }
 
 const DISCORD_INVITE_CODE = 'z5TfVHuQq2'
+const DISCORD_GUILD_ID = '1289721245281292288'
 const DISCORD_INVITE_API = `https://discord.com/api/v10/invites/${DISCORD_INVITE_CODE}?with_counts=true&with_expiration=false`
+const DISCORD_WIDGET_API = `https://discord.com/api/guilds/${DISCORD_GUILD_ID}/widget.json`
+
+// Discord-Channel-Names enthalten Emoji + Sortier-Präfixe.
+// Diese Channels NICHT in der Live-Lane-Liste anzeigen (nur "echte" Mitspieler-Lanes).
+const HIDDEN_LANE_PATTERNS = [/^afk$/i, /sammelpunkt/i, /coaching\s*lane/i]
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c])
+}
 
 async function fetchLiveStats() {
   const memberNodes = document.querySelectorAll('[data-stat="members"]')
@@ -387,6 +399,81 @@ async function fetchLiveStats() {
   setupCountUp()
 }
 
+async function fetchDiscordWidget() {
+  const root = document.querySelector('[data-live-root]')
+  if (!root) return
+
+  const lanesList = root.querySelector('[data-lanes-list]')
+  const lanesCount = root.querySelector('[data-lanes-count]')
+  const presenceGrid = root.querySelector('[data-presence-grid]')
+
+  let data
+  try {
+    const res = await fetch(DISCORD_WIDGET_API, { credentials: 'omit' })
+    if (!res.ok) throw new Error(`status ${res.status}`)
+    data = await res.json()
+  } catch {
+    if (lanesList) {
+      lanesList.innerHTML = '<li class="lane-empty">Live-Daten gerade nicht erreichbar — schau direkt im Discord.</li>'
+    }
+    if (lanesCount) lanesCount.textContent = ''
+    if (presenceGrid) presenceGrid.innerHTML = ''
+    return
+  }
+
+  // ── Voice-Lanes ─────────────────────────────────────────────────────────
+  if (lanesList) {
+    const channels = (data.channels || [])
+      .filter((c) => !HIDDEN_LANE_PATTERNS.some((re) => re.test(c.name || '')))
+      .map((c) => ({
+        id: c.id,
+        name: (c.name || 'Voice').replace(/^[^\p{L}\d]+/u, '').trim() || c.name,
+        count: Number(c.members_count ?? 0),
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'de'))
+
+    if (channels.length === 0) {
+      lanesList.innerHTML = '<li class="lane-empty">Aktuell keine Voice-Lane offen.</li>'
+    } else {
+      const top = channels.slice(0, 5)
+      lanesList.innerHTML = top
+        .map((c) => `
+          <li class="lane">
+            <span class="lane-name">${escapeHtml(c.name)}</span>
+            <span class="lane-count${c.count > 0 ? ' is-active' : ''}">${c.count > 0 ? `${c.count} drin` : 'leer'}</span>
+          </li>
+        `)
+        .join('')
+    }
+    if (lanesCount) {
+      const active = channels.filter((c) => c.count > 0).length
+      lanesCount.textContent = `${active} aktiv`
+    }
+  }
+
+  // ── Online-Avatare ──────────────────────────────────────────────────────
+  if (presenceGrid) {
+    const members = (data.members || []).filter((m) => m.avatar_url)
+    if (members.length === 0) {
+      presenceGrid.innerHTML = ''
+    } else {
+      const SHOW = 16
+      const visible = members.slice(0, SHOW)
+      const overflow = Math.max(0, (Number(data.presence_count) || members.length) - visible.length)
+      const avatars = visible
+        .map(
+          (m) => `<img src="${escapeHtml(m.avatar_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`,
+        )
+        .join('')
+      const overflowChip = overflow > 0
+        ? `<span class="presence-overflow">+${overflow}</span>`
+        : ''
+      presenceGrid.innerHTML = avatars + overflowChip
+      presenceGrid.removeAttribute('aria-hidden')
+    }
+  }
+}
+
 function boot() {
   document.documentElement.classList.add('js')
   setActiveNav()
@@ -398,6 +485,7 @@ function boot() {
   setupParallax()
   syncYear()
   fetchLiveStats()
+  fetchDiscordWidget()
 }
 
 boot()

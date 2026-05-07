@@ -1,3 +1,11 @@
+## #8 — "Live aus der Community"-Sektion auf der Startseite
+
+- Neue Sektion direkt unter dem Hero zeigt drei Live-Kacheln: aktive Voice-Lanes mit Live-Personenzahl, eine Avatar-Wand der gerade-online-Spieler und eine Patchnotes-Kachel
+- Voice-Lane-Kachel listet die Top 5 belebten Lanes mit Personenzahl pro Lane — direkt aus dem Discord, ohne Refresh
+- Online-Wand zeigt 16 Avatare plus Overflow-Counter ("+X"), damit man sieht wie viele wirklich da sind
+- Sortiert die Lanes nach Aktivität, blendet Server-Helper-Channels (AFK, Sammelpunkt, Coaching-Lane) aus
+- Skeleton-Loading damit nichts springt während die Daten laden, Fallback wenn Discord mal nicht antwortet
+
 ## #7 — Hero-Polish und Live-Indikator auf den Subseiten
 
 - Hero-Überschrift erscheint jetzt mit weichem Wort-für-Wort-Effekt beim Laden

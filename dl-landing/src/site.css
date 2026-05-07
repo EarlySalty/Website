@@ -462,6 +462,203 @@ ol {
   z-index: 0;
 }
 
+/* ── Live aus der Community ── */
+.live-section {
+  position: relative;
+}
+
+.live-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+@media (max-width: 920px) {
+  .live-grid { grid-template-columns: 1fr; }
+}
+
+.live-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(20, 38, 66, 0.55), rgba(12, 26, 48, 0.85));
+  border: 1px solid rgba(64, 196, 255, 0.14);
+  position: relative;
+  overflow: hidden;
+  min-height: 17rem;
+}
+
+.live-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(64, 196, 255, 0.10), transparent 70%);
+  pointer-events: none;
+}
+
+.live-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.live-card-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.live-card-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-card-meta [data-stat="online"] {
+  color: #e8f1f7;
+  font-weight: 700;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+  animation: livePulse 2.2s ease-in-out infinite;
+}
+
+.live-dot--neutral {
+  background: #64748b;
+  animation: none;
+}
+
+.live-card-cta {
+  margin-top: auto;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.live-card-cta:hover { transform: translateX(4px); }
+
+/* Voice-Lanes-Liste */
+.lane-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  position: relative;
+}
+
+.lane-list .lane {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.92rem;
+}
+
+.lane-name {
+  color: #e8f1f7;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lane-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.lane-count.is-active { color: #4ade80; font-weight: 700; }
+
+.lane-skeleton {
+  height: 2.6rem;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  background-size: 200% 100%;
+  animation: skel 1.4s linear infinite;
+}
+
+.lane-empty {
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 0.8rem 0;
+}
+
+@keyframes skel {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Online-Avatare */
+.presence-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.4rem;
+  position: relative;
+}
+
+@media (max-width: 920px) {
+  .presence-grid { grid-template-columns: repeat(10, 1fr); }
+}
+
+.presence-grid img,
+.presence-skeleton {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  object-fit: cover;
+  border: 2px solid rgba(20, 38, 66, 0.85);
+}
+
+.presence-skeleton {
+  animation: skel 1.4s linear infinite;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  background-size: 200% 100%;
+}
+
+.presence-overflow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(64, 196, 255, 0.12);
+  border-radius: 50%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(20, 38, 66, 0.85);
+}
+
+/* Patch-Tile */
+.patch-tile-body { position: relative; }
+.patch-tile-body h3 { font-size: 1.1rem; margin: 0 0 0.4rem; color: #e8f1f7; }
+.patch-tile-body p  { color: var(--muted); font-size: 0.92rem; margin: 0; }
+
 /* Live-Indicator im Header (Subseiten) */
 .header-live {
   display: inline-flex;
