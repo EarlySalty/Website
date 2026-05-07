@@ -1,3 +1,9 @@
+## #6 — Suchmaschinen-Ping nach jedem Deploy
+
+- IndexNow eingerichtet: Bing, Yandex und Cloudflare-Crawler erfahren jetzt in Minuten von neuen oder geänderten Seiten — nicht erst nach Tagen
+- Ein-Schritt-Befehl `node scripts/seo-submit.mjs --apply` schickt die ganze Sitemap nach jedem Deploy raus
+- Operator-Anleitung für das einmalige Google Search Console und Bing Webmaster Tools Setup liegt jetzt im Repo
+
 ## #5 — Bessere Auffindbarkeit bei Google & Live-Discord-Zahlen
 
 - Mitgliederzahl und gerade-online-Spieler werden jetzt live auf der Startseite angezeigt (zieht direkt aus dem Discord-Server)
