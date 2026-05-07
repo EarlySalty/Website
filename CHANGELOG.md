@@ -1,3 +1,11 @@
+## #5 — Bessere Auffindbarkeit bei Google & Live-Discord-Zahlen
+
+- Mitgliederzahl und gerade-online-Spieler werden jetzt live auf der Startseite angezeigt (zieht direkt aus dem Discord-Server)
+- Vollständige Link-Vorschauen beim Teilen — auch für Patchnotes und Aktivitäts-Tracker — mit Bild, Titel und Beschreibung
+- Sitemap erweitert: Patchnotes, Aktivitäts-Tracker, Builds, Mitspieler, Coaching und Streamer-Bereich sind jetzt sauber für Google sichtbar
+- Domain-Weiterleitung von `www.` auf die normale Domain repariert (war noch auf eine alte Adresse gestellt)
+- Strukturierte Daten ergänzt, damit Google die Seite als deutsche Deadlock-Community samt Coaching-Angebot erkennt
+
 ## #4 — Automatische Dependency-Updates eingerichtet
 
 - Dependabot überwacht ab jetzt alle GitHub Actions und npm-Pakete in allen Teilprojekten auf veraltete Versionen

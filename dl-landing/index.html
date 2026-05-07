@@ -6,6 +6,8 @@
   <title>Deutsche Deadlock Community | Mitspieler, Coaching & Streamer</title>
   <meta name="description" content="Die aktivste deutsche Deadlock Community. Finde Mitspieler, werde besser durch Coaching und werde als Streamer sichtbar. 2000+ Mitglieder auf Discord." />
   <link rel="canonical" href="https://deutsche-deadlock-community.de/" />
+  <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/" />
+  <link rel="alternate" hreflang="x-default" href="https://deutsche-deadlock-community.de/" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Deutsche Deadlock Community | Mitspieler, Coaching & Streamer" />
   <meta property="og:description" content="Die aktivste deutsche Deadlock Community. Finde Mitspieler, werde besser durch Coaching und werde als Streamer sichtbar." />
@@ -23,11 +25,42 @@
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Deutsche Deadlock Community",
-      "url": "https://deutsche-deadlock-community.de/",
-      "description": "Die aktivste deutsche Deadlock Community für Mitspieler, Coaching, Voice-Lanes und Streamer.",
-      "inLanguage": "de-DE"
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://deutsche-deadlock-community.de/#website",
+          "name": "Deutsche Deadlock Community",
+          "url": "https://deutsche-deadlock-community.de/",
+          "description": "Die aktivste deutsche Deadlock Community für Mitspieler, Coaching, Voice-Lanes und Streamer.",
+          "inLanguage": "de-DE",
+          "publisher": { "@id": "https://deutsche-deadlock-community.de/#organization" }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://deutsche-deadlock-community.de/#organization",
+          "name": "Deutsche Deadlock Community",
+          "alternateName": "DDC",
+          "url": "https://deutsche-deadlock-community.de/",
+          "logo": "https://deutsche-deadlock-community.de/ddc-logo.svg",
+          "description": "Deutschsprachige Community rund um das Spiel Deadlock von Valve. Discord mit Voice-Lanes, kostenlosem Coaching, Streamer-Netzwerk, Patchnotes auf Deutsch und Aktivitäts-Tracker.",
+          "sameAs": [
+            "https://discord.gg/z5TfVHuQq2",
+            "https://discord.com/invite/deutsche-deadlock-community-1289721245281292288"
+          ]
+        },
+        {
+          "@type": "VideoGame",
+          "@id": "https://deutsche-deadlock-community.de/#game",
+          "name": "Deadlock",
+          "publisher": {
+            "@type": "Organization",
+            "name": "Valve Corporation",
+            "sameAs": "https://www.valvesoftware.com/"
+          },
+          "applicationCategory": "Game",
+          "gamePlatform": ["Windows"]
+        }
+      ]
     }
   </script>
   <script type="module" src="/src/site.js"></script>
@@ -117,8 +150,8 @@
                 <span class="hero-stat-label">Gerade online</span>
               </div>
               <div class="hero-stat">
-                <span class="hero-stat-number" data-stat="voice">&mdash;</span>
-                <span class="hero-stat-label">In Voice-Lanes</span>
+                <span class="hero-stat-number" data-stat="voice">24/7</span>
+                <span class="hero-stat-label">Voice-Lanes aktiv</span>
               </div>
               <div class="hero-stat">
                 <span class="hero-stat-number">100%</span>

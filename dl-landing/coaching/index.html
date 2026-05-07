@@ -6,6 +6,8 @@
   <title>Deadlock Coaching auf Deutsch | Kostenlos in der Community</title>
   <meta name="description" content="Kostenloses Deadlock Coaching auf Deutsch. Stell eine Anfrage, werde mit einem Coach gematcht und lerne in einer eigenen Voice-Lane. Für alle Ranks." />
   <link rel="canonical" href="https://deutsche-deadlock-community.de/coaching/" />
+  <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/coaching/" />
+  <link rel="alternate" hreflang="x-default" href="https://deutsche-deadlock-community.de/coaching/" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Deadlock Coaching auf Deutsch | Kostenlos in der Community" />
   <meta property="og:description" content="Kostenloses Deadlock Coaching auf Deutsch. Stell eine Anfrage, werde mit einem Coach gematcht und lerne in einer eigenen Voice-Lane." />
@@ -23,11 +25,40 @@
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebPage",
-      "name": "Deadlock Coaching auf Deutsch",
-      "url": "https://deutsche-deadlock-community.de/coaching/",
-      "description": "Kostenloses Deadlock Coaching auf Deutsch. Stell eine Anfrage, werde mit einem Coach gematcht und lerne in einer eigenen Voice-Lane.",
-      "inLanguage": "de-DE"
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": "https://deutsche-deadlock-community.de/coaching/#webpage",
+          "name": "Deadlock Coaching auf Deutsch",
+          "url": "https://deutsche-deadlock-community.de/coaching/",
+          "description": "Kostenloses Deadlock Coaching auf Deutsch. Stell eine Anfrage, werde mit einem Coach gematcht und lerne in einer eigenen Voice-Lane.",
+          "inLanguage": "de-DE",
+          "isPartOf": { "@id": "https://deutsche-deadlock-community.de/#website" },
+          "breadcrumb": { "@id": "https://deutsche-deadlock-community.de/coaching/#breadcrumb" }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": "https://deutsche-deadlock-community.de/coaching/#breadcrumb",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Start", "item": "https://deutsche-deadlock-community.de/" },
+            { "@type": "ListItem", "position": 2, "name": "Coaching", "item": "https://deutsche-deadlock-community.de/coaching/" }
+          ]
+        },
+        {
+          "@type": "Service",
+          "name": "Deadlock Coaching auf Deutsch",
+          "serviceType": "Gaming Coaching",
+          "areaServed": { "@type": "Country", "name": "Deutschland" },
+          "availableLanguage": ["de"],
+          "provider": { "@id": "https://deutsche-deadlock-community.de/#organization" },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock"
+          }
+        }
+      ]
     }
   </script>
   <script type="module" src="/src/site.js"></script>

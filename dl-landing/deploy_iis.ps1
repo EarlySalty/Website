@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $websiteTarget = $SiteRoot
-$browserUrl = "https://earlysalty.de/"
+$browserUrl = "https://deutsche-deadlock-community.de/"
 
 if (-not $SkipBuild) {
     Push-Location $repoRoot

@@ -160,7 +160,9 @@ function setupCountUp() {
       const rawValue = node.textContent?.trim() ?? ''
       const target = Number.parseInt(rawValue.replace(/\./g, ''), 10)
 
+      // Pure Zahlen (mit deutschen Tausendertrennern) animieren — alles andere skippen.
       if (!rawValue || rawValue === '—' || Number.isNaN(target)) return
+      if (!/^\d{1,3}(\.\d{3})*$/.test(rawValue)) return
 
       const startTime = performance.now()
       const duration = 1500
@@ -243,6 +245,9 @@ function syncYear() {
   })
 }
 
+const DISCORD_INVITE_CODE = 'z5TfVHuQq2'
+const DISCORD_INVITE_API = `https://discord.com/api/v10/invites/${DISCORD_INVITE_CODE}?with_counts=true&with_expiration=false`
+
 async function fetchLiveStats() {
   const statElements = {
     members: document.querySelector('[data-stat="members"]'),
@@ -250,25 +255,31 @@ async function fetchLiveStats() {
     voice: document.querySelector('[data-stat="voice"]'),
   }
 
-  if (!statElements.members) return
+  if (!statElements.members && !statElements.online) {
+    return
+  }
 
   try {
-    const res = await fetch('/api/public/guild-stats')
+    const res = await fetch(DISCORD_INVITE_API, { credentials: 'omit' })
     if (res.ok) {
       const data = await res.json()
+      const members = Number(data?.approximate_member_count)
+      const presence = Number(data?.approximate_presence_count)
 
-      if (typeof data.member_count === 'number' && statElements.members) {
-        statElements.members.textContent = data.member_count.toLocaleString('de-DE')
+      if (Number.isFinite(members) && statElements.members) {
+        statElements.members.textContent = members.toLocaleString('de-DE')
       }
-      if (typeof data.online_count === 'number' && statElements.online) {
-        statElements.online.textContent = data.online_count.toLocaleString('de-DE')
+      if (Number.isFinite(presence) && statElements.online) {
+        statElements.online.textContent = presence.toLocaleString('de-DE')
       }
-      if (typeof data.voice_count === 'number' && statElements.voice) {
-        statElements.voice.textContent = data.voice_count.toLocaleString('de-DE')
+      // Voice-Lane-Count ist über public Discord API nicht verfügbar; bleibt leer
+      // bis ein eigener Backend-Endpoint dafür existiert.
+      if (statElements.voice && statElements.voice.textContent.trim() === '—') {
+        statElements.voice.textContent = '24/7'
       }
     }
   } catch {
-    // Silently fail — stats will show "—" as fallback
+    // Stats bleiben auf "—" als Fallback
   }
 
   setupCountUp()

@@ -6,6 +6,8 @@
   <title>Deadlock Streamer Community | Live-Posts, Twitch & Discord</title>
   <meta name="description" content="Werde als Deadlock Streamer sichtbar. Automatische Live-Posts im Discord, eigener Streamer-Bereich und Austausch mit anderen Creatorn. Deutsche Community." />
   <link rel="canonical" href="https://deutsche-deadlock-community.de/streamer/" />
+  <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/streamer/" />
+  <link rel="alternate" hreflang="x-default" href="https://deutsche-deadlock-community.de/streamer/" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Deadlock Streamer Community | Live-Posts, Twitch & Discord" />
   <meta property="og:description" content="Werde als Deadlock Streamer sichtbar. Automatische Live-Posts im Discord, eigener Streamer-Bereich und Austausch mit anderen Creatorn." />
@@ -23,11 +25,26 @@
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebPage",
-      "name": "Deadlock Streamer Community",
-      "url": "https://deutsche-deadlock-community.de/streamer/",
-      "description": "Werde als Deadlock Streamer sichtbar. Automatische Live-Posts im Discord, eigener Streamer-Bereich und Austausch mit anderen Creatorn.",
-      "inLanguage": "de-DE"
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": "https://deutsche-deadlock-community.de/streamer/#webpage",
+          "name": "Deadlock Streamer Community",
+          "url": "https://deutsche-deadlock-community.de/streamer/",
+          "description": "Werde als Deadlock Streamer sichtbar. Automatische Live-Posts im Discord, eigener Streamer-Bereich und Austausch mit anderen Creatorn.",
+          "inLanguage": "de-DE",
+          "isPartOf": { "@id": "https://deutsche-deadlock-community.de/#website" },
+          "breadcrumb": { "@id": "https://deutsche-deadlock-community.de/streamer/#breadcrumb" }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": "https://deutsche-deadlock-community.de/streamer/#breadcrumb",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Start", "item": "https://deutsche-deadlock-community.de/" },
+            { "@type": "ListItem", "position": 2, "name": "Streamer", "item": "https://deutsche-deadlock-community.de/streamer/" }
+          ]
+        }
+      ]
     }
   </script>
   <script type="module" src="/src/site.js"></script>
