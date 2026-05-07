@@ -1,3 +1,9 @@
+## #11 — Backlinks von eigenen Bot-Repos und Paste-Vorlagen
+
+- README in den vier eigenen Bot-Repos (Deadlock-Bots, Patchnotes-Bot, Steam-Bot, Twitch-Bot) bekommt jetzt automatisch einen Footer-Block mit Link zur Website, Discord und Helden-Übersicht
+- Ein Befehl reicht — alle Repos werden gleichzeitig aktualisiert und gepusht, idempotent
+- Für Discord-Server-Description, Twitch-Panels und Steam-Group-Summary gibt es fertige Copy-Paste-Texte zum Einfügen
+
 ## #10 — Helden-Übersicht und Anfänger-Guide auf Deutsch
 
 - Neue Seite `/helden/` zeigt alle 38 Deadlock-Helden mit Portrait, Lane-Zuordnung, Rolle und Schwierigkeitsgrad
