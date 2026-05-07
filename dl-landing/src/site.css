@@ -462,6 +462,301 @@ ol {
   z-index: 0;
 }
 
+/* ── Helden-Übersicht /helden/ ── */
+.heroes-hero {
+  padding: 6rem 0 2rem;
+  background: linear-gradient(180deg, rgba(20, 38, 66, 0.4), transparent 80%);
+}
+
+.heroes-hero h1 {
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  line-height: 1.1;
+  margin: 0.6rem 0 1rem;
+}
+
+.heroes-eyebrow {
+  display: inline-block;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(64, 196, 255, 0.12);
+  border: 1px solid rgba(64, 196, 255, 0.3);
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.heroes-hero p {
+  color: var(--muted);
+  font-size: 1.05rem;
+  max-width: 38rem;
+}
+
+.heroes-filters {
+  padding: 1rem 0 1.5rem;
+}
+
+.filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: rgba(12, 26, 48, 0.55);
+  border: 1px solid rgba(64, 196, 255, 0.12);
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.filter-pill {
+  padding: 0.42rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.filter-pill:hover {
+  background: rgba(64, 196, 255, 0.08);
+  color: #e8f1f7;
+}
+
+.filter-pill.is-active {
+  background: rgba(64, 196, 255, 0.18);
+  border-color: rgba(64, 196, 255, 0.5);
+  color: #fff;
+}
+
+.filter-hint {
+  margin-top: 0.7rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.filter-hint [data-filter-count] {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.heroes-grid-section {
+  padding: 1.5rem 0 4rem;
+}
+
+.heroes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.1rem;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(20, 38, 66, 0.55), rgba(12, 26, 48, 0.85));
+  border: 1px solid rgba(64, 196, 255, 0.14);
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.hero-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(64, 196, 255, 0.45);
+}
+
+.hero-card-portrait {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
+}
+
+.hero-card-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-card-body h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1.1rem;
+  color: #e8f1f7;
+}
+
+.hero-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.55rem;
+}
+
+.hero-tag {
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.hero-tag--role {
+  background: rgba(64, 196, 255, 0.14);
+  color: #b6e2f5;
+  border: 1px solid rgba(64, 196, 255, 0.25);
+}
+
+.hero-tag--lane {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-tag--difficulty-einsteiger    { background: rgba(74, 222, 128, 0.16); color: #a7f3c8; border: 1px solid rgba(74, 222, 128, 0.32); }
+.hero-tag--difficulty-fortgeschritten { background: rgba(245, 204, 17, 0.14); color: #f6e088; border: 1px solid rgba(245, 204, 17, 0.32); }
+.hero-tag--difficulty-schwer        { background: rgba(245, 102, 102, 0.14); color: #ffb3b3; border: 1px solid rgba(245, 102, 102, 0.32); }
+
+.hero-card-tagline {
+  font-size: 0.92rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* ── Long-Form Guide /guides/anfaenger/ ── */
+.guide-hero {
+  padding: 6rem 0 2.2rem;
+  background: linear-gradient(180deg, rgba(20, 38, 66, 0.4), transparent 80%);
+}
+
+.guide-hero h1 {
+  font-size: clamp(2.2rem, 4.8vw, 3.6rem);
+  line-height: 1.08;
+  margin: 0.6rem 0 0.9rem;
+}
+
+.guide-hero p {
+  color: var(--muted);
+  font-size: 1.1rem;
+  max-width: 42rem;
+  line-height: 1.55;
+}
+
+.guide-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.guide-meta span {
+  padding: 0.25rem 0.7rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+
+.guide-toc {
+  margin: 1.5rem 0 0;
+  padding: 1.2rem 1.4rem;
+  border-radius: 14px;
+  background: rgba(12, 26, 48, 0.55);
+  border: 1px solid rgba(64, 196, 255, 0.14);
+}
+
+.guide-toc-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin: 0 0 0.55rem;
+}
+
+.guide-toc ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.35rem 1.5rem;
+}
+
+.guide-toc a {
+  color: #e8f1f7;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.guide-toc a:hover { color: var(--primary); }
+
+.guide-body {
+  padding: 1rem 0 4rem;
+}
+
+.guide-body .container {
+  max-width: 46rem;
+}
+
+.guide-body h2 {
+  font-size: clamp(1.6rem, 2.5vw, 2rem);
+  margin: 2.5rem 0 0.8rem;
+  scroll-margin-top: 5rem;
+}
+
+.guide-body h3 {
+  font-size: 1.2rem;
+  margin: 1.6rem 0 0.5rem;
+  color: #e8f1f7;
+}
+
+.guide-body p {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #cbd5e1;
+  margin: 0 0 1rem;
+}
+
+.guide-body ul, .guide-body ol {
+  padding-left: 1.4rem;
+  margin: 0 0 1.2rem;
+  color: #cbd5e1;
+  line-height: 1.65;
+}
+
+.guide-body li { margin-bottom: 0.35rem; }
+
+.guide-body strong { color: #e8f1f7; }
+
+.guide-body a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+.guide-callout {
+  margin: 1.5rem 0;
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  background: rgba(64, 196, 255, 0.08);
+  border-left: 3px solid var(--primary);
+  color: #cbd5e1;
+}
+
+.guide-callout strong { color: #e8f1f7; }
+
 /* ── Live aus der Community ── */
 .live-section {
   position: relative;

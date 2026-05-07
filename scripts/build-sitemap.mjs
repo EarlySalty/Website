@@ -25,6 +25,8 @@ const ENTRIES = [
   { path: '/mitspieler/',            src: 'dl-landing/mitspieler/index.html' },
   { path: '/coaching/',              src: 'dl-landing/coaching/index.html' },
   { path: '/streamer/',              src: 'dl-landing/streamer/index.html' },
+  { path: '/helden/',                src: 'dl-landing/helden/index.html' },
+  { path: '/guides/anfaenger/',      src: 'dl-landing/guides/anfaenger/index.html' },
   { path: '/patch/',                 src: 'dl-patch/index.html' },
   { path: '/aktivitaet/',            src: 'dl-activity/index.html' },
   { path: '/builds/',                src: 'dl-tierlist/index.html' },

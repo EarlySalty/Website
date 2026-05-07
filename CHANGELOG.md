@@ -1,3 +1,11 @@
+## #10 — Helden-Übersicht und Anfänger-Guide auf Deutsch
+
+- Neue Seite `/helden/` zeigt alle 38 Deadlock-Helden mit Portrait, Lane-Zuordnung, Rolle und Schwierigkeitsgrad
+- Filter nach Anfänger/Fortgeschritten/Schwer und nach Rolle (Carry, Mage, Tank, Initiator, Support, Skirmisher, Defender)
+- Neue Seite `/guides/anfaenger/` ist ein vollständiger deutscher Einsteiger-Guide: Match-Aufbau, Lanes, Souls, Items, Hero-Empfehlungen, wichtige Mechaniken und häufige Fehler
+- Beide Seiten in Hauptnavigation, Footer und auf der Startseite verlinkt — sauber für Google indexierbar
+- Sitemap deckt jetzt 9 statt 7 URLs ab
+
 ## #9 — Website-Joins werden jetzt sauber gezählt
 
 - Alle "Discord beitreten"-Buttons auf der Website laufen jetzt über einen eigenen Tracking-Invite

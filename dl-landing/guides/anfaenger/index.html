@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deadlock für Einsteiger — Der komplette deutsche Guide | Deutsche Deadlock Community</title>
+  <meta name="description" content="Du hast Deadlock noch nie gespielt? Dieser deutsche Anfänger-Guide erklärt dir Lanes, Souls, Items, Helden-Auswahl und Mechaniken — Schritt für Schritt, ohne Fachjargon." />
+  <link rel="canonical" href="https://deutsche-deadlock-community.de/guides/anfaenger/" />
+  <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/guides/anfaenger/" />
+  <link rel="alternate" hreflang="x-default" href="https://deutsche-deadlock-community.de/guides/anfaenger/" />
+  <meta name="theme-color" content="#07151d" />
+  <meta name="keywords" content="Deadlock Anfänger Guide, Deadlock für Einsteiger, Deadlock lernen, Deadlock Tutorial deutsch, Deadlock Tipps Anfänger, Deadlock erklärt, Deadlock erste Schritte, Deadlock Souls, Deadlock Lanes, Deadlock Items" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://deutsche-deadlock-community.de/guides/anfaenger/" />
+  <meta property="og:title" content="Deadlock für Einsteiger — Der komplette deutsche Guide" />
+  <meta property="og:description" content="Lanes, Souls, Items, Helden-Auswahl, Mechaniken — alles was du als Anfänger über Deadlock wissen musst, auf Deutsch." />
+  <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Deadlock für Einsteiger — kompletter deutscher Guide" />
+  <meta name="twitter:description" content="Lanes, Souls, Items, Mechaniken — Schritt-für-Schritt-Erklärung für Neueinsteiger." />
+  <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Article",
+          "@id": "https://deutsche-deadlock-community.de/guides/anfaenger/#article",
+          "headline": "Deadlock für Einsteiger — Der komplette deutsche Guide",
+          "description": "Lanes, Souls, Items, Helden-Auswahl und Mechaniken — alles was du als Anfänger über Deadlock wissen musst.",
+          "url": "https://deutsche-deadlock-community.de/guides/anfaenger/",
+          "inLanguage": "de-DE",
+          "isPartOf": { "@id": "https://deutsche-deadlock-community.de/#website" },
+          "mainEntityOfPage": "https://deutsche-deadlock-community.de/guides/anfaenger/",
+          "image": "https://deutsche-deadlock-community.de/images/og-image.png",
+          "publisher": { "@id": "https://deutsche-deadlock-community.de/#organization" },
+          "author": { "@id": "https://deutsche-deadlock-community.de/#organization" },
+          "about": {
+            "@type": "VideoGame",
+            "name": "Deadlock",
+            "publisher": { "@type": "Organization", "name": "Valve Corporation" }
+          },
+          "breadcrumb": { "@id": "https://deutsche-deadlock-community.de/guides/anfaenger/#breadcrumb" }
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": "https://deutsche-deadlock-community.de/guides/anfaenger/#breadcrumb",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Start", "item": "https://deutsche-deadlock-community.de/" },
+            { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://deutsche-deadlock-community.de/guides/anfaenger/" },
+            { "@type": "ListItem", "position": 3, "name": "Anfänger-Guide", "item": "https://deutsche-deadlock-community.de/guides/anfaenger/" }
+          ]
+        }
+      ]
+    }
+  </script>
+  <script type="module" src="/src/site.js"></script>
+</head>
+<body>
+  <a href="#main" class="sr-only">Zum Inhalt springen</a>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="container">
+        <div class="header-row">
+          <div class="header-left">
+            <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="nav-drawer" aria-label="Menü öffnen">
+              <svg class="icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <a class="brand" href="/">
+              <img src="/ddc-logo.svg" alt="Deutsche Deadlock Community" class="brand-logo" height="40" />
+            </a>
+          </div>
+          <div class="header-actions">
+            <span class="header-live" aria-label="Aktuell online im Discord">
+              <span class="header-live-dot" aria-hidden="true"></span>
+              <span class="header-live-text"><span data-stat="online">—</span> online</span>
+            </span>
+            <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener noreferrer">Beitreten</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+      <div class="nav-drawer-backdrop" data-menu-close></div>
+      <nav class="nav-drawer-panel" aria-label="Hauptnavigation">
+        <button class="nav-drawer-close" type="button" data-menu-close aria-label="Menü schließen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/">Start</a>
+          <a class="nav-drawer-link" href="/helden/">Helden</a>
+          <a class="nav-drawer-link" href="/mitspieler/" data-nav-link>Mitspieler</a>
+          <a class="nav-drawer-link" href="/coaching/" data-nav-link>Coaching</a>
+          <a class="nav-drawer-link" href="/patch/">Patchnotes</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <span class="nav-drawer-label">Streamer</span>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/streamer/">Streamer-Netzwerk</a>
+          <a class="nav-drawer-link" href="/streamer/onboarding/">Onboarding</a>
+          <a class="nav-drawer-link" href="/streamer/faq/">FAQ</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <span class="nav-drawer-label">Plattformen</span>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/turnier/">Turnierplattform</a>
+          <a class="nav-drawer-link" href="/aktivitaet/">Aktivitäts-Tracker</a>
+          <a class="nav-drawer-link" href="/builds/">Builds &amp; Items</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <a class="button button-primary nav-drawer-cta" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener noreferrer">Discord beitreten</a>
+      </nav>
+    </div>
+
+    <main id="main">
+      <section class="guide-hero">
+        <div class="container">
+          <div data-reveal>
+            <span class="heroes-eyebrow">Anfänger-Guide · auf Deutsch</span>
+            <h1>Deadlock für Einsteiger</h1>
+            <p>Du hast Deadlock noch nie gespielt oder bist gerade in deine ersten Matches gestolpert? Dieser Guide erklärt dir alles Wichtige — von Steam-Beitritt über Lane-System bis zu deinen ersten Items. Ohne Fachjargon, auf Deutsch, in der Reihenfolge wie du es brauchst.</p>
+            <div class="guide-meta">
+              <span>📖 Lesezeit ~10 Min</span>
+              <span>🎮 Keine Vorkenntnisse nötig</span>
+              <span>🇩🇪 Deutsche Community</span>
+            </div>
+            <nav class="guide-toc" aria-label="Inhaltsverzeichnis">
+              <p class="guide-toc-title">Inhaltsverzeichnis</p>
+              <ol>
+                <li><a href="#was-ist-deadlock">Was ist Deadlock?</a></li>
+                <li><a href="#zugang">Zugang &amp; Installation</a></li>
+                <li><a href="#match-aufbau">Match-Aufbau</a></li>
+                <li><a href="#lanes">Lanes &amp; Laning-Phase</a></li>
+                <li><a href="#souls">Souls — die Währung</a></li>
+                <li><a href="#items">Items &amp; Builds</a></li>
+                <li><a href="#helden">Welcher Hero für den Start?</a></li>
+                <li><a href="#mechaniken">Wichtige Mechaniken</a></li>
+                <li><a href="#fehler">Häufige Anfängerfehler</a></li>
+                <li><a href="#besser-werden">Wie du besser wirst</a></li>
+              </ol>
+            </nav>
+          </div>
+        </div>
+      </section>
+
+      <article class="guide-body">
+        <div class="container">
+          <h2 id="was-ist-deadlock">Was ist Deadlock?</h2>
+          <p><strong>Deadlock</strong> ist ein Multiplayer-Shooter von <strong>Valve</strong> — den Machern von Counter-Strike, Dota 2 und Half-Life. Es kombiniert die <strong>Schießmechanik eines Hero-Shooters</strong> mit dem <strong>Aufbau eines MOBAs</strong>: Zwei Teams aus je sechs Spielern treten auf einer symmetrischen Karte gegeneinander an, schicken Lane-Minions in vier Bahnen los, sammeln Ressourcen und versuchen am Ende den gegnerischen Hauptbau (<em>Patron</em>) zu zerstören.</p>
+          <p>Das macht Deadlock besonders: Du brauchst keine MOBA-Erfahrung, weil du selbst zielst und schießt — und du brauchst keine Shooter-Pro-Skills, weil deine Items, dein Build und dein Hero genauso entscheidend sind wie deine Aim. Wer als Shooter-Spieler einsteigt, wird die Tiefe von Builds und Strategie unterschätzen. Wer als MOBA-Spieler kommt, wird Headshots überraschend wichtig finden. Beides muss man verbinden.</p>
+
+          <h2 id="zugang">Zugang &amp; Installation</h2>
+          <p>Deadlock ist aktuell in einer <strong>Closed-Alpha-Phase</strong>. Das heißt: Du brauchst einen Invite, um es spielen zu können. Der Zugang läuft über <strong>Steam</strong>:</p>
+          <ol>
+            <li>Du brauchst einen Steam-Account und einen Freund oder eine Community, die dich einlädt.</li>
+            <li>Sobald jemand dich einlädt, taucht Deadlock in deiner Steam-Bibliothek auf — Download-Größe liegt aktuell bei rund <strong>40 GB</strong>.</li>
+            <li>Du installierst es wie jedes andere Steam-Spiel und drückst beim ersten Start auf „Find Match", um in deine ersten Matches zu kommen.</li>
+          </ol>
+          <div class="guide-callout">
+            <strong>Tipp:</strong> Im <a href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener noreferrer">Discord der Deutschen Deadlock Community</a> bekommst du Beta-Invites und Mitspieler. Eine Anfrage im Onboarding-Channel reicht meistens.
+          </div>
+
+          <h2 id="match-aufbau">Match-Aufbau</h2>
+          <p>Ein typisches Deadlock-Match dauert <strong>30 bis 45 Minuten</strong> und teilt sich in drei klare Phasen:</p>
+          <ul>
+            <li><strong>Laning-Phase</strong> (etwa Minute 0–10): Du bist in einer der vier Lanes, kämpfst gegen einen oder zwei direkte Gegner und sammelst Ressourcen.</li>
+            <li><strong>Mid-Game</strong> (Minute 10–25): Lanes brechen auf, das Team fokussiert sich auf <em>Walker</em>, <em>Shrines</em> und Teamfights um Objektive.</li>
+            <li><strong>Late-Game</strong> (Minute 25+): Voll-aufgebaute Helden treffen aufeinander, jeder Tod kostet wertvolle Souls, das nächste Teamfight kann das Match entscheiden.</li>
+          </ul>
+          <p>Wichtig: Du gewinnst nicht durch Kills. Du gewinnst, indem dein Team gemeinsam <strong>den gegnerischen Patron zerstört</strong>. Kills sind nur das Mittel, um genug Vorsprung dafür aufzubauen.</p>
+
+          <h2 id="lanes">Lanes &amp; Laning-Phase</h2>
+          <p>Es gibt vier Lanes — von links nach rechts beim Spawn betrachtet: <strong>Yellow / Purple / Blue / Orange</strong>. Auf der deutschsprachigen Community wird oft auch die englische Bezeichnung verwendet: <em>Carry-Lane</em>, <em>Mid-Lane</em>, <em>Off-Lane</em> und <em>Walker-Lane</em> sind Rollen-Begriffe, keine fixen Lane-Plätze. Die <strong>Lane-Zuteilung</strong> passiert beim Match-Start automatisch: Du bekommst einen Lane-Partner (oder bist solo) und stehst einem oder zwei Gegnern gegenüber.</p>
+          <p>In der Laning-Phase geht es um drei Dinge:</p>
+          <ul>
+            <li><strong>Last-Hits</strong> auf Minions: Wenn ein Minion stirbt, droppt es eine Soul-Kugel. Du musst sie mit einem Schuss bestätigen, sonst geht die Hälfte an den Gegner.</li>
+            <li><strong>Tower-Druck</strong>: Jede Lane hat einen <em>Guardian</em> und einen <em>Walker</em>. Wenn du diese zerstörst, öffnet sich der Weg zur nächsten Map-Stufe.</li>
+            <li><strong>Trades</strong>: Den Gegner abwehren, sodass er Souls verpasst — ohne dass du selber stirbst.</li>
+          </ul>
+
+          <h2 id="souls">Souls — die Währung</h2>
+          <p>Souls sind das Goldsystem von Deadlock. Du brauchst sie, um <strong>Items zu kaufen und Abilities aufzuwerten</strong>. Es gibt drei Wege, Souls zu bekommen:</p>
+          <ol>
+            <li><strong>Last-Hits</strong> (Minions abschließen): die saubersten Souls, weil 100% gehen an dich.</li>
+            <li><strong>Soul-Kugel-Confirm</strong>: Wenn ein Minion stirbt, schwebt eine Kugel — wer sie zuerst trifft, bekommt 50% extra. Das macht den Unterschied zwischen einem guten und einem mittelmäßigen Laner.</li>
+            <li><strong>Hero-Kills, Tower, Jungle-Camps und Urn-Runs</strong>: Bonus-Souls, mit denen man Vorsprung herausspielt.</li>
+          </ol>
+          <p>Faustregel für die Laning-Phase: <strong>Du verlierst keine Souls, wenn du sie nicht selber bekommst.</strong> Lieber konzentriert farmen als jedes Trade einzugehen.</p>
+
+          <h2 id="items">Items &amp; Builds</h2>
+          <p>Items kaufst du im Shop am Patron oder über das Item-Menü auf der Map. Es gibt drei Item-Kategorien:</p>
+          <ul>
+            <li><strong>Weapon</strong> (orange): erhöht deinen Bullet-Damage, Fire-Rate, Reload-Speed und ähnliche Schießwerte.</li>
+            <li><strong>Vitality</strong> (grün): mehr HP, Movement, Stamina, Ausdauer — alles was deine Survival-Kraft hochzieht.</li>
+            <li><strong>Spirit</strong> (lila): skaliert deine Abilities und Spirit-Damage. Für Helden, die mehr über Spells als über Schüsse spielen.</li>
+          </ul>
+          <p>Items kommen in vier Tiers: <strong>500, 1.250, 3.000 und 6.200 Souls</strong>. Tier 1 schon im Lane, Tier 4 erst Late-Game. Statt blind die teuersten Items zu kaufen, baue auf deine Stärken: Carry-Hero spielt Weapon-fokussiert, Mage spielt Spirit-fokussiert, Tank investiert mehr in Vitality.</p>
+          <div class="guide-callout">
+            <strong>Anfänger-Tipp:</strong> Schau dir bei deinem Hero in den ersten Matches an, was die Top-Spieler bauen. <a href="/builds/">Auf unserer Tierliste</a> findest du community-kuratierte Builds für jeden Hero und jedes Tier.
+          </div>
+
+          <h2 id="helden">Welcher Hero für den Start?</h2>
+          <p>Mit aktuell <strong>38 spielbaren Helden</strong> ist die Auswahl groß. Für dein erstes Match empfehlen wir einen Hero mit einfachen Mechaniken und solidem Survival:</p>
+          <ul>
+            <li><strong>Abrams</strong> — Tank-Brawler mit Lifesteal. Verzeiht Fehler, hat klare Trade-Patterns.</li>
+            <li><strong>Haze</strong> — klassischer Carry mit Sleep-Setup. Skaliert ins Late-Game und braucht keine Combo-Sequenzen.</li>
+            <li><strong>Infernus</strong> — Burn-Stacks, gute Lane-Präsenz, robust.</li>
+            <li><strong>Seven</strong> — AoE-Mage mit klarer Stun-Win-Condition. Im Teamfight fast immer wertvoll.</li>
+            <li><strong>Mo &amp; Krill</strong> — Burrow-Initiator mit eingebautem Sustain. Robust, einfache Combo.</li>
+            <li><strong>Wraith</strong> — Mid-Range-Carry, einfache Kit-Mechanik, gut für Aim-Fokus.</li>
+          </ul>
+          <p>Schau dir die <a href="/helden/">komplette Helden-Übersicht</a> an, dort kannst du nach „Einsteiger" filtern und siehst direkt, wer für den Start geeignet ist.</p>
+
+          <h2 id="mechaniken">Wichtige Mechaniken</h2>
+          <h3>Parry (Block)</h3>
+          <p>Standard-Bind ist <strong>F</strong>. Wenn du parrierst und ein Gegner trifft dich mit einem Melee-Angriff, ist er für ein paar Sekunden gestunnt. Eine richtige Parry kann ein Gunfight komplett drehen — falsche Parries kosten dich aber wertvolle Sekunden, in denen du nicht schießen kannst.</p>
+          <h3>Headshots</h3>
+          <p>Headshots machen ungefähr <strong>doppelten Schaden</strong>. Auch im Lane gegen Minions zählen sie zwar nicht direkt, aber gegen Helden absolut. Wer in Deadlock ohne auf den Kopf zu zielen spielt, verliert mittelfristig.</p>
+          <h3>Slide &amp; Mantle</h3>
+          <p>Du kannst sliden (Strg während du läufst), mantlen (kletterst über Kanten) und double-jumpen. Diese Mobility ist <strong>der zentrale Unterschied</strong> zu klassischen Shootern. Wer flach läuft, ist langsam und vorhersehbar.</p>
+          <h3>Stamina</h3>
+          <p>Sprint, Slide, Jump und Dash teilen sich eine Stamina-Leiste. <strong>Stamina-Management ist kritisch</strong>: Wer sie ausgibt um aggressiv zu sein, hat keine Reserve mehr für die Flucht. Items wie <em>Extra Stamina</em> erhöhen deine Reserve.</p>
+
+          <h2 id="fehler">Häufige Anfängerfehler</h2>
+          <ul>
+            <li><strong>Zu früh teure Items kaufen.</strong> Tier 1 und 2 reichen für die Lane. Tier 3 erst nach dem Walker-Down.</li>
+            <li><strong>Solo in Teamfights gehen.</strong> Wenn der Mini-Map-Indikator deiner Teammates rot ist — warten, regrouppen, dann pushen.</li>
+            <li><strong>Stamina komplett verheizen.</strong> Behalte immer mindestens einen Dash für die Flucht.</li>
+            <li><strong>Soul-Confirm ignorieren.</strong> Wer sie nicht trifft, ist nach 10 Minuten 2.000 Souls hinter — das ist ein ganzes Tier-Item.</li>
+            <li><strong>Headshot vergessen.</strong> Auf Kopfhöhe zielen, vor allem in Lane-Trades.</li>
+            <li><strong>Komplett auf Builds aus dem Internet vertrauen.</strong> Builds sind Vorlagen, kein Rezept — passe sie an die Gegnerformation an.</li>
+          </ul>
+
+          <h2 id="besser-werden">Wie du besser wirst</h2>
+          <p>Mehr als jedes Tutorial bringt dich konstantes Spielen mit Leuten, die etwas mehr wissen. In der <strong>Deutschen Deadlock Community</strong> hast du genau diese Möglichkeit:</p>
+          <ul>
+            <li><strong><a href="/mitspieler/">Voice-Lanes</a></strong> für jede Stimmung: Chill, Ranked, Neue Spieler. Du gehst rein, fragst „Lane mit?", spielst sofort.</li>
+            <li><strong><a href="/coaching/">Kostenloses Coaching</a></strong>: Stell eine Anfrage, ein erfahrener Spieler bucht eine eigene Voice-Lane mit dir und schaut sich dein Replay an oder spielt mit dir.</li>
+            <li><strong><a href="/patch/">Patchnotes auf Deutsch</a></strong>: Bei jedem Update siehst du auf einen Blick was sich geändert hat — nach Heroes und Items filterbar.</li>
+            <li><strong><a href="/builds/">Tierliste &amp; Builds</a></strong>: Welche Helden gerade stark sind und wie sie gespielt werden.</li>
+          </ul>
+          <p>Das wichtigste Werkzeug: einfach starten. Niemand erwartet, dass du nach drei Matches gut bist. Aber wenn du zehnmal gespielt hast, hast du ein Gefühl für deinen Hero — und mit der Community wirst du wesentlich schneller besser, als alleine durch Solo-Matches.</p>
+        </div>
+      </article>
+
+      <section class="section section--alt cta-section">
+        <div class="container" data-reveal>
+          <h2>Bereit für dein erstes Match?</h2>
+          <p>Komm in den Discord, geh in eine Voice-Lane und spiel los. Die Community freut sich auf dich.</p>
+          <div class="cta-actions">
+            <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener noreferrer">Discord beitreten</a>
+            <a class="button button-secondary" href="/helden/">Helden ansehen</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <section>
+            <h3>Deutsche Deadlock Community</h3>
+            <p class="mt-md">Die aktivste deutsche Community für Deadlock-Spieler, Coaches und Streamer.</p>
+            <p class="mt-lg muted" style="font-size: 0.82rem;">Betrieben von EarlySalty</p>
+          </section>
+          <section>
+            <h3>Navigation</h3>
+            <nav class="footer-links mt-md" aria-label="Footer-Navigation">
+              <a href="/">Start</a>
+              <a href="/helden/">Helden</a>
+              <a href="/mitspieler/">Mitspieler</a>
+              <a href="/coaching/">Coaching</a>
+              <a href="/streamer/">Streamer</a>
+            </nav>
+          </section>
+          <section>
+            <h3>Plattformen</h3>
+            <nav class="footer-links mt-md" aria-label="Community-Plattformen">
+              <a href="/turnier/">Turnierplattform</a>
+              <a href="/aktivitaet/">Aktivitäts-Tracker</a>
+              <a href="/builds/">Builds &amp; Items</a>
+            </nav>
+          </section>
+          <section>
+            <h3>Recht &amp; Links</h3>
+            <nav class="footer-links mt-md" aria-label="Rechtliches">
+              <a href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener noreferrer">Discord</a>
+              <a href="/twitch/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
+              <a href="/twitch/datenschutz" target="_blank" rel="noopener noreferrer">Datenschutz</a>
+              <a href="/twitch/agb" target="_blank" rel="noopener noreferrer">AGB</a>
+            </nav>
+          </section>
+        </div>
+        <div class="footer-bottom">© <span data-current-year></span> Deutsche Deadlock Community</div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
