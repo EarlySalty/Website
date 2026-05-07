@@ -204,6 +204,111 @@ function setupCountUp() {
   observer.observe(proofGrid)
 }
 
+function splitHeroHeadline() {
+  const headline = document.querySelector('.hero-content h1')
+  if (!headline) return
+
+  // Bereits gesplittet? (Hot-Reload-Schutz)
+  if (headline.dataset.split === '1') return
+  headline.dataset.split = '1'
+
+  // Walk: Text-Knoten in <span class="word">…</span> aufteilen, Inline-Elemente
+  // (z.B. <span class="hero-highlight">) bleiben erhalten und werden als
+  // ein Word behandelt. <br>-Tags bleiben unverändert.
+  const words = []
+  const fragment = document.createDocumentFragment()
+
+  Array.from(headline.childNodes).forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const tokens = node.textContent.split(/(\s+)/)
+      tokens.forEach((tok) => {
+        if (!tok) return
+        if (/^\s+$/.test(tok)) {
+          fragment.appendChild(document.createTextNode(tok))
+        } else {
+          const span = document.createElement('span')
+          span.className = 'word'
+          span.textContent = tok
+          words.push(span)
+          fragment.appendChild(span)
+        }
+      })
+    } else if (node.nodeName === 'BR') {
+      fragment.appendChild(node.cloneNode())
+    } else {
+      // Inline-Element wie <span class="hero-highlight"> — als ein Word umhüllen
+      const wrapper = document.createElement('span')
+      wrapper.className = 'word'
+      wrapper.appendChild(node.cloneNode(true))
+      words.push(wrapper)
+      fragment.appendChild(wrapper)
+    }
+  })
+
+  headline.replaceChildren(fragment)
+
+  if (prefersReducedMotion()) {
+    words.forEach((w) => w.classList.add('is-in'))
+    return
+  }
+
+  // Stagger-Reveal beim Page-Load
+  requestAnimationFrame(() => {
+    words.forEach((w, i) => {
+      setTimeout(() => w.classList.add('is-in'), 80 + i * 90)
+    })
+  })
+}
+
+function setupMagneticCTA() {
+  if (prefersReducedMotion()) return
+  if (!window.matchMedia('(hover: hover)').matches) return
+
+  const cta = document.querySelector('.hero-actions .button-primary')
+  if (!cta) return
+
+  const RANGE = 70 // px Aktivierungsradius um den Button
+  const STRENGTH = 0.18
+  let frameId = 0
+  let nextX = 0
+  let nextY = 0
+
+  const apply = () => {
+    frameId = 0
+    cta.style.transform = `translate(${nextX.toFixed(2)}px, ${nextY.toFixed(2)}px)`
+  }
+
+  const onMove = (event) => {
+    const rect = cta.getBoundingClientRect()
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+    const dx = event.clientX - cx
+    const dy = event.clientY - cy
+    const dist = Math.hypot(dx, dy)
+    const max = Math.max(rect.width, rect.height) / 2 + RANGE
+
+    if (dist > max) {
+      nextX = 0
+      nextY = 0
+    } else {
+      nextX = dx * STRENGTH
+      nextY = dy * STRENGTH
+    }
+
+    if (!frameId) frameId = requestAnimationFrame(apply)
+  }
+
+  const onLeave = () => {
+    nextX = 0
+    nextY = 0
+    if (!frameId) frameId = requestAnimationFrame(apply)
+  }
+
+  cta.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)'
+  document.addEventListener('mousemove', onMove, { passive: true })
+  cta.addEventListener('mouseleave', onLeave)
+}
+
 function setupParallax() {
   const showcase = document.querySelector('.hero-bg')
   const canHover = window.matchMedia('(hover: hover)').matches
@@ -249,15 +354,11 @@ const DISCORD_INVITE_CODE = 'z5TfVHuQq2'
 const DISCORD_INVITE_API = `https://discord.com/api/v10/invites/${DISCORD_INVITE_CODE}?with_counts=true&with_expiration=false`
 
 async function fetchLiveStats() {
-  const statElements = {
-    members: document.querySelector('[data-stat="members"]'),
-    online: document.querySelector('[data-stat="online"]'),
-    voice: document.querySelector('[data-stat="voice"]'),
-  }
+  const memberNodes = document.querySelectorAll('[data-stat="members"]')
+  const onlineNodes = document.querySelectorAll('[data-stat="online"]')
+  const voiceNodes = document.querySelectorAll('[data-stat="voice"]')
 
-  if (!statElements.members && !statElements.online) {
-    return
-  }
+  if (memberNodes.length === 0 && onlineNodes.length === 0) return
 
   try {
     const res = await fetch(DISCORD_INVITE_API, { credentials: 'omit' })
@@ -266,17 +367,18 @@ async function fetchLiveStats() {
       const members = Number(data?.approximate_member_count)
       const presence = Number(data?.approximate_presence_count)
 
-      if (Number.isFinite(members) && statElements.members) {
-        statElements.members.textContent = members.toLocaleString('de-DE')
+      if (Number.isFinite(members)) {
+        const txt = members.toLocaleString('de-DE')
+        memberNodes.forEach((n) => (n.textContent = txt))
       }
-      if (Number.isFinite(presence) && statElements.online) {
-        statElements.online.textContent = presence.toLocaleString('de-DE')
+      if (Number.isFinite(presence)) {
+        const txt = presence.toLocaleString('de-DE')
+        onlineNodes.forEach((n) => (n.textContent = txt))
       }
-      // Voice-Lane-Count ist über public Discord API nicht verfügbar; bleibt leer
-      // bis ein eigener Backend-Endpoint dafür existiert.
-      if (statElements.voice && statElements.voice.textContent.trim() === '—') {
-        statElements.voice.textContent = '24/7'
-      }
+      // Voice-Lane-Count ist über public Discord API nicht verfügbar; Fallback "24/7"
+      voiceNodes.forEach((n) => {
+        if (n.textContent.trim() === '—') n.textContent = '24/7'
+      })
     }
   } catch {
     // Stats bleiben auf "—" als Fallback
@@ -289,6 +391,8 @@ function boot() {
   document.documentElement.classList.add('js')
   setActiveNav()
   setupNavDrawer()
+  splitHeroHeadline()
+  setupMagneticCTA()
   setupReveal()
   setupCardTilt()
   setupParallax()

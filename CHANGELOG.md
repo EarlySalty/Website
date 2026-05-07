@@ -1,3 +1,11 @@
+## #7 — Hero-Polish und Live-Indikator auf den Subseiten
+
+- Hero-Überschrift erscheint jetzt mit weichem Wort-für-Wort-Effekt beim Laden
+- Hauptbutton zieht den Mauszeiger sanft an — kleines Premium-Detail
+- Hero-Hintergrund hat einen feinen Filmkorn-Layer und wärmeren Farbverlauf
+- Coaching-, Mitspieler- und Streamer-Seite zeigen jetzt rechts oben einen kleinen Live-Indikator mit "X online" — direkt aus Discord
+- Respektiert Reduzierte-Bewegung-Einstellungen, mobil bleibt der Header schlank
+
 ## #6 — Suchmaschinen-Ping nach jedem Deploy
 
 - IndexNow eingerichtet: Bing, Yandex und Cloudflare-Crawler erfahren jetzt in Minuten von neuen oder geänderten Seiten — nicht erst nach Tagen
