@@ -159,3 +159,64 @@ jobs:
         with:
           sarif_file: semgrep.sarif
           category: semgrep
+
+  api-endpoint-inventory:
+    name: "API Endpoint Inventory"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r builds/backend/requirements.txt
+
+      - name: List and audit API routes
+        working-directory: builds/backend
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, ".")
+          # Prevent lifespan DB init from running
+          import unittest.mock as mock
+          with mock.patch("app.database.init_db", return_value=None):
+              from app.main import app
+
+          routes = []
+          for route in app.routes:
+              if hasattr(route, "methods") and hasattr(route, "path"):
+                  for method in sorted(route.methods):
+                      routes.append((method, route.path))
+
+          routes.sort()
+
+          print("=== API Route Inventory ===")
+          for method, path in routes:
+              print(f"  {method:6} {path}")
+
+          # Warnung bei Admin-Endpunkten ohne sichtbaren Auth-Schutz
+          admin_routes = [(m, p) for m, p in routes if "/admin" in p]
+          if admin_routes:
+              print(f"\n::warning::Admin-Endpunkte vorhanden ({len(admin_routes)}) — Auth-Schutz manuell prüfen:")
+              for method, path in admin_routes:
+                  print(f"  {method} {path}")
+
+          with open("api-routes.txt", "w") as f:
+              f.write("\n".join(f"{m} {p}" for m, p in routes))
+          print(f"\nGesamt: {len(routes)} Endpunkte")
+          PY
+
+      - name: Upload route inventory
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: api-route-inventory
+          path: builds/backend/api-routes.txt
+          if-no-files-found: ignore
+          retention-days: 90

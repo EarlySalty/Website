@@ -1,3 +1,8 @@
+## #16 — API-Endpoint-Inventar und Dependency-Pinning
+
+- Neuer CI-Job listet alle FastAPI-Endpunkte und warnt bei Admin-Routen ohne sichtbaren Auth-Schutz
+- Route-Inventar wird als 90-Tage-Artifact gespeichert — Änderungen zwischen PRs direkt vergleichbar
+
 ## #15 — DAST, Lizenz-Audit und Security-Header-Check
 
 - Wöchentlicher OWASP ZAP Baseline-Scan gegen die Live-Website eingerichtet — findet Lücken die statische Scans nicht sehen
