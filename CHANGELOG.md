@@ -1,3 +1,9 @@
+## #15 — DAST, Lizenz-Audit und Security-Header-Check
+
+- Wöchentlicher OWASP ZAP Baseline-Scan gegen die Live-Website eingerichtet — findet Lücken die statische Scans nicht sehen
+- Neuer Security-Header-Check: HSTS, X-Content-Type-Options und X-Frame-Options werden wöchentlich überprüft
+- Lizenz-Audit prüft alle Python-Abhängigkeiten auf Copyleft-Lizenzen (GPL/AGPL)
+
 ## #14 — GitHub Actions Minutenverbrauch drastisch gesenkt
 
 - Tägliche Security-Scans entfernt — werden stattdessen wöchentlich vom Remote-Agent abgedeckt

@@ -78,6 +78,26 @@ jobs:
       - name: Run pip-audit (builds/backend)
         run: pip-audit --strict --desc -r builds/backend/requirements.txt
 
+      - name: License audit
+        continue-on-error: true
+        run: |
+          pip install pip-licenses
+          pip install -r builds/backend/requirements.txt -r dl-landing/mcp-server/requirements.txt
+          pip-licenses --format=json --output-file=licenses.json
+          python3 - <<'PY'
+          import json, sys
+          with open('licenses.json') as f:
+              pkgs = json.load(f)
+          blocklist = ['GPL-2.0', 'GPL-2.0-only', 'GPL-3.0', 'GPL-3.0-only', 'AGPL-3.0', 'AGPL-3.0-only']
+          bad = [p for p in pkgs if any(b in (p.get('License') or '') for b in blocklist)]
+          if bad:
+              print('Copyleft-Lizenzen gefunden:')
+              for p in bad:
+                  print(f"  {p['Name']} {p['Version']}: {p['License']}")
+              sys.exit(1)
+          print(f'Lizenz-Audit OK: {len(pkgs)} Pakete geprüft, keine Copyleft-Lizenzen.')
+          PY
+
       - name: Run pip-audit (dl-landing/mcp-server)
         run: pip-audit --strict --desc -r dl-landing/mcp-server/requirements.txt
 

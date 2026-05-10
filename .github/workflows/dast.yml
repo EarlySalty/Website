@@ -1,0 +1,72 @@
+name: "DAST Website"
+
+on:
+  schedule:
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dast-website-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zap-scan:
+    name: "OWASP ZAP Baseline"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run ZAP baseline scan
+        run: |
+          docker run --rm \
+            -v "$PWD:/zap/wrk/:rw" \
+            -t ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t https://deutsche-deadlock-community.de \
+            -J zap-report.json \
+            -r zap-report.html \
+            -w zap-report.md \
+            -m 5 \
+            -T 30 \
+            -I
+
+      - name: Upload ZAP reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zap-baseline-reports
+          path: |
+            zap-report.html
+            zap-report.json
+            zap-report.md
+          if-no-files-found: warn
+          retention-days: 30
+
+  security-headers:
+    name: "Security Headers Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required security headers
+        continue-on-error: true
+        run: |
+          headers="$(curl -sI https://deutsche-deadlock-community.de)"
+          printf '%s\n' "$headers"
+
+          missing=0
+          for header in \
+            "Strict-Transport-Security" \
+            "X-Content-Type-Options" \
+            "X-Frame-Options"; do
+            if ! printf '%s\n' "$headers" | grep -qi "^${header}:"; then
+              echo "::warning::Missing security header: ${header}"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
