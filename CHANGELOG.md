@@ -1,3 +1,8 @@
+## #17 — Trivy-Scan für vollständige Code-Scanning-Abdeckung
+
+- Trivy-Filesystem-Scan ergänzt: Sicherheitslücken in Abhängigkeiten erscheinen jetzt in GitHub Security / Code Scanning
+- Findings (HIGH/CRITICAL) aus allen Scantools sichtbar in einer zentralen Oberfläche
+
 ## #16 — API-Endpoint-Inventar und Dependency-Pinning
 
 - Neuer CI-Job listet alle FastAPI-Endpunkte und warnt bei Admin-Routen ohne sichtbaren Auth-Schutz
