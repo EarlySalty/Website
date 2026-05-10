@@ -1,3 +1,9 @@
+## #14 — GitHub Actions Minutenverbrauch drastisch gesenkt
+
+- Tägliche Security-Scans entfernt — werden stattdessen wöchentlich vom Remote-Agent abgedeckt
+- Semgrep meldet Findings jetzt als Info statt den Build abzubrechen — kein falscher Alarm mehr
+- Dependabot-Auto-Merge läuft nur noch bei echten PRs, nicht mehr täglich auf Vorrat
+
 ## #13 — Automatische Security-Pipeline vervollständigt
 
 - Dependabot überwacht jetzt auch das Python-Backend täglich auf neue Versionen
