@@ -54,11 +54,12 @@ updates:
     commit-message:
       prefix: "deps"
 
-  - package-ecosystem: "npm"
+  - package-ecosystem: "pip"
     directory: "/builds/backend"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     labels:
       - "dependencies"
+      - "security"
     commit-message:
       prefix: "deps"

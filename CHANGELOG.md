@@ -1,3 +1,9 @@
+## #13 — Automatische Security-Pipeline vervollständigt
+
+- Dependabot überwacht jetzt auch das Python-Backend täglich auf neue Versionen
+- Bei jedem Push werden alle npm- und pip-Abhängigkeiten automatisch auf CVEs geprüft
+- Jeder Release wird kryptografisch signiert (SBOM + Provenance-Attestierung via Sigstore)
+
 ## #12 — Sicherheitslücken in Abhängigkeiten geschlossen
 
 - Backend-Pakete (FastAPI, Pydantic, python-jose, python-multipart) auf aktuelle, sichere Versionen aktualisiert — schließt u.a. eine JWT-Fälschungs-Lücke und Path-Traversal in Datei-Uploads
