@@ -1,3 +1,8 @@
+## #12 — Sicherheitslücken in Abhängigkeiten geschlossen
+
+- Backend-Pakete (FastAPI, Pydantic, python-jose, python-multipart) auf aktuelle, sichere Versionen aktualisiert — schließt u.a. eine JWT-Fälschungs-Lücke und Path-Traversal in Datei-Uploads
+- Frontend-Abhängigkeiten (vite, rollup, picomatch, postcss) auf gepatchte Versionen angehoben
+
 ## #11 — Backlinks von eigenen Bot-Repos und Paste-Vorlagen
 
 - README in den vier eigenen Bot-Repos (Deadlock-Bots, Patchnotes-Bot, Steam-Bot, Twitch-Bot) bekommt jetzt automatisch einen Footer-Block mit Link zur Website, Discord und Helden-Übersicht
