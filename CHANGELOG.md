@@ -1,3 +1,8 @@
+## #18 — Discord-Buttons jetzt pro Bereich getrennt messbar
+
+- Jede wichtige Subseite der Website nutzt jetzt ihren eigenen Discord-Einstiegslink statt eines gemeinsamen Buttons
+- Damit wird sichtbar, ob neue Member eher über Startseite, Streamer, Mitspieler, Coaching, Helden oder Guides in den Discord kommen
+
 ## #17 — Trivy-Scan für vollständige Code-Scanning-Abdeckung
 
 - Trivy-Filesystem-Scan ergänzt: Sicherheitslücken in Abhängigkeiten erscheinen jetzt in GitHub Security / Code Scanning
