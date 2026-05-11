@@ -1,3 +1,8 @@
+## #19 — Repo-Aufräumen ohne sichtbare Änderung
+
+- Build-Abhängigkeiten (`node_modules`) sind nicht mehr im Git getrackt — das Repo wird beim nächsten Update spürbar schneller geklont und aktualisiert
+- Für Besucher der Website ändert sich nichts
+
 ## #18 — Discord-Buttons jetzt pro Bereich getrennt messbar
 
 - Jede wichtige Subseite der Website nutzt jetzt ihren eigenen Discord-Einstiegslink statt eines gemeinsamen Buttons
