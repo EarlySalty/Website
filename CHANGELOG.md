@@ -1,3 +1,9 @@
+## #20 — Feedback-Seite für ehemalige Mitglieder
+
+- Neue Seite, auf der ausgetretene Discord-Mitglieder in Ruhe ausführliches Feedback geben können — mit Textfeldern und optionalem Bild-Upload
+- Die Fragen sind darauf abgestimmt, wie lange und wie aktiv jemand dabei war
+- Erreichbar nur über einen persönlichen Link und nur einmal absendbar
+
 ## #19 — Repo-Aufräumen ohne sichtbare Änderung
 
 - Build-Abhängigkeiten (`node_modules`) sind nicht mehr im Git getrackt — das Repo wird beim nächsten Update spürbar schneller geklont und aktualisiert

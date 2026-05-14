@@ -13,6 +13,7 @@ export default defineConfig({
       input: {
         home: 'index.html',
         mitspieler: 'mitspieler/index.html',
+        survey: 'survey/index.html',
         coaching: 'coaching/index.html',
         streamer: 'streamer/index.html',
         helden: 'helden/index.html',

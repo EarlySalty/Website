@@ -1,0 +1,256 @@
+.survey-hero {
+  min-height: auto;
+  padding: 6.5rem 0 2.75rem;
+}
+
+.survey-hero-content {
+  max-width: 48rem;
+}
+
+.survey-hero-content p {
+  max-width: 40rem;
+}
+
+.survey-section {
+  padding-top: 0;
+}
+
+.survey-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.survey-card {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.4rem, 2vw, 2rem);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(194, 221, 240, 0.16);
+  background: linear-gradient(180deg, rgba(18, 34, 60, 0.88), rgba(10, 20, 38, 0.96));
+  box-shadow: var(--shadow);
+}
+
+.survey-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 110% 70% at 50% 0%, rgba(6, 182, 212, 0.14), transparent 68%);
+}
+
+.survey-card > * {
+  position: relative;
+}
+
+.survey-card h2 {
+  font-size: clamp(1.8rem, 4vw, 2.7rem);
+}
+
+.survey-card p {
+  color: #d6e4ef;
+}
+
+.survey-card--loading {
+  min-height: 16rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.survey-intro {
+  display: grid;
+  gap: 0.9rem;
+  margin-bottom: 1.8rem;
+}
+
+.survey-intro p {
+  max-width: 50rem;
+}
+
+.survey-form {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.survey-question-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.form-label {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.form-hint {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.survey-textarea,
+.survey-file-input {
+  width: 100%;
+  border: 1px solid rgba(194, 221, 240, 0.14);
+  border-radius: 18px;
+  background: rgba(7, 14, 28, 0.72);
+  color: var(--text);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.survey-textarea {
+  min-height: 8.5rem;
+  padding: 1rem 1.05rem;
+  resize: vertical;
+}
+
+.survey-file-input {
+  padding: 0.95rem 1rem;
+}
+
+.survey-textarea::placeholder {
+  color: #7f99ad;
+}
+
+.survey-textarea:focus,
+.survey-file-input:focus {
+  outline: none;
+  border-color: rgba(6, 182, 212, 0.72);
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.12);
+  background: rgba(7, 14, 28, 0.9);
+}
+
+.survey-upload-panel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.1rem;
+  border-radius: 20px;
+  border: 1px dashed rgba(194, 221, 240, 0.22);
+  background: rgba(5, 11, 22, 0.45);
+}
+
+.survey-upload-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.survey-upload-feedback {
+  min-height: 1.4rem;
+  font-size: 0.92rem;
+  color: #d5e5f0;
+}
+
+.survey-upload-feedback.is-error {
+  color: #ffb4b4;
+}
+
+.survey-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.8rem;
+}
+
+.survey-upload-empty {
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: rgba(8, 16, 31, 0.72);
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.survey-upload-thumb {
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(194, 221, 240, 0.14);
+  background: rgba(8, 16, 31, 0.82);
+}
+
+.survey-upload-thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.survey-upload-caption {
+  display: block;
+  padding: 0.55rem 0.65rem 0.7rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-banner {
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(194, 221, 240, 0.14);
+  background: rgba(8, 16, 31, 0.78);
+  color: #d6e4ef;
+  font-size: 0.95rem;
+}
+
+.status-banner.is-error {
+  border-color: rgba(248, 113, 113, 0.42);
+  background: rgba(68, 17, 23, 0.5);
+}
+
+.status-banner.is-success {
+  border-color: rgba(74, 222, 128, 0.3);
+  background: rgba(8, 44, 31, 0.5);
+}
+
+.survey-submit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.35rem;
+}
+
+.survey-submit-row .button {
+  min-width: 14rem;
+}
+
+.survey-submit-note {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.survey-button[disabled] {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.survey-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1.4rem;
+}
+
+@media (max-width: 720px) {
+  .survey-hero {
+    padding-top: 5.6rem;
+  }
+
+  .survey-card {
+    padding: 1.2rem;
+  }
+
+  .survey-submit-row .button {
+    width: 100%;
+    min-width: 0;
+  }
+}

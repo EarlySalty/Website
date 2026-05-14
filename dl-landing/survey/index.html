@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community-Feedback | Deutsche Deadlock Community</title>
+  <meta name="description" content="Teile uns mit, warum du den Server verlassen hast und was wir besser machen koennen." />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="canonical" href="https://deutsche-deadlock-community.de/survey/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="theme-color" content="#07151d" />
+  <script type="module" src="./survey.js"></script>
+</head>
+<body>
+  <a href="#main" class="sr-only">Zum Inhalt springen</a>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="container">
+        <div class="header-row">
+          <div class="header-left">
+            <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="nav-drawer" aria-label="Menue oeffnen">
+              <svg class="icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display: none;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <a class="brand" href="/">
+              <span class="brand-mark">Deutsche Deadlock Community</span>
+            </a>
+          </div>
+          <div class="header-actions">
+            <a class="button button-secondary" href="/">Zur Startseite</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+      <div class="nav-drawer-backdrop" data-menu-close></div>
+      <nav class="nav-drawer-panel" aria-label="Hauptnavigation">
+        <button class="nav-drawer-close" type="button" data-menu-close aria-label="Menue schliessen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/">Start</a>
+          <a class="nav-drawer-link" href="/mitspieler/">Mitspieler</a>
+          <a class="nav-drawer-link" href="/coaching/">Coaching</a>
+          <a class="nav-drawer-link" href="/streamer/">Streamer</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <span class="nav-drawer-label">Plattformen</span>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/turnier/">Turnierplattform</a>
+          <a class="nav-drawer-link" href="/aktivitaet/">Aktivitaets-Tracker</a>
+          <a class="nav-drawer-link" href="/builds/">Builds &amp; Items</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <a class="button button-secondary nav-drawer-cta" href="/">Zur Startseite</a>
+      </nav>
+    </div>
+
+    <main id="main">
+      <section class="hero hero--sub survey-hero">
+        <div class="hero-bg">
+          <img src="/images/hero-rooftops.png" alt="" width="1920" height="1080" loading="eager" />
+        </div>
+        <div class="container">
+          <div class="hero-content survey-hero-content">
+            <span class="meta">Leave Survey</span>
+            <h1>Dein Feedback hilft uns weiter.</h1>
+            <p>Wenn du magst, sag uns offen, was fuer dich nicht gepasst hat. Das Formular ist persoenlich, kurz erreichbar und kann nur einmal abgeschickt werden.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section survey-section">
+        <div class="container">
+          <div class="survey-shell" data-survey-root aria-live="polite">
+            <div class="survey-card survey-card--loading">
+              <span class="meta">Wird geladen</span>
+              <h2>Wir bereiten dein Formular vor.</h2>
+              <p class="muted">Einen Moment bitte.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <section>
+            <h3>Deutsche Deadlock Community</h3>
+            <p class="mt-md">Danke, dass du dir kurz Zeit fuer ehrliches Feedback nimmst.</p>
+          </section>
+          <section>
+            <h3>Navigation</h3>
+            <nav class="footer-links mt-md" aria-label="Footer-Navigation">
+              <a href="/">Start</a>
+              <a href="/mitspieler/">Mitspieler</a>
+              <a href="/coaching/">Coaching</a>
+              <a href="/streamer/">Streamer</a>
+            </nav>
+          </section>
+          <section>
+            <h3>Info</h3>
+            <p class="mt-md muted">Feedback-Seite fuer persoenliche Austrittsumfragen.</p>
+            <p class="mt-lg muted" style="font-size: 0.82rem;">&copy; <span data-current-year></span> Deutsche Deadlock Community</p>
+          </section>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
