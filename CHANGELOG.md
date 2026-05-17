@@ -1,3 +1,8 @@
+## #21 — Logo und Metadaten auf aktuelle Brand-Version gebracht
+
+- Logo (ddc-logo.svg) auf die aktuelle Referenz-Version aus dem Design-System aktualisiert
+- alternateName im strukturierten Schema-Markup ausgeschrieben statt abgekürzt
+
 ## #20 — Feedback-Seite für ehemalige Mitglieder
 
 - Neue Seite, auf der ausgetretene Discord-Mitglieder in Ruhe ausführliches Feedback geben können — mit Textfeldern und optionalem Bild-Upload
