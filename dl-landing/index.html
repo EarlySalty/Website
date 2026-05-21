@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <title>Deutsche Deadlock Community | Mitspieler, Coaching & Streamer</title>
   <meta name="description" content="Die aktivste deutsche Deadlock Community. Finde Mitspieler, werde besser durch Coaching und werde als Streamer sichtbar. 2000+ Mitglieder auf Discord." />
   <link rel="canonical" href="https://deutsche-deadlock-community.de/" />
@@ -17,10 +18,14 @@
   <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Deutsche Deadlock Community — Mitspieler, Coaching & Streamer" />
+  <meta property="og:locale" content="de_DE" />
+  <meta property="og:site_name" content="Deutsche Deadlock Community" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Deutsche Deadlock Community | Mitspieler, Coaching & Streamer" />
   <meta name="twitter:description" content="Die aktivste deutsche Deadlock Community. Finde Mitspieler, werde besser durch Coaching und werde als Streamer sichtbar." />
   <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <script type="application/ld+json">
     {
@@ -33,7 +38,15 @@
           "url": "https://deutsche-deadlock-community.de/",
           "description": "Die aktivste deutsche Deadlock Community für Mitspieler, Coaching, Voice-Lanes und Streamer.",
           "inLanguage": "de-DE",
-          "publisher": { "@id": "https://deutsche-deadlock-community.de/#organization" }
+          "publisher": { "@id": "https://deutsche-deadlock-community.de/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://deutsche-deadlock-community.de/helden/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
         },
         {
           "@type": "Organization",

@@ -1,3 +1,11 @@
+## #23 — SEO und Google-Indexierung verbessert
+
+- Alle Seiten haben jetzt explizite Google-Indexierungs-Direktiven, die Rich Snippets und große Bilder in den Suchergebnissen freischalten
+- Sitemap erhält Prioritäten und Aktualisierungsfrequenzen, damit Google wichtige Seiten öfter crawlt
+- Fehlende Open-Graph-Tags (Sprache, Seitenname, Bild-Alt-Text) auf allen Seiten ergänzt
+- Google kann die Sitemap nun direkt über alle Seiten im `<head>` finden — muss jetzt noch manuell in der Google Search Console unter „Sitemaps" eingereicht werden
+- WebSite-Schema auf der Startseite mit Suchfunktion (SearchAction) erweitert
+
 ## #22 — Backend-Datenbankverbindung auf persistente Verbindung umgestellt
 
 - Die API öffnet jetzt beim Start eine einzelne Datenbankverbindung und behält sie — statt bei jedem Request neu zu verbinden
