@@ -1,11 +1,10 @@
 /* ── Hero ── */
 .patch-hero {
-  padding: 6rem 0 3rem;
-  background: linear-gradient(180deg, rgba(6,182,212,.07) 0%, transparent 100%);
-  border-bottom: 1px solid var(--border);
+  padding: 3.5rem 0 2rem;
+  background: linear-gradient(180deg, rgba(6,182,212,.04) 0%, transparent 100%);
 }
 
-.patch-hero-content { max-width: 680px; }
+.patch-hero-content { max-width: 640px; }
 
 .patch-hero-eyebrow {
   font-size: .75rem;
@@ -38,22 +37,27 @@
   z-index: 10;
   background: rgba(12, 26, 48, 0.92);
   backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  padding: .875rem 0;
+  padding: .75rem 0;
 }
 
 .patch-filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: .75rem;
+  gap: .625rem;
 }
 
-.patch-search-wrap { position: relative; flex: 1 1 220px; }
+.patch-search-wrap {
+  position: relative;
+  flex: 0 1 380px;
+  min-width: 180px;
+}
 
 .patch-search-icon {
   position: absolute;
-  left: .75rem;
+  left: .875rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--muted);
@@ -62,19 +66,19 @@
 
 .patch-search {
   width: 100%;
-  padding: .55rem .75rem .55rem 2.25rem;
+  padding: .5rem 1rem .5rem 2.5rem;
   background: rgba(255,255,255,.06);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 99px;
   color: var(--text);
-  font-size: .9rem;
+  font-size: .875rem;
   outline: none;
   transition: border-color .2s, background .2s;
 }
 
 .patch-search:focus {
   border-color: var(--primary);
-  background: rgba(6,182,212,.08);
+  background: rgba(6,182,212,.07);
 }
 
 .patch-search::placeholder { color: var(--muted); }
@@ -142,6 +146,7 @@
   gap: .25rem .75rem;
   padding: 1.25rem 1.5rem;
   cursor: pointer;
+  user-select: none;
 }
 
 .patch-card-meta {

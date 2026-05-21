@@ -1,3 +1,11 @@
+## #24 — Patchnotes-Seite: Logo, Design und UX verbessert
+
+- Logo wird jetzt korrekt angezeigt (war zuvor kaputt wegen falschem Asset-Pfad)
+- Sucheingabe ist jetzt ein kompaktes, abgerundetes Pill-Feld statt einer breiten Box
+- Patchnotes lassen sich per Klick auf den gesamten Patch-Header aufklappen — nicht nur auf den kleinen Pfeil
+- 2024-Patches werden nicht mehr angezeigt (nur ab 2025)
+- Hero-Bereich ist kompakter und weniger aufdringlich
+
 ## #23 — SEO und Google-Indexierung verbessert
 
 - Alle Seiten haben jetzt explizite Google-Indexierungs-Direktiven, die Rich Snippets und große Bilder in den Suchergebnissen freischalten

@@ -114,7 +114,10 @@ async function loadPatches() {
     const res = await fetch(API_URL)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const data = await res.json()
-    allPatches = data.patches || []
+    allPatches = (data.patches || []).filter(p => {
+      const year = new Date(p.posted_at).getFullYear()
+      return year >= 2025
+    })
     hideSkeleton()
     renderPatches(allPatches)
   } catch (err) {
@@ -199,12 +202,13 @@ function renderPatches(patches) {
 
   list.innerHTML = patches.map(patch => renderPatchCard(patch)).join('')
 
-  list.querySelectorAll('.patch-card-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const card = btn.closest('.patch-card')
+  list.querySelectorAll('.patch-card-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const card = header.closest('.patch-card')
       const isOpen = card.classList.contains('is-open')
       card.classList.toggle('is-open', !isOpen)
-      btn.setAttribute('aria-expanded', String(!isOpen))
+      const toggle = header.querySelector('.patch-card-toggle')
+      if (toggle) toggle.setAttribute('aria-expanded', String(!isOpen))
     })
   })
 }
