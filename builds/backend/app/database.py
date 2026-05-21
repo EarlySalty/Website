@@ -1,15 +1,38 @@
 import aiosqlite
 import os
+from typing import Any
 
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "deadlock.db")
 DB_PATH = os.getenv("DB_PATH") or DEFAULT_DB_PATH
 
-async def get_db():
-    db = await aiosqlite.connect(DB_PATH)
-    db.row_factory = aiosqlite.Row
-    return db
+_db: aiosqlite.Connection | None = None
+
+
+class _DBProxy:
+    """Proxies aiosqlite.Connection; close() is a no-op to keep the persistent connection alive."""
+    def __init__(self, db: aiosqlite.Connection) -> None:
+        self._db = db
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._db, name)
+
+    async def close(self) -> None:
+        pass
+
+
+async def get_db() -> _DBProxy:
+    return _DBProxy(_db)
+
+
+async def close_db() -> None:
+    global _db
+    if _db:
+        await _db.close()
+        _db = None
+
 
 async def init_db():
+    global _db
     async with aiosqlite.connect(DB_PATH) as db:
         # Meta Heroes
         await db.execute("""
@@ -255,6 +278,11 @@ async def init_db():
         count = (await cursor.fetchone())[0]
         if count == 0:
             await insert_sample_data(db)
+
+    _db = await aiosqlite.connect(DB_PATH)
+    _db.row_factory = aiosqlite.Row
+    await _db.execute("PRAGMA journal_mode=WAL")
+    await _db.execute("PRAGMA synchronous=NORMAL")
 
 async def insert_sample_data(db):
     # Real heroes from deadlockmeta.com with correct tiers and local image paths

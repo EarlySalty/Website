@@ -1,3 +1,9 @@
+## #22 — Backend-Datenbankverbindung auf persistente Verbindung umgestellt
+
+- Die API öffnet jetzt beim Start eine einzelne Datenbankverbindung und behält sie — statt bei jedem Request neu zu verbinden
+- SQLite läuft jetzt im WAL-Modus: Lesen und Schreiben blockieren sich nicht mehr gegenseitig
+- Führt zu merklich schnellerem API-Antwortverhalten bei allen Endpunkten
+
 ## #21 — Logo und Metadaten auf aktuelle Brand-Version gebracht
 
 - Logo (ddc-logo.svg) auf die aktuelle Referenz-Version aus dem Design-System aktualisiert

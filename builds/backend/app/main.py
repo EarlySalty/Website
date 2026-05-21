@@ -3,12 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.routers import auth, heroes, builds, items, tierlists, patchnotes, history, admin, coaching
-from app.database import init_db
+from app.database import init_db, close_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
     yield
+    await close_db()
 
 app = FastAPI(title="Deadlock Meta API", version="0.1.0", lifespan=lifespan)
 
