@@ -1,3 +1,7 @@
+## #25 — Website-Portale jetzt im FAQ-Bot erklärt
+
+- Was Landing, Activity, Patch Notes und Tierlist jeweils können, ist nun zentral dokumentiert — Fragen dazu werden im Discord-FAQ-Bot direkt beantwortet
+
 ## #24 — Patchnotes-Seite: Logo, Design und UX verbessert
 
 - Logo wird jetzt korrekt angezeigt (war zuvor kaputt wegen falschem Asset-Pfad)
