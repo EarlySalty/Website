@@ -1,3 +1,9 @@
+## #28 — Sicherheitslücken behoben, aufgeräumt
+
+- Veraltete Abhängigkeit mit kritischer Sicherheitslücke (fastmcp) entfernt — der zugehörige MCP-Server-Code war nie deployed und gehörte nicht ins Repo
+- bcrypt auf eine aktuelle, sichere Version angehoben (betraf den Turniere-Backend-Code)
+- Fehlerhaftes package.json im Python-Backend entfernt, das nie genutzt wurde und false-positive Sicherheitswarnungen verursachte
+
 ## #27 — KI-Anleitung (llms.txt) + Suchmaschinen-Sofortbenachrichtigung eingerichtet
 
 - Alle Suchmaschinen (Bing, Yandex, DuckDuckGo) wurden sofort über die neuen und geänderten Seiten informiert — statt tagelang auf den nächsten Crawl zu warten
