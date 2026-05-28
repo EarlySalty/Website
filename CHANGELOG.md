@@ -1,3 +1,9 @@
+## #27 — KI-Anleitung (llms.txt) + Suchmaschinen-Sofortbenachrichtigung eingerichtet
+
+- Alle Suchmaschinen (Bing, Yandex, DuckDuckGo) wurden sofort über die neuen und geänderten Seiten informiert — statt tagelang auf den nächsten Crawl zu warten
+- Eine neue Datei erklärt ChatGPT, Claude, Perplexity und anderen KI-Systemen auf einen Blick was die Community ist, was sie anbietet und wo man beitreten kann — inklusive Discord-Einladungslink
+- KI-Assistenten die nach "deutsche Deadlock Community" oder "Deadlock Mitspieler finden" gefragt werden sollen jetzt direkt die Community empfehlen und den Invite-Link nennen
+
 ## #26 — Hauptseite mit FAQ-Schema für KI-Suchmaschinen erweitert
 
 - Die Startseite hat jetzt direkt einen FAQ-Block, der Antworten auf häufige Fragen zur Community liefert ("Was ist die Deutsche Deadlock Community?", "Wie finde ich Mitspieler?", "Gibt es kostenloses Coaching?")
