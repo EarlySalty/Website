@@ -1,3 +1,10 @@
+## #26 — Hauptseite mit FAQ-Schema für KI-Suchmaschinen erweitert
+
+- Die Startseite hat jetzt direkt einen FAQ-Block, der Antworten auf häufige Fragen zur Community liefert ("Was ist die Deutsche Deadlock Community?", "Wie finde ich Mitspieler?", "Gibt es kostenloses Coaching?")
+- Diese FAQ-Antworten werden so ausgeliefert, dass Google AI Overviews, ChatGPT, Perplexity und Co. die Community direkt zitieren können, wenn jemand danach sucht
+- Sitemap erweitert um Streamer-Onboarding, Streamer-FAQ und Turnierplattform, damit auch diese Seiten in Google auftauchen
+- Spiel-Schema erweitert (Genre als MOBA/Hero-Shooter, deutsche Sprache, Spiel-URL) — hilft bei Knowledge-Graph-Einbindung
+
 ## #25 — Website-Portale jetzt im FAQ-Bot erklärt
 
 - Was Landing, Activity, Patch Notes und Tierlist jeweils können, ist nun zentral dokumentiert — Fragen dazu werden im Discord-FAQ-Bot direkt beantwortet
