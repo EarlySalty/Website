@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 
 export default function Layout() {
-  const { user, login, logout, isAdmin } = useAuth()
+  const { user, login, logout, isAdmin, isCoach } = useAuth()
   const location = useLocation()
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/')
@@ -11,6 +11,7 @@ export default function Layout() {
     { to: '/heroes', label: 'Heroes' },
     { to: '/tierlists', label: 'Tier Lists' },
     { to: '/patchnotes', label: 'Patch Notes' },
+    { to: '/coaching', label: 'Coaching' },
   ]
 
   return (
@@ -53,6 +54,20 @@ export default function Layout() {
                   <div className="hidden rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 sm:block">
                     {user.displayName}
                   </div>
+                  <Link
+                    to="/coaching/me"
+                    className="hidden rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/6 hover:text-white sm:block"
+                  >
+                    Mein Coaching
+                  </Link>
+                  {isCoach && (
+                    <Link
+                      to="/coaching/dashboard"
+                      className="rounded-full border border-sky-400/25 bg-sky-400/10 px-4 py-2 text-sm font-semibold text-sky-200 transition hover:bg-sky-400/16"
+                    >
+                      Coach
+                    </Link>
+                  )}
                   {isAdmin && (
                     <Link
                       to="/admin"

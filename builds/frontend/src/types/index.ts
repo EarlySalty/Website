@@ -77,6 +77,7 @@ export interface User {
   displayName: string
   avatarUrl: string
   role: 'user' | 'admin' | 'builder'
+  is_coach?: boolean
 }
 
 export interface TierHistoryEntry {

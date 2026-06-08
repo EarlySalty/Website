@@ -12,6 +12,10 @@ import AdminPage from './pages/AdminPage'
 import LoginPage from './pages/LoginPage'
 import CoachesPage from './pages/CoachesPage'
 import CoachDetailPage from './pages/CoachDetailPage'
+import CoachDashboardPage from './pages/CoachDashboardPage'
+import CoachOverviewPage from './pages/CoachOverviewPage'
+import CoacheeDetailPage from './pages/CoacheeDetailPage'
+import MyCoachingPage from './pages/MyCoachingPage'
 
 export default function App() {
   return (
@@ -36,6 +40,10 @@ export default function App() {
         <Route path="coaching" element={<CoachesPage />} />
         <Route path="coaching/coaches" element={<CoachesPage />} />
         <Route path="coaching/coaches/:id" element={<CoachDetailPage />} />
+        <Route path="coaching/dashboard" element={<CoachDashboardPage />} />
+        <Route path="coaching/overview" element={<CoachOverviewPage />} />
+        <Route path="coaching/coachees/:id" element={<CoacheeDetailPage />} />
+        <Route path="coaching/me" element={<MyCoachingPage />} />
       </Route>
     </Routes>
   )

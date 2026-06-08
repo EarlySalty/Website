@@ -537,7 +537,14 @@ async def my_coaching(request: Request):
         except (ValueError, TypeError):
             return {"profile": None, "goals": [], "notes": [], "sessions": []}
 
-        cur = await db.execute("SELECT * FROM coachees WHERE discord_user_id=?", (discord_id,))
+        # Bewusst KEIN SELECT *: die Spalte coachees.notes ist coach-intern und
+        # hat (anders als session_notes) kein Sichtbarkeits-Gate -> nie an den Spieler geben.
+        cur = await db.execute(
+            """SELECT id, discord_user_id, discord_username, display_name, rank,
+                      main_heroes_json, current_focus, created_at, updated_at
+               FROM coachees WHERE discord_user_id=?""",
+            (discord_id,),
+        )
         coachee = _row(await cur.fetchone())
         if not coachee:
             return {"profile": None, "goals": [], "notes": [], "sessions": []}

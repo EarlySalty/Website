@@ -7,6 +7,7 @@ interface AuthContextType {
   login: () => void
   logout: () => void
   isAdmin: boolean
+  isCoach: boolean
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -52,7 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       login,
       logout,
-      isAdmin: user?.role === 'admin'
+      isAdmin: user?.role === 'admin',
+      isCoach: user?.role === 'admin' || !!user?.is_coach
     }}>
       {children}
     </AuthContext.Provider>

@@ -1,3 +1,15 @@
+## #29 — Coaching-Plattform: Coach- und Spieler-Bereich
+
+**Problem:** Coachings liefen bisher ausschließlich über Discord. Es gab keinen Ort, an dem Coaches sehen konnten, wen sie (und die anderen Coaches) betreut haben oder was noch offen ist, und keine Möglichkeit, pro Spieler Ziele, Meilensteine und Session-Notizen festzuhalten. Gecoachte Spieler hatten gar keine Sicht auf ihren eigenen Fortschritt. Die Website hatte zudem keine Live-Coaching-Daten — die dafür vorgesehene Schnittstelle wurde von keinem Bot-Teil befüllt.
+
+**Geändert:** Es gibt jetzt eine Coaching-Plattform auf der Website mit getrenntem Coach- und Spieler-Bereich, die der Discord-Bot mit Live-Daten füttert. Login wie gewohnt per Discord.
+
+**Wie's funktioniert:**
+- **Für Coaches** (sichtbar, sobald man die Coach-Rolle trägt): ein Dashboard mit der Anfragen-Queue (offen bzw. für dich reserviert) und allen Spielern, mit denen gearbeitet wird; eine Übersicht über die Auslastung aller Coaches und die jüngsten Sessions (wer hat wen gecoacht); und pro Spieler eine Detailseite, auf der sich Ziele mit Meilensteinen anlegen und abhaken lassen sowie Session-Notizen festhalten — jede Notiz wahlweise nur für Coaches oder für den Spieler freigegeben.
+- **Für gecoachte Spieler**: ein eigener Bereich „Mein Coaching" mit dem persönlichen Profil, den gesetzten Zielen samt Fortschritt, den von Coaches geteilten Notizen und der Session-Historie.
+- **Datenfluss**: Der Bot spiegelt jede Statusänderung einer Coaching-Anfrage (analysiert → reserviert → geclaimt → abgeschlossen) per gesichertem Server-zu-Server-Aufruf an die Website. Fällt die Website aus, läuft der Discord-Ablauf unverändert weiter — die Spiegelung ist bewusst „best effort" und blockiert nie.
+- **Sichtbarkeit**: Wer welche Seite sehen darf, entscheidet die Website serverseitig — Coach-Bereiche nur mit aktiver Coach-Rolle, „Mein Coaching" nur für den jeweiligen Spieler. Coach-interne Notizen werden serverseitig herausgefiltert, bevor die Spieler-Sicht überhaupt Daten bekommt.
+
 ## #28 — Sicherheitslücken behoben, aufgeräumt
 
 - Veraltete Abhängigkeit mit kritischer Sicherheitslücke (fastmcp) entfernt — der zugehörige MCP-Server-Code war nie deployed und gehörte nicht ins Repo

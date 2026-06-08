@@ -171,3 +171,168 @@ export const coaching = {
     return request<CoachingRequest[]>(`/coaching/requests${query}`)
   },
 }
+
+// ===== Coaching-Plattform (Coach-/Spieler-Bereich, vom Bot gespiegelt) =====
+
+export interface PlatformCoachStat {
+  id: string
+  display_name: string | null
+  discord_username: string | null
+  active: number
+  completed: number
+  total: number
+}
+
+export interface PlatformRecentSession {
+  id: string
+  status: string
+  started_at: string | null
+  completed_at: string | null
+  discord_username: string | null
+  coachee_id: string | null
+  coachee_display: string | null
+  coach_display: string | null
+}
+
+export interface PlatformQueueRequest {
+  id: string
+  discord_user_id: number
+  discord_username: string | null
+  rank: string | null
+  subrank: string | null
+  hero: string | null
+  games_played: string | null
+  hours_played: string | null
+  availability: string | null
+  current_problems: string | null
+  ai_summary: string | null
+  status: string
+  assigned_coach_id: string | null
+  assigned_coach_username: string | null
+  reserved_until: number | null
+  created_at: string
+  reserved_for_me: boolean
+  is_open: boolean
+}
+
+export interface CoacheeListItem {
+  id: string
+  discord_username: string | null
+  display_name: string | null
+  rank: string | null
+  current_focus: string | null
+  open_goals: number
+  sessions: number
+}
+
+export interface CoacheeProfile {
+  id: string
+  discord_user_id: number
+  discord_username: string | null
+  display_name: string | null
+  rank: string | null
+  main_heroes_json: string | null
+  current_focus: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Milestone {
+  id: string
+  goal_id: string
+  title: string
+  description: string | null
+  achieved: number
+  achieved_at: string | null
+  sort_order: number
+  created_at: string
+}
+
+export interface Goal {
+  id: string
+  coachee_id: string
+  coach_id: string | null
+  session_id: string | null
+  title: string
+  description: string | null
+  status: 'open' | 'active' | 'done' | 'dropped'
+  sort_order: number
+  target_date: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+  milestones: Milestone[]
+}
+
+export interface SessionNote {
+  id: string
+  session_id: string | null
+  coachee_id: string
+  coach_id: string | null
+  content: string
+  visibility: 'coach_only' | 'shared_with_user'
+  created_at: string
+  updated_at: string
+}
+
+export interface PlatformSession {
+  id?: string
+  request_id?: string
+  coach_id?: string | null
+  coachee_id?: string | null
+  discord_user_id?: number
+  discord_username?: string | null
+  status: string
+  started_at: string | null
+  completed_at: string | null
+  coach_display: string | null
+}
+
+export interface CoacheeDetail {
+  profile: CoacheeProfile
+  goals: Goal[]
+  notes: SessionNote[]
+  sessions: PlatformSession[]
+}
+
+export interface MyCoaching {
+  profile: CoacheeProfile | null
+  goals: Goal[]
+  notes: SessionNote[]
+  sessions: PlatformSession[]
+}
+
+export const coachingPlatform = {
+  overview: () =>
+    request<{ coaches: PlatformCoachStat[]; recent_sessions: PlatformRecentSession[] }>(
+      '/coaching/platform/overview'
+    ),
+  queue: () => request<{ requests: PlatformQueueRequest[] }>('/coaching/platform/queue'),
+  listCoachees: () => request<{ coachees: CoacheeListItem[] }>('/coaching/platform/coachees'),
+  getCoachee: (id: string) => request<CoacheeDetail>(`/coaching/platform/coachees/${id}`),
+  updateCoachee: (
+    id: string,
+    data: Partial<Pick<CoacheeProfile, 'display_name' | 'rank' | 'main_heroes_json' | 'current_focus' | 'notes'>>
+  ) => request(`/coaching/platform/coachees/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  createGoal: (coacheeId: string, data: { title: string; description?: string; target_date?: string; session_id?: string }) =>
+    request<{ id: string }>(`/coaching/platform/coachees/${coacheeId}/goals`, { method: 'POST', body: JSON.stringify(data) }),
+  updateGoal: (goalId: string, data: { title?: string; description?: string; status?: string; sort_order?: number; target_date?: string }) =>
+    request(`/coaching/platform/goals/${goalId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteGoal: (goalId: string) => request(`/coaching/platform/goals/${goalId}`, { method: 'DELETE' }),
+
+  createMilestone: (goalId: string, data: { title: string; description?: string }) =>
+    request<{ id: string }>(`/coaching/platform/goals/${goalId}/milestones`, { method: 'POST', body: JSON.stringify(data) }),
+  updateMilestone: (milestoneId: string, data: { title?: string; achieved?: boolean; sort_order?: number }) =>
+    request(`/coaching/platform/milestones/${milestoneId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteMilestone: (milestoneId: string) => request(`/coaching/platform/milestones/${milestoneId}`, { method: 'DELETE' }),
+
+  createNote: (coacheeId: string, data: { content: string; visibility?: string; session_id?: string }) =>
+    request<{ id: string }>(`/coaching/platform/coachees/${coacheeId}/notes`, { method: 'POST', body: JSON.stringify(data) }),
+  updateNote: (noteId: string, data: { content?: string; visibility?: string }) =>
+    request(`/coaching/platform/notes/${noteId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteNote: (noteId: string) => request(`/coaching/platform/notes/${noteId}`, { method: 'DELETE' }),
+
+  me: () => request<MyCoaching>('/coaching/platform/me'),
+}
