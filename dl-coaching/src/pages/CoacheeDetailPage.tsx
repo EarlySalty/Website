@@ -8,17 +8,31 @@ import SessionStatusBadge from '@/components/SessionStatusBadge'
 const fmtDate = (s: string | null | undefined) =>
   s ? new Date(s).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-const GOAL_STATUS: Record<string, { label: string; cls: string }> = {
-  open: { label: 'Offen', cls: 'bg-slate-500/15 text-slate-300' },
-  active: { label: 'Aktiv', cls: 'bg-sky-400/15 text-sky-300' },
-  done: { label: 'Erreicht', cls: 'bg-emerald-400/15 text-emerald-300' },
-  dropped: { label: 'Verworfen', cls: 'bg-rose-400/15 text-rose-300' },
+const GOAL_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  open:    { label: 'Offen',     color: 'var(--text-secondary)', bg: 'var(--bg-raised)' },
+  active:  { label: 'Aktiv',     color: 'var(--sky)',            bg: 'rgba(56,189,248,0.10)' },
+  done:    { label: 'Erreicht',  color: 'var(--green)',          bg: 'rgba(34,197,94,0.10)' },
+  dropped: { label: 'Verworfen', color: 'var(--red)',            bg: 'rgba(239,68,68,0.10)' },
 }
 
 function Spinner() {
   return (
     <div className="flex items-center justify-center min-h-[50vh]">
-      <div className="animate-spin h-8 w-8 rounded-full border-2 border-accent-violet border-t-transparent" />
+      <div className="spinner h-8 w-8" />
+    </div>
+  )
+}
+
+function SectionHead({ label }: { label: string }) {
+  return (
+    <div className="mb-4 flex items-center gap-3">
+      <span
+        className="text-xs font-semibold uppercase tracking-[0.2em]"
+        style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}
+      >
+        // {label}
+      </span>
+      <div className="flex-1 divider" />
     </div>
   )
 }
@@ -39,20 +53,34 @@ function MilestoneRow({ milestone, coacheeId }: { milestone: Milestone; coacheeI
     <li className="flex items-center gap-3 py-1.5">
       <button
         onClick={() => toggle.mutate()}
-        className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border text-xs transition ${
-          done ? 'border-emerald-400/50 bg-emerald-400/20 text-emerald-300' : 'border-white/20 text-transparent hover:border-white/40'
-        }`}
+        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-sm text-xs transition"
+        style={{
+          border: done ? '1px solid rgba(34,197,94,0.5)' : '1px solid var(--border-medium)',
+          background: done ? 'rgba(34,197,94,0.15)' : 'transparent',
+          color: done ? 'var(--green)' : 'transparent',
+        }}
         aria-label={done ? 'Als offen markieren' : 'Als erreicht markieren'}
       >
         ✓
       </button>
-      <span className={`flex-1 text-sm ${done ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
+      <span
+        className="flex-1 text-sm"
+        style={{
+          color: done ? 'var(--text-muted)' : 'var(--text-secondary)',
+          textDecoration: done ? 'line-through' : 'none',
+        }}
+      >
         {milestone.title}
       </span>
-      {milestone.achieved_at && <span className="text-xs text-slate-500">{fmtDate(milestone.achieved_at)}</span>}
+      {milestone.achieved_at && (
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(milestone.achieved_at)}</span>
+      )}
       <button
         onClick={() => remove.mutate()}
-        className="text-xs text-slate-500 transition hover:text-rose-300"
+        className="text-xs transition"
+        style={{ color: 'var(--text-muted)' }}
+        onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
         aria-label="Meilenstein löschen"
       >
         ✕
@@ -84,60 +112,91 @@ function GoalCard({ goal, coacheeId }: { goal: Goal; coacheeId: string }) {
 
   const status = GOAL_STATUS[goal.status] ?? GOAL_STATUS.open
   const reached = goal.milestones.filter((m) => m.achieved).length
+  const pct = goal.milestones.length > 0 ? Math.round((reached / goal.milestones.length) * 100) : 0
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#0c1017] p-5">
+    <div className="rounded-sm p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-dim)' }}>
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-white">{goal.title}</h4>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.cls}`}>{status.label}</span>
+            <h4
+              className="font-bold text-white"
+              style={{ fontFamily: "'Rajdhani', sans-serif', fontSize: '15px', letterSpacing: '0.04em'" }}
+            >
+              {goal.title}
+            </h4>
+            <span
+              className="flex-shrink-0 rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+              style={{ color: status.color, background: status.bg, fontFamily: "'Rajdhani', sans-serif" }}
+            >
+              {status.label}
+            </span>
           </div>
-          {goal.description && <p className="mt-1 text-sm text-slate-400">{goal.description}</p>}
+          {goal.description && (
+            <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>{goal.description}</p>
+          )}
           {goal.target_date && (
-            <p className="mt-1 text-xs text-slate-500">Ziel bis {fmtDate(goal.target_date)}</p>
+            <p className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+              Ziel bis {fmtDate(goal.target_date)}
+            </p>
           )}
         </div>
         <button
           onClick={() => remove.mutate()}
-          className="flex-shrink-0 text-xs text-slate-500 transition hover:text-rose-300"
+          className="flex-shrink-0 text-xs transition"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
         >
           Löschen
         </button>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        {(['open', 'active', 'done', 'dropped'] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatus.mutate(s)}
-            disabled={goal.status === s}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              goal.status === s
-                ? `${GOAL_STATUS[s].cls} cursor-default`
-                : 'border border-white/10 text-slate-400 hover:bg-white/5 hover:text-white'
-            }`}
-          >
-            {GOAL_STATUS[s].label}
-          </button>
-        ))}
+      {/* Status buttons */}
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {(['open', 'active', 'done', 'dropped'] as const).map((s) => {
+          const active = goal.status === s
+          return (
+            <button
+              key={s}
+              onClick={() => setStatus.mutate(s)}
+              disabled={active}
+              className="rounded-sm px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition"
+              style={{
+                fontFamily: "'Rajdhani', sans-serif",
+                color: active ? GOAL_STATUS[s].color : 'var(--text-muted)',
+                background: active ? GOAL_STATUS[s].bg : 'transparent',
+                border: active ? `1px solid ${GOAL_STATUS[s].color}44` : '1px solid var(--border-dim)',
+                cursor: active ? 'default' : 'pointer',
+              }}
+            >
+              {GOAL_STATUS[s].label}
+            </button>
+          )
+        })}
       </div>
 
-      <div className="mt-4 border-t border-white/5 pt-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Meilensteine</span>
+      {/* Milestones */}
+      <div className="mt-4 pt-3" style={{ borderTop: '1px solid var(--border-dim)' }}>
+        <div className="mb-2 flex items-center justify-between">
+          <span className="stat-label">Meilensteine</span>
           {goal.milestones.length > 0 && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs font-bold" style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}>
               {reached}/{goal.milestones.length}
             </span>
           )}
         </div>
         {goal.milestones.length > 0 && (
-          <ul className="mt-1 divide-y divide-white/5">
-            {goal.milestones.map((m) => (
-              <MilestoneRow key={m.id} milestone={m} coacheeId={coacheeId} />
-            ))}
-          </ul>
+          <>
+            <div className="mb-2 h-1 overflow-hidden rounded-full" style={{ background: 'var(--border-medium)' }}>
+              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'var(--amber)' }} />
+            </div>
+            <ul className="divide-y" style={{ borderColor: 'var(--border-dim)' }}>
+              {goal.milestones.map((m) => (
+                <MilestoneRow key={m.id} milestone={m} coacheeId={coacheeId} />
+              ))}
+            </ul>
+          </>
         )}
         <form
           className="mt-2 flex gap-2"
@@ -150,12 +209,13 @@ function GoalCard({ goal, coacheeId }: { goal: Goal; coacheeId: string }) {
             value={newMilestone}
             onChange={(e) => setNewMilestone(e.target.value)}
             placeholder="Neuer Meilenstein…"
-            className="flex-1 rounded-lg border border-white/10 bg-[#080a10] px-3 py-1.5 text-sm text-white placeholder:text-slate-600 focus:border-accent-violet/50 focus:outline-none"
+            className="input-field flex-1"
           />
           <button
             type="submit"
             disabled={!newMilestone.trim() || addMilestone.isPending}
-            className="rounded-lg bg-white/5 px-3 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 disabled:opacity-50"
+            className="rounded-sm px-3 py-2 text-sm font-semibold transition disabled:opacity-50"
+            style={{ background: 'var(--bg-raised)', border: '1px solid var(--border-soft)', color: 'var(--text-secondary)' }}
           >
             +
           </button>
@@ -179,26 +239,42 @@ function NoteItem({ note, coacheeId }: { note: SessionNote; coacheeId: string })
     onSuccess: invalidate,
   })
   return (
-    <div className="rounded-lg border border-white/10 bg-[#0c1017] p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-slate-500">{fmtDate(note.created_at)}</span>
+    <div className="rounded-sm p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-dim)' }}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(note.created_at)}</span>
         <div className="flex items-center gap-2">
           <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-              shared ? 'bg-emerald-400/15 text-emerald-300' : 'bg-slate-500/15 text-slate-400'
-            }`}
+            className="rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              color: shared ? 'var(--green)' : 'var(--text-muted)',
+              background: shared ? 'rgba(34,197,94,0.10)' : 'var(--bg-raised)',
+              border: `1px solid ${shared ? 'rgba(34,197,94,0.24)' : 'var(--border-dim)'}`,
+            }}
           >
-            {shared ? 'Für Spieler sichtbar' : 'Nur Coaches'}
+            {shared ? 'Sichtbar' : 'Privat'}
           </span>
-          <button onClick={() => toggle.mutate()} className="text-xs text-slate-400 transition hover:text-white">
+          <button
+            onClick={() => toggle.mutate()}
+            className="text-xs transition"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
             {shared ? 'Verbergen' : 'Teilen'}
           </button>
-          <button onClick={() => remove.mutate()} className="text-xs text-slate-500 transition hover:text-rose-300">
+          <button
+            onClick={() => remove.mutate()}
+            className="text-xs transition"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
             ✕
           </button>
         </div>
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">{note.content}</p>
+      <p className="mt-2 whitespace-pre-wrap text-sm" style={{ color: 'var(--text-secondary)' }}>{note.content}</p>
     </div>
   )
 }
@@ -224,11 +300,7 @@ export default function CoacheeDetailPage() {
   const addGoal = useMutation({
     mutationFn: () =>
       coachingPlatform.createGoal(id!, { title: goalTitle.trim(), description: goalDesc.trim() || undefined }),
-    onSuccess: () => {
-      setGoalTitle('')
-      setGoalDesc('')
-      invalidate()
-    },
+    onSuccess: () => { setGoalTitle(''); setGoalDesc(''); invalidate() },
   })
   const addNote = useMutation({
     mutationFn: () =>
@@ -236,29 +308,20 @@ export default function CoacheeDetailPage() {
         content: noteText.trim(),
         visibility: noteShared ? 'shared_with_user' : 'coach_only',
       }),
-    onSuccess: () => {
-      setNoteText('')
-      setNoteShared(false)
-      invalidate()
-    },
+    onSuccess: () => { setNoteText(''); setNoteShared(false); invalidate() },
   })
   const saveFocus = useMutation({
     mutationFn: (focus: string) => coachingPlatform.updateCoachee(id!, { current_focus: focus }),
-    onSuccess: () => {
-      setEditFocus(null)
-      invalidate()
-    },
+    onSuccess: () => { setEditFocus(null); invalidate() },
   })
 
   if (authLoading) return <Spinner />
 
   if (!isCoach) {
     return (
-      <div className="content-grid py-10">
-        <p className="text-slate-400">Dieser Bereich ist Coaches vorbehalten.</p>
-        <Link to="/" className="mt-4 inline-block text-accent-violet hover:underline">
-          ← Zu den Coaches
-        </Link>
+      <div className="content-grid py-12">
+        <p style={{ color: 'var(--text-muted)' }}>Dieser Bereich ist Coaches vorbehalten.</p>
+        <Link to="/" className="mt-4 inline-block text-sm" style={{ color: 'var(--amber)' }}>← Zu den Coaches</Link>
       </div>
     )
   }
@@ -267,11 +330,9 @@ export default function CoacheeDetailPage() {
 
   if (!data?.profile) {
     return (
-      <div className="content-grid py-10">
-        <p className="text-slate-400">Spieler nicht gefunden.</p>
-        <Link to="/dashboard" className="mt-4 inline-block text-accent-violet hover:underline">
-          ← Zum Dashboard
-        </Link>
+      <div className="content-grid py-12">
+        <p style={{ color: 'var(--text-muted)' }}>Spieler nicht gefunden.</p>
+        <Link to="/dashboard" className="mt-4 inline-block text-sm" style={{ color: 'var(--amber)' }}>← Dashboard</Link>
       </div>
     )
   }
@@ -280,64 +341,82 @@ export default function CoacheeDetailPage() {
   const name = profile.display_name || profile.discord_username || 'Spieler'
 
   return (
-    <div className="content-grid py-10 md:py-14">
-      <Link to="/dashboard" className="mb-6 inline-block text-sm text-slate-400 hover:text-white">
-        ← Zum Dashboard
+    <div className="content-grid py-12 md:py-16">
+      <Link to="/dashboard" className="mb-6 inline-block text-sm transition" style={{ color: 'var(--text-muted)' }}>
+        ← Dashboard
       </Link>
 
-      {/* Profil-Kopf */}
-      <div className="rounded-xl border border-white/10 bg-[#0c1017] p-6">
+      {/* Profil */}
+      <div className="mb-10 rounded-sm p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-soft)' }}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">{name}</h1>
-            {profile.discord_username && <p className="text-slate-400">@{profile.discord_username}</p>}
-            <div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-400">
-              <span>Rang: {profile.rank || '—'}</span>
-              <span>·</span>
-              <span>{sessions.length} Sessions</span>
+            <h1
+              className="text-2xl font-bold text-white"
+              style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em' }}
+            >
+              {name}
+            </h1>
+            {profile.discord_username && (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>@{profile.discord_username}</p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-6">
+              {profile.rank && (
+                <div>
+                  <p className="stat-label mb-0.5">Rang</p>
+                  <p className="text-sm text-white">{profile.rank}</p>
+                </div>
+              )}
+              <div>
+                <p className="stat-label mb-0.5">Sessions</p>
+                <p className="stat-value">{sessions.length}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-5 border-t border-white/10 pt-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-wider text-slate-500">Aktueller Fokus</span>
+        <div className="mt-5 pt-4" style={{ borderTop: '1px solid var(--border-dim)' }}>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="stat-label">Aktueller Fokus</span>
             {editFocus === null && (
               <button
                 onClick={() => setEditFocus(profile.current_focus || '')}
-                className="text-xs text-slate-400 transition hover:text-white"
+                className="text-xs transition"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--amber)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
               >
                 Bearbeiten
               </button>
             )}
           </div>
           {editFocus === null ? (
-            <p className="mt-1 text-sm text-slate-200">{profile.current_focus || 'Noch kein Fokus gesetzt.'}</p>
+            <p className="text-sm" style={{ color: profile.current_focus ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+              {profile.current_focus || 'Noch kein Fokus gesetzt.'}
+            </p>
           ) : (
             <form
-              className="mt-2 flex gap-2"
-              onSubmit={(e) => {
-                e.preventDefault()
-                saveFocus.mutate(editFocus)
-              }}
+              className="flex gap-2"
+              onSubmit={(e) => { e.preventDefault(); saveFocus.mutate(editFocus) }}
             >
               <input
                 value={editFocus}
                 onChange={(e) => setEditFocus(e.target.value)}
                 autoFocus
                 placeholder="z. B. Lane-Phase, Map-Awareness…"
-                className="flex-1 rounded-lg border border-white/10 bg-[#080a10] px-3 py-1.5 text-sm text-white placeholder:text-slate-600 focus:border-accent-violet/50 focus:outline-none"
+                className="input-field flex-1"
               />
               <button
                 type="submit"
-                className="rounded-lg bg-accent-violet px-3 py-1.5 text-sm font-medium text-white transition hover:bg-accent-violet/80"
+                className="rounded-sm px-3 py-2 text-sm font-semibold text-white transition"
+                style={{ background: 'var(--amber)', color: '#060810' }}
               >
                 Speichern
               </button>
               <button
                 type="button"
                 onClick={() => setEditFocus(null)}
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-400 transition hover:text-white"
+                className="rounded-sm px-3 py-2 text-sm transition"
+                style={{ border: '1px solid var(--border-soft)', color: 'var(--text-secondary)' }}
               >
                 Abbrechen
               </button>
@@ -346,119 +425,131 @@ export default function CoacheeDetailPage() {
         </div>
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         {/* Ziele */}
         <section>
-          <h2 className="mb-4 text-xl font-semibold text-white">Ziele & Meilensteine</h2>
+          <SectionHead label="Ziele & Meilensteine" />
 
           <form
-            className="mb-4 space-y-2 rounded-xl border border-white/10 bg-[#0c1017] p-4"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (goalTitle.trim()) addGoal.mutate()
-            }}
+            className="mb-4 space-y-2 rounded-sm p-4"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-dim)' }}
+            onSubmit={(e) => { e.preventDefault(); if (goalTitle.trim()) addGoal.mutate() }}
           >
             <input
               value={goalTitle}
               onChange={(e) => setGoalTitle(e.target.value)}
               placeholder="Neues Ziel…"
-              className="w-full rounded-lg border border-white/10 bg-[#080a10] px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-accent-violet/50 focus:outline-none"
+              className="input-field w-full"
             />
             <input
               value={goalDesc}
               onChange={(e) => setGoalDesc(e.target.value)}
               placeholder="Beschreibung (optional)"
-              className="w-full rounded-lg border border-white/10 bg-[#080a10] px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-accent-violet/50 focus:outline-none"
+              className="input-field w-full"
             />
             <button
               type="submit"
               disabled={!goalTitle.trim() || addGoal.isPending}
-              className="rounded-lg bg-accent-violet px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-violet/80 disabled:opacity-50"
+              className="rounded-sm px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50"
+              style={{ background: 'var(--amber)', color: '#060810' }}
             >
               Ziel hinzufügen
             </button>
           </form>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {goals.length > 0 ? (
               goals.map((g) => <GoalCard key={g.id} goal={g} coacheeId={id!} />)
             ) : (
-              <p className="rounded-xl border border-white/10 bg-[#0c1017] p-6 text-center text-sm text-slate-500">
-                Noch keine Ziele.
+              <p
+                className="rounded-sm p-6 text-center text-xs uppercase tracking-wider"
+                style={{ border: '1px solid var(--border-dim)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontFamily: "'Rajdhani', sans-serif" }}
+              >
+                Noch keine Ziele
               </p>
             )}
           </div>
         </section>
 
         {/* Notizen */}
-        <section>
-          <h2 className="mb-4 text-xl font-semibold text-white">Session-Notizen</h2>
+        <div className="space-y-8">
+          <section>
+            <SectionHead label="Session-Notizen" />
 
-          <form
-            className="mb-4 space-y-2 rounded-xl border border-white/10 bg-[#0c1017] p-4"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (noteText.trim()) addNote.mutate()
-            }}
-          >
-            <textarea
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              rows={3}
-              placeholder="Was lief in der Session, was üben…"
-              className="w-full resize-y rounded-lg border border-white/10 bg-[#080a10] px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-accent-violet/50 focus:outline-none"
-            />
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-slate-400">
-                <input
-                  type="checkbox"
-                  checked={noteShared}
-                  onChange={(e) => setNoteShared(e.target.checked)}
-                  className="h-4 w-4 rounded border-white/20 bg-[#080a10]"
-                />
-                Für Spieler sichtbar
-              </label>
-              <button
-                type="submit"
-                disabled={!noteText.trim() || addNote.isPending}
-                className="rounded-lg bg-accent-violet px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-violet/80 disabled:opacity-50"
-              >
-                Notiz speichern
-              </button>
-            </div>
-          </form>
-
-          <div className="space-y-3">
-            {notes.length > 0 ? (
-              notes.map((n) => <NoteItem key={n.id} note={n} coacheeId={id!} />)
-            ) : (
-              <p className="rounded-xl border border-white/10 bg-[#0c1017] p-6 text-center text-sm text-slate-500">
-                Noch keine Notizen.
-              </p>
-            )}
-          </div>
-
-          {/* Session-Historie */}
-          <h2 className="mb-4 mt-8 text-xl font-semibold text-white">Sessions</h2>
-          <div className="space-y-2">
-            {sessions.length > 0 ? (
-              sessions.map((s, i) => (
-                <div
-                  key={s.id ?? i}
-                  className="flex items-center justify-between rounded-lg border border-white/10 bg-[#0c1017] px-4 py-3 text-sm"
+            <form
+              className="mb-4 space-y-2 rounded-sm p-4"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-dim)' }}
+              onSubmit={(e) => { e.preventDefault(); if (noteText.trim()) addNote.mutate() }}
+            >
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                rows={3}
+                placeholder="Was lief in der Session, was üben…"
+                className="input-field w-full resize-y"
+              />
+              <div className="flex items-center justify-between">
+                <label className="flex cursor-pointer items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <input
+                    type="checkbox"
+                    checked={noteShared}
+                    onChange={(e) => setNoteShared(e.target.checked)}
+                    className="h-4 w-4 rounded-sm"
+                    style={{ accentColor: 'var(--amber)' }}
+                  />
+                  Für Spieler sichtbar
+                </label>
+                <button
+                  type="submit"
+                  disabled={!noteText.trim() || addNote.isPending}
+                  className="rounded-sm px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
+                  style={{ background: 'var(--amber)', color: '#060810' }}
                 >
-                  <span className="text-slate-300">{s.coach_display || 'Coach'}</span>
-                  <span className="text-slate-500">{fmtDate(s.started_at)}</span>
-                  <SessionStatusBadge status={s.status} />
-                </div>
-              ))
-            ) : (
-              <p className="rounded-xl border border-white/10 bg-[#0c1017] p-6 text-center text-sm text-slate-500">
-                Noch keine Sessions.
-              </p>
-            )}
-          </div>
-        </section>
+                  Speichern
+                </button>
+              </div>
+            </form>
+
+            <div className="space-y-2">
+              {notes.length > 0 ? (
+                notes.map((n) => <NoteItem key={n.id} note={n} coacheeId={id!} />)
+              ) : (
+                <p
+                  className="rounded-sm p-5 text-center text-xs uppercase tracking-wider"
+                  style={{ border: '1px solid var(--border-dim)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontFamily: "'Rajdhani', sans-serif" }}
+                >
+                  Noch keine Notizen
+                </p>
+              )}
+            </div>
+          </section>
+
+          <section>
+            <SectionHead label="Session-Log" />
+            <div className="space-y-2">
+              {sessions.length > 0 ? (
+                sessions.map((s, i) => (
+                  <div
+                    key={s.id ?? i}
+                    className="flex items-center justify-between rounded-sm px-4 py-3 text-sm"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-dim)' }}
+                  >
+                    <span style={{ color: 'var(--text-secondary)' }}>{s.coach_display || 'Coach'}</span>
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(s.started_at)}</span>
+                    <SessionStatusBadge status={s.status} />
+                  </div>
+                ))
+              ) : (
+                <p
+                  className="rounded-sm p-5 text-center text-xs uppercase tracking-wider"
+                  style={{ border: '1px solid var(--border-dim)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontFamily: "'Rajdhani', sans-serif" }}
+                >
+                  Noch keine Sessions
+                </p>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   )

@@ -3,20 +3,35 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #06070b;
-  --bg-secondary: #0e1118;
-  --bg-tertiary: #161a24;
-  --bg-card: rgba(20, 24, 34, 0.88);
-  --border-soft: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --text-primary: #f4f7fb;
-  --text-secondary: #96a1b5;
-  --text-muted: #667086;
-  --accent-cyan: #77d5ff;
-  --accent-violet: #7c6cff;
-  --accent-gold: #ffc95f;
-  --accent-green: #72e7a3;
-  --shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.38);
+  --bg-base:    #060810;
+  --bg-surface: #0b0e1a;
+  --bg-card:    #0e1220;
+  --bg-raised:  #131828;
+
+  --border-dim:    rgba(255, 255, 255, 0.06);
+  --border-soft:   rgba(255, 255, 255, 0.10);
+  --border-medium: rgba(255, 255, 255, 0.16);
+
+  --text-primary:   #eef1f8;
+  --text-secondary: #8b95af;
+  --text-muted:     #4e5872;
+
+  /* Soul amber — Deadlock's primary resource energy */
+  --amber:        #e8953a;
+  --amber-light:  #f5b44a;
+  --amber-glow:   rgba(232, 149, 58, 0.14);
+  --amber-border: rgba(232, 149, 58, 0.32);
+
+  /* Violet — secondary accent */
+  --violet:      #7562f8;
+  --violet-glow: rgba(117, 98, 248, 0.14);
+
+  --green: #22c55e;
+  --red:   #ef4444;
+  --sky:   #38bdf8;
+
+  --shadow-card:       0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-glow-amber: 0 0 28px rgba(232, 149, 58, 0.18);
 }
 
 * {
@@ -26,22 +41,19 @@
 }
 
 html {
-  background:
-    radial-gradient(circle at top, rgba(124, 108, 255, 0.16), transparent 24rem),
-    radial-gradient(circle at 20% 20%, rgba(119, 213, 255, 0.12), transparent 22rem),
-    linear-gradient(180deg, #080910 0%, #06070b 100%);
+  background: var(--bg-base);
+  scroll-behavior: smooth;
 }
 
 body {
   color: var(--text-primary);
-  font-family: "Segoe UI", "Trebuchet MS", "Helvetica Neue", Arial, sans-serif;
+  font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
   line-height: 1.6;
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(9, 11, 17, 0.18), rgba(9, 11, 17, 0.18)),
-    radial-gradient(circle at top, rgba(124, 108, 255, 0.09), transparent 30rem),
-    radial-gradient(circle at bottom right, rgba(119, 213, 255, 0.09), transparent 24rem),
-    var(--bg-primary);
+    radial-gradient(ellipse 60% 40% at 50% -10%, rgba(117, 98, 248, 0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 100% 80%, rgba(232, 149, 58, 0.06) 0%, transparent 60%),
+    var(--bg-base);
 }
 
 #root {
@@ -55,10 +67,7 @@ a {
   text-decoration: none;
 }
 
-button,
-input,
-textarea,
-select {
+button, input, textarea, select {
   font: inherit;
 }
 
@@ -68,11 +77,13 @@ img {
 }
 
 ::selection {
-  background: rgba(124, 108, 255, 0.32);
+  background: rgba(232, 149, 58, 0.28);
   color: var(--text-primary);
 }
 
 @layer components {
+
+  /* ── Page Shell ───────────────────────────────── */
   .page-shell {
     @apply relative overflow-hidden;
   }
@@ -83,43 +94,175 @@ img {
     inset: 0;
     pointer-events: none;
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
-    background-size: 52px 52px;
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.46), transparent 96%);
+      linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,0.5), transparent 80%);
     z-index: 0;
   }
 
+  /* ── Grid Container ──────────────────────────── */
   .content-grid {
-    @apply relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    @apply relative z-10 mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
   }
 
-  .glass-panel {
-    background: linear-gradient(180deg, rgba(20, 24, 34, 0.92), rgba(12, 15, 22, 0.9));
-    border: 1px solid var(--border-soft);
-    box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(16px);
-  }
-
+  /* ── Section Heading ─────────────────────────── */
   .section-title {
-    @apply text-2xl font-semibold tracking-tight text-white md:text-3xl;
+    font-family: 'Rajdhani', sans-serif;
+    @apply text-3xl font-bold tracking-wide text-white md:text-4xl;
   }
 
   .section-copy {
     color: var(--text-secondary);
+    @apply text-sm leading-relaxed;
   }
 
+  /* ── Eyebrow Label ───────────────────────────── */
   .eyebrow {
-    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em];
-    background: rgba(124, 108, 255, 0.14);
-    border: 1px solid rgba(124, 108, 255, 0.28);
-    color: #c9c1ff;
+    font-family: 'Rajdhani', sans-serif;
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em];
+    color: var(--amber);
+  }
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 2px;
+    background: var(--amber);
+    border-radius: 1px;
+    flex-shrink: 0;
   }
 
-  .hero-card {
-    @apply rounded-[1.35rem] p-3 transition duration-200 hover:-translate-y-1;
-    background: linear-gradient(180deg, rgba(18, 22, 31, 0.96), rgba(11, 14, 20, 0.94));
+  /* ── Card Base ───────────────────────────────── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .card-hover:hover {
+    border-color: var(--amber-border);
+    box-shadow: var(--shadow-glow-amber);
+  }
+
+  /* ── Coach Card (amber left strip on hover) ──── */
+  .coach-card {
+    @apply card card-hover relative block p-5 overflow-hidden;
+  }
+  .coach-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--amber), transparent 80%);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .coach-card:hover::before {
+    opacity: 1;
+  }
+
+  /* ── Stat Block ──────────────────────────────── */
+  .stat-label {
+    font-family: 'Rajdhani', sans-serif;
+    @apply text-xs font-semibold uppercase tracking-[0.18em];
+    color: var(--text-muted);
+  }
+  .stat-value {
+    font-family: 'Rajdhani', sans-serif;
+    @apply text-xl font-bold;
+    color: var(--amber);
+  }
+
+  /* ── Badge / Pill ────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-semibold uppercase tracking-wide;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .badge-open {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--green);
+    border: 1px solid rgba(34, 197, 94, 0.24);
+  }
+  .badge-reserved {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--sky);
+    border: 1px solid rgba(56, 189, 248, 0.24);
+  }
+  .badge-completed {
+    background: rgba(117, 98, 248, 0.12);
+    color: var(--violet);
+    border: 1px solid rgba(117, 98, 248, 0.24);
+  }
+  .badge-amber {
+    background: var(--amber-glow);
+    color: var(--amber);
+    border: 1px solid var(--amber-border);
+  }
+
+  /* ── Input ───────────────────────────────────── */
+  .input-field {
+    background: var(--bg-surface);
     border: 1px solid var(--border-soft);
-    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.26);
+    border-radius: 6px;
+    color: var(--text-primary);
+    @apply px-4 py-2 text-sm outline-none transition;
+  }
+  .input-field::placeholder {
+    color: var(--text-muted);
+  }
+  .input-field:focus {
+    border-color: var(--amber-border);
+    box-shadow: 0 0 0 3px rgba(232, 149, 58, 0.08);
+  }
+
+  /* ── Spinner ─────────────────────────────────── */
+  .spinner {
+    @apply animate-spin rounded-full;
+    border: 2px solid var(--border-medium);
+    border-top-color: var(--amber);
+  }
+
+  /* ── Divider ─────────────────────────────────── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-soft) 30%, var(--border-soft) 70%, transparent);
+  }
+
+  /* ── Rating bar (10 segments) ────────────────── */
+  .rating-bar {
+    @apply flex gap-0.5;
+  }
+  .rating-segment {
+    height: 3px;
+    flex: 1;
+    border-radius: 2px;
+    background: var(--border-medium);
+  }
+  .rating-segment.on {
+    background: var(--amber);
+  }
+
+  /* ── Staggered load animation ────────────────── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in {
+    animation: fadeInUp 0.35s ease-out forwards;
+    opacity: 0;
+  }
+
+  /* ── Pulse dot (active status) ───────────────── */
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.35; }
+  }
+  .pulse-dot {
+    @apply h-2 w-2 rounded-full;
+    animation: pulse-dot 1.8s ease-in-out infinite;
   }
 }

@@ -11,22 +11,41 @@ const fmtDate = (s: string | null) =>
 function SessionRow({ s }: { s: PlatformRecentSession }) {
   const coachee = s.coachee_display || s.discord_username || 'Spieler'
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-[#0c1017] px-4 py-3 text-sm">
+    <div
+      className="flex flex-wrap items-center justify-between gap-3 rounded-sm px-4 py-3 text-sm"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-dim)' }}
+    >
       <div className="flex items-center gap-2">
-        <span className="font-medium text-white">{s.coach_display || 'Coach'}</span>
-        <span className="text-slate-500">→</span>
+        <span className="font-semibold text-white" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
+          {s.coach_display || 'Coach'}
+        </span>
+        <span style={{ color: 'var(--text-muted)' }}>→</span>
         {s.coachee_id ? (
-          <Link to={`/coachees/${s.coachee_id}`} className="text-accent-violet hover:underline">
+          <Link to={`/coachees/${s.coachee_id}`} style={{ color: 'var(--amber)' }}>
             {coachee}
           </Link>
         ) : (
-          <span className="text-slate-300">{coachee}</span>
+          <span style={{ color: 'var(--text-secondary)' }}>{coachee}</span>
         )}
       </div>
       <div className="flex items-center gap-3">
         <SessionStatusBadge status={s.status} />
-        <span className="text-slate-500">{fmtDate(s.started_at)}</span>
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{fmtDate(s.started_at)}</span>
       </div>
+    </div>
+  )
+}
+
+function SectionHead({ label }: { label: string }) {
+  return (
+    <div className="mb-4 flex items-center gap-3">
+      <span
+        className="text-xs font-semibold uppercase tracking-[0.2em]"
+        style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}
+      >
+        // {label}
+      </span>
+      <div className="flex-1 divider" />
     </div>
   )
 }
@@ -42,16 +61,16 @@ export default function CoachOverviewPage() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin h-8 w-8 rounded-full border-2 border-accent-violet border-t-transparent" />
+        <div className="spinner h-8 w-8" />
       </div>
     )
   }
 
   if (!isCoach) {
     return (
-      <div className="content-grid py-10">
-        <p className="text-slate-400">Dieser Bereich ist Coaches vorbehalten.</p>
-        <Link to="/" className="mt-4 inline-block text-accent-violet hover:underline">
+      <div className="content-grid py-12">
+        <p style={{ color: 'var(--text-muted)' }}>Dieser Bereich ist Coaches vorbehalten.</p>
+        <Link to="/" className="mt-4 inline-block text-sm" style={{ color: 'var(--amber)' }}>
           ← Zu den Coaches
         </Link>
       </div>
@@ -62,61 +81,79 @@ export default function CoachOverviewPage() {
   const recent = data?.recent_sessions ?? []
 
   return (
-    <div className="content-grid py-10 md:py-14">
-      <span className="eyebrow">Coaching</span>
-      <h1 className="section-title mt-4">Übersicht</h1>
-      <p className="section-copy mt-2 max-w-2xl">
-        Auslastung aller Coaches und die jüngsten Sessions — wer hat wen gecoacht.
-      </p>
-
-      <div className="mt-8">
-        <CoachTabs active="overview" />
+    <div className="content-grid py-12 md:py-16">
+      <div className="mb-8">
+        <div className="eyebrow mb-4">Coach Terminal</div>
+        <h1 className="section-title">Übersicht</h1>
+        <p className="section-copy mt-2">Auslastung aller Coaches und aktuelle Sessions.</p>
       </div>
+
+      <CoachTabs active="overview" />
 
       {isLoading ? (
         <div className="flex justify-center py-16">
-          <div className="animate-spin h-8 w-8 rounded-full border-2 border-accent-violet border-t-transparent" />
+          <div className="spinner h-8 w-8" />
         </div>
       ) : (
         <>
-          {/* Coach-Auslastung */}
-          <section>
-            <h2 className="mb-4 text-xl font-semibold text-white">Coaches</h2>
+          {/* Coach-Tabelle */}
+          <section className="mb-10">
+            <SectionHead label="Coaches" />
             {coaches.length > 0 ? (
-              <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0c1017]">
+              <div
+                className="overflow-hidden rounded-sm"
+                style={{ border: '1px solid var(--border-dim)', background: 'var(--bg-card)' }}
+              >
                 <table className="w-full text-left text-sm">
-                  <thead className="border-b border-white/10 text-xs uppercase tracking-wider text-slate-500">
+                  <thead style={{ borderBottom: '1px solid var(--border-dim)' }}>
                     <tr>
-                      <th className="px-4 py-3 font-medium">Coach</th>
-                      <th className="px-4 py-3 text-right font-medium">Aktiv</th>
-                      <th className="px-4 py-3 text-right font-medium">Abgeschlossen</th>
-                      <th className="px-4 py-3 text-right font-medium">Gesamt</th>
+                      {['Coach', 'Aktiv', 'Abgeschlossen', 'Gesamt'].map((h, i) => (
+                        <th
+                          key={h}
+                          className={`px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] ${i > 0 ? 'text-right' : ''}`}
+                          style={{ color: 'var(--text-muted)', fontFamily: "'Rajdhani', sans-serif" }}
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {coaches.map((c) => (
-                      <tr key={c.id} className="transition hover:bg-white/5">
-                        <td className="px-4 py-3">
-                          <span className="font-medium text-white">{c.display_name || c.discord_username || 'Coach'}</span>
+                  <tbody>
+                    {coaches.map((c, i) => (
+                      <tr
+                        key={c.id}
+                        style={{ borderTop: i > 0 ? '1px solid var(--border-dim)' : undefined }}
+                      >
+                        <td className="px-4 py-3 font-semibold text-white" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
+                          {c.display_name || c.discord_username || 'Coach'}
                         </td>
-                        <td className="px-4 py-3 text-right text-sky-300">{c.active}</td>
-                        <td className="px-4 py-3 text-right text-emerald-300">{c.completed}</td>
-                        <td className="px-4 py-3 text-right text-slate-300">{c.total}</td>
+                        <td className="px-4 py-3 text-right font-bold" style={{ color: 'var(--sky)', fontFamily: "'Rajdhani', sans-serif" }}>
+                          {c.active}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold" style={{ color: 'var(--green)', fontFamily: "'Rajdhani', sans-serif" }}>
+                          {c.completed}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold" style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}>
+                          {c.total}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <p className="rounded-xl border border-white/10 bg-[#0c1017] p-8 text-center text-sm text-slate-500">
-                Noch keine Coaches mit Sessions.
+              <p
+                className="rounded-sm p-8 text-center text-xs uppercase tracking-wider"
+                style={{ border: '1px solid var(--border-dim)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontFamily: "'Rajdhani', sans-serif" }}
+              >
+                Noch keine Coaches mit Sessions
               </p>
             )}
           </section>
 
           {/* Jüngste Sessions */}
-          <section className="mt-12">
-            <h2 className="mb-4 text-xl font-semibold text-white">Jüngste Sessions</h2>
+          <section>
+            <SectionHead label="Jüngste Sessions" />
             {recent.length > 0 ? (
               <div className="space-y-2">
                 {recent.map((s) => (
@@ -124,8 +161,11 @@ export default function CoachOverviewPage() {
                 ))}
               </div>
             ) : (
-              <p className="rounded-xl border border-white/10 bg-[#0c1017] p-8 text-center text-sm text-slate-500">
-                Noch keine Sessions.
+              <p
+                className="rounded-sm p-8 text-center text-xs uppercase tracking-wider"
+                style={{ border: '1px solid var(--border-dim)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontFamily: "'Rajdhani', sans-serif" }}
+              >
+                Noch keine Sessions
               </p>
             )}
           </section>

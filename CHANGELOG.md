@@ -1,3 +1,17 @@
+## #33 — Coaching-Plattform: komplettes UI-Redesign
+
+**Ausgangslage:** Die Coaching-Website unter `/coaching` war funktional verdrahtet, sah aber aus wie ein generisches Admin-Dashboard — helle Rundknöpfe, weiche Karten, kein visueller Bezug zum Deadlock-Universum. Für eine Community-Plattform, die Spieler ernstnehmen soll, war das nicht überzeugend.
+
+**Geändert:** Vollständiges visuelles Redesign aller sechs Seiten (Coach-Roster, Coach-Profil, Coach-Dashboard, Spieler-Seite, Übersicht, Coachee-Detail) sowie aller wiederverwendbaren Komponenten (Layout, Navigation, SessionStatusBadge). Die Geschäftslogik — alle Mutations, Queries, Routing — blieb unverändert.
+
+**Wie es jetzt funktioniert:**
+- **Designsprache „Soul Terminal"**: Die Amber-Gold-Farbe (`#e8953a`) ist Deadlocks Souls-Ressource entlehnt und zieht sich als einziger Hauptakzent durch die gesamte UI — aktive Nav-Items haben einen Amber-Unterstrich, Coach-Karten eine Amber-Leiste beim Hover, Statuswerte glühen Amber.
+- **Font-Paar**: Rajdhani (condensed/militärisch, für Headings + Labels) kombiniert mit DM Sans (sauber, für Fließtext). Kein generisches System-Font.
+- **Karten-Design**: Statt weicher `rounded-xl`-Karten jetzt scharfe `rounded-sm`-Rechtecke mit `3px`-Amber-Leiste am linken Rand bei Hover — fühlt sich nach Taktik-Briefing an, nicht nach SaaS-Dashboard.
+- **Rating-Balken**: Die 10-Sterne-Reihe ersetzt durch 10 schmale Segmente (wie ein Rang-Balken) — auf kleinen Karten sofort scanbar.
+- **Sektions-Heads**: Alle Abschnittstitel haben jetzt `// LABEL`-Syntax mit Amber-Farbe + horizontalem Divider — gibt dem Dashboard ein Terminal-Feeling.
+- **CSP-Erweiterung**: Caddy-Caddyfile bekommt eine coaching-spezifische CSP-Override, die `fonts.googleapis.com` (style) und `fonts.gstatic.com` (font) explizit freigibt — alle anderen Routen behalten ihre restriktive CSP.
+
 ## #32 — Coaching-Bridge: Bot→Website-Sync verdrahtet + Session-End-Mirror
 
 **Ausgangslage:** Die Coaching-Plattform unter `/coaching` hatte alle Seiten, Backend-Endpunkte und Datenbankschemas — aber keine Daten. Der Discord-Bot speicherte Coaching-Anfragen, Claims und Session-Abschlüsse nur in seiner eigenen SQLite, ohne sie je an das Website-Backend zu schicken.

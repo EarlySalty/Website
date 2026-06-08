@@ -9,67 +9,110 @@ const fmtDateTime = (ts: number) =>
 
 export function CoachTabs({ active }: { active: 'dashboard' | 'overview' }) {
   const tabs = [
-    { to: '/dashboard', label: 'Dashboard', key: 'dashboard' },
+    { to: '/dashboard', label: 'Queue', key: 'dashboard' },
     { to: '/overview', label: 'Übersicht', key: 'overview' },
-  ]
+  ] as const
   return (
-    <nav className="mb-8 flex gap-2 rounded-full border border-white/8 bg-white/5 p-1 w-fit">
+    <div className="mb-8 flex gap-px">
       {tabs.map((t) => (
         <Link
           key={t.key}
           to={t.to}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-            active === t.key ? 'bg-white text-slate-950' : 'text-slate-300 hover:bg-white/8 hover:text-white'
-          }`}
+          className="px-5 py-2 text-sm font-semibold uppercase tracking-[0.1em] transition"
+          style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            background: active === t.key ? 'var(--amber-glow)' : 'var(--bg-card)',
+            color: active === t.key ? 'var(--amber)' : 'var(--text-muted)',
+            borderBottom: active === t.key ? '2px solid var(--amber)' : '2px solid transparent',
+          }}
         >
           {t.label}
         </Link>
       ))}
-    </nav>
+    </div>
+  )
+}
+
+function SectionHead({ label, count }: { label: string; count?: number }) {
+  return (
+    <div className="mb-4 flex items-center gap-3">
+      <span
+        className="text-xs font-semibold uppercase tracking-[0.2em]"
+        style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}
+      >
+        // {label}
+      </span>
+      {count !== undefined && (
+        <span
+          className="rounded-sm px-2 py-0.5 text-xs font-bold"
+          style={{ background: 'var(--amber-glow)', color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}
+        >
+          {count}
+        </span>
+      )}
+      <div className="flex-1 divider" />
+    </div>
   )
 }
 
 function QueueCard({ req }: { req: PlatformQueueRequest }) {
   const reservedForMe = req.reserved_for_me && !req.is_open
   return (
-    <div className="rounded-xl border border-white/10 bg-[#0c1017] p-5">
-      <div className="flex items-start justify-between gap-3">
+    <div
+      className="relative overflow-hidden rounded-sm p-5 transition"
+      style={{
+        background: 'var(--bg-card)',
+        border: `1px solid ${reservedForMe ? 'rgba(56, 189, 248, 0.22)' : 'var(--border-dim)'}`,
+      }}
+    >
+      {/* Status strip */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[3px]"
+        style={{ background: reservedForMe ? 'var(--sky)' : 'var(--green)' }}
+      />
+
+      <div className="flex items-start justify-between gap-3 pl-1">
         <div className="min-w-0">
-          <h3 className="font-semibold text-white">{req.discord_username || 'Spieler'}</h3>
-          <p className="text-sm text-slate-400">
+          <h3
+            className="font-bold text-white"
+            style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '15px', letterSpacing: '0.04em' }}
+          >
+            {req.discord_username || 'Spieler'}
+          </h3>
+          <p className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
             {req.rank || '—'}
             {req.subrank ? ` ${req.subrank}` : ''}
             {req.hero ? ` · ${req.hero}` : ''}
           </p>
         </div>
-        {reservedForMe ? (
-          <span className="flex-shrink-0 rounded-full bg-sky-400/15 px-2.5 py-1 text-xs font-medium text-sky-300">
-            Für dich reserviert
-          </span>
-        ) : (
-          <span className="flex-shrink-0 rounded-full bg-emerald-400/15 px-2.5 py-1 text-xs font-medium text-emerald-300">
-            Offen
-          </span>
-        )}
+        <span className={`badge flex-shrink-0 ${reservedForMe ? 'badge-reserved' : 'badge-open'}`}>
+          {reservedForMe ? 'Reserviert' : 'Offen'}
+        </span>
       </div>
 
       {req.current_problems && (
-        <p className="mt-3 text-sm text-slate-300 line-clamp-3">{req.current_problems}</p>
-      )}
-      {req.ai_summary && (
-        <p className="mt-2 rounded-lg bg-white/5 px-3 py-2 text-xs text-slate-400">{req.ai_summary}</p>
+        <p className="mt-3 line-clamp-3 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          {req.current_problems}
+        </p>
       )}
 
-      <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-        {reservedForMe ? (
-          <span>
-            {req.reserved_until ? `reserviert bis ${fmtDateTime(req.reserved_until)}` : 'für dich reserviert'}
+      {req.ai_summary && (
+        <div
+          className="mt-3 rounded-sm px-3 py-2 text-xs"
+          style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)', border: '1px solid var(--border-dim)' }}
+        >
+          <span className="mr-1 font-semibold uppercase tracking-wide" style={{ color: 'var(--violet)', fontFamily: "'Rajdhani', sans-serif" }}>
+            AI
           </span>
-        ) : (
-          <span>offen für alle Coaches</span>
-        )}
-        <span>Claim im Discord-Embed</span>
-      </div>
+          {req.ai_summary}
+        </div>
+      )}
+
+      <p className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+        {reservedForMe && req.reserved_until
+          ? `Reserviert bis ${fmtDateTime(req.reserved_until)}`
+          : 'Claim im Discord-Embed'}
+      </p>
     </div>
   )
 }
@@ -78,19 +121,46 @@ function CoacheeRow({ c }: { c: CoacheeListItem }) {
   return (
     <Link
       to={`/coachees/${c.id}`}
-      className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#0c1017] p-4 transition hover:border-accent-violet/50 hover:bg-[#0f1520]"
+      className="flex items-center justify-between gap-4 rounded-sm px-4 py-3 transition"
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-dim)',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'var(--amber-border)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'var(--border-dim)'
+      }}
     >
-      <div className="min-w-0">
-        <p className="truncate font-medium text-white">{c.display_name || c.discord_username || 'Spieler'}</p>
-        <p className="truncate text-sm text-slate-400">
+      <div className="min-w-0 flex-1">
+        <p
+          className="truncate font-bold text-white"
+          style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.04em' }}
+        >
+          {c.display_name || c.discord_username || 'Spieler'}
+        </p>
+        <p className="truncate text-xs" style={{ color: 'var(--text-muted)' }}>
           {c.rank || '—'}
           {c.current_focus ? ` · ${c.current_focus}` : ''}
         </p>
       </div>
-      <div className="flex flex-shrink-0 gap-4 text-sm text-slate-400">
-        <span>{c.open_goals} offene Ziele</span>
-        <span>·</span>
-        <span>{c.sessions} Sessions</span>
+      <div className="flex flex-shrink-0 items-center gap-5 text-xs" style={{ color: 'var(--text-muted)' }}>
+        <span>
+          <span style={{ color: c.open_goals > 0 ? 'var(--amber)' : 'var(--text-secondary)', fontFamily: "'Rajdhani', sans-serif", fontWeight: 700 }}>
+            {c.open_goals}
+          </span>{' '}
+          Ziele
+        </span>
+        <span>
+          <span style={{ color: 'var(--text-secondary)', fontFamily: "'Rajdhani', sans-serif", fontWeight: 700 }}>
+            {c.sessions}
+          </span>{' '}
+          Sessions
+        </span>
+        <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 16 16" fill="none" style={{ color: 'var(--text-muted)' }}>
+          <path d="M6 12l4-4-4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </div>
     </Link>
   )
@@ -114,16 +184,16 @@ export default function CoachDashboardPage() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin h-8 w-8 rounded-full border-2 border-accent-violet border-t-transparent" />
+        <div className="spinner h-8 w-8" />
       </div>
     )
   }
 
   if (!isCoach) {
     return (
-      <div className="content-grid py-10">
-        <p className="text-slate-400">Dieser Bereich ist Coaches vorbehalten.</p>
-        <Link to="/" className="mt-4 inline-block text-accent-violet hover:underline">
+      <div className="content-grid py-12">
+        <p style={{ color: 'var(--text-muted)' }}>Dieser Bereich ist Coaches vorbehalten.</p>
+        <Link to="/" className="mt-4 inline-block text-sm" style={{ color: 'var(--amber)' }}>
           ← Zu den Coaches
         </Link>
       </div>
@@ -141,61 +211,75 @@ export default function CoachDashboardPage() {
   })
 
   return (
-    <div className="content-grid py-10 md:py-14">
-      <span className="eyebrow">Coaching</span>
-      <h1 className="section-title mt-4">Coach-Dashboard</h1>
-      <p className="section-copy mt-2 max-w-2xl">
-        Offene und für dich reservierte Anfragen sowie die Spieler, mit denen du arbeitest.
-      </p>
-
-      <div className="mt-8">
-        <CoachTabs active="dashboard" />
+    <div className="content-grid py-12 md:py-16">
+      <div className="mb-8">
+        <div className="eyebrow mb-4">Coach Terminal</div>
+        <h1 className="section-title">Dashboard</h1>
+        <p className="section-copy mt-2">Offene Anfragen und deine Spieler.</p>
       </div>
 
+      <CoachTabs active="dashboard" />
+
       {/* Queue */}
-      <section>
-        <h2 className="mb-4 text-xl font-semibold text-white">Anfragen-Queue</h2>
+      <section className="mb-12">
+        <SectionHead label="Anfragen-Queue" count={queueLoading ? undefined : requests.length} />
         {queueLoading ? (
-          <div className="flex justify-center py-10">
-            <div className="animate-spin h-7 w-7 rounded-full border-2 border-accent-violet border-t-transparent" />
+          <div className="flex justify-center py-12">
+            <div className="spinner h-7 w-7" />
           </div>
         ) : requests.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {requests.map((r) => (
               <QueueCard key={r.id} req={r} />
             ))}
           </div>
         ) : (
-          <p className="rounded-xl border border-white/10 bg-[#0c1017] p-8 text-center text-sm text-slate-500">
-            Aktuell keine offenen Anfragen.
+          <p
+            className="rounded-sm p-8 text-center text-xs uppercase tracking-wider"
+            style={{
+              border: '1px solid var(--border-dim)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-muted)',
+              fontFamily: "'Rajdhani', sans-serif",
+            }}
+          >
+            Keine offenen Anfragen
           </p>
         )}
       </section>
 
       {/* Spieler */}
-      <section className="mt-12">
+      <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-white">Spieler</h2>
+          <SectionHead label="Spieler" count={coacheesLoading ? undefined : coachees.length} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Spieler suchen…"
-            className="rounded-full border border-white/10 bg-[#080a10] px-4 py-2 text-sm text-white placeholder:text-slate-600 focus:border-accent-violet/50 focus:outline-none"
+            placeholder="Suchen…"
+            className="input-field w-52"
           />
         </div>
         {coacheesLoading ? (
-          <div className="flex justify-center py-10">
-            <div className="animate-spin h-7 w-7 rounded-full border-2 border-accent-violet border-t-transparent" />
+          <div className="flex justify-center py-12">
+            <div className="spinner h-7 w-7" />
           </div>
         ) : coachees.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {coachees.map((c) => (
               <CoacheeRow key={c.id} c={c} />
             ))}
           </div>
         ) : (
-          <p className="rounded-xl border border-white/10 bg-[#0c1017] p-8 text-center text-sm text-slate-500">
-            {search ? 'Keine Treffer.' : 'Noch keine Spieler erfasst.'}
+          <p
+            className="rounded-sm p-8 text-center text-xs uppercase tracking-wider"
+            style={{
+              border: '1px solid var(--border-dim)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-muted)',
+              fontFamily: "'Rajdhani', sans-serif",
+            }}
+          >
+            {search ? 'Keine Treffer' : 'Noch keine Spieler erfasst'}
           </p>
         )}
       </section>

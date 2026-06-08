@@ -2,43 +2,53 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams, Link } from 'react-router-dom'
 import { coaching, type CoachReview } from '@/api/client'
 
-function StarRating({ rating }: { rating: number }) {
+function RatingBar({ rating, max = 10 }: { rating: number; max?: number }) {
+  const filled = Math.round(rating)
   return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-        <span key={i} className={i <= rating ? 'text-yellow-400' : 'text-gray-600'}>★</span>
-      ))}
+    <div className="flex items-center gap-2">
+      <div className="rating-bar" style={{ maxWidth: 100 }}>
+        {Array.from({ length: max }).map((_, i) => (
+          <div key={i} className={`rating-segment${i < filled ? ' on' : ''}`} />
+        ))}
+      </div>
+      <span
+        className="text-sm font-bold"
+        style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}
+      >
+        {rating.toFixed(1)}/10
+      </span>
     </div>
   )
 }
 
 function ReviewCard({ review }: { review: CoachReview }) {
   const date = new Date(review.created_at).toLocaleDateString('de-DE', {
-    year: 'numeric', month: 'short', day: 'numeric'
+    year: 'numeric', month: 'short', day: 'numeric',
   })
-
   return (
-    <div className="rounded-lg border border-white/10 bg-[#0c1017] p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-slate-400">{review.user_display_name}</span>
-        <div className="flex items-center gap-2">
-          <StarRating rating={review.rating} />
-          <span className="text-sm font-medium text-white">{review.rating}/10</span>
-        </div>
+    <div
+      className="rounded-sm p-4"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-dim)' }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+          {review.user_display_name}
+        </span>
+        <RatingBar rating={review.rating} />
       </div>
 
       {review.feedback_text && (
-        <p className="mt-3 text-sm text-slate-300">{review.feedback_text}</p>
+        <p className="mt-3 text-sm" style={{ color: 'var(--text-secondary)' }}>{review.feedback_text}</p>
       )}
 
       {review.improved_areas && (
         <div className="mt-3">
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Verbessert:</span>
-          <p className="mt-1 text-sm text-slate-400">{review.improved_areas}</p>
+          <span className="stat-label">Verbessert</span>
+          <p className="mt-0.5 text-sm" style={{ color: 'var(--text-muted)' }}>{review.improved_areas}</p>
         </div>
       )}
 
-      <span className="mt-3 block text-xs text-slate-500">{date}</span>
+      <span className="mt-3 block text-xs" style={{ color: 'var(--text-muted)' }}>{date}</span>
     </div>
   )
 }
@@ -61,90 +71,125 @@ export default function CoachDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin w-8 h-8 border-2 border-accent-violet border-t-transparent rounded-full" />
+        <div className="spinner h-8 w-8" />
       </div>
     )
   }
 
   if (!coach) {
     return (
-      <div className="content-grid py-10">
-        <p className="text-slate-400">Coach nicht gefunden.</p>
-        <Link to="/" className="mt-4 text-accent-violet hover:underline">
+      <div className="content-grid py-12">
+        <p style={{ color: 'var(--text-muted)' }}>Coach nicht gefunden.</p>
+        <Link to="/" className="mt-4 block text-sm" style={{ color: 'var(--amber)' }}>
           ← Zurück zu Coaches
         </Link>
       </div>
     )
   }
 
+  const initial = (coach.display_name || '?').charAt(0).toUpperCase()
+
   return (
-    <div className="content-grid py-10 md:py-14">
-      {/* Back */}
-      <Link to="/" className="inline-block mb-6 text-sm text-slate-400 hover:text-white">
-        ← Zurück zu Coaches
+    <div className="content-grid py-12 md:py-16">
+      <Link to="/" className="mb-6 inline-block text-sm transition" style={{ color: 'var(--text-muted)' }}>
+        ← Coaches
       </Link>
 
-      {/* Header */}
-      <div className="rounded-xl border border-white/10 bg-[#0c1017] p-6">
-        <div className="flex flex-col md:flex-row gap-6">
+      {/* Profile card */}
+      <div
+        className="rounded-sm p-6"
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-soft)' }}
+      >
+        <div className="flex flex-col gap-6 md:flex-row">
           {/* Avatar */}
-          <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-full bg-[#1a2030]">
+          <div
+            className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-sm"
+            style={{ background: 'var(--bg-raised)', border: '1px solid var(--border-soft)' }}
+          >
             {coach.avatar_url ? (
               <img src={coach.avatar_url} alt={coach.display_name} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-slate-400">
-                {coach.display_name?.charAt(0) || '?'}
+              <div
+                className="flex h-full w-full items-center justify-center text-4xl font-bold"
+                style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}
+              >
+                {initial}
               </div>
             )}
           </div>
 
           {/* Info */}
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-white">{coach.display_name}</h1>
-            <p className="text-slate-400">@{coach.discord_username}</p>
+            <h1
+              className="text-2xl font-bold text-white"
+              style={{ fontFamily: "'Rajdhani', sans-serif", letterSpacing: '0.06em' }}
+            >
+              {coach.display_name}
+            </h1>
+            <p className="mt-0.5 text-sm" style={{ color: 'var(--text-muted)' }}>@{coach.discord_username}</p>
 
-            {/* Rating */}
-            <div className="mt-4 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <StarRating rating={coach.avg_rating} />
-                <span className="text-xl font-bold text-white">{coach.avg_rating.toFixed(1)}</span>
-              </div>
-              <span className="text-slate-400">({coach.total_reviews} Bewertungen)</span>
+            <div className="mt-4">
+              {coach.total_reviews > 0 ? (
+                <>
+                  <RatingBar rating={coach.avg_rating} />
+                  <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {coach.total_reviews} Bewertungen
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Noch keine Bewertungen</p>
+              )}
             </div>
 
-            {/* Stats */}
-            <div className="mt-4 flex gap-6 text-sm text-slate-300">
-              <span>{coach.total_sessions} Sessions</span>
-              <span>·</span>
-              <span>{coach.total_reviews} Reviews</span>
+            <div className="mt-4 flex gap-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <span>
+                <span className="font-bold" style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}>
+                  {coach.total_sessions}
+                </span>{' '}
+                Sessions
+              </span>
+              <span>
+                <span className="font-bold" style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}>
+                  {coach.total_reviews}
+                </span>{' '}
+                Bewertungen
+              </span>
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex flex-col gap-2">
-            <button className="rounded-lg bg-accent-violet px-6 py-2.5 font-medium text-white transition hover:bg-accent-violet/80">
-              Coaching anfragen
-            </button>
+            <div
+              className="rounded-sm px-4 py-2.5 text-center text-sm"
+              style={{
+                background: 'var(--amber-glow)',
+                border: '1px solid var(--amber-border)',
+                color: 'var(--amber)',
+                fontFamily: "'Rajdhani', sans-serif",
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+              }}
+            >
+              Anfrage via Discord
+            </div>
           </div>
         </div>
 
         {/* Bio */}
         {coach.bio && (
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Über mich</h2>
-            <p className="text-slate-300">{coach.bio}</p>
+          <div className="mt-6 pt-5" style={{ borderTop: '1px solid var(--border-dim)' }}>
+            <p className="stat-label mb-2">Über mich</p>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{coach.bio}</p>
           </div>
         )}
 
         {/* Specialties */}
         {coach.specialties && coach.specialties.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-2">Specialties</h2>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-5">
+            <p className="stat-label mb-2">Schwerpunkte</p>
+            <div className="flex flex-wrap gap-1.5">
               {coach.specialties.map((s: string) => (
-                <span key={s} className="rounded-full bg-accent-violet/20 px-3 py-1.5 text-sm text-accent-violet">
-                  {s}
-                </span>
+                <span key={s} className="badge badge-amber text-[11px]">{s}</span>
               ))}
             </div>
           </div>
@@ -152,18 +197,31 @@ export default function CoachDetailPage() {
       </div>
 
       {/* Reviews */}
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold text-white mb-4">Bewertungen</h2>
+      <div className="mt-10">
+        <div className="mb-4 flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}>
+            // Bewertungen
+          </span>
+          <div className="flex-1 divider" />
+        </div>
 
         {reviews && reviews.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {reviews.map(review => (
+          <div className="grid gap-3 md:grid-cols-2">
+            {reviews.map((review) => (
               <ReviewCard key={review.id} review={review} />
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-white/10 bg-[#0c1017] p-8 text-center">
-            <p className="text-slate-400">Noch keine Bewertungen.</p>
+          <div
+            className="rounded-sm p-8 text-center"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-dim)' }}
+          >
+            <p
+              className="text-xs uppercase tracking-wider"
+              style={{ color: 'var(--text-muted)', fontFamily: "'Rajdhani', sans-serif" }}
+            >
+              Noch keine Bewertungen
+            </p>
           </div>
         )}
       </div>
