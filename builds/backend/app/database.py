@@ -341,6 +341,8 @@ async def init_db():
             "ALTER TABLE coaching_requests ADD COLUMN assigned_coach_username TEXT",
             "ALTER TABLE coaching_requests ADD COLUMN reserved_until INTEGER",
             "ALTER TABLE coaching_sessions ADD COLUMN coachee_id TEXT",
+            "ALTER TABLE coaching_requests ADD COLUMN bot_request_id INTEGER",
+            "ALTER TABLE coaching_sessions ADD COLUMN bot_session_id TEXT",
         ):
             try:
                 await db.execute(_alter)

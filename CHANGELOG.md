@@ -1,3 +1,11 @@
+## #32 — Coaching-Bridge: Bot→Website-Sync verdrahtet + Session-End-Mirror
+
+**Ausgangslage:** Die Coaching-Plattform unter `/coaching` hatte alle Seiten, Backend-Endpunkte und Datenbankschemas — aber keine Daten. Der Discord-Bot speicherte Coaching-Anfragen, Claims und Session-Abschlüsse nur in seiner eigenen SQLite, ohne sie je an das Website-Backend zu schicken.
+
+**Geändert:** Zwei Fixes: (1) Der `coaching_survey`-Cog sendet beim Beenden einer Session (`/coaching-session-beenden`) jetzt einen HTTP-Call an `/platform/sync` des Website-Backends — der Session-Status `completed` landet damit in der Website-DB. (2) Das Website-Backend akzeptiert jetzt optionale Bot-Request-IDs in `POST /coaching/requests` und hat einen direkten `POST /sessions/{id}/end`-Endpunkt für den Bot. Zwei neue ALTER-TABLE-Spalten (`bot_request_id`, `bot_session_id`) ermöglichen idempotentes Matching ohne Kollisionen.
+
+**Wie's funktioniert:** Der Bot feuert bei jedem Status-Wechsel (Anfrage gepostet, Coach claimt, Session endet) einen HTTP-Call an den internen Port 8772. Der `/platform/sync`-Endpunkt macht ein Upsert — zuerst den Coachee anlegen/aktualisieren, dann Request, dann Session. Damit sehen Coaches ihr Dashboard mit echten Spieler-Daten und Spieler ihre aktive Session und Ziele, sobald sie sich mit Discord einloggen.
+
 ## #31 — Neues Art-Déco-Aufzug-Design für die Startseite
 
 **Ausgangslage:** Die Website-Navigation existiert bisher nur innerhalb der Landing-Page selbst. Eine eigenständige, visuelle Einstiegsseite mit Charakter fehlte.

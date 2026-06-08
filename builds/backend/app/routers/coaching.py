@@ -57,6 +57,7 @@ class CoachReview(BaseModel):
 
 
 class CoachingRequestCreate(BaseModel):
+    id: Optional[str] = None  # Bot kann seine eigene UUID übergeben
     discord_user_id: int
     discord_username: str
     rank: str
@@ -369,7 +370,7 @@ async def create_coaching_request(
     """Bot endpoint: Create new coaching request after AI analysis."""
     db = await get_db()
     try:
-        request_id = secrets.token_urlsafe(16)
+        request_id = req.id or secrets.token_urlsafe(16)
 
         await db.execute("""
             INSERT INTO coaching_requests (id, discord_user_id, discord_username, rank, subrank,
@@ -570,6 +571,26 @@ async def get_coach_dashboard(request: Request):
             "sessions": [dict(s) for s in sessions],
             "reviews": [_review_from_row(r) for r in reviews],
         }
+    finally:
+        await db.close()
+
+
+# ========== BOT: SESSION END ==========
+
+@router.post("/sessions/{session_id}/end")
+async def end_session(
+    session_id: str,
+    _bot_auth: None = Depends(require_bot_token),
+):
+    """Bot endpoint: Mark session as completed."""
+    db = await get_db()
+    try:
+        await db.execute(
+            "UPDATE coaching_sessions SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE id=?",
+            (session_id,)
+        )
+        await db.commit()
+        return {"status": "completed"}
     finally:
         await db.close()
 
