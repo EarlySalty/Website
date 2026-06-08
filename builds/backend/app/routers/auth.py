@@ -366,6 +366,31 @@ async def require_admin_user(request: Request) -> dict[str, Any]:
     return user
 
 
+async def _is_active_coach(user_id: str) -> bool:
+    """True, wenn der Discord-User eine aktive Zeile in coaches hat."""
+    db = await get_db()
+    try:
+        cursor = await db.execute(
+            "SELECT 1 FROM coaches WHERE discord_user_id=? AND status='active'",
+            (int(user_id),),
+        )
+        return (await cursor.fetchone()) is not None
+    except Exception:
+        return False
+    finally:
+        await db.close()
+
+
+async def require_coach_user(request: Request) -> dict[str, Any]:
+    """Coach-Gate: eingeloggt UND (Admin ODER aktive Zeile in coaches)."""
+    user = await require_authenticated_user(request)
+    if user.get("role") == "admin":
+        return user
+    if not await _is_active_coach(user["sub"]):
+        raise HTTPException(status_code=403, detail="Coach only")
+    return user
+
+
 @router.get("/discord/login")
 async def discord_login(request: Request, next: str | None = None):
     callback_url = _build_callback_url(request)
@@ -450,6 +475,7 @@ async def me(request: Request):
     user = await get_current_user_optional(request)
     if not user:
         return {"user": None}
+    is_coach = user["role"] == "admin" or await _is_active_coach(user["sub"])
     return {
         "user": {
             "id": user["id"],
@@ -457,6 +483,7 @@ async def me(request: Request):
             "displayName": user["displayName"],
             "avatarUrl": user["avatarUrl"],
             "role": user["role"],
+            "is_coach": is_coach,
         }
     }
 

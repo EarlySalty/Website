@@ -271,6 +271,82 @@ async def init_db():
             )
         """)
 
+        # ========== COACHING PLATTFORM (Coachee-Profile, Ziele, Meilensteine, Notizen) ==========
+
+        # Coachees = gecoachte Spieler (eigenes Profil, getrennt von coaches)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coachees (
+                id TEXT PRIMARY KEY,
+                discord_user_id INTEGER UNIQUE NOT NULL,
+                discord_username TEXT,
+                display_name TEXT,
+                rank TEXT,
+                main_heroes_json TEXT DEFAULT '[]',
+                current_focus TEXT,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Ziele pro Coachee (vom Coach gepflegt)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coaching_goals (
+                id TEXT PRIMARY KEY,
+                coachee_id TEXT REFERENCES coachees(id),
+                coach_id TEXT REFERENCES coaches(id),
+                session_id TEXT,
+                title TEXT NOT NULL,
+                description TEXT,
+                status TEXT DEFAULT 'open',
+                sort_order INTEGER DEFAULT 0,
+                target_date TEXT,
+                completed_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Meilensteine pro Ziel
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coaching_milestones (
+                id TEXT PRIMARY KEY,
+                goal_id TEXT REFERENCES coaching_goals(id),
+                title TEXT NOT NULL,
+                description TEXT,
+                achieved INTEGER DEFAULT 0,
+                achieved_at TIMESTAMP,
+                sort_order INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Session-Notizen ("Session auf Papier"); visibility steuert User-Sichtbarkeit
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS session_notes (
+                id TEXT PRIMARY KEY,
+                session_id TEXT,
+                coachee_id TEXT REFERENCES coachees(id),
+                coach_id TEXT REFERENCES coaches(id),
+                content TEXT,
+                visibility TEXT DEFAULT 'coach_only',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Reservierungs-/Zuweisungs-Spalten fuer den Bot-Mirror (idempotent nachruesten)
+        for _alter in (
+            "ALTER TABLE coaching_requests ADD COLUMN assigned_coach_id TEXT",
+            "ALTER TABLE coaching_requests ADD COLUMN assigned_coach_username TEXT",
+            "ALTER TABLE coaching_requests ADD COLUMN reserved_until INTEGER",
+            "ALTER TABLE coaching_sessions ADD COLUMN coachee_id TEXT",
+        ):
+            try:
+                await db.execute(_alter)
+            except Exception:
+                pass  # Spalte existiert bereits
+
         await db.commit()
 
         # Insert sample data if empty

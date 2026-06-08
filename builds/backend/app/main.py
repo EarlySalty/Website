@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.routers import auth, heroes, builds, items, tierlists, patchnotes, history, admin, coaching
+from app.routers import auth, heroes, builds, items, tierlists, patchnotes, history, admin, coaching, coaching_platform
 from app.database import init_db, close_db
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ app.include_router(patchnotes.router, prefix="/api/patchnotes", tags=["patchnote
 app.include_router(history.router, prefix="/api/history", tags=["history"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(coaching.router, prefix="/api/coaching", tags=["coaching"])
+app.include_router(coaching_platform.router, prefix="/api/coaching", tags=["coaching-platform"])
 
 @app.get("/api/health")
 async def health():
