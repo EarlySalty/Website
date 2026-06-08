@@ -1,3 +1,11 @@
+## #30 — Coaching-Plattform jetzt unter /coaching erreichbar
+
+**Problem:** Die Coaching-Plattform war gebaut, aber an keiner eigenen Adresse erreichbar — die Seiten hingen technisch in der Tier-List-App, und öffentlich gab es nur eine statische Info-Seite ohne Login.
+
+**Geändert:** Die Coaching-Plattform ist jetzt eine eigenständige Seite unter `deutsche-deadlock-community.de/coaching`, getrennt von der Tier-List, mit Discord-Login.
+
+**Wie's funktioniert:** Unter `/coaching` läuft eine eigene Anwendung — Startseite ist die Coach-Liste, dazu der Coach-Bereich (Dashboard mit Anfragen-Queue, Übersicht über alle Coaches, Spieler-Profile mit Zielen/Meilensteinen/Notizen) und der Spieler-Bereich „Mein Coaching". Login per Discord wie auf dem Rest der Seite; wer welchen Bereich sieht, prüft der Server (Coach-Bereiche nur mit aktiver Coach-Rolle, „Mein Coaching" nur für den jeweiligen Spieler).
+
 ## #29 — Coaching-Plattform: Coach- und Spieler-Bereich
 
 **Problem:** Coachings liefen bisher ausschließlich über Discord. Es gab keinen Ort, an dem Coaches sehen konnten, wen sie (und die anderen Coaches) betreut haben oder was noch offen ist, und keine Möglichkeit, pro Spieler Ziele, Meilensteine und Session-Notizen festzuhalten. Gecoachte Spieler hatten gar keine Sicht auf ihren eigenen Fortschritt. Die Website hatte zudem keine Live-Coaching-Daten — die dafür vorgesehene Schnittstelle wurde von keinem Bot-Teil befüllt.
