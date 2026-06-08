@@ -168,15 +168,36 @@ def _build_anonymous_review_label(discord_user_id: Optional[int], coach_id: str)
     return f"Coachee #{digest}"
 
 
-def require_bot_token(request: Request) -> None:
-    secret = os.environ.get("COACHING_BOT_TOKEN")
-    if not secret:
-        logger.error("COACHING_BOT_TOKEN is not configured; rejecting coaching bot endpoint request")
-        raise HTTPException(503, "Coaching bot token is not configured")
+# Service-zu-Service-Auth: gleicher interner Token wie im restlichen Stack
+# (X-Internal-Token / TWITCH_INTERNAL_API_TOKEN, wie master_broker/public_stats).
+# COACHING_BOT_TOKEN bleibt nur optionaler Fallback — kein neues Secret noetig.
+_BOT_TOKEN_ENV_NAMES = (
+    "TWITCH_INTERNAL_API_TOKEN",
+    "MASTER_BROKER_TOKEN",
+    "COACHING_BOT_TOKEN",
+)
 
-    provided_token = request.headers.get("X-Bot-Token") or ""
+
+def require_bot_token(request: Request) -> None:
+    secret = ""
+    for _name in _BOT_TOKEN_ENV_NAMES:
+        secret = (os.environ.get(_name) or "").strip()
+        if secret:
+            break
+    if not secret:
+        logger.error(
+            "Kein interner Token gesetzt (%s); weise Bot-Endpoint ab",
+            "/".join(_BOT_TOKEN_ENV_NAMES),
+        )
+        raise HTTPException(503, "Internal API token is not configured")
+
+    provided_token = (
+        request.headers.get("X-Internal-Token")
+        or request.headers.get("X-Bot-Token")
+        or ""
+    )
     if not hmac.compare_digest(provided_token, secret):
-        raise HTTPException(401, "Invalid bot token")
+        raise HTTPException(401, "Invalid internal token")
 
 
 # ========== PUBLIC ROUTES (Coach Profiles) ==========
