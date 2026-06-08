@@ -1,3 +1,11 @@
+## #31 — Neues Art-Déco-Aufzug-Design für die Startseite
+
+**Ausgangslage:** Die Website-Navigation existiert bisher nur innerhalb der Landing-Page selbst. Eine eigenständige, visuelle Einstiegsseite mit Charakter fehlte.
+
+**Geändert:** Neuer Ordner `deco-elevator-new` mit einer selbstständigen Einstiegsseite im Art-Déco-Aufzug-Stil — das DDC-Design-Handoff-Material als Grundlage.
+
+**Wie's funktioniert:** Die Seite zeigt beim Laden zwei Aufzugtüren mit Diamant-Gitter-Overlay, die sich auseinanderschieben und das Bedienfeld darunter freilegen. Oben thront ein SVG-Sunburst-Ornament (Fächerstrahlen, Medaillon, eingeschriebenes Dreieck — abgeleitet von den Déco-Referenzbildern im Handoff). Das Bedienfeld hat sieben Etagen-Knöpfe für alle DDC-Sektionen (Lobby, Mitspieler, Coaching, Tier-Liste, Patchnotes, Streamer, Discord); beim Drücken zählt der Etagen-Indikator durch die Zwischenstockwerke durch, ein kurzer Cyan-Puls signalisiert die Ankunft. Farben: DDC-Marken-Gradient (Cyan→Violett) für alle aktiven Zustände, Messing-Gold nur für strukturelle Ornamente und Bordüren. Schriften: Sora (Display) + Manrope (Body) wie im Design-System vorgegeben. Die alte Landing-Page bleibt unangetastet.
+
 ## #30 — Coaching-Plattform jetzt unter /coaching erreichbar
 
 **Problem:** Die Coaching-Plattform war gebaut, aber an keiner eigenen Adresse erreichbar — die Seiten hingen technisch in der Tier-List-App, und öffentlich gab es nur eine statische Info-Seite ohne Login.
