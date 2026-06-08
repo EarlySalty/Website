@@ -42,6 +42,15 @@ while true; do
 done
 
 export PYTHONUNBUFFERED=1
+
+# Eigene oeffentliche OAuth-Rueck-Adresse (redirect_after im delegierten Flow):
+# Der zentrale Broker (/callback/discord, 127.0.0.1:8766) leitet nach dem
+# Discord-Login hierher zurueck. Caddy strippt /coaching, bevor das Backend die
+# Anfrage sieht -> ohne diese Zeile baut das Backend die URL ohne /coaching-Praefix
+# und der Broker landet auf einem 404. Die bei Discord registrierte URI bleibt
+# unveraendert (/callback/discord); das hier ist nur die Rueckleitung an diesen Dienst.
+export AUTH_PUBLIC_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/callback"
+
 cd "$BACKEND_DIR"
 exec "$PYTHON_BIN" -m uvicorn app.main:app \
   --host "${WEBSITE_BACKEND_HOST:-127.0.0.1}" \
