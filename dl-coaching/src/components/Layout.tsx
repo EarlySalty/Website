@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { Avatar } from '@/components/ui'
 
 export default function Layout() {
   const { user, login, logout, isCoach } = useAuth()
@@ -9,44 +10,43 @@ export default function Layout() {
     exact ? location.pathname === path : location.pathname === path || location.pathname.startsWith(path + '/')
 
   return (
-    <div className="page-shell min-h-screen">
+    <div className="page-shell flex min-h-screen flex-col">
       {/* ── Header ──────────────────────────────── */}
       <header
         className="sticky top-0 z-50"
         style={{
-          background: 'rgba(6, 8, 16, 0.92)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(232, 149, 58, 0.12)',
+          background: 'rgba(5, 7, 13, 0.88)',
+          backdropFilter: 'blur(18px)',
+          borderBottom: '1px solid rgba(232, 149, 58, 0.14)',
         }}
       >
+        {/* Amber-Scanline oben */}
+        <div
+          className="h-[2px] w-full"
+          style={{ background: 'linear-gradient(90deg, transparent, var(--amber) 30%, var(--amber-light) 50%, var(--amber) 70%, transparent)' }}
+        />
         <div className="content-grid">
-          <div className="flex min-h-[70px] items-center justify-between gap-4">
+          <div className="flex min-h-[64px] items-center justify-between gap-4">
 
             {/* Logo */}
-            <div className="flex items-center gap-7">
-              <Link to="/" className="flex items-center gap-3">
+            <div className="flex items-center gap-8">
+              <Link to="/" className="group flex items-center gap-3">
                 <div
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-sm"
+                  className="font-display flex h-9 w-9 flex-shrink-0 items-center justify-center text-[11px] font-bold tracking-[0.14em] transition-shadow group-hover:shadow-[0_0_18px_rgba(232,149,58,0.45)]"
                   style={{
-                    background: 'linear-gradient(135deg, var(--amber) 0%, #c97420 100%)',
-                    color: '#06080f',
-                    fontFamily: "'Rajdhani', sans-serif",
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    letterSpacing: '0.18em',
+                    background: 'linear-gradient(135deg, var(--amber-light) 0%, var(--amber-deep) 100%)',
+                    color: '#120b03',
+                    clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
                   }}
                 >
                   DDC
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-[10px] uppercase tracking-[0.28em]" style={{ color: 'var(--text-muted)' }}>
-                    Coaching
+                  <p className="font-mono-data text-[9px] uppercase tracking-[0.3em]" style={{ color: 'var(--text-muted)' }}>
+                    Deutsche Deadlock Community
                   </p>
-                  <p
-                    className="text-base leading-none text-white"
-                    style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, letterSpacing: '0.06em' }}
-                  >
-                    Deadlock
+                  <p className="font-display text-base font-bold uppercase leading-none tracking-[0.08em] text-white">
+                    Coaching
                   </p>
                 </div>
               </Link>
@@ -56,8 +56,8 @@ export default function Layout() {
                 <NavLink to="/" active={isActive('/', true)}>Coaches</NavLink>
                 {user && <NavLink to="/me" active={isActive('/me')}>Mein Coaching</NavLink>}
                 {isCoach && (
-                  <NavLink to="/dashboard" active={isActive('/dashboard') || isActive('/overview')}>
-                    Dashboard
+                  <NavLink to="/dashboard" active={isActive('/dashboard') || isActive('/overview') || isActive('/coachees')}>
+                    Coach-Bereich
                   </NavLink>
                 )}
               </nav>
@@ -67,41 +67,13 @@ export default function Layout() {
             <div className="flex items-center gap-3">
               {user ? (
                 <>
-                  <div className="hidden items-center gap-2 sm:flex">
-                    <div
-                      className="h-7 w-7 flex-shrink-0 overflow-hidden rounded-sm"
-                      style={{ background: 'var(--bg-raised)' }}
-                    >
-                      <div
-                        className="flex h-full w-full items-center justify-center text-xs font-bold"
-                        style={{ color: 'var(--amber)', fontFamily: "'Rajdhani', sans-serif" }}
-                      >
-                        {(user.displayName || '?').charAt(0).toUpperCase()}
-                      </div>
-                    </div>
+                  <div className="hidden items-center gap-2.5 sm:flex">
+                    <Avatar url={user.avatarUrl} name={user.displayName} size={30} />
                     <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                       {user.displayName}
                     </span>
                   </div>
-                  <button
-                    onClick={logout}
-                    className="rounded-sm px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition"
-                    style={{
-                      border: '1px solid var(--border-soft)',
-                      color: 'var(--text-secondary)',
-                      fontFamily: "'Rajdhani', sans-serif",
-                    }}
-                    onMouseEnter={e => {
-                      const t = e.currentTarget
-                      t.style.borderColor = 'var(--border-medium)'
-                      t.style.color = 'var(--text-primary)'
-                    }}
-                    onMouseLeave={e => {
-                      const t = e.currentTarget
-                      t.style.borderColor = 'var(--border-soft)'
-                      t.style.color = 'var(--text-secondary)'
-                    }}
-                  >
+                  <button onClick={logout} className="btn-ghost !px-3 !py-1.5 !text-xs">
                     Logout
                   </button>
                 </>
@@ -130,16 +102,13 @@ export default function Layout() {
       </main>
 
       {/* ── Footer ──────────────────────────────── */}
-      <footer className="mt-auto py-8" style={{ borderTop: '1px solid var(--border-dim)' }}>
+      <footer className="relative z-10 mt-auto py-8" style={{ borderTop: '1px solid var(--border-dim)' }}>
         <div className="content-grid">
           <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
-            <p
-              className="text-xs uppercase tracking-[0.2em]"
-              style={{ color: 'var(--text-muted)', fontFamily: "'Rajdhani', sans-serif" }}
-            >
+            <p className="font-mono-data text-[10px] uppercase tracking-[0.22em]" style={{ color: 'var(--text-muted)' }}>
               Deutsche Deadlock Community — Coaching
             </p>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <p className="font-mono-data text-[10px] tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>
               © {new Date().getFullYear()} DDC
             </p>
           </div>
@@ -153,17 +122,14 @@ function NavLink({ to, children, active }: { to: string; children: React.ReactNo
   return (
     <Link
       to={to}
-      className="relative px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.1em] transition"
-      style={{
-        fontFamily: "'Rajdhani', sans-serif",
-        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
-      }}
+      className="font-display relative px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.12em] transition"
+      style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
     >
       {children}
       {active && (
         <span
-          className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full"
-          style={{ background: 'var(--amber)' }}
+          className="absolute bottom-0 left-3 right-3 h-[2px]"
+          style={{ background: 'linear-gradient(90deg, var(--amber), transparent)' }}
         />
       )}
     </Link>

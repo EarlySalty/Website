@@ -37,6 +37,7 @@ export interface CoachProfile {
   avg_rating: number
   total_reviews: number
   total_sessions: number
+  twitch_url?: string | null
 }
 
 export interface CoachReview {
@@ -219,11 +220,41 @@ export interface PlatformSession {
   coach_display: string | null
 }
 
+export interface Appointment {
+  id: string
+  coach_id: string | null
+  coachee_id: string | null
+  scheduled_at: string
+  duration_minutes: number
+  title: string | null
+  note: string | null
+  status: 'scheduled' | 'done' | 'cancelled' | string
+  coachee_display?: string | null
+  coach_display?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface CoachSelf {
+  id: string
+  display_name: string | null
+  discord_username: string | null
+  avatar_url: string | null
+  bio: string | null
+  specialties: string[]
+  twitch_url: string | null
+  status: string
+  avg_rating: number
+  total_reviews: number
+  total_sessions: number
+}
+
 export interface CoacheeDetail {
   profile: CoacheeProfile
   goals: Goal[]
   notes: SessionNote[]
   sessions: PlatformSession[]
+  appointments?: Appointment[]
 }
 
 export interface MyCoaching {
@@ -231,6 +262,7 @@ export interface MyCoaching {
   goals: Goal[]
   notes: SessionNote[]
   sessions: PlatformSession[]
+  appointments?: Appointment[]
 }
 
 export const coachingPlatform = {
@@ -257,6 +289,17 @@ export const coachingPlatform = {
   updateMilestone: (milestoneId: string, data: { title?: string; achieved?: boolean; sort_order?: number }) =>
     request(`/coaching/platform/milestones/${milestoneId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteMilestone: (milestoneId: string) => request(`/coaching/platform/milestones/${milestoneId}`, { method: 'DELETE' }),
+
+  listAppointments: (scope: 'mine' | 'all' = 'mine') =>
+    request<{ appointments: Appointment[] }>(`/coaching/platform/appointments?scope=${scope}`),
+  createAppointment: (data: { coachee_id: string; scheduled_at: string; duration_minutes?: number; title?: string; note?: string }) =>
+    request<{ id: string }>('/coaching/platform/appointments', { method: 'POST', body: JSON.stringify(data) }),
+  updateAppointment: (id: string, data: { scheduled_at?: string; duration_minutes?: number; title?: string; note?: string; status?: string }) =>
+    request(`/coaching/platform/appointments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  coachMe: () => request<CoachSelf>('/coaching/platform/coaches/me'),
+  updateCoachMe: (data: { bio?: string; specialties?: string[]; twitch_url?: string }) =>
+    request('/coaching/platform/coaches/me', { method: 'PATCH', body: JSON.stringify(data) }),
 
   createNote: (coacheeId: string, data: { content: string; visibility?: string; session_id?: string }) =>
     request<{ id: string }>(`/coaching/platform/coachees/${coacheeId}/notes`, { method: 'POST', body: JSON.stringify(data) }),

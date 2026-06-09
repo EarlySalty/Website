@@ -3,18 +3,19 @@ Coaching-Plattform: Bot-Mirror + Coach-/User-Bereich.
 
 - Bot-Mirror (X-Bot-Token): spiegelt Anfragen/Sessions aus dem Discord-Bot.
 - Coach-Routen (require_coach_user): Quer-Uebersicht, Queue, Coachee-Profile,
-  Ziele, Meilensteine, Notizen.
+  Ziele, Meilensteine, Notizen, Termine.
 - User-Routen (require_authenticated_user): eigene Coaching-Sicht.
 
 Eigene DB (deadlock.db) wie der restliche Website-Stack; der Bot fuettert sie
 ueber /sync. Reservierungs-/Claim-Logik bleibt im Bot, hier nur Spiegelung.
 """
 
+import json
 import logging
 import secrets
 import time
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -306,7 +307,27 @@ async def get_coachee(coachee_id: str, request: Request):
             (coachee_id,),
         )
         sessions = [_row(s) for s in await scur.fetchall()]
-        return {"profile": coachee, "goals": goals, "notes": notes, "sessions": sessions}
+
+        # Alle Termine des Coachees (alle Stati), absteigend nach scheduled_at
+        acur = await db.execute(
+            """SELECT a.id, a.scheduled_at, a.duration_minutes, a.title, a.note, a.status,
+                      a.created_at,
+                      COALESCE(c.display_name, c.discord_username) AS coach_display
+               FROM coaching_appointments a
+               LEFT JOIN coaches c ON a.coach_id=c.id
+               WHERE a.coachee_id=?
+               ORDER BY a.scheduled_at DESC""",
+            (coachee_id,),
+        )
+        appointments = [_row(r) for r in await acur.fetchall()]
+
+        return {
+            "profile": coachee,
+            "goals": goals,
+            "notes": notes,
+            "sessions": sessions,
+            "appointments": appointments,
+        }
     finally:
         await db.close()
 
@@ -563,6 +584,426 @@ async def my_coaching(request: Request):
             (discord_id,),
         )
         sessions = [_row(s) for s in await scur.fetchall()]
-        return {"profile": coachee, "goals": goals, "notes": notes, "sessions": sessions}
+
+        # Upcoming + letzte 5 abgeschlossene/abgesagte Termine des Coachees
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+        acur = await db.execute(
+            """SELECT a.id, a.scheduled_at, a.duration_minutes, a.title, a.status,
+                      c.display_name AS coach_display
+               FROM coaching_appointments a
+               LEFT JOIN coaches c ON a.coach_id=c.id
+               WHERE a.coachee_id=? AND (
+                   (a.status='scheduled' AND a.scheduled_at >= ?)
+                   OR a.status IN ('done','cancelled')
+               )
+               ORDER BY
+                   CASE WHEN a.status='scheduled' THEN 0 ELSE 1 END,
+                   a.scheduled_at ASC
+               LIMIT 50""",
+            (coachee["id"], cutoff),
+        )
+        all_appts = [_row(r) for r in await acur.fetchall()]
+        # Scheduled: alle; done/cancelled: letzte 5
+        scheduled_appts = [a for a in all_appts if a["status"] == "scheduled"]
+        closed_appts = [a for a in all_appts if a["status"] in ("done", "cancelled")][-5:]
+        appointments = scheduled_appts + closed_appts
+
+        return {
+            "profile": coachee,
+            "goals": goals,
+            "notes": notes,
+            "sessions": sessions,
+            "appointments": appointments,
+        }
+    finally:
+        await db.close()
+
+
+# ========== COACH-ROLLEN-SYNC (Bot → Website) ==========
+
+class CoachSyncEntry(BaseModel):
+    discord_user_id: int
+    discord_username: Optional[str] = None
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+
+class CoachSyncPayload(BaseModel):
+    coaches: List[CoachSyncEntry]
+
+
+@router.post("/platform/coaches/sync")
+async def coaches_sync(payload: CoachSyncPayload, _bot: None = Depends(require_bot_token)):
+    """Bot-Endpunkt: Synchronisiert die aktiven Coaches aus dem Discord-Roster."""
+    # Leer-Listen-Schutz: nie alle Coaches deaktivieren bei Bot-Fehler
+    if not payload.coaches:
+        return {"ok": True, "skipped": True}
+
+    db = await get_db()
+    try:
+        incoming_ids = {entry.discord_user_id for entry in payload.coaches}
+
+        for entry in payload.coaches:
+            cur = await db.execute(
+                "SELECT id FROM coaches WHERE discord_user_id=?", (entry.discord_user_id,)
+            )
+            row = await cur.fetchone()
+            if row:
+                # Nur Bot-kontrollierte Felder aktualisieren; bio/specialties/availability/twitch_url
+                # bleiben unangetastet — die pflegt der Coach selbst.
+                await db.execute(
+                    """UPDATE coaches
+                          SET discord_username=COALESCE(?, discord_username),
+                              display_name=COALESCE(?, display_name),
+                              avatar_url=COALESCE(?, avatar_url),
+                              status='active',
+                              updated_at=?
+                        WHERE discord_user_id=?""",
+                    (entry.discord_username, entry.display_name, entry.avatar_url,
+                     _iso(), entry.discord_user_id),
+                )
+            else:
+                coach_id = _uid()
+                await db.execute(
+                    """INSERT INTO coaches
+                           (id, discord_user_id, discord_username, display_name, avatar_url, status)
+                       VALUES (?, ?, ?, ?, ?, 'active')""",
+                    (coach_id, entry.discord_user_id, entry.discord_username,
+                     entry.display_name, entry.avatar_url),
+                )
+
+        # Coaches, die nicht mehr im Roster sind → inaktiv setzen
+        placeholders = ",".join("?" * len(incoming_ids))
+        cur = await db.execute(
+            f"""UPDATE coaches SET status='inactive', updated_at=?
+                WHERE status='active' AND discord_user_id NOT IN ({placeholders})""",
+            (_iso(), *incoming_ids),
+        )
+        deactivated = cur.rowcount
+
+        await db.commit()
+        active = len(incoming_ids)
+        return {"ok": True, "active": active, "deactivated": deactivated}
+    finally:
+        await db.close()
+
+
+# ========== TERMINE ==========
+
+class AppointmentCreate(BaseModel):
+    coachee_id: str
+    scheduled_at: str
+    duration_minutes: int = 60
+    title: Optional[str] = None
+    note: Optional[str] = None
+
+
+class AppointmentUpdate(BaseModel):
+    scheduled_at: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    title: Optional[str] = None
+    note: Optional[str] = None
+    status: Optional[str] = None
+
+
+@router.post("/platform/appointments")
+async def create_appointment(body: AppointmentCreate, request: Request):
+    user = await require_coach_user(request)
+
+    # ISO-Validierung
+    try:
+        datetime.fromisoformat(body.scheduled_at.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(400, "scheduled_at muss ISO-8601 UTC sein")
+
+    db = await get_db()
+    try:
+        # Coachee muss existieren
+        cur = await db.execute("SELECT id FROM coachees WHERE id=?", (body.coachee_id,))
+        if not await cur.fetchone():
+            raise HTTPException(404, "Coachee nicht gefunden")
+
+        coach_id = await _acting_coach_id(db, user)
+        appt_id = _uid()
+        await db.execute(
+            """INSERT INTO coaching_appointments
+                   (id, coach_id, coachee_id, scheduled_at, duration_minutes, title, note)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (appt_id, coach_id, body.coachee_id, body.scheduled_at,
+             body.duration_minutes, body.title, body.note),
+        )
+        await db.commit()
+        return {"id": appt_id}
+    finally:
+        await db.close()
+
+
+@router.get("/platform/appointments")
+async def list_appointments(scope: str = "mine", request: Request = None):
+    user = await require_coach_user(request)
+    db = await get_db()
+    try:
+        # Termine ab 7 Tage vor jetzt, alle Stati, aufsteigend
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+
+        if scope == "mine":
+            coach_id = await _acting_coach_id(db, user)
+            cur = await db.execute(
+                """SELECT a.id, a.coach_id, a.coachee_id, a.scheduled_at, a.duration_minutes,
+                          a.title, a.note, a.status, a.created_at,
+                          COALESCE(co.display_name, co.discord_username) AS coachee_display,
+                          COALESCE(c.display_name, c.discord_username) AS coach_display
+                   FROM coaching_appointments a
+                   LEFT JOIN coachees co ON a.coachee_id=co.id
+                   LEFT JOIN coaches c ON a.coach_id=c.id
+                   WHERE a.coach_id=? AND a.scheduled_at >= ?
+                   ORDER BY a.scheduled_at ASC""",
+                (coach_id, cutoff),
+            )
+        else:
+            cur = await db.execute(
+                """SELECT a.id, a.coach_id, a.coachee_id, a.scheduled_at, a.duration_minutes,
+                          a.title, a.note, a.status, a.created_at,
+                          COALESCE(co.display_name, co.discord_username) AS coachee_display,
+                          COALESCE(c.display_name, c.discord_username) AS coach_display
+                   FROM coaching_appointments a
+                   LEFT JOIN coachees co ON a.coachee_id=co.id
+                   LEFT JOIN coaches c ON a.coach_id=c.id
+                   WHERE a.scheduled_at >= ?
+                   ORDER BY a.scheduled_at ASC""",
+                (cutoff,),
+            )
+        return {"appointments": [_row(r) for r in await cur.fetchall()]}
+    finally:
+        await db.close()
+
+
+@router.patch("/platform/appointments/{appointment_id}")
+async def update_appointment(appointment_id: str, body: AppointmentUpdate, request: Request):
+    user = await require_coach_user(request)
+
+    if body.status is not None and body.status not in ("scheduled", "done", "cancelled"):
+        raise HTTPException(400, "status muss scheduled | done | cancelled sein")
+
+    if body.scheduled_at is not None:
+        try:
+            datetime.fromisoformat(body.scheduled_at.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(400, "scheduled_at muss ISO-8601 UTC sein")
+
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "SELECT coach_id, status FROM coaching_appointments WHERE id=?", (appointment_id,)
+        )
+        appt = await cur.fetchone()
+        if not appt:
+            raise HTTPException(404, "Termin nicht gefunden")
+
+        # Nur besitzender Coach oder Admin darf ändern
+        acting_coach_id = await _acting_coach_id(db, user)
+        is_admin = user.get("role") == "admin"
+        if not is_admin and appt["coach_id"] != acting_coach_id:
+            raise HTTPException(403, "Nur der zuständige Coach darf diesen Termin ändern")
+
+        fields: dict = {k: v for k, v in body.dict().items() if v is not None}
+        if not fields:
+            return {"ok": True}
+
+        sets = []
+        params = []
+        for k, v in fields.items():
+            sets.append(f"{k}=?")
+            params.append(v)
+
+        # Reschedule → Benachrichtigungsstempel zurücksetzen (Bot schickt neue Einladung)
+        if "scheduled_at" in fields:
+            sets.append("notify_created_at=NULL")
+            sets.append("notify_reminder_at=NULL")
+
+        sets.append("updated_at=?")
+        params.append(_iso())
+        params.append(appointment_id)
+
+        await db.execute(
+            f"UPDATE coaching_appointments SET {', '.join(sets)} WHERE id=?", params
+        )
+        await db.commit()
+        return {"ok": True}
+    finally:
+        await db.close()
+
+
+# ========== NOTIFICATION-QUEUE (Bot-Polling) ==========
+
+@router.get("/platform/notifications/due")
+async def notifications_due(_bot: None = Depends(require_bot_token)):
+    """Bot-Polling: welche Termine müssen jetzt benachrichtigt werden?"""
+    db = await get_db()
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        in_2h = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+
+        # Drei Typen via UNION, lesbar gehalten
+        cur = await db.execute(
+            """
+            SELECT 'created' AS type,
+                   a.id AS appointment_id,
+                   co.discord_user_id,
+                   COALESCE(co.display_name, co.discord_username) AS coachee_display,
+                   COALESCE(c.display_name, c.discord_username) AS coach_display,
+                   a.scheduled_at, a.duration_minutes, a.title, a.note
+            FROM coaching_appointments a
+            JOIN coachees co ON a.coachee_id=co.id
+            JOIN coaches c ON a.coach_id=c.id
+            WHERE a.status='scheduled' AND a.notify_created_at IS NULL
+
+            UNION ALL
+
+            SELECT 'reminder' AS type,
+                   a.id, co.discord_user_id,
+                   COALESCE(co.display_name, co.discord_username),
+                   COALESCE(c.display_name, c.discord_username),
+                   a.scheduled_at, a.duration_minutes, a.title, a.note
+            FROM coaching_appointments a
+            JOIN coachees co ON a.coachee_id=co.id
+            JOIN coaches c ON a.coach_id=c.id
+            WHERE a.status='scheduled'
+              AND a.notify_reminder_at IS NULL
+              AND a.notify_created_at IS NOT NULL
+              AND a.scheduled_at BETWEEN ? AND ?
+
+            UNION ALL
+
+            SELECT 'cancelled' AS type,
+                   a.id, co.discord_user_id,
+                   COALESCE(co.display_name, co.discord_username),
+                   COALESCE(c.display_name, c.discord_username),
+                   a.scheduled_at, a.duration_minutes, a.title, a.note
+            FROM coaching_appointments a
+            JOIN coachees co ON a.coachee_id=co.id
+            JOIN coaches c ON a.coach_id=c.id
+            WHERE a.status='cancelled'
+              AND a.notify_cancelled_at IS NULL
+              AND a.notify_created_at IS NOT NULL
+            """,
+            (now, in_2h),
+        )
+        return {"notifications": [_row(r) for r in await cur.fetchall()]}
+    finally:
+        await db.close()
+
+
+class AckItem(BaseModel):
+    appointment_id: str
+    type: str  # created | reminder | cancelled
+
+
+class AckPayload(BaseModel):
+    items: List[AckItem]
+
+
+@router.post("/platform/notifications/ack")
+async def notifications_ack(payload: AckPayload, _bot: None = Depends(require_bot_token)):
+    """Bot: bestätigt, dass Benachrichtigungen verschickt wurden."""
+    db = await get_db()
+    try:
+        ts = _iso()
+        acked = 0
+        for item in payload.items:
+            col = {
+                "created": "notify_created_at",
+                "reminder": "notify_reminder_at",
+                "cancelled": "notify_cancelled_at",
+            }.get(item.type)
+            if not col:
+                continue
+            await db.execute(
+                f"UPDATE coaching_appointments SET {col}=? WHERE id=?",
+                (ts, item.appointment_id),
+            )
+            acked += 1
+        await db.commit()
+        return {"ok": True, "acked": acked}
+    finally:
+        await db.close()
+
+
+# ========== COACH-EIGENPROFIL ==========
+
+class CoachProfileUpdate(BaseModel):
+    bio: Optional[str] = None
+    specialties: Optional[List[str]] = None
+    twitch_url: Optional[str] = None
+
+
+@router.get("/platform/coaches/me")
+async def get_my_coach_profile(request: Request):
+    user = await require_coach_user(request)
+    db = await get_db()
+    try:
+        try:
+            discord_id = int(user["sub"])
+        except (ValueError, TypeError):
+            raise HTTPException(404, "Coach-Profil nicht gefunden")
+
+        cur = await db.execute(
+            "SELECT * FROM coaches WHERE discord_user_id=?", (discord_id,)
+        )
+        row = await cur.fetchone()
+        if not row:
+            raise HTTPException(404, "Coach-Profil nicht gefunden")
+
+        data = _row(row)
+        # specialties_json als Liste ausgeben (wie list_coaches in coaching.py)
+        try:
+            data["specialties"] = json.loads(data["specialties_json"]) if data["specialties_json"] else []
+        except Exception:
+            data["specialties"] = []
+        try:
+            data["availability"] = json.loads(data["availability_json"]) if data["availability_json"] else {}
+        except Exception:
+            data["availability"] = {}
+
+        return data
+    finally:
+        await db.close()
+
+
+@router.patch("/platform/coaches/me")
+async def update_my_coach_profile(body: CoachProfileUpdate, request: Request):
+    user = await require_coach_user(request)
+    db = await get_db()
+    try:
+        try:
+            discord_id = int(user["sub"])
+        except (ValueError, TypeError):
+            raise HTTPException(404, "Coach-Profil nicht gefunden")
+
+        cur = await db.execute(
+            "SELECT id FROM coaches WHERE discord_user_id=?", (discord_id,)
+        )
+        if not await cur.fetchone():
+            raise HTTPException(404, "Coach-Profil nicht gefunden")
+
+        sets, params = [], []
+        if body.bio is not None:
+            sets.append("bio=?"); params.append(body.bio)
+        if body.specialties is not None:
+            sets.append("specialties_json=?"); params.append(json.dumps(body.specialties))
+        if body.twitch_url is not None:
+            sets.append("twitch_url=?"); params.append(body.twitch_url)
+
+        if not sets:
+            return {"ok": True}
+
+        sets.append("updated_at=?"); params.append(_iso())
+        params.append(discord_id)
+
+        await db.execute(
+            f"UPDATE coaches SET {', '.join(sets)} WHERE discord_user_id=?", params
+        )
+        await db.commit()
+        return {"ok": True}
     finally:
         await db.close()

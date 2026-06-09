@@ -335,7 +335,26 @@ async def init_db():
             )
         """)
 
-        # Reservierungs-/Zuweisungs-Spalten fuer den Bot-Mirror (idempotent nachruesten)
+        # Terminkalender für Coach ↔ Coachee
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS coaching_appointments (
+                id TEXT PRIMARY KEY,
+                coach_id TEXT REFERENCES coaches(id),
+                coachee_id TEXT REFERENCES coachees(id),
+                scheduled_at TEXT NOT NULL,
+                duration_minutes INTEGER DEFAULT 60,
+                title TEXT,
+                note TEXT,
+                status TEXT DEFAULT 'scheduled',
+                notify_created_at TEXT,
+                notify_reminder_at TEXT,
+                notify_cancelled_at TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Idempotente ALTER-Nachrüstungen
         for _alter in (
             "ALTER TABLE coaching_requests ADD COLUMN assigned_coach_id TEXT",
             "ALTER TABLE coaching_requests ADD COLUMN assigned_coach_username TEXT",
@@ -343,6 +362,7 @@ async def init_db():
             "ALTER TABLE coaching_sessions ADD COLUMN coachee_id TEXT",
             "ALTER TABLE coaching_requests ADD COLUMN bot_request_id INTEGER",
             "ALTER TABLE coaching_sessions ADD COLUMN bot_session_id TEXT",
+            "ALTER TABLE coaches ADD COLUMN twitch_url TEXT",
         ):
             try:
                 await db.execute(_alter)

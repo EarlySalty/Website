@@ -44,6 +44,7 @@ class CoachProfile(BaseModel):
     avg_rating: float
     total_reviews: int
     total_sessions: int
+    twitch_url: Optional[str] = None
 
 
 class CoachReview(BaseModel):
@@ -129,6 +130,7 @@ def _coach_from_row(row) -> CoachProfile:
         avg_rating=row["avg_rating"] or 0,
         total_reviews=row["total_reviews"] or 0,
         total_sessions=row["total_sessions"] or 0,
+        twitch_url=row["twitch_url"] if "twitch_url" in row.keys() else None,
     )
 
 

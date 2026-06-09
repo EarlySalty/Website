@@ -1,3 +1,17 @@
+## #34 — Coaching-Plattform v2: Discord-Sync, Termine, Coach-Profile, neues Gesicht
+
+**Ausgangslage:** Das Coach-Roster zeigte nur die zwei Coaches, die zufällig schon einmal in den gespiegelten Daten aufgetaucht waren — ohne Avatare, ohne Inhalte, auf einer großen leeren Fläche. Termine existierten gar nicht: Wer ein Coaching geplant hatte, wusste das nur aus dem Discord-Chat. Und Coaches konnten ihr eigenes Profil nirgends pflegen.
+
+**Geändert:** Vier Baustellen in einem Schub: (1) Das Roster synchronisiert sich jetzt automatisch aus Discord — jeder mit der Coach-Rolle erscheint mit echtem Avatar. (2) Coaches planen Coachings mit Datum und Uhrzeit; der Spieler bekommt automatisch eine Discord-DM samt Erinnerung. (3) Coaches pflegen Bio, Schwerpunkte und Twitch-Link direkt auf der Website. (4) Komplettes visuelles Redesign mit Hero-Auftritt, Atmosphäre und Akten-Timeline.
+
+**Wie's funktioniert:**
+- **Coach-Sync:** Der Discord-Bot pusht beim Start, alle 10 Minuten und sofort bei jeder Rollenänderung die komplette Liste der Coach-Rollen-Träger an die Website (Name, Anzeigename, Avatar). Wer die Rolle verliert, wird auf inaktiv gesetzt — verschwindet aus dem Roster, bleibt aber für die Historie erhalten. Eine leere Liste wird nie übernommen, damit ein Bot-Schluckauf nicht das ganze Roster leert. Selbst gepflegte Felder (Bio, Schwerpunkte, Twitch) überschreibt der Sync grundsätzlich nicht.
+- **Termine:** Der Coach plant im neuen Cockpit oder direkt in der Spieler-Akte einen Termin mit Datum, Dauer und Thema. Der Bot fragt die Website im Minutentakt nach fälligen Benachrichtigungen und schickt dem Spieler eine DM bei Anlage, eine Erinnerung unter 2 Stunden vor Start und eine Nachricht bei Absage. Verschiebt der Coach den Termin, geht automatisch eine neue Einladung raus. Der Spieler sieht den nächsten Termin prominent als Banner unter „Mein Coaching“, der Coach seine anstehenden Coachings ganz oben im Cockpit.
+- **Profil-Pflege:** Im Cockpit gibt es einen aufklappbaren Profil-Editor (Bio, Schwerpunkte, Twitch-Link). Die Schwerpunkte erscheinen als Badges auf der Roster-Karte, der Twitch-Link als Button auf der Profilseite.
+- **Neues Design:** Großer Hero mit Statistik-Leiste und 3-Schritte-Erklärung, wie man an ein Coaching kommt; Coach-Karten mit echten Avataren und Visier-Ecken beim Hover; die Spieler-Akte als chronologische Timeline aus Terminen, Sessions und geteilten Protokollen; erklärende Leer-Zustände statt nackter „Noch keine …“-Zeilen; Mono-Schrift für alle Daten und Zahlen. Nebenbei behoben: Zeitstempel wurden bisher um die lokale Zeitzone verschoben angezeigt, weil UTC-Zeiten ohne Zonen-Kennung vom Browser als Ortszeit gelesen wurden.
+
+**Für wen sichtbar:** Coaches (Cockpit mit Terminplanung und Profil-Editor), gecoachte Spieler („Mein Coaching“ mit Termin-Banner und Akte), alle Besucher (neues Roster mit allen echten Coaches).
+
 ## #33 — Coaching-Plattform: komplettes UI-Redesign
 
 **Ausgangslage:** Die Coaching-Website unter `/coaching` war funktional verdrahtet, sah aber aus wie ein generisches Admin-Dashboard — helle Rundknöpfe, weiche Karten, kein visueller Bezug zum Deadlock-Universum. Für eine Community-Plattform, die Spieler ernstnehmen soll, war das nicht überzeugend.
