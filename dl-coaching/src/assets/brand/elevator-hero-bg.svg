@@ -5,11 +5,6 @@
       <stop offset=".5" stop-color="#4B351A" stop-opacity=".15"/>
       <stop offset="1" stop-color="#050302" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="fade" x1="0" y1="0" x2="1800" y2="1100" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#171008"/>
-      <stop offset=".45" stop-color="#0E0A06"/>
-      <stop offset="1" stop-color="#050302"/>
-    </linearGradient>
     <filter id="noise">
       <feTurbulence type="fractalNoise" baseFrequency=".62" numOctaves="3" seed="28"/>
       <feColorMatrix type="saturate" values="0"/>
@@ -18,7 +13,6 @@
       </feComponentTransfer>
     </filter>
   </defs>
-  <rect width="1800" height="1100" fill="url(#fade)"/>
   <rect width="1800" height="1100" fill="url(#lamp)"/>
   <g opacity=".22" stroke="#B99352">
     <path d="M1030 158l470 470-470 470-470-470 470-470Z"/>
@@ -32,5 +26,4 @@
     <path d="M1260 430l-28-42M1260 430l28-42"/>
   </g>
   <rect width="1800" height="1100" filter="url(#noise)"/>
-  <rect width="1800" height="1100" fill="url(#fade)" opacity=".22"/>
 </svg>
