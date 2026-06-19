@@ -1,3 +1,11 @@
+## #37 — Coaching-Hero ohne Kachelrahmen
+
+**Ausgangslage:** Trotz Salon-Ansatz wirkte der erste Bereich weiterhin wie eine große Kachel: gerahmter Hero, Innenrahmen und eine Kennzahlenreihe mit sichtbaren Zellen.
+
+**Geändert:** Der Coaching-Hero ist jetzt offen gesetzt. Rahmen, Innenrahmen, Boxfläche und Statistik-Zellgrenzen sind entfernt. Die Kennzahlen stehen als ruhige Signatur unter der Headline, der Schmuck bleibt als dezentes Messing-Ornament im Hintergrund.
+
+**Wie's jetzt läuft:** Der erste Eindruck ist weniger Dashboard und mehr edle Website-Fläche. Die Seite behält den alten, dunklen Messing-Look, aber ohne den hingerotzten Kachelblock-Eindruck.
+
 ## #36 — Coaching-Seite edler und weniger kachelig
 
 **Ausgangslage:** Die neue Coaching-Seite war funktional und im Deco-Farbraum, wirkte aber noch zu stark nach Dashboard: viele gleich große Kacheln, wenig Ruhe, wenig „alt edel“.

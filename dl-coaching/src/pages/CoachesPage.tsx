@@ -105,8 +105,7 @@ export default function CoachesPage() {
   const totalReviews = (coaches ?? []).reduce((sum, c) => sum + (c.total_reviews || 0), 0)
 
   return (
-    <div className="content-grid pb-16 pt-10 md:pt-14">
-      {/* ── Hero ── */}
+    <div className="content-grid pb-16">
       <div className="salon-hero relative mb-12 md:mb-16">
         <span className="hero-ghost absolute -top-8 left-0 -z-10 hidden md:block" aria-hidden>
           Coaching
