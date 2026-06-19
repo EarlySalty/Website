@@ -120,12 +120,12 @@ img { display: block; max-width: 100%; }
     position: fixed;
     inset: 0;
     pointer-events: none;
-    opacity: 0.68;
+    opacity: 1;
     background:
-      linear-gradient(180deg, rgba(11, 9, 7, 0.28), rgba(11, 9, 7, 0.9)),
-      url("./assets/brand/elevator-hero-bg.svg") center top / cover no-repeat;
-    background-size: auto, cover;
-    mask-image: radial-gradient(ellipse 115% 72% at 50% 0%, rgba(0,0,0,0.78), transparent 82%);
+      radial-gradient(ellipse 70% 48% at 68% 18%, rgba(201, 168, 106, 0.075), transparent 68%),
+      radial-gradient(ellipse 42% 40% at 86% 36%, rgba(85, 151, 143, 0.055), transparent 72%),
+      linear-gradient(180deg, rgba(18, 14, 9, 0.35), rgba(8, 6, 4, 0.72));
+    mask-image: radial-gradient(ellipse 118% 76% at 50% 0%, rgba(0,0,0,0.9), transparent 86%);
     z-index: 0;
   }
   .page-shell::after {
