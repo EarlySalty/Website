@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui'
+import coachingSignet from '@/assets/brand/coaching-signet.svg'
 
 export default function Layout() {
   const { user, login, logout, isCoach } = useAuth()
@@ -29,25 +30,8 @@ export default function Layout() {
           <div className="flex min-h-[64px] items-center justify-between gap-4">
 
             <div className="flex items-center gap-8">
-              <Link to="/" className="group flex items-center gap-3">
-                <div
-                  className="font-display flex h-9 w-9 flex-shrink-0 items-center justify-center text-[11px] font-extrabold tracking-[0.14em] transition-shadow group-hover:shadow-[0_0_18px_rgba(201,168,106,0.45)]"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--amber-light), var(--amber-deep))',
-                    color: '#120c05',
-                    clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
-                  }}
-                >
-                  DDC
-                </div>
-                <div className="hidden sm:block">
-                  <p className="font-mono-data text-[9px] uppercase tracking-[0.3em]" style={{ color: 'var(--text-muted)' }}>
-                    Deutsche Deadlock Community
-                  </p>
-                  <p className="font-display text-base font-bold uppercase leading-none tracking-[0.08em] text-white">
-                    Coaching-Etage
-                  </p>
-                </div>
+              <Link to="/" className="brand-signet-link" aria-label="DDC Coaching-Etage">
+                <img src={coachingSignet} alt="DDC Coaching-Etage" />
               </Link>
 
               <nav className="hidden items-center gap-1 md:flex">

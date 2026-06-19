@@ -120,10 +120,12 @@ img { display: block; max-width: 100%; }
     position: fixed;
     inset: 0;
     pointer-events: none;
-    background-image:
+    background:
+      linear-gradient(180deg, rgba(11, 9, 7, 0.18), rgba(11, 9, 7, 0.82)),
+      url("./assets/brand/elevator-hero-bg.svg") right top / min(82vw, 1380px) auto no-repeat,
       linear-gradient(rgba(201, 168, 106, 0.035) 1px, transparent 1px),
       linear-gradient(90deg, rgba(201, 168, 106, 0.035) 1px, transparent 1px);
-    background-size: 52px 52px;
+    background-size: auto, min(82vw, 1380px) auto, 52px 52px, 52px 52px;
     mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(0,0,0,0.75), transparent 75%);
     z-index: 0;
   }
@@ -139,6 +141,23 @@ img { display: block; max-width: 100%; }
 
   .content-grid {
     @apply relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .brand-signet-link {
+    display: block;
+    flex-shrink: 0;
+    opacity: 0.96;
+    transition: opacity 0.2s, filter 0.2s;
+  }
+
+  .brand-signet-link:hover {
+    opacity: 1;
+    filter: drop-shadow(0 0 16px rgba(201, 168, 106, 0.22));
+  }
+
+  .brand-signet-link img {
+    width: auto;
+    height: clamp(38px, 4vw, 48px);
   }
 
   .font-display { font-family: var(--font-display); }
@@ -504,7 +523,9 @@ img { display: block; max-width: 100%; }
     min-height: min(780px, calc(100svh - 8rem));
     overflow: visible;
     padding: clamp(3.5rem, 8vw, 7rem) 0 clamp(2.2rem, 5vw, 4rem);
-    background: none;
+    background:
+      linear-gradient(90deg, rgba(11, 9, 7, 0.62), transparent 62%),
+      url("./assets/brand/brass-plaque.svg") right 10% top 18% / min(52vw, 760px) auto no-repeat;
   }
 
   .salon-hero::before {

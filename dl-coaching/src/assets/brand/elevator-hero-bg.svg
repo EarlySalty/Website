@@ -1,0 +1,36 @@
+<svg width="1800" height="1100" viewBox="0 0 1800 1100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="lamp" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1260 210) rotate(116) scale(850 620)">
+      <stop stop-color="#D0AE6E" stop-opacity=".22"/>
+      <stop offset=".5" stop-color="#4B351A" stop-opacity=".15"/>
+      <stop offset="1" stop-color="#050302" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="1800" y2="1100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#171008"/>
+      <stop offset=".45" stop-color="#0E0A06"/>
+      <stop offset="1" stop-color="#050302"/>
+    </linearGradient>
+    <filter id="noise">
+      <feTurbulence type="fractalNoise" baseFrequency=".62" numOctaves="3" seed="28"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 .14"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+  <rect width="1800" height="1100" fill="url(#fade)"/>
+  <rect width="1800" height="1100" fill="url(#lamp)"/>
+  <g opacity=".22" stroke="#B99352">
+    <path d="M1030 158l470 470-470 470-470-470 470-470Z"/>
+    <path d="M730 328l600 600M1330 328L730 928"/>
+    <path d="M124 0v1100M292 0v1100M460 0v1100M628 0v1100M796 0v1100M964 0v1100M1132 0v1100M1300 0v1100M1468 0v1100M1636 0v1100" opacity=".16"/>
+    <path d="M0 154h1800M0 326h1800M0 498h1800M0 670h1800M0 842h1800M0 1014h1800" opacity=".12"/>
+  </g>
+  <g opacity=".12" stroke="#F0D9A2">
+    <path d="M1260 0v430"/>
+    <path d="M1235 60h50"/>
+    <path d="M1260 430l-28-42M1260 430l28-42"/>
+  </g>
+  <rect width="1800" height="1100" filter="url(#noise)"/>
+  <rect width="1800" height="1100" fill="url(#fade)" opacity=".22"/>
+</svg>

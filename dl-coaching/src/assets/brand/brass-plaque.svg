@@ -1,0 +1,35 @@
+<svg width="1200" height="420" viewBox="0 0 1200 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="plate" x1="57" y1="23" x2="1111" y2="409" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4A3018"/>
+      <stop offset=".18" stop-color="#B38A4B"/>
+      <stop offset=".44" stop-color="#6C4C25"/>
+      <stop offset=".69" stop-color="#D0A968"/>
+      <stop offset="1" stop-color="#2B1B0D"/>
+    </linearGradient>
+    <radialGradient id="wear" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(610 183) rotate(18) scale(628 241)">
+      <stop stop-color="#F0D9A2" stop-opacity=".22"/>
+      <stop offset=".55" stop-color="#7B5528" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#050302" stop-opacity=".58"/>
+    </radialGradient>
+    <filter id="rough">
+      <feTurbulence type="fractalNoise" baseFrequency=".78" numOctaves="4" seed="19"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 .22"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+  <rect width="1200" height="420" fill="#0C0805"/>
+  <path d="M51 32h1098l20 20v316l-20 20H51l-20-20V52l20-20Z" fill="url(#plate)" stroke="#D7B675" stroke-width="3"/>
+  <path d="M75 59h1050l16 16v270l-16 16H75l-16-16V75l16-16Z" fill="url(#wear)" stroke="#211407" stroke-opacity=".65"/>
+  <rect x="31" y="32" width="1138" height="356" filter="url(#rough)" opacity=".45"/>
+  <g opacity=".6">
+    <circle cx="72" cy="72" r="16" fill="#211407" stroke="#D8B776" stroke-width="3"/>
+    <circle cx="1128" cy="72" r="16" fill="#211407" stroke="#D8B776" stroke-width="3"/>
+    <circle cx="72" cy="348" r="16" fill="#211407" stroke="#D8B776" stroke-width="3"/>
+    <circle cx="1128" cy="348" r="16" fill="#211407" stroke="#D8B776" stroke-width="3"/>
+  </g>
+  <path d="M118 112h964M118 308h964" stroke="#F0D9A2" stroke-opacity=".13"/>
+  <path d="M139 130h922M139 290h922" stroke="#1A1008" stroke-opacity=".44"/>
+</svg>
