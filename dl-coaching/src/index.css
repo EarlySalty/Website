@@ -123,10 +123,8 @@ img { display: block; max-width: 100%; }
     opacity: 0.68;
     background:
       linear-gradient(180deg, rgba(11, 9, 7, 0.28), rgba(11, 9, 7, 0.9)),
-      url("./assets/brand/elevator-hero-bg.svg") center top / cover no-repeat,
-      linear-gradient(rgba(201, 168, 106, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(201, 168, 106, 0.035) 1px, transparent 1px);
-    background-size: auto, cover, 52px 52px, 52px 52px;
+      url("./assets/brand/elevator-hero-bg.svg") center top / cover no-repeat;
+    background-size: auto, cover;
     mask-image: radial-gradient(ellipse 115% 72% at 50% 0%, rgba(0,0,0,0.78), transparent 82%);
     z-index: 0;
   }
@@ -582,7 +580,6 @@ img { display: block; max-width: 100%; }
     min-height: min(780px, calc(100svh - 8rem));
     overflow: visible;
     padding: clamp(3.5rem, 8vw, 7rem) 0 clamp(2.2rem, 5vw, 4rem);
-    background: linear-gradient(90deg, rgba(11, 9, 7, 0.48), transparent 64%);
   }
 
   .salon-hero::before {
