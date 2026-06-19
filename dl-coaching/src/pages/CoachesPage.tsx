@@ -20,96 +20,77 @@ function RatingBar({ rating, max = 10 }: { rating: number; max?: number }) {
 }
 
 function CoachCard({ coach, index }: { coach: CoachProfile; index: number }) {
+  const hasReviews = coach.total_reviews > 0
   return (
     <Link
       to={`/coaches/${coach.id}`}
-      className="card card-hover bracket-card animate-in group relative flex flex-col overflow-hidden p-5"
+      className="coach-row animate-in group"
       style={{ animationDelay: `${index * 70}ms` }}
     >
-      {/* Laufende Nummer als Wasserzeichen */}
-      <span
-        className="font-display pointer-events-none absolute -right-1 -top-3 text-[64px] font-bold leading-none"
-        style={{ color: 'rgba(232, 149, 58, 0.06)' }}
-      >
+      <span className="coach-row-index">
         {String(index + 1).padStart(2, '0')}
       </span>
 
-      <div className="flex items-start gap-4">
-        <Avatar url={coach.avatar_url} name={coach.display_name} size={64} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="pulse-dot" style={{ background: 'var(--green)' }} />
-            <h3 className="font-display truncate text-lg font-bold uppercase leading-tight tracking-[0.04em] text-white">
-              {coach.display_name}
-            </h3>
-          </div>
-          <p className="font-mono-data mb-2 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-            @{coach.discord_username}
-          </p>
-          {coach.total_reviews > 0 ? (
-            <RatingBar rating={coach.avg_rating} />
-          ) : (
-            <p className="font-mono-data text-[10px] uppercase tracking-[0.14em]" style={{ color: 'var(--text-muted)' }}>
-              Neu im Roster
-            </p>
-          )}
-        </div>
+      <div className="coach-row-portrait">
+        <Avatar url={coach.avatar_url} name={coach.display_name} size={82} />
       </div>
 
-      {coach.bio ? (
-        <p className="mt-4 line-clamp-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          {coach.bio}
-        </p>
-      ) : (
-        <p className="mt-4 line-clamp-2 text-sm italic leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-          Stellt sich demnächst vor — Anfrage trotzdem jederzeit möglich.
-        </p>
-      )}
-
-      {coach.specialties && coach.specialties.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {coach.specialties.slice(0, 4).map((s: string) => (
-            <span key={s} className="chip">{s}</span>
-          ))}
+      <div className="coach-row-main">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h3 className="font-display text-2xl font-extrabold uppercase leading-none text-white">
+            {coach.display_name}
+          </h3>
+          <p className="font-mono-data text-[11px]" style={{ color: 'var(--text-muted)' }}>
+            @{coach.discord_username}
+          </p>
         </div>
-      )}
 
-      <div className="flex-1" />
-      <div
-        className="mt-4 flex items-center gap-5 border-t pt-3 text-xs"
-        style={{ borderColor: 'var(--border-dim)', color: 'var(--text-muted)' }}
-      >
-        <span className="flex items-center gap-1.5">
-          <span className="font-mono-data font-bold" style={{ color: 'var(--text-secondary)' }}>
-            {coach.total_sessions}
-          </span>
-          Sessions
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="font-mono-data font-bold" style={{ color: 'var(--text-secondary)' }}>
-            {coach.total_reviews}
-          </span>
-          Bewertungen
-        </span>
-        <span
-          className="font-display ml-auto text-[11px] font-bold uppercase tracking-[0.1em] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-          style={{ color: 'var(--amber)' }}
-        >
-          Profil →
-        </span>
+        {coach.bio ? (
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            {coach.bio}
+          </p>
+        ) : (
+          <p className="mt-3 max-w-3xl text-sm italic leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+            Stellt sich demnächst vor. Eine Anfrage ist trotzdem jederzeit möglich.
+          </p>
+        )}
+
+        {coach.specialties && coach.specialties.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {coach.specialties.slice(0, 6).map((s: string) => (
+              <span key={s} className="chip">{s}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="coach-row-side">
+        {hasReviews ? (
+          <div className="w-full">
+            <RatingBar rating={coach.avg_rating} />
+            <p className="stat-label mt-1 text-right">{coach.total_reviews} Bewertungen</p>
+          </div>
+        ) : (
+          <p className="stat-label text-right">Neu im Roster</p>
+        )}
+        <div className="coach-row-facts">
+          <span><b>{coach.total_sessions}</b> Sessions</span>
+          <span><b>{coach.total_reviews}</b> Bewertungen</span>
+        </div>
+        <span className="coach-row-link">Profil öffnen</span>
       </div>
     </Link>
   )
 }
 
-function Step({ nr, title, copy }: { nr: string; title: string; copy: string }) {
+function ProcessStep({ nr, title, copy }: { nr: string; title: string; copy: string }) {
   return (
-    <div className="panel relative flex-1 p-5">
-      <span className="font-mono-data absolute right-4 top-3 text-[11px]" style={{ color: 'var(--amber)', opacity: 0.7 }}>
-        {nr}
-      </span>
-      <h3 className="font-display text-sm font-bold uppercase tracking-[0.1em] text-white">{title}</h3>
-      <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{copy}</p>
+    <div className="process-step">
+      <span>{nr}</span>
+      <div>
+        <h3>{title}</h3>
+        <p>{copy}</p>
+      </div>
     </div>
   )
 }
@@ -126,17 +107,17 @@ export default function CoachesPage() {
   return (
     <div className="content-grid pb-16 pt-10 md:pt-14">
       {/* ── Hero ── */}
-      <div className="deco-hero-card relative mb-12 md:mb-16">
+      <div className="salon-hero relative mb-12 md:mb-16">
         <span className="hero-ghost absolute -top-8 left-0 -z-10 hidden md:block" aria-hidden>
           Coaching
         </span>
-        <div className="animate-in-left">
+        <div className="animate-in-left max-w-3xl">
           <div className="eyebrow mb-4">DDC Coaching-Programm</div>
-          <h1 className="hero-display max-w-3xl">
+          <h1 className="hero-display">
             Besser werden,<br />
             <span style={{ color: 'var(--amber-light)' }}>ohne Chat-Chaos.</span>
           </h1>
-          <p className="section-copy mt-5 max-w-xl text-[15px]">
+          <p className="section-copy mt-5 max-w-2xl text-[15px]">
             Coaches, Anfragen, Termine, Ziele und Session-Notizen laufen auf der Website. Discord bleibt für Login, Voice und kurze Abstimmung.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
@@ -145,48 +126,41 @@ export default function CoachesPage() {
           </div>
         </div>
 
-        <div className="animate-in mt-8 flex flex-wrap gap-px overflow-hidden rounded-md" style={{ animationDelay: '160ms', border: '1px solid var(--border-dim)' }}>
+        <div className="salon-metrics animate-in" style={{ animationDelay: '160ms' }}>
           {[
             { label: 'Coaches im Roster', value: isLoading ? '…' : String(coaches?.length ?? 0) },
             { label: 'Sessions gespielt', value: isLoading ? '…' : String(totalSessions) },
             { label: 'Bewertungen', value: isLoading ? '…' : String(totalReviews) },
             { label: 'Kosten', value: 'Gratis' },
           ].map((s) => (
-            <div key={s.label} className="min-w-[140px] flex-1 px-5 py-4" style={{ background: 'var(--bg-card)' }}>
-              <p className="font-display text-2xl font-bold" style={{ color: 'var(--amber)' }}>{s.value}</p>
-              <p className="stat-label mt-0.5">{s.label}</p>
+            <div key={s.label}>
+              <p>{s.value}</p>
+              <span>{s.label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="animate-in mb-12" style={{ animationDelay: '240ms' }}>
-        <div className="mb-4 flex items-center gap-3">
-          <span className="font-mono-data text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--amber)' }}>
-            {'// '}So läuft’s
-          </span>
-          <div className="divider flex-1" />
+      <div className="salon-process animate-in mb-12" style={{ animationDelay: '240ms' }}>
+        <div className="salon-section-title">
+          <span>So läuft’s</span>
+          <i />
         </div>
-        <div className="flex flex-col gap-3 md:flex-row">
-          <Step nr="01" title="Anfrage auf der Website" copy="Rank, Helden, Zeitfenster und Thema landen strukturiert im Coach-Cockpit." />
-          <Step nr="02" title="Termin abstimmen" copy="Ein Coach übernimmt, schlägt Zeiten vor und hält den vereinbarten Termin fest." />
-          <Step nr="03" title="Fortschritt behalten" copy="Termine, Ziele, Meilensteine und Session-Protokolle bleiben unter „Mein Coaching“." />
+        <div className="process-line">
+          <ProcessStep nr="01" title="Anfrage auf der Website" copy="Rank, Helden, Zeitfenster und Thema landen strukturiert im Coach-Cockpit." />
+          <ProcessStep nr="02" title="Termin abstimmen" copy="Ein Coach übernimmt, schlägt Zeiten vor und hält den vereinbarten Termin fest." />
+          <ProcessStep nr="03" title="Fortschritt behalten" copy="Termine, Ziele, Meilensteine und Session-Protokolle bleiben unter „Mein Coaching“." />
         </div>
       </div>
 
-      <div className="mb-5 flex items-center gap-3">
-        <span className="font-mono-data text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--amber)' }}>
-          {'// '}Das Roster
-        </span>
+      <div className="salon-section-title mb-5">
+        <span>Coach-Salon</span>
         {!isLoading && (
-          <span
-            className="font-mono-data rounded-sm px-1.5 py-0.5 text-[10px] font-bold"
-            style={{ background: 'var(--amber-glow)', color: 'var(--amber)', border: '1px solid var(--amber-border)' }}
-          >
+          <b>
             {String(coaches?.length ?? 0).padStart(2, '0')}
-          </span>
+          </b>
         )}
-        <div className="divider flex-1" />
+        <i />
       </div>
 
       {isLoading ? (
@@ -194,7 +168,7 @@ export default function CoachesPage() {
           <div className="spinner h-9 w-9" />
         </div>
       ) : coaches && coaches.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="coach-list">
           {coaches.map((coach, i) => (
             <CoachCard key={coach.id} coach={coach} index={i} />
           ))}

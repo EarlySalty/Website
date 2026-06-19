@@ -1,3 +1,11 @@
+## #36 — Coaching-Seite edler und weniger kachelig
+
+**Ausgangslage:** Die neue Coaching-Seite war funktional und im Deco-Farbraum, wirkte aber noch zu stark nach Dashboard: viele gleich große Kacheln, wenig Ruhe, wenig „alt edel“.
+
+**Geändert:** Die Coaching-Startseite ist jetzt als Salon aufgebaut: breiter Hero mit Messing-Ornament, integrierte Kennzahlenleiste, Ablauf als Prozesslinie statt Kartenreihe und Coach-Roster als breite Profilzeilen statt Kachelgrid. Die Anfrage-Seite nutzt denselben Stil und ersetzt die Sidecards durch eine schlichte Aktenleiste.
+
+**Wie's jetzt läuft:** Der erste Eindruck ist ruhiger und hochwertiger. Spieler sehen zuerst das Programm und die klare Aktion, danach den Ablauf und anschließend die Coaches als scanbare Liste mit Profilbild, Bio, Schwerpunkten, Sessions und Bewertung. Die Funktion bleibt gleich, aber die Oberfläche wirkt weniger zusammengeworfen.
+
 ## #35 — Coaching zieht auf die Website um
 
 **Ausgangslage:** Der Coaching-Bereich war funktional, wirkte aber noch wie ein separates Dashboard und führte Spieler gedanklich weiter in Discord-Anfragen hinein. In der Coach-Queue hing außerdem noch die alte AI-Zusammenfassung, obwohl die Organisation künftig auf der Website stattfinden soll.

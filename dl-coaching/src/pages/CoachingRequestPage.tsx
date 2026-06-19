@@ -56,7 +56,7 @@ export default function CoachingRequestPage() {
   if (!user) {
     return (
       <div className="content-grid pb-16 pt-10 md:pt-14">
-        <div className="deco-hero-card animate-in-left">
+        <div className="salon-hero animate-in-left">
           <div className="eyebrow mb-4">Coaching anfragen</div>
           <h1 className="hero-display max-w-3xl">
             Erst Website.<br />
@@ -89,7 +89,7 @@ export default function CoachingRequestPage() {
 
   return (
     <div className="content-grid pb-16 pt-10 md:pt-14">
-      <div className="deco-hero-card animate-in-left mb-10">
+      <div className="salon-hero animate-in-left mb-10">
         <div className="eyebrow mb-4">Website-Anfrage</div>
         <h1 className="hero-display max-w-4xl">
           Coaching buchen,<br />
@@ -200,8 +200,8 @@ export default function CoachingRequestPage() {
           </div>
         </form>
 
-        <aside className="space-y-4">
-          <div className="card p-5">
+        <aside className="request-ledger">
+          <div>
             <p className="stat-label mb-2">Ablauf</p>
             <ol className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
               <li><span style={{ color: 'var(--amber-light)' }}>01</span> Anfrage hier ausfüllen</li>
@@ -210,7 +210,7 @@ export default function CoachingRequestPage() {
               <li><span style={{ color: 'var(--amber-light)' }}>04</span> Notizen und Ziele bleiben in deiner Akte</li>
             </ol>
           </div>
-          <div className="card p-5">
+          <div>
             <p className="stat-label mb-2">Discord bleibt für</p>
             <div className="flex flex-wrap gap-1.5">
               {['Login', 'Rückfragen', 'Voice', 'Erinnerungen'].map((item) => (
