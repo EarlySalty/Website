@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui'
-import coachingSignet from '@/assets/brand/coaching-signet.svg'
+import coachingMark from '@/assets/brand/coaching-mark.svg'
 
 export default function Layout() {
   const { user, login, logout, isCoach } = useAuth()
@@ -30,8 +30,12 @@ export default function Layout() {
           <div className="flex min-h-[64px] items-center justify-between gap-4">
 
             <div className="flex items-center gap-8">
-              <Link to="/" className="brand-signet-link" aria-label="DDC Coaching-Etage">
-                <img src={coachingSignet} alt="DDC Coaching-Etage" />
+              <Link to="/" className="brand-wordmark" aria-label="DDC Coaching-Etage">
+                <img src={coachingMark} alt="" aria-hidden="true" />
+                <span className="brand-copy">
+                  <span>Deutsche Deadlock Community</span>
+                  <strong>Coaching-Etage</strong>
+                </span>
               </Link>
 
               <nav className="hidden items-center gap-1 md:flex">
@@ -63,7 +67,7 @@ export default function Layout() {
               ) : (
                 <button
                   onClick={login}
-                  className="flex items-center gap-2 rounded-sm px-4 py-2 text-sm font-semibold text-white transition"
+                  className="discord-login-button flex items-center gap-2 rounded-sm px-4 py-2 text-sm font-semibold text-white transition"
                   style={{ background: '#5865F2' }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#4752C4' }}
                   onMouseLeave={e => { e.currentTarget.style.background = '#5865F2' }}

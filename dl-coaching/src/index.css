@@ -120,13 +120,14 @@ img { display: block; max-width: 100%; }
     position: fixed;
     inset: 0;
     pointer-events: none;
+    opacity: 0.68;
     background:
-      linear-gradient(180deg, rgba(11, 9, 7, 0.18), rgba(11, 9, 7, 0.82)),
-      url("./assets/brand/elevator-hero-bg.svg") right top / min(82vw, 1380px) auto no-repeat,
+      linear-gradient(180deg, rgba(11, 9, 7, 0.28), rgba(11, 9, 7, 0.9)),
+      url("./assets/brand/elevator-hero-bg.svg") center top / cover no-repeat,
       linear-gradient(rgba(201, 168, 106, 0.035) 1px, transparent 1px),
       linear-gradient(90deg, rgba(201, 168, 106, 0.035) 1px, transparent 1px);
-    background-size: auto, min(82vw, 1380px) auto, 52px 52px, 52px 52px;
-    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(0,0,0,0.75), transparent 75%);
+    background-size: auto, cover, 52px 52px, 52px 52px;
+    mask-image: radial-gradient(ellipse 115% 72% at 50% 0%, rgba(0,0,0,0.78), transparent 82%);
     z-index: 0;
   }
   .page-shell::after {
@@ -143,21 +144,79 @@ img { display: block; max-width: 100%; }
     @apply relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
-  .brand-signet-link {
-    display: block;
+  .brand-wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.72rem;
     flex-shrink: 0;
     opacity: 0.96;
     transition: opacity 0.2s, filter 0.2s;
   }
 
-  .brand-signet-link:hover {
+  .brand-wordmark:hover {
     opacity: 1;
     filter: drop-shadow(0 0 16px rgba(201, 168, 106, 0.22));
   }
 
-  .brand-signet-link img {
-    width: auto;
-    height: clamp(38px, 4vw, 48px);
+  .brand-wordmark img {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+
+  .brand-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .brand-copy span {
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    white-space: nowrap;
+  }
+
+  .brand-copy strong {
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 430px) {
+    .brand-wordmark {
+      gap: 0.5rem;
+    }
+
+    .brand-wordmark img {
+      width: 32px;
+      height: 32px;
+    }
+
+    .brand-copy span {
+      display: none;
+    }
+
+    .brand-copy strong {
+      font-size: 14px;
+    }
+
+    .discord-login-button {
+      gap: 0.35rem !important;
+      padding: 0.5rem 0.65rem !important;
+      font-size: 13px !important;
+    }
+
+    .discord-login-button svg {
+      width: 14px;
+      height: 14px;
+    }
   }
 
   .font-display { font-family: var(--font-display); }
