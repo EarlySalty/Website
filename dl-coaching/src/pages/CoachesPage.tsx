@@ -107,9 +107,6 @@ export default function CoachesPage() {
   return (
     <div className="content-grid pb-16">
       <div className="salon-hero relative mb-12 md:mb-16">
-        <span className="hero-ghost absolute -top-8 left-0 -z-10 hidden md:block" aria-hidden>
-          Coaching
-        </span>
         <div className="animate-in-left max-w-3xl">
           <div className="eyebrow mb-4">DDC Coaching-Programm</div>
           <h1 className="hero-display">

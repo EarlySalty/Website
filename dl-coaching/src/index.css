@@ -503,17 +503,15 @@ img { display: block; max-width: 100%; }
   .salon-hero {
     min-height: min(780px, calc(100svh - 8rem));
     overflow: visible;
-    padding: clamp(3.5rem, 8vw, 7rem) clamp(0rem, 2vw, 2rem) clamp(2.2rem, 5vw, 4rem);
-    background:
-      radial-gradient(70% 86% at 82% 18%, rgba(239, 212, 157, 0.12), transparent 58%),
-      linear-gradient(120deg, rgba(128, 101, 52, 0.13), transparent 36%);
+    padding: clamp(3.5rem, 8vw, 7rem) 0 clamp(2.2rem, 5vw, 4rem);
+    background: none;
   }
 
   .salon-hero::before {
     content: '';
     position: absolute;
-    left: clamp(0rem, 2vw, 2rem);
-    right: clamp(0rem, 2vw, 2rem);
+    left: 0;
+    right: 0;
     bottom: 0;
     height: 1px;
     background: linear-gradient(90deg, rgba(201, 168, 106, 0.38), transparent 72%);
@@ -523,16 +521,16 @@ img { display: block; max-width: 100%; }
   .salon-hero::after {
     content: '';
     position: absolute;
-    right: clamp(0rem, 9vw, 8rem);
+    right: clamp(0rem, 8vw, 7rem);
     top: 45%;
     width: min(32vw, 430px);
     aspect-ratio: 1;
     transform: translateY(-50%) rotate(45deg);
-    border: 1px solid rgba(201, 168, 106, 0.11);
+    border: 1px solid rgba(201, 168, 106, 0.08);
     background:
       linear-gradient(90deg, transparent 49%, rgba(201, 168, 106, 0.10) 50%, transparent 51%),
       linear-gradient(0deg, transparent 49%, rgba(201, 168, 106, 0.10) 50%, transparent 51%);
-    opacity: 0.7;
+    opacity: 0.48;
     pointer-events: none;
   }
 
@@ -544,14 +542,25 @@ img { display: block; max-width: 100%; }
   .salon-metrics {
     display: flex;
     flex-wrap: wrap;
-    gap: clamp(1.4rem, 4vw, 4rem);
+    gap: clamp(1.6rem, 5vw, 5.5rem);
     margin-top: clamp(2.4rem, 5vw, 4rem);
   }
 
   .salon-metrics div {
-    min-width: 7.5rem;
+    min-width: 6.5rem;
     padding: 0;
     border: 0;
+    position: relative;
+  }
+
+  .salon-metrics div + div::before {
+    content: '';
+    position: absolute;
+    left: calc(clamp(1.6rem, 5vw, 5.5rem) / -2);
+    top: 0.2rem;
+    bottom: 0.35rem;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(201, 168, 106, 0.28), transparent);
   }
 
   .salon-metrics p {
@@ -755,6 +764,202 @@ img { display: block; max-width: 100%; }
     border-bottom: 0;
   }
 
+  .discord-modal-page {
+    display: grid;
+    min-height: calc(100svh - 64px);
+    place-items: center;
+    padding-top: clamp(2rem, 6vw, 5rem);
+    padding-bottom: clamp(2rem, 6vw, 5rem);
+  }
+
+  .discord-request-modal {
+    width: min(100%, 520px);
+    border: 1px solid rgba(201, 168, 106, 0.2);
+    border-radius: 10px;
+    background: #232329;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.52);
+    padding: 1.5rem;
+  }
+
+  .discord-modal-head {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .discord-modal-head h1 {
+    color: #f4f0e6;
+    font-family: var(--font-body);
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.15;
+  }
+
+  .discord-modal-head p {
+    color: #aaa8b2;
+    font-size: 0.82rem;
+  }
+
+  .discord-modal-mark {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--amber-light), var(--amber));
+    color: #17130c;
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+
+  .discord-user-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 1rem;
+    border: 1px solid #373740;
+    border-radius: 7px;
+    background: #1f1f25;
+    padding: 0.65rem;
+  }
+
+  .discord-user-strip strong {
+    display: block;
+    color: #f4f0e6;
+    font-size: 0.9rem;
+    line-height: 1.15;
+  }
+
+  .discord-user-strip span {
+    color: #aaa8b2;
+    font-size: 0.76rem;
+  }
+
+  .discord-warning {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.65rem;
+    margin-bottom: 1.2rem;
+    border: 1px solid #d7a100;
+    border-radius: 7px;
+    background: rgba(215, 161, 0, 0.08);
+    color: #f1ead9;
+    padding: 0.75rem 0.8rem;
+  }
+
+  .discord-warning span {
+    display: grid;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    border-radius: 50%;
+    background: #d7a100;
+    color: #17130c;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .discord-warning p {
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .discord-field {
+    display: block;
+    margin-top: 1rem;
+  }
+
+  .discord-field span {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #f4f0e6;
+    font-size: 0.92rem;
+    font-weight: 800;
+  }
+
+  .discord-field b {
+    color: #e07171;
+  }
+
+  .discord-field input,
+  .discord-field textarea {
+    width: 100%;
+    border: 1px solid #373740;
+    border-radius: 7px;
+    background: #1f1f25;
+    color: #f4f0e6;
+    padding: 0.78rem 0.9rem;
+    outline: none;
+    transition: border-color 0.16s, box-shadow 0.16s;
+  }
+
+  .discord-field textarea {
+    resize: vertical;
+  }
+
+  .discord-field input::placeholder,
+  .discord-field textarea::placeholder {
+    color: #8c8a94;
+  }
+
+  .discord-field input:focus,
+  .discord-field textarea:focus {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(201, 168, 106, 0.12);
+  }
+
+  .discord-error {
+    margin-top: 0.9rem;
+    color: #ff8f8f;
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+
+  .discord-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+    margin-top: 1.4rem;
+  }
+
+  .discord-cancel,
+  .discord-submit {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 7px;
+    font-weight: 800;
+    transition: filter 0.16s, opacity 0.16s, transform 0.16s;
+  }
+
+  .discord-cancel {
+    background: #2f2f36;
+    color: #f4f0e6;
+  }
+
+  .discord-submit {
+    background: #5865f2;
+    color: #fff;
+  }
+
+  .discord-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .discord-cancel:hover,
+  .discord-submit:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
   @media (max-width: 980px) {
     .salon-metrics {
       gap: 1.3rem 2rem;
@@ -840,6 +1045,14 @@ img { display: block; max-width: 100%; }
     .request-ledger > div + div {
       border-top: 1px solid var(--border-dim);
       padding-top: 1rem;
+    }
+
+    .discord-request-modal {
+      padding: 1.2rem;
+    }
+
+    .discord-actions {
+      grid-template-columns: 1fr;
     }
   }
 }
