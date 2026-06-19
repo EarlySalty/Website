@@ -135,7 +135,7 @@ export default function CoachDetailPage() {
           </div>
 
           <div className="flex flex-col gap-2 md:items-end">
-            <div className="badge badge-amber !px-4 !py-2.5 !text-sm">Anfrage via Discord</div>
+            <Link to={`/anfrage?coach=${coach.id}`} className="btn-amber !px-4 !py-2.5 !text-sm">Anfrage stellen</Link>
             {coach.twitch_url && (
               <a
                 href={coach.twitch_url}

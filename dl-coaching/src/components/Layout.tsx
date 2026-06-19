@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import type { ReactNode } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui'
 
@@ -15,27 +16,25 @@ export default function Layout() {
       <header
         className="sticky top-0 z-50"
         style={{
-          background: 'rgba(5, 7, 13, 0.88)',
+          background: 'rgba(11, 9, 7, 0.9)',
           backdropFilter: 'blur(18px)',
-          borderBottom: '1px solid rgba(232, 149, 58, 0.14)',
+          borderBottom: '1px solid var(--border-dim)',
         }}
       >
-        {/* Amber-Scanline oben */}
         <div
           className="h-[2px] w-full"
-          style={{ background: 'linear-gradient(90deg, transparent, var(--amber) 30%, var(--amber-light) 50%, var(--amber) 70%, transparent)' }}
+          style={{ background: 'linear-gradient(90deg, transparent, var(--amber-deep) 25%, var(--amber-light) 50%, var(--amber-deep) 75%, transparent)' }}
         />
         <div className="content-grid">
           <div className="flex min-h-[64px] items-center justify-between gap-4">
 
-            {/* Logo */}
             <div className="flex items-center gap-8">
               <Link to="/" className="group flex items-center gap-3">
                 <div
-                  className="font-display flex h-9 w-9 flex-shrink-0 items-center justify-center text-[11px] font-bold tracking-[0.14em] transition-shadow group-hover:shadow-[0_0_18px_rgba(232,149,58,0.45)]"
+                  className="font-display flex h-9 w-9 flex-shrink-0 items-center justify-center text-[11px] font-extrabold tracking-[0.14em] transition-shadow group-hover:shadow-[0_0_18px_rgba(201,168,106,0.45)]"
                   style={{
-                    background: 'linear-gradient(135deg, var(--amber-light) 0%, var(--amber-deep) 100%)',
-                    color: '#120b03',
+                    background: 'linear-gradient(135deg, var(--amber-light), var(--amber-deep))',
+                    color: '#120c05',
                     clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
                   }}
                 >
@@ -46,14 +45,14 @@ export default function Layout() {
                     Deutsche Deadlock Community
                   </p>
                   <p className="font-display text-base font-bold uppercase leading-none tracking-[0.08em] text-white">
-                    Coaching
+                    Coaching-Etage
                   </p>
                 </div>
               </Link>
 
-              {/* Nav */}
               <nav className="hidden items-center gap-1 md:flex">
                 <NavLink to="/" active={isActive('/', true)}>Coaches</NavLink>
+                <NavLink to="/anfrage" active={isActive('/anfrage')}>Anfrage</NavLink>
                 {user && <NavLink to="/me" active={isActive('/me')}>Mein Coaching</NavLink>}
                 {isCoach && (
                   <NavLink to="/dashboard" active={isActive('/dashboard') || isActive('/overview') || isActive('/coachees')}>
@@ -96,12 +95,10 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* ── Main ────────────────────────────────── */}
       <main className="flex-1">
         <Outlet />
       </main>
 
-      {/* ── Footer ──────────────────────────────── */}
       <footer className="relative z-10 mt-auto py-8" style={{ borderTop: '1px solid var(--border-dim)' }}>
         <div className="content-grid">
           <div className="flex flex-col items-center justify-between gap-2 sm:flex-row">
@@ -118,7 +115,7 @@ export default function Layout() {
   )
 }
 
-function NavLink({ to, children, active }: { to: string; children: React.ReactNode; active: boolean }) {
+function NavLink({ to, children, active }: { to: string; children: ReactNode; active: boolean }) {
   return (
     <Link
       to={to}

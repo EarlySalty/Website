@@ -1,3 +1,15 @@
+## #35 — Coaching zieht auf die Website um
+
+**Ausgangslage:** Der Coaching-Bereich war funktional, wirkte aber noch wie ein separates Dashboard und führte Spieler gedanklich weiter in Discord-Anfragen hinein. In der Coach-Queue hing außerdem noch die alte AI-Zusammenfassung, obwohl die Organisation künftig auf der Website stattfinden soll.
+
+**Geändert:** Die Coaching-App übernimmt jetzt die Art-Déco-Aufzug-Optik der neuen Website: dunkles Messing, lokale Sora/Manrope-Fonts, stärkere Hero-Flächen, schärfere Karten und wärmere Panels. Dazu gibt es eine neue Website-Anfrage unter `/coaching/anfrage`; Coach-Profile und Roster verlinken dorthin. Die sichtbare AI-Analyse ist aus der Queue entfernt.
+
+**Wie's jetzt läuft:**
+- **Anfrage:** Spieler melden sich mit Discord an, füllen auf der Website Rank, Helden/Rolle, Verfügbarkeit, Lernprobleme, Ziele und optional einen Wunsch-Coach aus. Die Anfrage landet strukturiert in der Coaching-Queue.
+- **Coach-Sicht:** Coaches sehen Website-Anfragen im Cockpit, pflegen weiterhin Bio, Spezialitäten und Twitch-Link, planen Termine und behalten vergangene Termine, Spielerakten, Ziele und Notizen im Blick.
+- **Spieler-Sicht:** Unter „Mein Coaching“ sieht der Spieler Termine, Fortschritt, Ziele und freigegebene Session-Notizen. Wenn noch keine Akte existiert, führt die Seite direkt zur Website-Anfrage.
+- **Discord-Rolle:** Discord bleibt für Login, kurze Abstimmung, Voice und Benachrichtigungen erhalten, ist aber nicht mehr der Ort, an dem die Coaching-Anfrage organisiert wird.
+
 ## #34 — Coaching-Plattform v2: Discord-Sync, Termine, Coach-Profile, neues Gesicht
 
 **Ausgangslage:** Das Coach-Roster zeigte nur die zwei Coaches, die zufällig schon einmal in den gespiegelten Daten aufgetaucht waren — ohne Avatare, ohne Inhalte, auf einer großen leeren Fläche. Termine existierten gar nicht: Wer ein Coaching geplant hatte, wusste das nur aus dem Discord-Chat. Und Coaches konnten ihr eigenes Profil nirgends pflegen.

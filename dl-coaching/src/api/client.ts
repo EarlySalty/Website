@@ -71,9 +71,21 @@ export interface CoachingRequest {
   hours_played: string | null
   availability: string | null
   current_problems: string | null
-  ai_summary: string | null
   status: string
   created_at: string
+}
+
+export interface CreateCoachingRequest {
+  display_name?: string
+  rank?: string
+  subrank?: string
+  hero?: string
+  games_played?: string
+  hours_played?: string
+  availability?: string
+  current_problems: string
+  goals?: string
+  preferred_coach_id?: string
 }
 
 export const coaching = {
@@ -101,6 +113,8 @@ export const coaching = {
     const query = status ? `?status=${status}` : ''
     return request<CoachingRequest[]>(`/coaching/requests${query}`)
   },
+  createRequest: (data: CreateCoachingRequest) =>
+    request<{ id: string }>('/coaching/requests', { method: 'POST', body: JSON.stringify(data) }),
 }
 
 // ===== Coaching-Plattform (Coach-/Spieler-Bereich, vom Bot gespiegelt) =====
@@ -136,7 +150,6 @@ export interface PlatformQueueRequest {
   hours_played: string | null
   availability: string | null
   current_problems: string | null
-  ai_summary: string | null
   status: string
   assigned_coach_id: string | null
   assigned_coach_username: string | null

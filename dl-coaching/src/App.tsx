@@ -5,6 +5,7 @@ import CoachDetailPage from './pages/CoachDetailPage'
 import CoachDashboardPage from './pages/CoachDashboardPage'
 import CoachOverviewPage from './pages/CoachOverviewPage'
 import CoacheeDetailPage from './pages/CoacheeDetailPage'
+import CoachingRequestPage from './pages/CoachingRequestPage'
 import MyCoachingPage from './pages/MyCoachingPage'
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<CoachesPage />} />
+        <Route path="anfrage" element={<CoachingRequestPage />} />
         <Route path="coaches/:id" element={<CoachDetailPage />} />
         <Route path="dashboard" element={<CoachDashboardPage />} />
         <Route path="overview" element={<CoachOverviewPage />} />

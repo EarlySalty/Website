@@ -126,23 +126,25 @@ export default function CoachesPage() {
   return (
     <div className="content-grid pb-16 pt-10 md:pt-14">
       {/* ── Hero ── */}
-      <div className="relative mb-12 md:mb-16">
+      <div className="deco-hero-card relative mb-12 md:mb-16">
         <span className="hero-ghost absolute -top-8 left-0 -z-10 hidden md:block" aria-hidden>
-          Roster
+          Coaching
         </span>
         <div className="animate-in-left">
-          <div className="eyebrow mb-4">DDC // Coaching-Programm</div>
+          <div className="eyebrow mb-4">DDC Coaching-Programm</div>
           <h1 className="hero-display max-w-3xl">
-            Werde besser.<br />
-            <span style={{ color: 'var(--amber)' }}>Mit System.</span>
+            Besser werden,<br />
+            <span style={{ color: 'var(--amber-light)' }}>ohne Chat-Chaos.</span>
           </h1>
           <p className="section-copy mt-5 max-w-xl text-[15px]">
-            Erfahrene Spieler der Deutschen Deadlock Community nehmen dich unter die Fittiche —
-            mit echten Sessions, klaren Zielen und Protokollen, die deinen Fortschritt festhalten.
+            Coaches, Anfragen, Termine, Ziele und Session-Notizen laufen auf der Website. Discord bleibt für Login, Voice und kurze Abstimmung.
           </p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Link to="/anfrage" className="btn-amber">Coaching anfragen</Link>
+            <Link to="/me" className="btn-ghost">Meine Termine</Link>
+          </div>
         </div>
 
-        {/* Stats-Strip */}
         <div className="animate-in mt-8 flex flex-wrap gap-px overflow-hidden rounded-md" style={{ animationDelay: '160ms', border: '1px solid var(--border-dim)' }}>
           {[
             { label: 'Coaches im Roster', value: isLoading ? '…' : String(coaches?.length ?? 0) },
@@ -158,7 +160,6 @@ export default function CoachesPage() {
         </div>
       </div>
 
-      {/* ── Ablauf ── */}
       <div className="animate-in mb-12" style={{ animationDelay: '240ms' }}>
         <div className="mb-4 flex items-center gap-3">
           <span className="font-mono-data text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--amber)' }}>
@@ -167,13 +168,12 @@ export default function CoachesPage() {
           <div className="divider flex-1" />
         </div>
         <div className="flex flex-col gap-3 md:flex-row">
-          <Step nr="01" title="Anfrage im Discord" copy="Stell deine Coaching-Anfrage im DDC-Discord — Rang, Helden, woran du arbeiten willst." />
-          <Step nr="02" title="Coach übernimmt" copy="Ein Coach aus dem Roster claimt deine Anfrage und plant mit dir den ersten Termin." />
-          <Step nr="03" title="Fortschritt hier" copy="Termine, Ziele, Meilensteine und Session-Protokolle findest du danach unter „Mein Coaching“." />
+          <Step nr="01" title="Anfrage auf der Website" copy="Rank, Helden, Zeitfenster und Thema landen strukturiert im Coach-Cockpit." />
+          <Step nr="02" title="Termin abstimmen" copy="Ein Coach übernimmt, schlägt Zeiten vor und hält den vereinbarten Termin fest." />
+          <Step nr="03" title="Fortschritt behalten" copy="Termine, Ziele, Meilensteine und Session-Protokolle bleiben unter „Mein Coaching“." />
         </div>
       </div>
 
-      {/* ── Roster ── */}
       <div className="mb-5 flex items-center gap-3">
         <span className="font-mono-data text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--amber)' }}>
           {'// '}Das Roster
@@ -202,7 +202,7 @@ export default function CoachesPage() {
       ) : (
         <EmptyState
           title="Roster wird geladen"
-          copy="Die Coaches werden automatisch aus dem Discord-Server synchronisiert. Schau in ein paar Minuten wieder vorbei."
+          copy="Die Coaches werden automatisch aus den Community-Rollen synchronisiert. Schau in ein paar Minuten wieder vorbei."
         />
       )}
     </div>

@@ -141,7 +141,7 @@ function AppointmentRow({ appt }: { appt: Appointment }) {
             Abbrechen
           </button>
           <span className="font-mono-data text-[10px]" style={{ color: 'var(--text-muted)' }}>
-            Der Spieler bekommt automatisch eine Discord-DM.
+            Der Spieler bekommt automatisch eine Discord-Benachrichtigung.
           </span>
         </form>
       )}
@@ -217,7 +217,7 @@ function AppointmentPlanner({ coachees }: { coachees: CoacheeListItem[] }) {
         <p className="mt-2 text-xs" style={{ color: 'var(--red)' }}>Termin konnte nicht angelegt werden.</p>
       )}
       {create.isSuccess && (
-        <p className="mt-2 text-xs" style={{ color: 'var(--green)' }}>Termin angelegt — der Spieler bekommt eine Discord-DM.</p>
+        <p className="mt-2 text-xs" style={{ color: 'var(--green)' }}>Termin angelegt — der Spieler bekommt eine Discord-Benachrichtigung.</p>
       )}
     </form>
   )
@@ -350,15 +350,8 @@ function QueueCard({ req }: { req: PlatformQueueRequest }) {
         </p>
       )}
 
-      {req.ai_summary && (
-        <div className="mt-3 ml-1 rounded-sm px-3 py-2 text-xs" style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)', border: '1px solid var(--border-dim)' }}>
-          <span className="font-mono-data mr-1.5 font-semibold uppercase tracking-wide" style={{ color: 'var(--violet)' }}>AI</span>
-          {req.ai_summary}
-        </div>
-      )}
-
       <p className="font-mono-data mt-3 pl-1 text-[10px] uppercase tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>
-        {reservedForMe && req.reserved_until ? `Reserviert bis ${fmtUnix(req.reserved_until)}` : 'Claim läuft über das Discord-Embed'}
+        {reservedForMe && req.reserved_until ? `Reserviert bis ${fmtUnix(req.reserved_until)}` : 'Offene Website-Anfrage'}
       </p>
     </div>
   )
@@ -439,7 +432,7 @@ export default function CoachDashboardPage() {
       <div className="animate-in-left mb-8">
         <div className="eyebrow mb-4">Coach-Bereich</div>
         <h1 className="section-title">Cockpit</h1>
-        <p className="section-copy mt-2">Deine Termine, offene Anfragen und deine Spieler — alles auf einen Blick.</p>
+        <p className="section-copy mt-2">Deine Termine, Website-Anfragen und deine Spieler — alles auf einen Blick.</p>
       </div>
 
       <CoachTabs active="dashboard" />
@@ -459,7 +452,7 @@ export default function CoachDashboardPage() {
         ) : (
           <EmptyState
             title="Nichts geplant"
-            copy="Plane oben ein Coaching mit einem deiner Spieler — der Termin erscheint bei euch beiden, und der Spieler bekommt automatisch eine Discord-DM samt Erinnerung."
+            copy="Plane oben ein Coaching mit einem deiner Spieler — der Termin erscheint bei euch beiden, dazu gehen Abstimmung und Erinnerung über Discord."
           />
         )}
         {past.length > 0 && (
@@ -486,7 +479,7 @@ export default function CoachDashboardPage() {
         ) : (
           <EmptyState
             title="Queue ist leer"
-            copy="Neue Coaching-Anfragen aus dem Discord landen automatisch hier, sobald sie analysiert sind."
+            copy="Neue Coaching-Anfragen von der Website landen automatisch hier, sobald ein Spieler das Formular abschickt."
           />
         )}
       </section>
@@ -514,7 +507,7 @@ export default function CoachDashboardPage() {
         ) : (
           <EmptyState
             title={search ? 'Keine Treffer' : 'Noch keine Spieler'}
-            copy={search ? 'Anderen Suchbegriff probieren.' : 'Sobald ein Spieler eine Coaching-Anfrage stellt und sie gespiegelt wird, taucht er hier mit seiner Akte auf.'}
+            copy={search ? 'Anderen Suchbegriff probieren.' : 'Sobald ein Spieler eine Coaching-Anfrage stellt, taucht er hier mit seiner Akte auf.'}
           />
         )}
       </section>

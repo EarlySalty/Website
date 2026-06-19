@@ -290,7 +290,7 @@ function AppointmentsSection({ coacheeId, appointments }: { coacheeId: string; a
             </div>
           ))
         ) : (
-          <EmptyState title="Kein Termin geplant" copy="Plane oben den nächsten Termin — der Spieler bekommt automatisch eine Discord-DM." />
+          <EmptyState title="Kein Termin geplant" copy="Plane oben den nächsten Termin — der Spieler bekommt automatisch eine Discord-Benachrichtigung." />
         )}
         {rest.map((a) => (
           <div key={a.id} className="card flex flex-wrap items-center gap-3 p-3.5 opacity-70">
@@ -524,7 +524,7 @@ export default function CoacheeDetailPage() {
                   </div>
                 ))
               ) : (
-                <EmptyState title="Noch keine Sessions" copy="Abgeschlossene Discord-Sessions tauchen hier automatisch auf." />
+                <EmptyState title="Noch keine Sessions" copy="Abgeschlossene Sessions tauchen hier automatisch auf." />
               )}
             </div>
           </section>

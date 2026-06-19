@@ -203,9 +203,9 @@ export default function MyCoachingPage() {
         <h1 className="section-title mb-8">Mein Coaching</h1>
         <EmptyState
           title="Noch keine Akte"
-          copy="Du hast bisher kein Coaching erhalten. Stell eine Anfrage im DDC-Discord — sobald ein Coach übernimmt, entsteht hier deine Akte mit Terminen, Zielen und Protokollen."
+          copy="Du hast bisher kein Coaching erhalten. Stell eine Anfrage auf der Website — sobald ein Coach übernimmt, entsteht hier deine Akte mit Terminen, Zielen und Protokollen."
         >
-          <Link to="/" className="btn-amber">Coaches ansehen</Link>
+          <Link to="/anfrage" className="btn-amber">Coaching anfragen</Link>
         </EmptyState>
       </div>
     )
