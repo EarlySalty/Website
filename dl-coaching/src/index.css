@@ -523,9 +523,7 @@ img { display: block; max-width: 100%; }
     min-height: min(780px, calc(100svh - 8rem));
     overflow: visible;
     padding: clamp(3.5rem, 8vw, 7rem) 0 clamp(2.2rem, 5vw, 4rem);
-    background:
-      linear-gradient(90deg, rgba(11, 9, 7, 0.62), transparent 62%),
-      url("./assets/brand/brass-plaque.svg") right 10% top 18% / min(52vw, 760px) auto no-repeat;
+    background: linear-gradient(90deg, rgba(11, 9, 7, 0.48), transparent 64%);
   }
 
   .salon-hero::before {
@@ -547,11 +545,11 @@ img { display: block; max-width: 100%; }
     width: min(32vw, 430px);
     aspect-ratio: 1;
     transform: translateY(-50%) rotate(45deg);
-    border: 1px solid rgba(201, 168, 106, 0.08);
+    border: 1px solid rgba(201, 168, 106, 0.06);
     background:
-      linear-gradient(90deg, transparent 49%, rgba(201, 168, 106, 0.10) 50%, transparent 51%),
-      linear-gradient(0deg, transparent 49%, rgba(201, 168, 106, 0.10) 50%, transparent 51%);
-    opacity: 0.48;
+      linear-gradient(90deg, transparent 49%, rgba(201, 168, 106, 0.07) 50%, transparent 51%),
+      linear-gradient(0deg, transparent 49%, rgba(201, 168, 106, 0.07) 50%, transparent 51%);
+    opacity: 0.36;
     pointer-events: none;
   }
 
