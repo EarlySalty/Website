@@ -8,7 +8,7 @@ import { Avatar, EmptyState, PageSpinner } from '@/components/ui'
 interface RequestForm {
   rank: string
   hero: string
-  availability: string
+  time: string
   experience: string
   problems: string
 }
@@ -16,7 +16,7 @@ interface RequestForm {
 const initialForm: RequestForm = {
   rank: '',
   hero: '',
-  availability: '',
+  time: '',
   experience: '',
   problems: '',
 }
@@ -33,7 +33,7 @@ export default function CoachingRequestPage() {
         display_name: user?.displayName,
         rank: form.rank.trim(),
         hero: form.hero.trim(),
-        availability: form.availability.trim(),
+        availability: form.time.trim(),
         games_played: form.experience.trim(),
         hours_played: form.experience.trim(),
         current_problems: form.problems.trim(),
@@ -51,21 +51,15 @@ export default function CoachingRequestPage() {
 
   if (!user) {
     return (
-      <div className="discord-modal-page content-grid">
-        <div className="discord-request-modal">
-          <div className="discord-modal-head">
-            <span className="discord-modal-mark">DDC</span>
-            <div>
-              <h1>Deadlock Coaching</h1>
-              <p>Einloggen, Formular ausfüllen, fertig.</p>
-            </div>
-          </div>
-          <div className="discord-warning">
-            <span>!</span>
-            <p>Die Anfrage läuft über deine Website-Anmeldung. Discord bleibt nur für Login, Rückfragen und Voice.</p>
-          </div>
-          <button onClick={login} className="discord-submit w-full">Mit Discord einloggen</button>
-        </div>
+      <div className="request-page content-grid">
+        <section className="request-intro">
+          <p className="eyebrow mb-4">Coaching anfragen</p>
+          <h1 className="section-title">Kurz einloggen, Anfrage stellen.</h1>
+          <p className="section-copy mt-3 max-w-xl">
+            Die Anfrage läuft über deinen Website-Login. Discord bleibt für Rückfragen, Voice und Erinnerungen.
+          </p>
+          <button onClick={login} className="btn-amber mt-6">Mit Discord einloggen</button>
+        </section>
       </div>
     )
   }
@@ -86,97 +80,94 @@ export default function CoachingRequestPage() {
     )
   }
 
-  const canSubmit = form.rank.trim() && form.hero.trim() && form.availability.trim() && form.experience.trim() && form.problems.trim()
+  const canSubmit = form.rank.trim() && form.hero.trim() && form.time.trim() && form.experience.trim() && form.problems.trim()
 
   return (
-    <div className="discord-modal-page content-grid">
+    <div className="request-page content-grid">
+      <section className="request-intro">
+        <p className="eyebrow mb-4">Website-Anfrage</p>
+        <h1 className="section-title">Deadlock Coaching</h1>
+        <p className="section-copy mt-3 max-w-xl">
+          Wenige Angaben reichen. Ein Coach sieht deine Anfrage, stimmt den Termin mit dir ab und hält danach die Notizen fest.
+        </p>
+      </section>
+
       <form
-        className="discord-request-modal"
+        className="request-form"
         onSubmit={(event) => {
           event.preventDefault()
           if (canSubmit) submit.mutate()
         }}
       >
-        <div className="discord-modal-head">
-          <span className="discord-modal-mark">DDC</span>
-          <div>
-            <h1>Deadlock Coaching</h1>
-            <p>Angemeldet als {user.displayName}</p>
-          </div>
-        </div>
-
-        <div className="discord-user-strip">
-          <Avatar url={user.avatarUrl} name={user.displayName} size={34} />
+        <div className="request-user">
+          <Avatar url={user.avatarUrl} name={user.displayName} size={38} />
           <div>
             <strong>{user.displayName}</strong>
             <span>Discord-Login aktiv</span>
           </div>
         </div>
 
-        <div className="discord-warning">
-          <span>!</span>
-          <p>Dieses Formular wird an die DDC-Coaches geschickt. Teile hier keine Passwörter oder sensiblen Daten.</p>
+        <div className="request-fields">
+          <label className="request-field">
+            <span>Aktueller Rang <b>*</b></span>
+            <input
+              value={form.rank}
+              onChange={(event) => update('rank', event.target.value)}
+              placeholder="z. B. Archon 3"
+              required
+            />
+          </label>
+
+          <label className="request-field">
+            <span>Main-Hero <b>*</b></span>
+            <input
+              value={form.hero}
+              onChange={(event) => update('hero', event.target.value)}
+              placeholder="z. B. Haze"
+              required
+            />
+          </label>
+
+          <label className="request-field">
+            <span>Wunschzeit <b>*</b></span>
+            <input
+              type="datetime-local"
+              value={form.time}
+              onChange={(event) => update('time', event.target.value)}
+              required
+            />
+          </label>
+
+          <label className="request-field">
+            <span>Games / Stunden <b>*</b></span>
+            <input
+              value={form.experience}
+              onChange={(event) => update('experience', event.target.value)}
+              placeholder="z. B. 300 Games / 150 Stunden"
+              required
+            />
+          </label>
+
+          <label className="request-field request-field-full">
+            <span>Was willst du verbessern? <b>*</b></span>
+            <textarea
+              value={form.problems}
+              onChange={(event) => update('problems', event.target.value)}
+              placeholder="z. B. Laning, Farming, Teamfights, Build-Entscheidungen, Replay anschauen..."
+              rows={4}
+              required
+            />
+          </label>
         </div>
 
-        <label className="discord-field">
-          <span>Rang + Subrank <b>*</b></span>
-          <input
-            value={form.rank}
-            onChange={(event) => update('rank', event.target.value)}
-            placeholder="z. B. Archon 3, Ascendant VI, Emissary II"
-            required
-          />
-        </label>
-
-        <label className="discord-field">
-          <span>Main-Hero <b>*</b></span>
-          <input
-            value={form.hero}
-            onChange={(event) => update('hero', event.target.value)}
-            placeholder="z. B. Haze, Seven, Vindicta"
-            required
-          />
-        </label>
-
-        <label className="discord-field">
-          <span>Wann hast du Zeit? <b>*</b></span>
-          <input
-            value={form.availability}
-            onChange={(event) => update('availability', event.target.value)}
-            placeholder="z. B. Montag 18:00, heute Abend ab 20 Uhr"
-            required
-          />
-        </label>
-
-        <label className="discord-field">
-          <span>Games / Stunden <b>*</b></span>
-          <input
-            value={form.experience}
-            onChange={(event) => update('experience', event.target.value)}
-            placeholder="z. B. 300 Games / 150 Stunden"
-            required
-          />
-        </label>
-
-        <label className="discord-field">
-          <span>Probleme / Ziele <b>*</b></span>
-          <textarea
-            value={form.problems}
-            onChange={(event) => update('problems', event.target.value)}
-            placeholder="Wobei brauchst du Hilfe? Keine DMs an Coaches, Kommunikation nur im Chat."
-            rows={4}
-            required
-          />
-        </label>
-
         {submit.isError && (
-          <p className="discord-error">Konnte nicht gespeichert werden. Bitte später erneut versuchen.</p>
+          <p className="request-error">Konnte nicht gespeichert werden. Bitte später erneut versuchen.</p>
         )}
 
-        <div className="discord-actions">
-          <Link to="/" className="discord-cancel">Abbrechen</Link>
-          <button type="submit" className="discord-submit" disabled={!canSubmit || submit.isPending}>
-            Absenden
+        <div className="request-actions">
+          <Link to="/" className="btn-ghost">Abbrechen</Link>
+          <button type="submit" className="btn-amber" disabled={!canSubmit || submit.isPending}>
+            Anfrage senden
           </button>
         </div>
       </form>
