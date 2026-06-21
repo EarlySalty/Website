@@ -10,9 +10,14 @@ export default function SessionStatusBadge({ status }: { status: string }) {
   const s = STATUS[status] ?? { label: status, color: 'var(--text-muted)', bg: 'var(--bg-raised)', border: 'var(--border-dim)' }
   return (
     <span
-      className="font-display inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+      className="font-display inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
       style={{ color: s.color, background: s.bg, border: `1px solid ${s.border}` }}
     >
+      <span
+        aria-hidden="true"
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ background: 'currentColor', boxShadow: '0 0 10px currentColor' }}
+      />
       {s.label}
     </span>
   )

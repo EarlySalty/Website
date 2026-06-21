@@ -83,11 +83,47 @@ function CoachCard({ coach, index }: { coach: CoachProfile; index: number }) {
   )
 }
 
-function ProcessStep({ nr, title, copy }: { nr: string; title: string; copy: string }) {
+type StepIcon = 'request' | 'calendar' | 'growth'
+
+function ProcessIcon({ name }: { name: StepIcon }) {
+  if (name === 'request') {
+    return (
+      <svg className="process-icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M8 4.75h8M7 8.75h10M7 12.75h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M6.5 3.75h11A1.75 1.75 0 0 1 19.25 5.5v13A1.75 1.75 0 0 1 17.5 20.25h-11a1.75 1.75 0 0 1-1.75-1.75v-13A1.75 1.75 0 0 1 6.5 3.75Z" stroke="currentColor" strokeWidth="1.7" />
+        <path d="m14.75 16.25 1.45 1.45 3.05-3.45" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
+  if (name === 'calendar') {
+    return (
+      <svg className="process-icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M7.75 3.75v3M16.25 3.75v3M5 9.25h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M6.5 5.25h11A1.75 1.75 0 0 1 19.25 7v10.5a1.75 1.75 0 0 1-1.75 1.75h-11a1.75 1.75 0 0 1-1.75-1.75V7A1.75 1.75 0 0 1 6.5 5.25Z" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M8.25 13.25h.01M12 13.25h.01M15.75 13.25h.01M8.25 16.25h.01M12 16.25h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg className="process-icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 18.5h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M7 15.75 10.75 12l2.5 2.5L18 8.75" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14.5 8.75H18v3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7.25 8.5a2.25 2.25 0 1 0 4.5 0 2.25 2.25 0 0 0-4.5 0Z" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  )
+}
+
+function ProcessStep({ nr, title, copy, icon }: { nr: string; title: string; copy: string; icon: StepIcon }) {
   return (
     <div className="process-step">
-      <span>{nr}</span>
+      <span className="process-icon">
+        <ProcessIcon name={icon} />
+      </span>
       <div>
+        <span className="process-number">{nr}</span>
         <h3>{title}</h3>
         <p>{copy}</p>
       </div>
@@ -143,9 +179,9 @@ export default function CoachesPage() {
           <i />
         </div>
         <div className="process-line">
-          <ProcessStep nr="01" title="Anfrage auf der Website" copy="Rank, Helden, Zeitfenster und Thema landen strukturiert im Coach-Cockpit." />
-          <ProcessStep nr="02" title="Termin abstimmen" copy="Ein Coach übernimmt, schlägt Zeiten vor und hält den vereinbarten Termin fest." />
-          <ProcessStep nr="03" title="Fortschritt behalten" copy="Termine, Ziele, Meilensteine und Session-Protokolle bleiben unter „Mein Coaching“." />
+          <ProcessStep nr="01" icon="request" title="Anfrage auf der Website" copy="Rank, Helden, Zeitfenster und Thema landen strukturiert im Coach-Cockpit." />
+          <ProcessStep nr="02" icon="calendar" title="Termin abstimmen" copy="Ein Coach übernimmt, schlägt Zeiten vor und hält den vereinbarten Termin fest." />
+          <ProcessStep nr="03" icon="growth" title="Fortschritt behalten" copy="Termine, Ziele, Meilensteine und Session-Protokolle bleiben unter „Mein Coaching“." />
         </div>
       </div>
 

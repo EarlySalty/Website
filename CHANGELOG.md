@@ -1,3 +1,11 @@
+## #38 — Coaching bekommt mehr visuelle Tiefe
+
+**Ausgangslage:** Die Coaching-Startseite war funktional, aber zu flach: dunkle Flächen lagen optisch nah beieinander, der Ablauf bestand fast nur aus Text und die Status-Badges wirkten neben dem restlichen Messing-Look zu hart.
+
+**Geändert:** Hintergrund, Hero, Karten, Coach-Zeilen, Buttons, Badges und Ablauf-Schritte haben mehr Ebenen bekommen. Die Seite nutzt jetzt klarere Dunkelstufen, weiche Amber-/Violett-Lichter, ein dezentes Grid im Hero, stärkere Schatten, größere Kennzahlen und Line-Icons in den drei Schritten.
+
+**Wie's jetzt läuft:** Die Coaching-Seite bleibt dunkel und ruhig, hat aber mehr Gaming-Atmosphäre und bessere Blickführung. Wichtige Bereiche heben sich vom Hintergrund ab, die Queue-Badges sind feiner gesetzt und die ersten Schritte lassen sich schneller scannen.
+
 ## #37 — Coaching-Hero ohne Kachelrahmen
 
 **Ausgangslage:** Trotz Salon-Ansatz wirkte der erste Bereich weiterhin wie eine große Kachel: gerahmter Hero, Innenrahmen und eine Kennzahlenreihe mit sichtbaren Zellen.
