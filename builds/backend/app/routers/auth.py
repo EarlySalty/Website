@@ -23,6 +23,13 @@ PRE_AUTH_TTL_SECONDS = int(os.getenv("AUTH_PRE_AUTH_TTL_SECONDS", "600"))
 SESSION_AUDIENCE = os.getenv("AUTH_SESSION_AUDIENCE", "ddc-web").strip() or "ddc-web"
 SESSION_ISSUER = os.getenv("AUTH_SESSION_ISSUER", "ddc-auth").strip() or "ddc-auth"
 COOKIE_DOMAIN = os.getenv("AUTH_COOKIE_DOMAIN", "").strip() or None
+DDC_COOKIE_DOMAIN = (
+    os.getenv("AUTH_DDC_COOKIE_DOMAIN", "deutsche-deadlock-community.de")
+    .strip()
+    .lower()
+    .lstrip(".")
+    or "deutsche-deadlock-community.de"
+)
 COOKIE_PATH = os.getenv("AUTH_COOKIE_PATH", "/").strip() or "/"
 COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "lax").strip().lower() or "lax"
 AUTH_PUBLIC_CALLBACK_URL = os.getenv("AUTH_PUBLIC_CALLBACK_URL", "").strip()
@@ -73,16 +80,31 @@ def _is_truthy(value: str | None, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _bare_host(value: str | None) -> str:
+    raw = (value or "").split(",")[0].strip().lower()
+    if raw.startswith("["):
+        end = raw.find("]")
+        return raw[1:end] if end > 0 else raw.strip("[]")
+    if raw.count(":") == 1:
+        return raw.rsplit(":", 1)[0]
+    return raw
+
+
+def _request_host(request: Request) -> str:
+    return _bare_host(
+        request.headers.get("X-Forwarded-Host")
+        or request.headers.get("Host")
+        or request.url.netloc
+    )
+
+
 def _cookie_secure(request: Request) -> bool:
     explicit = os.getenv("AUTH_COOKIE_SECURE")
     if explicit is not None:
         return _is_truthy(explicit)
     if _is_truthy(os.getenv("AUTH_INSECURE_COOKIE"), default=False):
         return False
-    host = (
-        (request.headers.get("X-Forwarded-Host") or request.headers.get("Host") or "").split(",")[0]
-    ).strip()
-    bare_host = host.split(":", 1)[0].strip().lower()
+    bare_host = _request_host(request)
     if bare_host in {"127.0.0.1", "localhost", "::1"}:
         return False
     scheme = (
@@ -91,11 +113,40 @@ def _cookie_secure(request: Request) -> bool:
     return scheme == "https"
 
 
-def _cookie_delete_kwargs() -> dict[str, Any]:
+def _normalized_cookie_domain(value: str | None) -> str | None:
+    domain = (value or "").strip().lower().lstrip(".")
+    return domain or None
+
+
+def _cookie_domain(request: Request) -> str | None:
+    explicit_domain = _normalized_cookie_domain(COOKIE_DOMAIN)
+    if explicit_domain:
+        return explicit_domain
+
+    host = _request_host(request)
+    if host == DDC_COOKIE_DOMAIN or host.endswith(f".{DDC_COOKIE_DOMAIN}"):
+        return DDC_COOKIE_DOMAIN
+    return None
+
+
+def _cookie_delete_kwargs(domain: str | None = None) -> dict[str, Any]:
     payload: dict[str, Any] = {"path": COOKIE_PATH}
-    if COOKIE_DOMAIN:
-        payload["domain"] = COOKIE_DOMAIN
+    if domain:
+        payload["domain"] = domain
     return payload
+
+
+def _cookie_delete_kwargs_variants(request: Request) -> list[dict[str, Any]]:
+    variants = [_cookie_delete_kwargs()]
+    domain = _cookie_domain(request)
+    if domain:
+        variants.append(_cookie_delete_kwargs(domain))
+    return variants
+
+
+def _delete_cookie_variants(response: Response, request: Request, name: str) -> None:
+    for kwargs in _cookie_delete_kwargs_variants(request):
+        response.delete_cookie(name, **kwargs)
 
 
 def _cookie_set_kwargs(request: Request) -> dict[str, Any]:
@@ -105,8 +156,9 @@ def _cookie_set_kwargs(request: Request) -> dict[str, Any]:
         "samesite": COOKIE_SAMESITE,
         "path": COOKIE_PATH,
     }
-    if COOKIE_DOMAIN:
-        payload["domain"] = COOKIE_DOMAIN
+    domain = _cookie_domain(request)
+    if domain:
+        payload["domain"] = domain
     return payload
 
 
@@ -427,7 +479,7 @@ async def discord_callback(request: Request, state_id: str | None = None):
         next_path = _normalize_redirect_path(pre_auth.get("next"), fallback=next_path)
 
     response = RedirectResponse(next_path, status_code=302)
-    response.delete_cookie(PRE_AUTH_COOKIE_NAME, **_cookie_delete_kwargs())
+    _delete_cookie_variants(response, request, PRE_AUTH_COOKIE_NAME)
 
     state_id_value = str(state_id or (pre_auth or {}).get("state_id") or "").strip()
     if not state_id_value:
@@ -466,7 +518,7 @@ async def discord_callback(request: Request, state_id: str | None = None):
         **_cookie_set_kwargs(request),
     )
     for legacy_name in LEGACY_SESSION_COOKIE_NAMES:
-        response.delete_cookie(legacy_name, **_cookie_delete_kwargs())
+        _delete_cookie_variants(response, request, legacy_name)
     return response
 
 
@@ -491,8 +543,8 @@ async def me(request: Request):
 @router.post("/logout")
 async def logout(request: Request):
     response = Response(status_code=204)
-    response.delete_cookie(SESSION_COOKIE_NAME, **_cookie_delete_kwargs())
-    response.delete_cookie(PRE_AUTH_COOKIE_NAME, **_cookie_delete_kwargs())
+    _delete_cookie_variants(response, request, SESSION_COOKIE_NAME)
+    _delete_cookie_variants(response, request, PRE_AUTH_COOKIE_NAME)
     for legacy_name in LEGACY_SESSION_COOKIE_NAMES:
-        response.delete_cookie(legacy_name, **_cookie_delete_kwargs())
+        _delete_cookie_variants(response, request, legacy_name)
     return response

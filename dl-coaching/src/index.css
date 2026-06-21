@@ -343,7 +343,7 @@ img { display: block; max-width: 100%; }
 
   .brand-copy span {
     color: var(--text-muted);
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.16em;
     white-space: nowrap;
@@ -352,7 +352,7 @@ img { display: block; max-width: 100%; }
   .brand-copy strong {
     color: var(--text-primary);
     font-family: var(--font-display);
-    font-size: 17px;
+    font-size: 20px;
     font-weight: 800;
     letter-spacing: 0.02em;
     white-space: nowrap;
@@ -373,7 +373,7 @@ img { display: block; max-width: 100%; }
     }
 
     .brand-copy strong {
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .discord-login-button {
