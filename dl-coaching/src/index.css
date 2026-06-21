@@ -127,11 +127,12 @@ img { display: block; max-width: 100%; }
       radial-gradient(ellipse 46% 34% at 20% 16%, rgba(142, 111, 197, 0.13), transparent 68%),
       radial-gradient(ellipse 42% 31% at 82% 18%, rgba(201, 168, 106, 0.14), transparent 70%),
       radial-gradient(ellipse 36% 38% at 84% 46%, rgba(85, 151, 143, 0.075), transparent 72%),
-      linear-gradient(rgba(201, 168, 106, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(201, 168, 106, 0.03) 1px, transparent 1px),
+      repeating-linear-gradient(135deg, transparent 0 84px, rgba(201, 168, 106, 0.028) 85px, transparent 86px 168px),
+      repeating-linear-gradient(45deg, transparent 0 118px, rgba(142, 111, 197, 0.022) 119px, transparent 120px 236px),
+      radial-gradient(circle, rgba(201, 168, 106, 0.065) 0 0.75px, transparent 1.25px),
       linear-gradient(180deg, rgba(18, 18, 18, 0.36), rgba(8, 8, 8, 0.76));
-    background-size: auto, auto, auto, 64px 64px, 64px 64px, auto;
-    mask-image: radial-gradient(ellipse 118% 76% at 50% 0%, rgba(0,0,0,0.9), transparent 86%);
+    background-size: auto, auto, auto, auto, auto, 38px 38px, auto;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,0.92), rgba(0,0,0,0.84) 72%, rgba(0,0,0,0.58));
     z-index: 0;
   }
   .page-shell::after {
@@ -140,7 +141,7 @@ img { display: block; max-width: 100%; }
     inset: 0;
     pointer-events: none;
     z-index: 1;
-    background: radial-gradient(120% 95% at 50% 45%, transparent 58%, rgba(0, 0, 0, 0.48));
+    background: radial-gradient(120% 95% at 50% 45%, transparent 63%, rgba(0, 0, 0, 0.34));
     mix-blend-mode: multiply;
   }
 
@@ -620,10 +621,11 @@ img { display: block; max-width: 100%; }
     background:
       radial-gradient(ellipse 44% 32% at 18% 18%, rgba(142, 111, 197, 0.13), transparent 70%),
       radial-gradient(ellipse 42% 35% at 74% 24%, rgba(201, 168, 106, 0.12), transparent 72%),
-      linear-gradient(rgba(201, 168, 106, 0.055) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(201, 168, 106, 0.045) 1px, transparent 1px);
-    background-size: auto, auto, 54px 54px, 54px 54px;
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.96), rgba(0, 0, 0, 0.88) 70%, transparent 100%);
+      repeating-linear-gradient(135deg, transparent 0 92px, rgba(201, 168, 106, 0.05) 93px, transparent 94px 184px),
+      repeating-linear-gradient(45deg, transparent 0 140px, rgba(85, 151, 143, 0.024) 141px, transparent 142px 280px),
+      radial-gradient(circle, rgba(239, 212, 157, 0.07) 0 0.8px, transparent 1.35px);
+    background-size: auto, auto, auto, auto, 34px 34px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.98), rgba(0, 0, 0, 0.96) 78%, rgba(0, 0, 0, 0.9) 100%);
   }
 
   .salon-hero::before {

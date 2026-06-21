@@ -1,3 +1,11 @@
+## #39 — Coaching-Muster ohne harte Rasterlinien
+
+**Ausgangslage:** Das neue Hintergrundmuster gab der Coaching-Seite mehr Tiefe, zeigte im Hero aber zu harte vertikale Rasterlinien. Unten lief der Hero außerdem zu stark ins Dunkle aus, wodurch Kennzahlen und Ablaufkarten etwas verschwommen wirkten.
+
+**Geändert:** Das Linienraster ist durch ein feines Punktmuster mit sehr schwachen diagonalen Deco-Facetten ersetzt. Der globale Rand-Vignette ist zurückgenommen und der Hero blendet unten nicht mehr transparent aus.
+
+**Wie's jetzt läuft:** Das Muster bleibt sichtbar und wirkt stärker nach Deadlock-/Art-Déco-Fläche, ohne senkrechte Streifen über die Seite zu ziehen. Der untere Bereich bleibt klarer, sodass Kennzahlen und „So läuft’s“ sauberer vom Hintergrund abstehen.
+
 ## #38 — Coaching bekommt mehr visuelle Tiefe
 
 **Ausgangslage:** Die Coaching-Startseite war funktional, aber zu flach: dunkle Flächen lagen optisch nah beieinander, der Ablauf bestand fast nur aus Text und die Status-Badges wirkten neben dem restlichen Messing-Look zu hart.
