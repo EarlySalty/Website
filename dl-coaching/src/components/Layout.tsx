@@ -14,18 +14,8 @@ export default function Layout() {
   return (
     <div className="page-shell flex min-h-screen flex-col">
       {/* ── Header ──────────────────────────────── */}
-      <header
-        className="sticky top-0 z-50"
-        style={{
-          background: 'rgba(11, 9, 7, 0.9)',
-          backdropFilter: 'blur(18px)',
-          borderBottom: '1px solid var(--border-dim)',
-        }}
-      >
-        <div
-          className="h-[2px] w-full"
-          style={{ background: 'linear-gradient(90deg, transparent, var(--amber-deep) 25%, var(--amber-light) 50%, var(--amber-deep) 75%, transparent)' }}
-        />
+      <header className="coaching-header sticky top-0 z-50">
+        <div className="coaching-header-rule" />
         <div className="content-grid">
           <div className="flex min-h-[64px] items-center justify-between gap-4">
 
@@ -54,13 +44,17 @@ export default function Layout() {
             <div className="flex items-center gap-3">
               {user ? (
                 <>
-                  <div className="hidden items-center gap-2.5 sm:flex">
+                  <div className="user-chip hidden items-center gap-2.5 sm:flex">
                     <Avatar url={user.avatarUrl} name={user.displayName} size={30} />
-                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <span>
                       {user.displayName}
                     </span>
                   </div>
-                  <button onClick={logout} className="btn-ghost !px-3 !py-1.5 !text-xs">
+                  <button onClick={logout} className="logout-button">
+                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M6.25 3.25H4.5A1.25 1.25 0 0 0 3.25 4.5v7A1.25 1.25 0 0 0 4.5 12.75h1.75" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" />
+                      <path d="M8.5 5.25 11.25 8 8.5 10.75M11 8H5.75" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                     Logout
                   </button>
                 </>
@@ -107,16 +101,9 @@ function NavLink({ to, children, active }: { to: string; children: ReactNode; ac
   return (
     <Link
       to={to}
-      className="font-display relative px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.12em] transition"
-      style={{ color: active ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+      className={`nav-link${active ? ' is-active' : ''}`}
     >
       {children}
-      {active && (
-        <span
-          className="absolute bottom-0 left-3 right-3 h-[2px]"
-          style={{ background: 'linear-gradient(90deg, var(--amber), transparent)' }}
-        />
-      )}
     </Link>
   )
 }

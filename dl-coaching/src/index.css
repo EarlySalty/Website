@@ -154,6 +154,161 @@ img { display: block; max-width: 100%; }
     @apply relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
+  .coaching-header {
+    position: sticky;
+    border-bottom: 1px solid rgba(201, 168, 106, 0.13);
+    background:
+      radial-gradient(ellipse 32% 120% at 34% 0%, rgba(201, 168, 106, 0.12), transparent 68%),
+      radial-gradient(ellipse 28% 100% at 68% 0%, rgba(142, 111, 197, 0.055), transparent 72%),
+      rgba(11, 11, 11, 0.86);
+    backdrop-filter: blur(16px) saturate(1.08);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+  }
+
+  .coaching-header::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: min(38rem, 58vw);
+    height: 4.2rem;
+    transform: translateX(-50%);
+    pointer-events: none;
+    background: radial-gradient(ellipse 50% 72% at 50% 0%, rgba(201, 168, 106, 0.13), transparent 72%);
+    opacity: 0.82;
+  }
+
+  .coaching-header-rule {
+    position: relative;
+    z-index: 2;
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, rgba(128, 101, 52, 0.88) 24%, var(--amber-light) 50%, rgba(128, 101, 52, 0.88) 76%, transparent);
+    box-shadow: 0 0 14px rgba(201, 168, 106, 0.24);
+  }
+
+  .nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 1rem 1rem 1.05rem;
+    color: var(--text-secondary);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
+    transition: color 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
+  }
+
+  .nav-link::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0.48rem;
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--amber-light);
+    box-shadow: 0 0 9px rgba(201, 168, 106, 0.72);
+    opacity: 0;
+    transform: translate(-50%, 4px) scale(0.7);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0.82rem;
+    right: 0.82rem;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--amber-light) 18%, var(--amber) 72%, transparent);
+    box-shadow: 0 0 8px rgba(201, 168, 106, 0.58);
+    opacity: 0;
+    transform: scaleX(0.62);
+    transform-origin: center;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .nav-link:hover {
+    color: var(--text-primary);
+    text-shadow: 0 0 16px rgba(201, 168, 106, 0.16);
+    transform: translateY(-1px);
+  }
+
+  .nav-link:hover::before {
+    opacity: 0.9;
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  .nav-link.is-active {
+    color: var(--text-primary);
+  }
+
+  .nav-link.is-active::before {
+    opacity: 0;
+  }
+
+  .nav-link.is-active::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  .user-chip {
+    position: relative;
+    min-height: 2.2rem;
+    padding: 0.25rem 0.6rem 0.25rem 0.3rem;
+    color: var(--text-secondary);
+    background:
+      linear-gradient(135deg, rgba(201, 168, 106, 0.105), rgba(201, 168, 106, 0.025) 58%, rgba(142, 111, 197, 0.035)),
+      rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(201, 168, 106, 0.13);
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  }
+
+  .user-chip span {
+    font-size: 0.86rem;
+    line-height: 1;
+  }
+
+  .logout-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.35rem;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    text-transform: uppercase;
+    transition: color 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
+  }
+
+  .logout-button svg {
+    width: 0.92rem;
+    height: 0.92rem;
+    opacity: 0;
+    transform: translateX(5px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  .logout-button:hover {
+    color: var(--amber-light);
+    text-shadow: 0 0 12px rgba(201, 168, 106, 0.22);
+    transform: translateY(-1px);
+  }
+
+  .logout-button:hover svg {
+    opacity: 0.9;
+    transform: translateX(0);
+  }
+
   .brand-wordmark {
     display: inline-flex;
     align-items: center;
