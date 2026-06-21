@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui'
-import coachingMark from '@/assets/brand/coaching-mark.svg'
+import coachingMark from '@/assets/brand/deadlock-d-logo.png'
 
 export default function Layout() {
   const { user, login, logout, isCoach } = useAuth()
