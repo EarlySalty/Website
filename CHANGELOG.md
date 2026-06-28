@@ -1,3 +1,11 @@
+## #40 — Coaching-Anfrage über die Website geht wieder
+
+**Ausgangslage:** Wer eingeloggt auf der Coaching-Seite eine Anfrage abschicken wollte, bekam nur „Konnte nicht gespeichert werden". Die Anfrage-Strecke war noch auf den alten Weg ausgelegt, über den nur der Bot Anfragen anlegen durfte — der normale Website-Login wurde dabei abgewiesen.
+
+**Geändert:** Die Anfrage akzeptiert jetzt deinen normalen Website-Login. Bist du eingeloggt, geht die Anfrage direkt über deine Session raus, und deine Discord-Identität wird aus dem Login übernommen — man kann sich also nicht als jemand anderes ausgeben. Der bestehende Bot-Weg bleibt unverändert.
+
+**Wie's jetzt läuft:** Einloggen, Formular ausfüllen, abschicken — die Anfrage landet direkt im Coach-Cockpit, und du siehst die Bestätigung „Anfrage ist drin". Kein Hängenbleiben mehr an der Fehlermeldung.
+
 ## #39 — Coaching-Muster ohne harte Rasterlinien
 
 **Ausgangslage:** Das neue Hintergrundmuster gab der Coaching-Seite mehr Tiefe, zeigte im Hero aber zu harte vertikale Rasterlinien. Unten lief der Hero außerdem zu stark ins Dunkle aus, wodurch Kennzahlen und Ablaufkarten etwas verschwommen wirkten.
