@@ -15,6 +15,7 @@ import pytest
 
 os.environ["TWITCH_INTERNAL_API_TOKEN"] = "test-secret-xyz"
 os.environ["DB_PATH"] = ":memory:"
+os.environ["AUTH_SESSION_SECRET"] = "test-session-secret"
 
 import aiosqlite
 from httpx import AsyncClient, ASGITransport
@@ -85,6 +86,14 @@ async def _create_schema(db):
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS meta_users (
+            id TEXT PRIMARY KEY,
+            username TEXT,
+            display_name TEXT,
+            avatar_url TEXT,
+            role TEXT DEFAULT 'user',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
         CREATE TABLE IF NOT EXISTS coachees (
             id TEXT PRIMARY KEY,
             discord_user_id INTEGER UNIQUE NOT NULL,
@@ -131,6 +140,12 @@ async def _create_schema(db):
             rank TEXT NOT NULL DEFAULT '',
             subrank TEXT NOT NULL DEFAULT '',
             hero TEXT,
+            games_played TEXT,
+            hours_played TEXT,
+            availability TEXT,
+            current_problems TEXT,
+            ai_summary TEXT,
+            ai_insights_json TEXT,
             status TEXT DEFAULT 'pending',
             assigned_coach_id TEXT,
             assigned_coach_username TEXT,
@@ -259,6 +274,53 @@ async def _insert_coachee(discord_id: int = 2001, display_name: str = "Spieler A
     )
     await db.commit()
     return coachee_id
+
+
+# ===========================================================================
+# Tests: Coaching-Anfragen
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_create_request_website_session_ignoriert_payload_identitaet(fresh_db):
+    """Website-User darf discord_user_id/discord_username nicht per Payload spoofen."""
+    session_token = auth_module.create_jwt(
+        "2001",
+        "session_user",
+        "user",
+        display_name="Session User",
+    )
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        client.cookies.set(auth_module.SESSION_COOKIE_NAME, session_token)
+        r = await client.post("/api/coaching/requests", json={
+            "display_name": "Payload Name",
+            "discord_user_id": 9999,
+            "discord_username": "spoofed_user",
+            "rank": "Archon 3",
+            "hero": "Haze",
+            "availability": "2026-07-01T14:00",
+            "games_played": "300 Games / 150 Stunden",
+            "hours_played": "300 Games / 150 Stunden",
+            "current_problems": "Laning und Teamfights",
+            "preferred_coach_id": "coach-wunsch",
+        })
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["discord_username"] == "session_user"
+        assert data["subrank"] == ""
+
+    db = db_module._db
+    cur = await db.execute(
+        """SELECT discord_user_id, discord_username, rank, subrank, current_problems
+           FROM coaching_requests WHERE id=?""",
+        (data["id"],),
+    )
+    row = await cur.fetchone()
+    assert row["discord_user_id"] == 2001
+    assert row["discord_username"] == "session_user"
+    assert row["rank"] == "Archon 3"
+    assert row["subrank"] == ""
+    assert row["current_problems"] == "Laning und Teamfights"
 
 
 # ===========================================================================

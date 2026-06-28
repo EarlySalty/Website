@@ -59,15 +59,17 @@ class CoachReview(BaseModel):
 
 class CoachingRequestCreate(BaseModel):
     id: Optional[str] = None  # Bot kann seine eigene UUID übergeben
-    discord_user_id: int
-    discord_username: str
+    display_name: Optional[str] = None
+    discord_user_id: Optional[int] = None
+    discord_username: Optional[str] = None
     rank: str
-    subrank: str
+    subrank: str = ""
     hero: Optional[str] = None
     games_played: Optional[str] = None
     hours_played: Optional[str] = None
     availability: Optional[str] = None
     current_problems: Optional[str] = None
+    preferred_coach_id: Optional[str] = None
     ai_summary: Optional[str] = None
     ai_insights_json: Optional[str] = None
 
@@ -201,6 +203,42 @@ def require_bot_token(request: Request) -> None:
     )
     if not hmac.compare_digest(provided_token, secret):
         raise HTTPException(401, "Invalid internal token")
+
+
+def _has_bot_token_header(request: Request) -> bool:
+    return bool(
+        request.headers.get("X-Internal-Token")
+        or request.headers.get("X-Bot-Token")
+    )
+
+
+async def _authenticate_coaching_request(request: Request) -> Optional[dict]:
+    if _has_bot_token_header(request):
+        require_bot_token(request)
+        return None
+    return await require_authenticated_user(request)
+
+
+def _session_discord_user_id(user_data: dict) -> int:
+    try:
+        return int(str(user_data.get("sub") or "").strip())
+    except (TypeError, ValueError):
+        raise HTTPException(400, "Authenticated Discord user id is invalid")
+
+
+def _session_discord_username(user_data: dict) -> str:
+    username = (
+        str(user_data.get("username") or "").strip()
+        or str(user_data.get("displayName") or "").strip()
+    )
+    if not username:
+        raise HTTPException(400, "Authenticated Discord username is missing")
+    return username
+
+
+async def _table_columns(db, table_name: str) -> set[str]:
+    cursor = await db.execute(f"PRAGMA table_info({table_name})")
+    return {row["name"] for row in await cursor.fetchall()}
 
 
 # ========== PUBLIC ROUTES (Coach Profiles) ==========
@@ -367,30 +405,57 @@ async def apply_to_be_coach(application: CoachApplicationCreate, request: Reques
 @router.post("/requests", response_model=CoachingRequest)
 async def create_coaching_request(
     req: CoachingRequestCreate,
-    _bot_auth: None = Depends(require_bot_token),
+    request: Request,
 ):
-    """Bot endpoint: Create new coaching request after AI analysis."""
+    """Create new coaching request via bot token or authenticated website session."""
+    user_data = await _authenticate_coaching_request(request)
+    if user_data is None:
+        if req.discord_user_id is None or not req.discord_username:
+            raise HTTPException(422, "discord_user_id and discord_username are required for bot requests")
+        discord_user_id = req.discord_user_id
+        discord_username = req.discord_username
+    else:
+        discord_user_id = _session_discord_user_id(user_data)
+        discord_username = _session_discord_username(user_data)
+
+    rank = req.rank or ""
+    subrank = req.subrank or ""
+
     db = await get_db()
     try:
         request_id = req.id or secrets.token_urlsafe(16)
+        columns = await _table_columns(db, "coaching_requests")
 
-        await db.execute("""
-            INSERT INTO coaching_requests (id, discord_user_id, discord_username, rank, subrank,
-                hero, games_played, hours_played, availability, current_problems,
-                ai_summary, ai_insights_json, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-        """, (
-            request_id, req.discord_user_id, req.discord_username, req.rank, req.subrank,
+        insert_columns = [
+            "id", "discord_user_id", "discord_username", "rank", "subrank",
+            "hero", "games_played", "hours_played", "availability",
+            "current_problems", "ai_summary", "ai_insights_json", "status",
+        ]
+        insert_values = [
+            request_id, discord_user_id, discord_username, rank, subrank,
             req.hero, req.games_played, req.hours_played, req.availability,
-            req.current_problems, req.ai_summary, req.ai_insights_json
-        ))
+            req.current_problems, req.ai_summary, req.ai_insights_json, "pending",
+        ]
+
+        if req.preferred_coach_id and "preferred_coach_id" in columns:
+            insert_columns.append("preferred_coach_id")
+            insert_values.append(req.preferred_coach_id)
+
+        placeholders = ", ".join("?" for _ in insert_columns)
+        await db.execute(
+            f"""
+            INSERT INTO coaching_requests ({", ".join(insert_columns)})
+            VALUES ({placeholders})
+            """,
+            insert_values,
+        )
         await db.commit()
 
         return CoachingRequest(
             id=request_id,
-            discord_username=req.discord_username,
-            rank=req.rank,
-            subrank=req.subrank,
+            discord_username=discord_username,
+            rank=rank,
+            subrank=subrank,
             hero=req.hero,
             games_played=req.games_played,
             hours_played=req.hours_played,

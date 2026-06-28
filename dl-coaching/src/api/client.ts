@@ -77,14 +77,13 @@ export interface CoachingRequest {
 
 export interface CreateCoachingRequest {
   display_name?: string
-  rank?: string
+  rank: string
   subrank?: string
   hero?: string
   games_played?: string
   hours_played?: string
   availability?: string
   current_problems: string
-  goals?: string
   preferred_coach_id?: string
 }
 
@@ -114,7 +113,7 @@ export const coaching = {
     return request<CoachingRequest[]>(`/coaching/requests${query}`)
   },
   createRequest: (data: CreateCoachingRequest) =>
-    request<{ id: string }>('/coaching/requests', { method: 'POST', body: JSON.stringify(data) }),
+    request<CoachingRequest>('/coaching/requests', { method: 'POST', body: JSON.stringify(data) }),
 }
 
 // ===== Coaching-Plattform (Coach-/Spieler-Bereich, vom Bot gespiegelt) =====
