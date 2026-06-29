@@ -418,6 +418,141 @@ async def test_notifications_due_request_created_ack_idempotent(fresh_db):
 
 
 # ===========================================================================
+# Tests: Bot-Mirror Coaching-Requests
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_platform_sync_website_request_id_aktualisiert_original_ohne_duplikat(fresh_db):
+    """Website-staemmige Requests werden per Original-ID aktualisiert, nicht per Bot-ID dupliziert."""
+    website_request_id = "website-token-original"
+    bot_request_id = 98765
+    db = db_module._db
+    await db.execute(
+        """INSERT INTO coaching_requests
+               (id, discord_user_id, discord_username, rank, subrank, status)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (
+            website_request_id,
+            424242,
+            "website_user",
+            "Archon",
+            "3",
+            "pending",
+        ),
+    )
+    await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.post(
+            "/api/coaching/platform/sync",
+            headers=BOT_HEADERS,
+            json={
+                "bot_request_id": bot_request_id,
+                "website_request_id": website_request_id,
+                "discord_user_id": 424242,
+                "discord_username": "website_user",
+                "rank": "Archon",
+                "subrank": "3",
+                "status": "claimed",
+                "assigned_coach_discord_id": 1001,
+                "assigned_coach_username": "coach_alpha",
+                "reserved_until": 1790000000,
+                "coach_discord_id": 1001,
+                "coach_username": "coach_alpha",
+                "session_status": "active",
+            },
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["ok"] is True
+
+    cur = await db.execute("SELECT COUNT(*) AS count FROM coaching_requests")
+    count_row = await cur.fetchone()
+    assert count_row["count"] == 1
+
+    cur = await db.execute(
+        """SELECT id, assigned_coach_id, assigned_coach_username, status, reserved_until
+           FROM coaching_requests WHERE id=?""",
+        (website_request_id,),
+    )
+    row = await cur.fetchone()
+    assert row["id"] == website_request_id
+    assert row["assigned_coach_id"] == "1001"
+    assert row["assigned_coach_username"] == "coach_alpha"
+    assert row["status"] == "claimed"
+    assert row["reserved_until"] == 1790000000
+
+    cur = await db.execute(
+        "SELECT id FROM coaching_requests WHERE id=?",
+        (str(bot_request_id),),
+    )
+    assert await cur.fetchone() is None
+
+    cur = await db.execute("SELECT request_id, status FROM coaching_sessions")
+    session = await cur.fetchone()
+    assert session["request_id"] == website_request_id
+    assert session["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_platform_sync_ohne_website_request_id_bleibt_bot_id_upsert(fresh_db):
+    """Bot-staemmige Requests werden weiter per bot_request_id eingefuegt und aktualisiert."""
+    bot_request_id = 2468
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.post(
+            "/api/coaching/platform/sync",
+            headers=BOT_HEADERS,
+            json={
+                "bot_request_id": bot_request_id,
+                "discord_user_id": 515151,
+                "discord_username": "bot_user",
+                "rank": "Initiate",
+                "subrank": "1",
+                "status": "analyzed",
+            },
+        )
+        assert r.status_code == 200, r.text
+
+        r2 = await client.post(
+            "/api/coaching/platform/sync",
+            headers=BOT_HEADERS,
+            json={
+                "bot_request_id": bot_request_id,
+                "discord_user_id": 515151,
+                "discord_username": "bot_user_updated",
+                "rank": "Archon",
+                "subrank": "4",
+                "status": "reserved",
+                "assigned_coach_discord_id": 1002,
+                "assigned_coach_username": "coach_beta",
+                "reserved_until": 1790000100,
+            },
+        )
+        assert r2.status_code == 200, r2.text
+
+    db = db_module._db
+    cur = await db.execute("SELECT COUNT(*) AS count FROM coaching_requests")
+    count_row = await cur.fetchone()
+    assert count_row["count"] == 1
+
+    cur = await db.execute(
+        """SELECT id, discord_username, rank, subrank, status, assigned_coach_id,
+                  assigned_coach_username, reserved_until
+           FROM coaching_requests WHERE id=?""",
+        (str(bot_request_id),),
+    )
+    row = await cur.fetchone()
+    assert row["id"] == str(bot_request_id)
+    assert row["discord_username"] == "bot_user_updated"
+    assert row["rank"] == "Archon"
+    assert row["subrank"] == "4"
+    assert row["status"] == "reserved"
+    assert row["assigned_coach_id"] == "1002"
+    assert row["assigned_coach_username"] == "coach_beta"
+    assert row["reserved_until"] == 1790000100
+
+
+# ===========================================================================
 # Tests: Coach-Rollen-Sync
 # ===========================================================================
 

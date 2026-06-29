@@ -100,6 +100,7 @@ async def _acting_coach_id(db, user: dict) -> Optional[str]:
 
 class SyncPayload(BaseModel):
     bot_request_id: int
+    website_request_id: Optional[str] = None
     discord_user_id: int
     discord_username: Optional[str] = None
     rank: Optional[str] = None
@@ -125,44 +126,77 @@ async def platform_sync(payload: SyncPayload, _bot: None = Depends(require_bot_t
     """Idempotenter Snapshot-Sync vom Bot bei jeder Statusaenderung."""
     db = await get_db()
     try:
-        req_id = str(payload.bot_request_id)
-        coachee_id = await _upsert_coachee(db, payload.discord_user_id, payload.discord_username)
+        req_id = payload.website_request_id or str(payload.bot_request_id)
         assigned_id = (
             str(payload.assigned_coach_discord_id)
             if payload.assigned_coach_discord_id
             else None
         )
+        if payload.website_request_id:
+            cur = await db.execute(
+                "SELECT id FROM coaching_requests WHERE id=?",
+                (payload.website_request_id,),
+            )
+            exists = await cur.fetchone()
+            if not exists:
+                logger.warning(
+                    "Ignoring website coaching sync because original request is missing",
+                    extra={"bot_request_id": payload.bot_request_id},
+                )
+                return {"ok": True, "skipped": True}
 
-        cur = await db.execute("SELECT id FROM coaching_requests WHERE id=?", (req_id,))
-        exists = await cur.fetchone()
-        if exists:
+            coachee_id = await _upsert_coachee(
+                db, payload.discord_user_id, payload.discord_username
+            )
             await db.execute(
-                """UPDATE coaching_requests SET discord_user_id=?, discord_username=?, rank=?,
-                   subrank=?, hero=?, games_played=?, hours_played=?, availability=?,
-                   current_problems=?, ai_summary=?, status=?, assigned_coach_id=?,
-                   assigned_coach_username=?, reserved_until=?, updated_at=? WHERE id=?""",
+                """UPDATE coaching_requests
+                   SET assigned_coach_id=?, assigned_coach_username=?, status=?,
+                       reserved_until=?, updated_at=?
+                   WHERE id=?""",
                 (
-                    payload.discord_user_id, payload.discord_username, payload.rank or "",
-                    payload.subrank or "", payload.hero, payload.games_played,
-                    payload.hours_played, payload.availability, payload.current_problems,
-                    payload.ai_summary, payload.status, assigned_id,
-                    payload.assigned_coach_username, payload.reserved_until, _iso(), req_id,
+                    assigned_id,
+                    payload.assigned_coach_username,
+                    payload.status,
+                    payload.reserved_until,
+                    _iso(),
+                    payload.website_request_id,
                 ),
             )
         else:
-            await db.execute(
-                """INSERT INTO coaching_requests (id, discord_user_id, discord_username, rank,
-                   subrank, hero, games_played, hours_played, availability, current_problems,
-                   ai_summary, status, assigned_coach_id, assigned_coach_username, reserved_until)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    req_id, payload.discord_user_id, payload.discord_username, payload.rank or "",
-                    payload.subrank or "", payload.hero, payload.games_played,
-                    payload.hours_played, payload.availability, payload.current_problems,
-                    payload.ai_summary, payload.status, assigned_id,
-                    payload.assigned_coach_username, payload.reserved_until,
-                ),
+            coachee_id = await _upsert_coachee(
+                db, payload.discord_user_id, payload.discord_username
             )
+
+            cur = await db.execute("SELECT id FROM coaching_requests WHERE id=?", (req_id,))
+            exists = await cur.fetchone()
+            if exists:
+                await db.execute(
+                    """UPDATE coaching_requests SET discord_user_id=?, discord_username=?, rank=?,
+                       subrank=?, hero=?, games_played=?, hours_played=?, availability=?,
+                       current_problems=?, ai_summary=?, status=?, assigned_coach_id=?,
+                       assigned_coach_username=?, reserved_until=?, updated_at=? WHERE id=?""",
+                    (
+                        payload.discord_user_id, payload.discord_username, payload.rank or "",
+                        payload.subrank or "", payload.hero, payload.games_played,
+                        payload.hours_played, payload.availability, payload.current_problems,
+                        payload.ai_summary, payload.status, assigned_id,
+                        payload.assigned_coach_username, payload.reserved_until, _iso(), req_id,
+                    ),
+                )
+            else:
+                await db.execute(
+                    """INSERT INTO coaching_requests (id, discord_user_id, discord_username, rank,
+                       subrank, hero, games_played, hours_played, availability, current_problems,
+                       ai_summary, status, assigned_coach_id, assigned_coach_username, reserved_until)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        req_id, payload.discord_user_id, payload.discord_username, payload.rank or "",
+                        payload.subrank or "", payload.hero, payload.games_played,
+                        payload.hours_played, payload.availability, payload.current_problems,
+                        payload.ai_summary, payload.status, assigned_id,
+                        payload.assigned_coach_username, payload.reserved_until,
+                    ),
+                )
 
         # Session spiegeln, sobald ein Coach den Claim gemacht hat
         if payload.coach_discord_id and payload.session_status:
