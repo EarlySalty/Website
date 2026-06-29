@@ -212,9 +212,11 @@ async def init_db():
                 hours_played TEXT,
                 availability TEXT,
                 current_problems TEXT,
+                preferred_coach_id TEXT,
                 ai_summary TEXT,
                 ai_insights_json TEXT,
                 status TEXT DEFAULT 'pending',
+                notify_discord_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -359,6 +361,8 @@ async def init_db():
             "ALTER TABLE coaching_requests ADD COLUMN assigned_coach_id TEXT",
             "ALTER TABLE coaching_requests ADD COLUMN assigned_coach_username TEXT",
             "ALTER TABLE coaching_requests ADD COLUMN reserved_until INTEGER",
+            "ALTER TABLE coaching_requests ADD COLUMN preferred_coach_id TEXT",
+            "ALTER TABLE coaching_requests ADD COLUMN notify_discord_at TIMESTAMP",
             "ALTER TABLE coaching_sessions ADD COLUMN coachee_id TEXT",
             "ALTER TABLE coaching_requests ADD COLUMN bot_request_id INTEGER",
             "ALTER TABLE coaching_sessions ADD COLUMN bot_session_id TEXT",

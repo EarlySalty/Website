@@ -144,9 +144,11 @@ async def _create_schema(db):
             hours_played TEXT,
             availability TEXT,
             current_problems TEXT,
+            preferred_coach_id TEXT,
             ai_summary TEXT,
             ai_insights_json TEXT,
             status TEXT DEFAULT 'pending',
+            notify_discord_at TIMESTAMP,
             assigned_coach_id TEXT,
             assigned_coach_username TEXT,
             reserved_until INTEGER,
@@ -321,6 +323,98 @@ async def test_create_request_website_session_ignoriert_payload_identitaet(fresh
     assert row["rank"] == "Archon 3"
     assert row["subrank"] == ""
     assert row["current_problems"] == "Laning und Teamfights"
+
+
+@pytest.mark.asyncio
+async def test_notifications_due_request_created_ack_idempotent(fresh_db):
+    """Neue Coaching-Requests erscheinen einmal als request_created und verschwinden nach Ack."""
+    request_id = "req-notify-1"
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.post(
+            "/api/coaching/requests",
+            headers=BOT_HEADERS,
+            json={
+                "id": request_id,
+                "discord_user_id": 424242,
+                "discord_username": "queue_user",
+                "rank": "Archon",
+                "subrank": "3",
+                "hero": "Haze",
+                "games_played": "123",
+                "hours_played": "456",
+                "availability": "werktags abends",
+                "current_problems": "Laning und Teamfights",
+                "preferred_coach_id": "coach-pref-1",
+            },
+        )
+        assert r.status_code == 200, r.text
+
+        orig_uid = cp_module._uid
+        cp_module._uid = lambda: "coachee-notify-1"
+        try:
+            due = await client.get("/api/coaching/platform/notifications/due", headers=BOT_HEADERS)
+            assert due.status_code == 200, due.text
+        finally:
+            cp_module._uid = orig_uid
+        notifs = due.json()["notifications"]
+        request_notifs = [n for n in notifs if n["type"] == "request_created"]
+        assert len(request_notifs) == 1
+
+        db = db_module._db
+        cur = await db.execute("SELECT id FROM coachees WHERE discord_user_id=424242")
+        coachee = await cur.fetchone()
+        assert coachee is not None
+        assert coachee["id"] == "coachee-notify-1"
+
+        item = request_notifs[0]
+        assert item == {
+            "type": "request_created",
+            "request_id": request_id,
+            "coachee_id": "coachee-notify-1",
+            "discord_user_id": 424242,
+            "discord_username": "queue_user",
+            "rank": "Archon",
+            "subrank": "3",
+            "hero": "Haze",
+            "games_played": "123",
+            "hours_played": "456",
+            "availability": "werktags abends",
+            "current_problems": "Laning und Teamfights",
+            "preferred_coach_id": "coach-pref-1",
+        }
+
+        ack = await client.post(
+            "/api/coaching/platform/notifications/ack",
+            headers=BOT_HEADERS,
+            json={"request_ids": [request_id]},
+        )
+        assert ack.status_code == 200, ack.text
+        assert ack.json()["acked"] == 1
+
+        due_after_ack = await client.get(
+            "/api/coaching/platform/notifications/due",
+            headers=BOT_HEADERS,
+        )
+        assert due_after_ack.status_code == 200, due_after_ack.text
+        assert [
+            n for n in due_after_ack.json()["notifications"]
+            if n.get("request_id") == request_id
+        ] == []
+
+        ack_again = await client.post(
+            "/api/coaching/platform/notifications/ack",
+            headers=BOT_HEADERS,
+            json={"request_ids": [request_id]},
+        )
+        assert ack_again.status_code == 200, ack_again.text
+        assert ack_again.json()["acked"] == 0
+
+        due_again = await client.get("/api/coaching/platform/notifications/due", headers=BOT_HEADERS)
+        assert [
+            n for n in due_again.json()["notifications"]
+            if n.get("request_id") == request_id
+        ] == []
 
 
 # ===========================================================================

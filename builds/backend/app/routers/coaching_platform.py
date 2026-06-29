@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.database import get_db
 from app.routers.auth import require_authenticated_user, require_coach_user
@@ -42,6 +42,11 @@ def _iso() -> str:
 
 def _row(r) -> dict:
     return {k: r[k] for k in r.keys()} if r is not None else None
+
+
+async def _table_columns(db, table_name: str) -> set[str]:
+    cur = await db.execute(f"PRAGMA table_info({table_name})")
+    return {row["name"] for row in await cur.fetchall()}
 
 
 # ========== UPSERT-HELFER ==========
@@ -838,7 +843,7 @@ async def update_appointment(appointment_id: str, body: AppointmentUpdate, reque
 
 @router.get("/platform/notifications/due")
 async def notifications_due(_bot: None = Depends(require_bot_token)):
-    """Bot-Polling: welche Termine müssen jetzt benachrichtigt werden?"""
+    """Bot-Polling: welche Termine/Requests müssen jetzt benachrichtigt werden?"""
     db = await get_db()
     try:
         now = datetime.now(timezone.utc).isoformat()
@@ -889,7 +894,61 @@ async def notifications_due(_bot: None = Depends(require_bot_token)):
             """,
             (now, in_2h),
         )
-        return {"notifications": [_row(r) for r in await cur.fetchall()]}
+        notifications = [_row(r) for r in await cur.fetchall()]
+
+        request_columns = await _table_columns(db, "coaching_requests")
+        preferred_coach_select = (
+            "preferred_coach_id"
+            if "preferred_coach_id" in request_columns
+            else "NULL AS preferred_coach_id"
+        )
+        cur = await db.execute(
+            f"""
+            SELECT id AS request_id,
+                   discord_user_id,
+                   discord_username,
+                   rank,
+                   subrank,
+                   hero,
+                   games_played,
+                   hours_played,
+                   availability,
+                   current_problems,
+                   {preferred_coach_select}
+            FROM coaching_requests
+            WHERE notify_discord_at IS NULL
+              AND status IN ('pending', 'analyzed', 'open', 'new')
+            ORDER BY created_at ASC
+            """
+        )
+        request_rows = await cur.fetchall()
+
+        for row in request_rows:
+            coachee_id = await _upsert_coachee(
+                db,
+                row["discord_user_id"],
+                row["discord_username"],
+            )
+            notifications.append({
+                "type": "request_created",
+                "request_id": row["request_id"],
+                "coachee_id": coachee_id,
+                "discord_user_id": row["discord_user_id"],
+                "discord_username": row["discord_username"],
+                "rank": row["rank"] or "",
+                "subrank": row["subrank"] or "",
+                "hero": row["hero"],
+                "games_played": row["games_played"],
+                "hours_played": row["hours_played"],
+                "availability": row["availability"],
+                "current_problems": row["current_problems"],
+                "preferred_coach_id": row["preferred_coach_id"],
+            })
+
+        if request_rows:
+            await db.commit()
+
+        return {"notifications": notifications}
     finally:
         await db.close()
 
@@ -900,7 +959,8 @@ class AckItem(BaseModel):
 
 
 class AckPayload(BaseModel):
-    items: List[AckItem]
+    items: List[AckItem] = Field(default_factory=list)
+    request_ids: List[str] = Field(default_factory=list)
 
 
 @router.post("/platform/notifications/ack")
@@ -923,6 +983,14 @@ async def notifications_ack(payload: AckPayload, _bot: None = Depends(require_bo
                 (ts, item.appointment_id),
             )
             acked += 1
+        for request_id in payload.request_ids:
+            cur = await db.execute(
+                """UPDATE coaching_requests
+                   SET notify_discord_at=?
+                   WHERE id=? AND notify_discord_at IS NULL""",
+                (ts, request_id),
+            )
+            acked += cur.rowcount
         await db.commit()
         return {"ok": True, "acked": acked}
     finally:
