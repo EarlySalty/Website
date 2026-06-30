@@ -1,3 +1,11 @@
+## #42 — Coaching-Frontend-Lint läuft wieder
+
+**Ausgangslage:** Die Coaching-App hatte zwar einen Lint-Befehl, aber die nötige ESLint-Toolchain fehlte. Dadurch konnte der Frontend-Check nicht laufen und echte React-/TypeScript-Probleme wären erst später aufgefallen.
+
+**Geändert:** Die Lint-Abhängigkeiten und eine passende Konfiguration sind ergänzt. Nebenbei sind zwei kleine React-Befunde bereinigt: der Auth-Check ist stabil eingebunden, und die Coaching-Timeline nutzt einen festen Zeitwert pro Render statt wiederholt die aktuelle Uhrzeit direkt auszulesen.
+
+**Wie's jetzt läuft:** `npm run lint` prüft die Coaching-App wieder sauber, und `npm run build` bleibt grün. Der Check kann damit wieder als normale Verifikation vor Website-Änderungen genutzt werden.
+
 ## #41 — Coaching-Sperre greift jetzt schon beim Abschicken
 
 **Ausgangslage:** Wer nach einem No-Show fürs Coaching gesperrt war, konnte auf der Website trotzdem noch eine neue Anfrage abschicken. Die Anfrage wurde gespeichert, im Discord aber später nicht weiterbearbeitet — für den Spieler sah es also erfolgreich aus, obwohl nichts passieren konnte.

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { coachingPlatform, type Appointment, type Goal, type PlatformSession, type SessionNote } from '@/api/client'
@@ -105,10 +106,10 @@ function buildTimeline(appointments: Appointment[], sessions: PlatformSession[],
   return entries.sort((a, b) => b.date.getTime() - a.date.getTime())
 }
 
-function TimelineNode({ entry }: { entry: TimelineEntry }) {
+function TimelineNode({ entry, nowMs }: { entry: TimelineEntry; nowMs: number }) {
   if (entry.kind === 'appointment') {
     const a = entry.appt
-    const upcoming = a.status === 'scheduled' && entry.date.getTime() > Date.now() - 30 * 60 * 1000
+    const upcoming = a.status === 'scheduled' && entry.date.getTime() > nowMs - 30 * 60 * 1000
     const nodeClass = a.status === 'cancelled' ? 'node-red' : upcoming ? 'node-amber' : 'node-green'
     return (
       <div className={`timeline-node ${nodeClass}`}>
@@ -162,6 +163,7 @@ function TimelineNode({ entry }: { entry: TimelineEntry }) {
 
 export default function MyCoachingPage() {
   const { user, login, isLoading: authLoading } = useAuth()
+  const [nowMs] = useState(() => Date.now())
 
   const { data, isLoading } = useQuery({
     queryKey: ['my-coaching'],
@@ -216,7 +218,7 @@ export default function MyCoachingPage() {
   const nextAppt = appointments
     .filter((a) => a.status === 'scheduled')
     .map((a) => ({ a, d: parseUtc(a.scheduled_at) }))
-    .filter((x): x is { a: Appointment; d: Date } => !!x.d && x.d.getTime() > Date.now() - 30 * 60 * 1000)
+    .filter((x): x is { a: Appointment; d: Date } => !!x.d && x.d.getTime() > nowMs - 30 * 60 * 1000)
     .sort((x, y) => x.d.getTime() - y.d.getTime())[0]?.a
 
   const timeline = buildTimeline(appointments, sessions, notes)
@@ -315,7 +317,7 @@ export default function MyCoachingPage() {
           {timeline.length > 0 ? (
             <div className="timeline">
               {timeline.map((entry, i) => (
-                <TimelineNode key={i} entry={entry} />
+                <TimelineNode key={i} entry={entry} nowMs={nowMs} />
               ))}
             </div>
           ) : (
