@@ -1,3 +1,11 @@
+## #41 — Coaching-Sperre greift jetzt schon beim Abschicken
+
+**Ausgangslage:** Wer nach einem No-Show fürs Coaching gesperrt war, konnte auf der Website trotzdem noch eine neue Anfrage abschicken. Die Anfrage wurde gespeichert, im Discord aber später nicht weiterbearbeitet — für den Spieler sah es also erfolgreich aus, obwohl nichts passieren konnte.
+
+**Geändert:** Die Website fragt vor dem Speichern beim Bot nach, ob für den eingeloggten Discord-Account eine aktive Coaching-Sperre läuft. Ist die Sperre aktiv, wird die Anfrage gar nicht erst angelegt; ist die Prüfung nicht erreichbar, bleibt der Intake geschlossen, statt tote Anfragen zu sammeln.
+
+**Wie's jetzt läuft:** Gesperrte Spieler bekommen direkt beim Formular eine klare Ablehnung. Freie Spieler laufen unverändert durch, und die Coaches sehen nur noch Anfragen, die auch wirklich bearbeitet werden dürfen.
+
 ## #40 — Coaching-Anfrage über die Website geht wieder
 
 **Ausgangslage:** Wer eingeloggt auf der Coaching-Seite eine Anfrage abschicken wollte, bekam nur „Konnte nicht gespeichert werden". Die Anfrage-Strecke war noch auf den alten Weg ausgelegt, über den nur der Bot Anfragen anlegen durfte — der normale Website-Login wurde dabei abgewiesen.

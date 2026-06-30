@@ -9,7 +9,7 @@ Setup-Muster:
 """
 
 import asyncio
-import json
+import contextlib
 import os
 import pytest
 
@@ -213,9 +213,6 @@ def _override_authenticated_user(discord_id: int = 2001):
     return _inner
 
 
-import contextlib
-
-
 @contextlib.asynccontextmanager
 async def _mock_coach(discord_id: int = 1001, role: str = "coach"):
     """
@@ -246,6 +243,25 @@ async def _mock_auth_user(discord_id: int = 2001):
         yield
     finally:
         cp_module.require_authenticated_user = orig
+
+
+@contextlib.asynccontextmanager
+async def _mock_no_show_ban_check(result=None, exc=None):
+    orig = getattr(coaching_module, "_fetch_no_show_ban_status", None)
+
+    async def _fake(discord_user_id):
+        if exc is not None:
+            raise exc
+        return result or {"banned": False}
+
+    coaching_module._fetch_no_show_ban_status = _fake
+    try:
+        yield
+    finally:
+        if orig is None:
+            delattr(coaching_module, "_fetch_no_show_ban_status")
+        else:
+            coaching_module._fetch_no_show_ban_status = orig
 
 
 # ---------------------------------------------------------------------------
@@ -292,24 +308,25 @@ async def test_create_request_website_session_ignoriert_payload_identitaet(fresh
         display_name="Session User",
     )
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        client.cookies.set(auth_module.SESSION_COOKIE_NAME, session_token)
-        r = await client.post("/api/coaching/requests", json={
-            "display_name": "Payload Name",
-            "discord_user_id": 9999,
-            "discord_username": "spoofed_user",
-            "rank": "Archon 3",
-            "hero": "Haze",
-            "availability": "2026-07-01T14:00",
-            "games_played": "300 Games / 150 Stunden",
-            "hours_played": "300 Games / 150 Stunden",
-            "current_problems": "Laning und Teamfights",
-            "preferred_coach_id": "coach-wunsch",
-        })
-        assert r.status_code == 200, r.text
-        data = r.json()
-        assert data["discord_username"] == "session_user"
-        assert data["subrank"] == ""
+    async with _mock_no_show_ban_check({"banned": False}):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            client.cookies.set(auth_module.SESSION_COOKIE_NAME, session_token)
+            r = await client.post("/api/coaching/requests", json={
+                "display_name": "Payload Name",
+                "discord_user_id": 9999,
+                "discord_username": "spoofed_user",
+                "rank": "Archon 3",
+                "hero": "Haze",
+                "availability": "2026-07-01T14:00",
+                "games_played": "300 Games / 150 Stunden",
+                "hours_played": "300 Games / 150 Stunden",
+                "current_problems": "Laning und Teamfights",
+                "preferred_coach_id": "coach-wunsch",
+            })
+            assert r.status_code == 200, r.text
+            data = r.json()
+            assert data["discord_username"] == "session_user"
+            assert data["subrank"] == ""
 
     db = db_module._db
     cur = await db.execute(
@@ -323,6 +340,65 @@ async def test_create_request_website_session_ignoriert_payload_identitaet(fresh
     assert row["rank"] == "Archon 3"
     assert row["subrank"] == ""
     assert row["current_problems"] == "Laning und Teamfights"
+
+
+@pytest.mark.asyncio
+async def test_create_request_website_session_lehnt_no_show_ban_vor_insert_ab(fresh_db):
+    """Aktive Bot-Sperre blockiert den Website-Intake bevor ein Request gespeichert wird."""
+    session_token = auth_module.create_jwt(
+        "3001",
+        "banned_user",
+        "user",
+        display_name="Banned User",
+    )
+
+    async with _mock_no_show_ban_check({"banned": True, "expires_at": 1790000000}):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            client.cookies.set(auth_module.SESSION_COOKIE_NAME, session_token)
+            r = await client.post("/api/coaching/requests", json={
+                "rank": "Archon 3",
+                "hero": "Haze",
+                "availability": "2026-07-01T14:00",
+                "games_played": "300 Games / 150 Stunden",
+                "hours_played": "300 Games / 150 Stunden",
+                "current_problems": "Laning und Teamfights",
+            })
+
+    assert r.status_code == 403, r.text
+    assert r.json()["detail"] == coaching_module.COACHING_NO_SHOW_BAN_MESSAGE
+
+    cur = await db_module._db.execute("SELECT COUNT(*) AS count FROM coaching_requests")
+    row = await cur.fetchone()
+    assert row["count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_create_request_website_session_fail_closed_bei_ban_check_fehler(fresh_db):
+    """Wenn die Bot-Sperrquelle nicht erreichbar ist, wird keine Anfrage gespeichert."""
+    session_token = auth_module.create_jwt(
+        "3002",
+        "fail_closed_user",
+        "user",
+        display_name="Fail Closed User",
+    )
+
+    async with _mock_no_show_ban_check(exc=coaching_module.HTTPException(503, "ban check unavailable")):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            client.cookies.set(auth_module.SESSION_COOKIE_NAME, session_token)
+            r = await client.post("/api/coaching/requests", json={
+                "rank": "Archon 3",
+                "hero": "Haze",
+                "availability": "2026-07-01T14:00",
+                "games_played": "300 Games / 150 Stunden",
+                "hours_played": "300 Games / 150 Stunden",
+                "current_problems": "Laning und Teamfights",
+            })
+
+    assert r.status_code == 503, r.text
+
+    cur = await db_module._db.execute("SELECT COUNT(*) AS count FROM coaching_requests")
+    row = await cur.fetchone()
+    assert row["count"] == 0
 
 
 @pytest.mark.asyncio

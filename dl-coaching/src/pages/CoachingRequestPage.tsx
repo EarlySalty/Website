@@ -81,6 +81,9 @@ export default function CoachingRequestPage() {
   }
 
   const canSubmit = form.rank.trim() && form.hero.trim() && form.time.trim() && form.experience.trim() && form.problems.trim()
+  const submitError = submit.error instanceof Error && submit.error.message
+    ? submit.error.message
+    : 'Konnte nicht gespeichert werden. Bitte später erneut versuchen.'
 
   return (
     <div className="request-page content-grid">
@@ -161,7 +164,7 @@ export default function CoachingRequestPage() {
         </div>
 
         {submit.isError && (
-          <p className="request-error">Konnte nicht gespeichert werden. Bitte später erneut versuchen.</p>
+          <p className="request-error">{submitError}</p>
         )}
 
         <div className="request-actions">

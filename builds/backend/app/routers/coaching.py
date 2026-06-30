@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
@@ -15,6 +16,23 @@ from app.routers.auth import require_admin_user, require_authenticated_user
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+COACHING_NO_SHOW_BAN_MESSAGE = (
+    "Du bist aktuell für Coaching-Anfragen gesperrt und kannst derzeit keine neue Anfrage stellen."
+)
+COACHING_BAN_CHECK_UNAVAILABLE_MESSAGE = (
+    "Coaching-Anfragen sind gerade nicht verfügbar. Bitte später erneut versuchen."
+)
+DASHBOARD_INTERNAL_API_BASE = (
+    os.getenv("DASHBOARD_INTERNAL_API_BASE", "http://127.0.0.1:8766").strip()
+    or "http://127.0.0.1:8766"
+)
+_DASHBOARD_INTERNAL_TOKEN_ENV_NAMES = (
+    "TURNIER_INTERNAL_API_TOKEN",
+    "MAIN_BOT_INTERNAL_TOKEN",
+    "TWITCH_INTERNAL_API_TOKEN",
+    "MASTER_BROKER_TOKEN",
+)
 
 
 # ========== SCHEMAS ==========
@@ -117,7 +135,7 @@ def _coach_from_row(row) -> CoachProfile:
     try:
         specialties = json.loads(row["specialties_json"]) if row["specialties_json"] else []
         availability = json.loads(row["availability_json"]) if row["availability_json"] else {}
-    except:
+    except (json.JSONDecodeError, TypeError):
         pass
 
     return CoachProfile(
@@ -210,6 +228,52 @@ def _has_bot_token_header(request: Request) -> bool:
         request.headers.get("X-Internal-Token")
         or request.headers.get("X-Bot-Token")
     )
+
+
+def _dashboard_internal_token() -> str:
+    for name in _DASHBOARD_INTERNAL_TOKEN_ENV_NAMES:
+        value = os.getenv(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
+async def _fetch_no_show_ban_status(discord_user_id: int) -> dict:
+    token = _dashboard_internal_token()
+    if not token:
+        logger.error("Kein interner Dashboard-Token für Coaching-Ban-Check gesetzt")
+        raise HTTPException(503, COACHING_BAN_CHECK_UNAVAILABLE_MESSAGE)
+
+    url = f"{DASHBOARD_INTERNAL_API_BASE.rstrip('/')}/internal/coaching/v1/no-show-ban"
+    headers = {"X-Internal-Token": token, "Content-Type": "application/json"}
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(5.0)) as client:
+            response = await client.post(
+                url,
+                json={"discord_user_id": discord_user_id},
+                headers=headers,
+            )
+    except httpx.HTTPError as exc:
+        logger.warning("Coaching-Ban-Check nicht erreichbar: %s", exc)
+        raise HTTPException(503, COACHING_BAN_CHECK_UNAVAILABLE_MESSAGE) from exc
+
+    if response.status_code != 200:
+        logger.warning(
+            "Coaching-Ban-Check fehlgeschlagen: status=%s",
+            response.status_code,
+        )
+        raise HTTPException(503, COACHING_BAN_CHECK_UNAVAILABLE_MESSAGE)
+
+    try:
+        data = response.json()
+    except ValueError as exc:
+        logger.warning("Coaching-Ban-Check lieferte kein JSON")
+        raise HTTPException(503, COACHING_BAN_CHECK_UNAVAILABLE_MESSAGE) from exc
+
+    if not isinstance(data, dict) or not isinstance(data.get("banned"), bool):
+        logger.warning("Coaching-Ban-Check lieferte unerwartetes Payload")
+        raise HTTPException(503, COACHING_BAN_CHECK_UNAVAILABLE_MESSAGE)
+    return data
 
 
 async def _authenticate_coaching_request(request: Request) -> Optional[dict]:
@@ -417,6 +481,9 @@ async def create_coaching_request(
     else:
         discord_user_id = _session_discord_user_id(user_data)
         discord_username = _session_discord_username(user_data)
+        ban_status = await _fetch_no_show_ban_status(discord_user_id)
+        if ban_status.get("banned") is True:
+            raise HTTPException(403, COACHING_NO_SHOW_BAN_MESSAGE)
 
     rank = req.rank or ""
     subrank = req.subrank or ""
