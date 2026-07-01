@@ -262,7 +262,10 @@ pub fn router(state: AppState) -> Router {
 
 #[cfg(test)]
 mod tests {
-    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+    use std::{
+        net::{IpAddr, Ipv4Addr, SocketAddr},
+        sync::Arc,
+    };
 
     use axum::{
         body::{to_bytes, Body},
@@ -275,16 +278,8 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn bot_request_erscheint_in_notification_queue() {
-        let db_path = std::env::temp_dir().join(format!(
-            "ddc-website-backend-test-{}.db",
-            crate::ids::token_urlsafe(8)
-        ));
-        std::env::set_var("DB_PATH", &db_path);
-        std::env::set_var("TWITCH_INTERNAL_API_TOKEN", "test-secret-xyz");
-        std::env::set_var("AUTH_SESSION_SECRET", "test-session-secret");
-
-        let state = AppState::new(Config::from_env()).await.expect("state");
+    async fn website_request_erscheint_bot_request_nicht_in_notification_queue() {
+        let (_db, state) = test_state().await;
         let app = router(state);
 
         let create = request(
@@ -307,6 +302,29 @@ mod tests {
         let response = app.clone().oneshot(create).await.expect("create response");
         assert_eq!(response.status(), StatusCode::OK);
 
+        let create_bot_request = request(
+            Method::POST,
+            "/api/coaching/requests",
+            Some(json!({
+                "bot_request_id": 9001,
+                "discord_user_id": 525252,
+                "discord_username": "bot_queue_user",
+                "rank": "Oracle",
+                "subrank": "1",
+                "hero": "Pocket",
+                "games_played": "321",
+                "hours_played": "654",
+                "availability": "wochenends",
+                "current_problems": "Rotations"
+            })),
+        );
+        let response = app
+            .clone()
+            .oneshot(create_bot_request)
+            .await
+            .expect("create bot response");
+        assert_eq!(response.status(), StatusCode::OK);
+
         let due = request(
             Method::GET,
             "/api/coaching/platform/notifications/due",
@@ -324,7 +342,113 @@ mod tests {
         assert_eq!(request_notification["discord_user_id"], 424242);
         assert_eq!(request_notification["preferred_coach_id"], "coach-pref-1");
 
-        let _ = std::fs::remove_file(db_path);
+        let bot_request_notification = notifications
+            .iter()
+            .find(|item| item["type"] == "request_created" && item["request_id"] == "9001")
+            .or_else(|| {
+                notifications.iter().find(|item| {
+                    item["type"] == "request_created" && item["discord_user_id"] == 525252
+                })
+            });
+        assert!(
+            bot_request_notification.is_none(),
+            "bot-only requests must not be mirrored back as website request_created notifications"
+        );
+    }
+
+    #[tokio::test]
+    async fn request_created_ack_matcht_nur_website_request_id() {
+        let (_db, state) = test_state().await;
+        let pool = state.pool.clone();
+        let app = router(state);
+
+        let create_website_request = request(
+            Method::POST,
+            "/api/coaching/requests",
+            Some(json!({
+                "id": "9001",
+                "discord_user_id": 626262,
+                "discord_username": "website_collision_user",
+                "rank": "Archon",
+                "subrank": "2"
+            })),
+        );
+        let response = app
+            .clone()
+            .oneshot(create_website_request)
+            .await
+            .expect("create website response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let create_bot_request = request(
+            Method::POST,
+            "/api/coaching/requests",
+            Some(json!({
+                "bot_request_id": 9001,
+                "discord_user_id": 727272,
+                "discord_username": "bot_collision_user",
+                "rank": "Oracle",
+                "subrank": "1"
+            })),
+        );
+        let response = app
+            .clone()
+            .oneshot(create_bot_request)
+            .await
+            .expect("create bot response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let ack = request(
+            Method::POST,
+            "/api/coaching/platform/notifications/ack",
+            Some(json!({ "request_ids": ["9001"] })),
+        );
+        let response = app.oneshot(ack).await.expect("ack response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["acked"], 1);
+
+        let website_notify: Option<chrono::DateTime<chrono::Utc>> = sqlx::query_scalar(
+            "SELECT notify_discord_at FROM coaching.requests WHERE website_request_id=$1",
+        )
+        .bind("9001")
+        .fetch_one(&pool)
+        .await
+        .expect("website notify");
+        assert!(website_notify.is_some());
+
+        let bot_notify: Option<chrono::DateTime<chrono::Utc>> = sqlx::query_scalar(
+            "SELECT notify_discord_at FROM coaching.requests WHERE bot_request_id=$1",
+        )
+        .bind(9001_i32)
+        .fetch_one(&pool)
+        .await
+        .expect("bot notify");
+        assert!(bot_notify.is_none());
+    }
+
+    async fn test_state() -> (dl_central_db::TestDb, AppState) {
+        std::env::set_var("TWITCH_INTERNAL_API_TOKEN", "test-secret-xyz");
+        std::env::set_var("AUTH_SESSION_SECRET", "test-session-secret");
+
+        let db = dl_central_db::testing::test_pool()
+            .await
+            .expect("central test pool");
+        let cfg = Config::from_env();
+        let http = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(20))
+            .build()
+            .expect("http client");
+        let auth = Auth::new(cfg.clone());
+        let state = AppState {
+            inner: Arc::new(AppInner {
+                cfg,
+                pool: db.pool().clone(),
+                http,
+                auth,
+            }),
+        };
+        (db, state)
     }
 
     fn request(method: Method, uri: &str, body: Option<Value>) -> Request<Body> {

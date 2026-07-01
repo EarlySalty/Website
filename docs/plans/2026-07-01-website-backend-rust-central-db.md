@@ -322,6 +322,9 @@ Akzeptanz:
 
 Abhaengig von: T2 und T3
 
+Status: umgesetzt am 2026-07-01, Kritiker-Pass ohne ID-Semantik-Befund.
+Verifikation: Build, Clippy, Fmt und Wegwerf-Postgres-Testlauf gruen.
+
 Dateien:
 
 - `builds/backend-rust/src/routes/coaching.rs`
@@ -354,6 +357,24 @@ Abhaengig von: T5
 Dateien:
 
 - `builds/backend-rust/src/routes/platform.rs`
+
+Teilstatus (2026-07-01): `notifications_due`/`notifications_ack` bereits auf
+`coaching.requests` portiert. Ein frischer Kritiker fand dabei einen echten
+Cross-System-ID-Bug (Bot-only-Requests wurden als vermeintliche
+Website-Requests dupliziert, da `request_created` jede Zeile meldete statt
+nur website-originierte; `notifications_ack` matchte ueber drei ID-Spalten
+ohne Cross-Column-Unique-Constraint). Gefixt: `request_created` meldet nur
+noch Zeilen mit `website_request_id IS NOT NULL`, Ack matcht ausschliesslich
+`website_request_id`. Mit Regressionstests belegt (Bot-Request unsichtbar im
+Notification-Feed; Ack trifft bei ID-Kollision nur die Website-Zeile).
+
+Noch offen (Rest-T6, per Kritiker-Bestandsaufnahme identifiziert, alle
+weiterhin auf altem SQLite-Query-Format mit `?`-Platzhaltern und
+unqualifizierten Tabellennamen wie `coaching_requests`/`coachees`/
+`coaching_appointments` — brechen zur Laufzeit gegen die zentrale Postgres
+mit "relation does not exist"): `platform_sync`, Overview/Queue/Coachees,
+Goals/Milestones/Notes, My-/Coaches-/Appointments-/Profil-Endpunkte, sowie
+zwei Helper mit alten `?`-Platzhaltern.
 
 Aufgaben:
 

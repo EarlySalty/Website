@@ -13,7 +13,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     app::AppState,
-    auth, config, db,
+    auth, config,
     error::{AppError, AppResult},
     ids, rows,
 };
@@ -45,34 +45,60 @@ pub struct ApplicationReviewQuery {
     status: String,
 }
 
+const COACH_SELECT: &str = "\
+    SELECT id, discord_user_id, discord_username, display_name, avatar_url, bio, \
+           specialties_json, availability_json, status, avg_rating, total_reviews, \
+           total_sessions, twitch_url, created_at, updated_at \
+    FROM coaching.coaches";
+
+const REQUEST_SELECT: &str = "\
+    SELECT COALESCE(website_request_id, bot_request_id::text, request_uid) AS id, \
+           request_uid, bot_request_id, website_request_id, discord_user_id, \
+           discord_username, rank, subrank, hero, games_played, hours_played, \
+           availability, current_problems, ai_summary, ai_insights_json, status, \
+           preferred_coach_id, created_at, updated_at \
+    FROM coaching.requests";
+
 pub async fn list_coaches(
     State(state): State<AppState>,
     Query(query): Query<CoachListQuery>,
 ) -> AppResult<Json<Value>> {
     let rows = match (query.specialty, query.min_rating) {
         (Some(specialty), Some(min_rating)) => {
-            sqlx::query("SELECT * FROM coaches WHERE status='active' AND specialties_json LIKE ? AND avg_rating >= ? ORDER BY avg_rating DESC, total_sessions DESC")
+            let sql = format!(
+                "{COACH_SELECT} WHERE status='active' AND specialties_json::text ILIKE $1 \
+                 AND avg_rating >= $2 ORDER BY avg_rating DESC, total_sessions DESC"
+            );
+            sqlx::query(&sql)
                 .bind(format!("%{specialty}%"))
                 .bind(min_rating)
                 .fetch_all(&state.pool)
                 .await?
         }
         (Some(specialty), None) => {
-            sqlx::query("SELECT * FROM coaches WHERE status='active' AND specialties_json LIKE ? ORDER BY avg_rating DESC, total_sessions DESC")
+            let sql = format!(
+                "{COACH_SELECT} WHERE status='active' AND specialties_json::text ILIKE $1 \
+                 ORDER BY avg_rating DESC, total_sessions DESC"
+            );
+            sqlx::query(&sql)
                 .bind(format!("%{specialty}%"))
                 .fetch_all(&state.pool)
                 .await?
         }
         (None, Some(min_rating)) => {
-            sqlx::query("SELECT * FROM coaches WHERE status='active' AND avg_rating >= ? ORDER BY avg_rating DESC, total_sessions DESC")
+            let sql = format!(
+                "{COACH_SELECT} WHERE status='active' AND avg_rating >= $1 \
+                 ORDER BY avg_rating DESC, total_sessions DESC"
+            );
+            sqlx::query(&sql)
                 .bind(min_rating)
                 .fetch_all(&state.pool)
                 .await?
         }
         (None, None) => {
-            sqlx::query("SELECT * FROM coaches WHERE status='active' ORDER BY avg_rating DESC, total_sessions DESC")
-                .fetch_all(&state.pool)
-                .await?
+            let sql =
+                format!("{COACH_SELECT} WHERE status='active' ORDER BY avg_rating DESC, total_sessions DESC");
+            sqlx::query(&sql).fetch_all(&state.pool).await?
         }
     };
     Ok(Json(Value::Array(
@@ -84,7 +110,8 @@ pub async fn get_coach(
     State(state): State<AppState>,
     Path(coach_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    let row = sqlx::query("SELECT * FROM coaches WHERE id=?")
+    let sql = format!("{COACH_SELECT} WHERE id=$1");
+    let row = sqlx::query(&sql)
         .bind(coach_id)
         .fetch_optional(&state.pool)
         .await?
@@ -96,10 +123,12 @@ pub async fn get_coach_reviews(
     State(state): State<AppState>,
     Path(coach_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    let rows = sqlx::query("SELECT * FROM coach_reviews WHERE coach_id=? ORDER BY created_at DESC")
-        .bind(coach_id)
-        .fetch_all(&state.pool)
-        .await?;
+    let rows = sqlx::query(
+        "SELECT * FROM coaching.coach_reviews WHERE coach_id=$1 ORDER BY created_at DESC",
+    )
+    .bind(coach_id)
+    .fetch_all(&state.pool)
+    .await?;
     Ok(Json(Value::Array(
         rows.iter().map(review_from_row).collect(),
     )))
@@ -121,41 +150,46 @@ pub async fn create_or_update_coach_profile(
             "Cannot create profile for another user",
         ));
     }
-    let existing = sqlx::query("SELECT id FROM coaches WHERE discord_user_id=?")
-        .bind(discord_user_id)
-        .fetch_optional(&state.pool)
-        .await?;
-    let coach_id = if let Some(row) = existing {
-        let id = rows::required_string(&row, "id");
-        sqlx::query(
-            "UPDATE coaches SET display_name=?, bio=?, specialties_json=?, availability_json=?, avatar_url=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-        )
-        .bind(body.get("display_name").and_then(Value::as_str).unwrap_or_default())
-        .bind(body.get("bio").and_then(Value::as_str))
-        .bind(json_string(body.get("specialties"), "[]"))
-        .bind(json_string(body.get("availability"), "{}"))
-        .bind(body.get("avatar_url").and_then(Value::as_str))
-        .bind(&id)
-        .execute(&state.pool)
-        .await?;
-        id
-    } else {
-        let id = ids::id16();
-        sqlx::query(
-            "INSERT INTO coaches (id, discord_user_id, discord_username, display_name, avatar_url, bio, specialties_json, availability_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')",
-        )
-        .bind(&id)
-        .bind(discord_user_id)
-        .bind(body.get("discord_username").and_then(Value::as_str).unwrap_or_default())
-        .bind(body.get("display_name").and_then(Value::as_str).unwrap_or_default())
-        .bind(body.get("avatar_url").and_then(Value::as_str))
-        .bind(body.get("bio").and_then(Value::as_str))
-        .bind(json_string(body.get("specialties"), "[]"))
-        .bind(json_string(body.get("availability"), "{}"))
-        .execute(&state.pool)
-        .await?;
-        id
-    };
+    let new_id = ids::id16();
+    let row = sqlx::query(
+        "INSERT INTO coaching.coaches \
+         (id, discord_user_id, discord_username, display_name, avatar_url, bio, \
+          specialties_json, availability_json, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', now(), now()) \
+         ON CONFLICT (discord_user_id) DO UPDATE SET \
+             discord_username=COALESCE(NULLIF(EXCLUDED.discord_username, ''), coaching.coaches.discord_username), \
+             display_name=EXCLUDED.display_name, avatar_url=EXCLUDED.avatar_url, bio=EXCLUDED.bio, \
+             specialties_json=EXCLUDED.specialties_json, availability_json=EXCLUDED.availability_json, \
+             updated_at=now() \
+         RETURNING id",
+    )
+    .bind(&new_id)
+    .bind(discord_user_id)
+    .bind(
+        body.get("discord_username")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )
+    .bind(
+        body.get("display_name")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )
+    .bind(body.get("avatar_url").and_then(Value::as_str))
+    .bind(body.get("bio").and_then(Value::as_str))
+    .bind(json_body_value(
+        &body,
+        &["specialties_json", "specialties"],
+        json!([]),
+    ))
+    .bind(json_body_value(
+        &body,
+        &["availability_json", "availability"],
+        json!({}),
+    ))
+    .fetch_one(&state.pool)
+    .await?;
+    let coach_id = rows::required_string(&row, "id");
     get_coach(State(state), Path(coach_id)).await
 }
 
@@ -176,10 +210,11 @@ pub async fn apply_to_be_coach(
         ));
     }
 
-    let existing = sqlx::query("SELECT id, status FROM coach_applications WHERE discord_user_id=?")
-        .bind(discord_user_id)
-        .fetch_optional(&state.pool)
-        .await?;
+    let existing =
+        sqlx::query("SELECT id, status FROM coaching.coach_applications WHERE discord_user_id=$1")
+            .bind(discord_user_id)
+            .fetch_optional(&state.pool)
+            .await?;
     let app_id = if let Some(row) = existing {
         let status = rows::required_string(&row, "status");
         let id = rows::required_string(&row, "id");
@@ -189,13 +224,32 @@ pub async fn apply_to_be_coach(
             ));
         }
         sqlx::query(
-            "UPDATE coach_applications SET application_text=?, experience_text=?, rank=?, specialties_json=?, availability_json=?, status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            "UPDATE coaching.coach_applications \
+             SET application_text=$1, experience_text=$2, rank=$3, specialties_json=$4, \
+                 availability_json=$5, status='pending', updated_at=now() \
+             WHERE id=$6",
         )
-        .bind(body.get("application_text").and_then(Value::as_str).unwrap_or_default())
-        .bind(body.get("experience_text").and_then(Value::as_str).unwrap_or_default())
+        .bind(
+            body.get("application_text")
+                .and_then(Value::as_str)
+                .unwrap_or_default(),
+        )
+        .bind(
+            body.get("experience_text")
+                .and_then(Value::as_str)
+                .unwrap_or_default(),
+        )
         .bind(body.get("rank").and_then(Value::as_str).unwrap_or_default())
-        .bind(json_string(body.get("specialties"), "[]"))
-        .bind(json_string(body.get("availability"), "{}"))
+        .bind(json_body_value(
+            &body,
+            &["specialties_json", "specialties"],
+            json!([]),
+        ))
+        .bind(json_body_value(
+            &body,
+            &["availability_json", "availability"],
+            json!({}),
+        ))
         .bind(&id)
         .execute(&state.pool)
         .await?;
@@ -203,7 +257,10 @@ pub async fn apply_to_be_coach(
     } else {
         let id = ids::id16();
         sqlx::query(
-            "INSERT INTO coach_applications (id, discord_user_id, discord_username, display_name, application_text, experience_text, rank, specialties_json, availability_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')",
+            "INSERT INTO coaching.coach_applications \
+             (id, discord_user_id, discord_username, display_name, application_text, \
+              experience_text, rank, specialties_json, availability_json, status, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', now(), now())",
         )
         .bind(&id)
         .bind(discord_user_id)
@@ -212,8 +269,16 @@ pub async fn apply_to_be_coach(
         .bind(body.get("application_text").and_then(Value::as_str).unwrap_or_default())
         .bind(body.get("experience_text").and_then(Value::as_str).unwrap_or_default())
         .bind(body.get("rank").and_then(Value::as_str).unwrap_or_default())
-        .bind(json_string(body.get("specialties"), "[]"))
-        .bind(json_string(body.get("availability"), "{}"))
+        .bind(json_body_value(
+            &body,
+            &["specialties_json", "specialties"],
+            json!([]),
+        ))
+        .bind(json_body_value(
+            &body,
+            &["availability_json", "availability"],
+            json!({}),
+        ))
         .execute(&state.pool)
         .await?;
         id
@@ -269,53 +334,62 @@ pub async fn create_coaching_request(
         (id, username)
     };
 
-    let request_id = body
-        .get("id")
-        .and_then(Value::as_str)
-        .map(str::to_string)
-        .unwrap_or_else(ids::id16);
+    let provided_request_id = body_string(&body, "id").map(str::to_string);
+    let provided_website_request_id = body_string(&body, "website_request_id").map(str::to_string);
+    let bot_request_id = optional_i32_body(&body, "bot_request_id")?;
+    let website_request_id = provided_website_request_id
+        .or(provided_request_id)
+        .or_else(|| {
+            if bot_request_id.is_none() {
+                Some(ids::id16())
+            } else {
+                None
+            }
+        });
+    let request_uid = website_request_id
+        .clone()
+        .unwrap_or_else(|| format!("bot:{}", bot_request_id.expect("bot request id present")));
+    let response_id = website_request_id
+        .clone()
+        .or_else(|| bot_request_id.map(|id| id.to_string()))
+        .unwrap_or_else(|| request_uid.clone());
     let rank = body.get("rank").and_then(Value::as_str).unwrap_or_default();
     let subrank = body
         .get("subrank")
         .and_then(Value::as_str)
         .unwrap_or_default();
-    let columns = db::table_columns(&state.pool, "coaching_requests").await?;
 
-    let mut sql = "INSERT INTO coaching_requests (id, discord_user_id, discord_username, rank, subrank, hero, games_played, hours_played, availability, current_problems, ai_summary, ai_insights_json, status".to_string();
-    let include_preferred = body
-        .get("preferred_coach_id")
-        .and_then(Value::as_str)
-        .is_some()
-        && columns.contains("preferred_coach_id");
-    if include_preferred {
-        sql.push_str(", preferred_coach_id");
-    }
-    sql.push_str(") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending'");
-    if include_preferred {
-        sql.push_str(", ?");
-    }
-    sql.push(')');
-
-    let mut query = sqlx::query(&sql)
-        .bind(&request_id)
-        .bind(discord_user_id)
-        .bind(&discord_username)
-        .bind(rank)
-        .bind(subrank)
-        .bind(body.get("hero").and_then(Value::as_str))
-        .bind(body.get("games_played").and_then(Value::as_str))
-        .bind(body.get("hours_played").and_then(Value::as_str))
-        .bind(body.get("availability").and_then(Value::as_str))
-        .bind(body.get("current_problems").and_then(Value::as_str))
-        .bind(body.get("ai_summary").and_then(Value::as_str))
-        .bind(body.get("ai_insights_json").and_then(Value::as_str));
-    if include_preferred {
-        query = query.bind(body.get("preferred_coach_id").and_then(Value::as_str));
-    }
-    query.execute(&state.pool).await?;
+    sqlx::query(
+        "INSERT INTO coaching.requests \
+         (request_uid, bot_request_id, website_request_id, discord_user_id, discord_username, \
+          rank, subrank, hero, games_played, hours_played, availability, current_problems, \
+          ai_summary, ai_insights_json, status, preferred_coach_id, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, \
+                 'pending', $15, now(), now())",
+    )
+    .bind(&request_uid)
+    .bind(bot_request_id)
+    .bind(website_request_id.as_deref())
+    .bind(discord_user_id)
+    .bind(&discord_username)
+    .bind(rank)
+    .bind(subrank)
+    .bind(body.get("hero").and_then(Value::as_str))
+    .bind(body.get("games_played").and_then(Value::as_str))
+    .bind(body.get("hours_played").and_then(Value::as_str))
+    .bind(body.get("availability").and_then(Value::as_str))
+    .bind(body.get("current_problems").and_then(Value::as_str))
+    .bind(body.get("ai_summary").and_then(Value::as_str))
+    .bind(json_body_value_opt(
+        &body,
+        &["ai_insights_json", "ai_insights"],
+    ))
+    .bind(body.get("preferred_coach_id").and_then(Value::as_str))
+    .execute(&state.pool)
+    .await?;
 
     Ok(Json(json!({
-        "id": request_id,
+        "id": response_id,
         "discord_username": discord_username,
         "rank": rank,
         "subrank": subrank,
@@ -335,14 +409,14 @@ pub async fn list_coaching_requests(
     Query(query): Query<RequestsQuery>,
 ) -> AppResult<Json<Value>> {
     let rows = if let Some(status) = query.status {
-        sqlx::query("SELECT * FROM coaching_requests WHERE status=? ORDER BY created_at DESC")
+        let sql = format!("{REQUEST_SELECT} WHERE status=$1 ORDER BY created_at DESC NULLS LAST");
+        sqlx::query(&sql)
             .bind(status)
             .fetch_all(&state.pool)
             .await?
     } else {
-        sqlx::query("SELECT * FROM coaching_requests ORDER BY created_at DESC")
-            .fetch_all(&state.pool)
-            .await?
+        let sql = format!("{REQUEST_SELECT} ORDER BY created_at DESC NULLS LAST");
+        sqlx::query(&sql).fetch_all(&state.pool).await?
     };
     Ok(Json(Value::Array(
         rows.iter().map(request_from_row).collect(),
@@ -356,25 +430,46 @@ pub async fn match_coach_to_request(
     Query(query): Query<MatchQuery>,
 ) -> AppResult<Json<Value>> {
     require_bot_token(&headers)?;
-    let row = sqlx::query("SELECT * FROM coaching_requests WHERE id=?")
+    let sql = format!(
+        "{REQUEST_SELECT} \
+         WHERE website_request_id=$1 OR bot_request_id::text=$1 OR request_uid=$1 \
+         ORDER BY CASE \
+             WHEN website_request_id=$1 THEN 0 \
+             WHEN bot_request_id::text=$1 THEN 1 \
+             ELSE 2 \
+         END \
+         LIMIT 1"
+    );
+    let row = sqlx::query(&sql)
         .bind(&request_id)
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| AppError::not_found("Request not found"))?;
     let session_id = ids::id16();
-    sqlx::query("INSERT INTO coaching_sessions (id, request_id, coach_id, discord_user_id, discord_username, discord_channel_id, status) VALUES (?, ?, ?, ?, ?, ?, 'active')")
-        .bind(&session_id)
-        .bind(&request_id)
-        .bind(query.coach_id)
-        .bind(rows::i64(&row, "discord_user_id"))
-        .bind(rows::string(&row, "discord_username"))
-        .bind(query.discord_channel_id)
-        .execute(&state.pool)
-        .await?;
+    let request_uid = rows::required_string(&row, "request_uid");
+    let website_request_id = rows::string(&row, "website_request_id");
+    let bot_request_id =
+        rows::i64(&row, "bot_request_id").and_then(|value| i32::try_from(value).ok());
     sqlx::query(
-        "UPDATE coaching_requests SET status='matched', updated_at=CURRENT_TIMESTAMP WHERE id=?",
+        "INSERT INTO coaching.sessions \
+         (id, request_uid, bot_request_id, website_request_id, coach_id, discord_user_id, \
+          discord_username, discord_channel_id, status, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', now())",
     )
-    .bind(request_id)
+    .bind(&session_id)
+    .bind(&request_uid)
+    .bind(bot_request_id)
+    .bind(website_request_id.as_deref())
+    .bind(&query.coach_id)
+    .bind(rows::i64(&row, "discord_user_id"))
+    .bind(rows::string(&row, "discord_username"))
+    .bind(query.discord_channel_id)
+    .execute(&state.pool)
+    .await?;
+    sqlx::query(
+        "UPDATE coaching.requests SET status='matched', updated_at=now() WHERE request_uid=$1",
+    )
+    .bind(request_uid)
     .execute(&state.pool)
     .await?;
     Ok(Json(
@@ -393,39 +488,49 @@ pub async fn submit_survey(
         .and_then(Value::as_str)
         .unwrap_or_default()
         .to_string();
-    let session = sqlx::query("SELECT * FROM coaching_sessions WHERE id=?")
+    let session = sqlx::query("SELECT * FROM coaching.sessions WHERE id=$1")
         .bind(&session_id)
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| AppError::not_found("Session not found"))?;
     let coach_id = rows::required_string(&session, "coach_id");
     let survey_id = ids::id16();
-    let rating = body.get("rating").and_then(Value::as_i64).unwrap_or(0);
-    let would_recommend = body
-        .get("would_recommend")
-        .and_then(Value::as_bool)
-        .map(|v| if v { 1 } else { 0 });
-    sqlx::query("INSERT INTO coaching_surveys (id, session_id, rating, feedback_text, improved_areas, unresolved_items, would_recommend) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        .bind(&survey_id)
+    let rating = i32_body_or_default(&body, "rating", 0)?;
+    let would_recommend = body.get("would_recommend").and_then(Value::as_bool);
+    sqlx::query(
+        "INSERT INTO coaching.surveys \
+         (id, session_id, rating, feedback_text, improved_areas, unresolved_items, \
+          would_recommend, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, now())",
+    )
+    .bind(&survey_id)
+    .bind(&session_id)
+    .bind(rating)
+    .bind(body.get("feedback_text").and_then(Value::as_str))
+    .bind(body.get("improved_areas").and_then(Value::as_str))
+    .bind(body.get("unresolved_items").and_then(Value::as_str))
+    .bind(would_recommend)
+    .execute(&state.pool)
+    .await?;
+    sqlx::query("UPDATE coaching.sessions SET status='completed', completed_at=now() WHERE id=$1")
         .bind(&session_id)
-        .bind(rating)
-        .bind(body.get("feedback_text").and_then(Value::as_str))
-        .bind(body.get("improved_areas").and_then(Value::as_str))
-        .bind(body.get("unresolved_items").and_then(Value::as_str))
-        .bind(would_recommend)
         .execute(&state.pool)
         .await?;
-    sqlx::query("UPDATE coaching_sessions SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE id=?")
-        .bind(&session_id)
-        .execute(&state.pool)
-        .await?;
-    let stats = sqlx::query("SELECT AVG(rating) AS avg, COUNT(*) AS cnt FROM coaching_surveys WHERE session_id IN (SELECT id FROM coaching_sessions WHERE coach_id=?)")
-        .bind(&coach_id)
-        .fetch_one(&state.pool)
-        .await?;
+    let stats = sqlx::query(
+        "SELECT AVG(rating)::float8 AS avg, COUNT(*)::bigint AS cnt \
+         FROM coaching.surveys \
+         WHERE session_id IN (SELECT id FROM coaching.sessions WHERE coach_id=$1)",
+    )
+    .bind(&coach_id)
+    .fetch_one(&state.pool)
+    .await?;
     let review_id = ids::id16();
-    sqlx::query("INSERT INTO coach_reviews (id, coach_id, session_id, user_display_name, rating, feedback_text, improved_areas) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        .bind(review_id)
+    sqlx::query(
+        "INSERT INTO coaching.coach_reviews \
+         (id, coach_id, session_id, user_display_name, rating, feedback_text, improved_areas, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, now())",
+    )
+        .bind(&review_id)
         .bind(&coach_id)
         .bind(&session_id)
         .bind(anonymous_review_label(rows::i64(&session, "discord_user_id"), &coach_id))
@@ -435,12 +540,21 @@ pub async fn submit_survey(
         .execute(&state.pool)
         .await?;
     if let Some(avg) = rows::f64(&stats, "avg") {
-        sqlx::query("UPDATE coaches SET avg_rating=?, total_reviews=?, total_sessions=total_sessions+1, updated_at=CURRENT_TIMESTAMP WHERE id=?")
-            .bind(avg)
-            .bind(rows::i64(&stats, "cnt").unwrap_or(0))
-            .bind(coach_id)
-            .execute(&state.pool)
-            .await?;
+        sqlx::query(
+            "UPDATE coaching.coaches \
+             SET avg_rating=$1, total_reviews=$2, total_sessions=COALESCE(total_sessions, 0)+1, \
+                 updated_at=now() \
+             WHERE id=$3",
+        )
+        .bind(avg)
+        .bind(
+            rows::i64(&stats, "cnt")
+                .and_then(|value| i32::try_from(value).ok())
+                .unwrap_or(0),
+        )
+        .bind(coach_id)
+        .execute(&state.pool)
+        .await?;
     }
     Ok(Json(json!({ "status": "stored", "survey_id": survey_id })))
 }
@@ -451,7 +565,8 @@ pub async fn get_coach_dashboard(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
 ) -> AppResult<Json<Value>> {
     let user = auth::require_authenticated_user(&state, &headers, Some(peer)).await?;
-    let coach = sqlx::query("SELECT * FROM coaches WHERE discord_user_id=?")
+    let sql = format!("{COACH_SELECT} WHERE discord_user_id=$1");
+    let coach = sqlx::query(&sql)
         .bind(user.sub.parse::<i64>().unwrap_or(0))
         .fetch_optional(&state.pool)
         .await?;
@@ -462,13 +577,13 @@ pub async fn get_coach_dashboard(
     };
     let coach_id = rows::required_string(&coach, "id");
     let sessions = sqlx::query(
-        "SELECT * FROM coaching_sessions WHERE coach_id=? ORDER BY created_at DESC LIMIT 10",
+        "SELECT * FROM coaching.sessions WHERE coach_id=$1 ORDER BY created_at DESC NULLS LAST LIMIT 10",
     )
     .bind(&coach_id)
     .fetch_all(&state.pool)
     .await?;
     let reviews = sqlx::query(
-        "SELECT * FROM coach_reviews WHERE coach_id=? ORDER BY created_at DESC LIMIT 5",
+        "SELECT * FROM coaching.coach_reviews WHERE coach_id=$1 ORDER BY created_at DESC NULLS LAST LIMIT 5",
     )
     .bind(&coach_id)
     .fetch_all(&state.pool)
@@ -486,7 +601,7 @@ pub async fn end_session(
     Path(session_id): Path<String>,
 ) -> AppResult<Json<Value>> {
     require_bot_token(&headers)?;
-    sqlx::query("UPDATE coaching_sessions SET status='completed', completed_at=CURRENT_TIMESTAMP WHERE id=?")
+    sqlx::query("UPDATE coaching.sessions SET status='completed', completed_at=now() WHERE id=$1")
         .bind(session_id)
         .execute(&state.pool)
         .await?;
@@ -504,23 +619,34 @@ pub async fn review_application(
     if !matches!(query.status.as_str(), "approved" | "rejected") {
         return Err(AppError::bad_request("Status must be approved or rejected"));
     }
-    let app = sqlx::query("SELECT * FROM coach_applications WHERE id=?")
+    let app = sqlx::query("SELECT * FROM coaching.coach_applications WHERE id=$1")
         .bind(&application_id)
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| AppError::not_found("Application not found"))?;
     if query.status == "approved" {
-        sqlx::query("INSERT INTO coaches (id, discord_user_id, discord_username, display_name, specialties_json, availability_json, status) VALUES (?, ?, ?, ?, ?, ?, 'active')")
+        sqlx::query(
+            "INSERT INTO coaching.coaches \
+             (id, discord_user_id, discord_username, display_name, specialties_json, \
+              availability_json, status, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, 'active', now(), now()) \
+             ON CONFLICT (discord_user_id) DO UPDATE SET \
+                 discord_username=EXCLUDED.discord_username, display_name=EXCLUDED.display_name, \
+                 specialties_json=EXCLUDED.specialties_json, availability_json=EXCLUDED.availability_json, \
+                 status='active', updated_at=now()",
+        )
             .bind(ids::id16())
             .bind(rows::i64(&app, "discord_user_id"))
             .bind(rows::string(&app, "discord_username"))
             .bind(rows::string(&app, "display_name"))
-            .bind(rows::string(&app, "specialties_json"))
-            .bind(rows::string(&app, "availability_json"))
+            .bind(rows::json_or(&app, &["specialties_json"], json!([])))
+            .bind(rows::json_or(&app, &["availability_json"], json!({})))
             .execute(&state.pool)
             .await?;
     }
-    sqlx::query("UPDATE coach_applications SET status=?, reviewed_by=?, reviewed_at=CURRENT_TIMESTAMP WHERE id=?")
+    sqlx::query(
+        "UPDATE coaching.coach_applications SET status=$1, reviewed_by=$2, reviewed_at=now() WHERE id=$3",
+    )
         .bind(&query.status)
         .bind(user.sub)
         .bind(application_id)
@@ -595,8 +721,8 @@ fn coach_from_row(row: &rows::DbRow) -> Value {
         "discord_username": rows::required_string(row, "discord_username"),
         "avatar_url": rows::value_from_row(row, "avatar_url"),
         "bio": rows::value_from_row(row, "bio"),
-        "specialties": rows::parse_json_or(rows::string(row, "specialties_json"), json!([])),
-        "availability": rows::parse_json_or(rows::string(row, "availability_json"), json!({})),
+        "specialties": rows::json_or(row, &["specialties_json"], json!([])),
+        "availability": rows::json_or(row, &["availability_json"], json!({})),
         "status": rows::required_string(row, "status"),
         "avg_rating": rows::f64(row, "avg_rating").unwrap_or(0.0),
         "total_reviews": rows::i64(row, "total_reviews").unwrap_or(0),
@@ -619,7 +745,7 @@ fn review_from_row(row: &rows::DbRow) -> Value {
 
 fn request_from_row(row: &rows::DbRow) -> Value {
     json!({
-        "id": rows::required_string(row, "id"),
+        "id": request_external_id(row),
         "discord_username": rows::required_string(row, "discord_username"),
         "rank": rows::required_string(row, "rank"),
         "subrank": rows::required_string(row, "subrank"),
@@ -647,17 +773,67 @@ fn anonymous_review_label(discord_user_id: Option<i64>, coach_id: &str) -> Strin
     )
 }
 
-fn json_string(value: Option<&Value>, fallback: &str) -> String {
-    match value {
-        Some(Value::String(raw)) => raw.clone(),
-        Some(v) => serde_json::to_string(v).unwrap_or_else(|_| fallback.to_string()),
-        None => fallback.to_string(),
+fn json_body_value(body: &Value, names: &[&str], fallback: Value) -> Value {
+    json_body_value_opt(body, names).unwrap_or(fallback)
+}
+
+fn json_body_value_opt(body: &Value, names: &[&str]) -> Option<Value> {
+    for name in names {
+        if let Some(value) = body.get(*name) {
+            match value {
+                Value::Null => {}
+                Value::String(raw) if raw.trim().is_empty() => {}
+                Value::String(raw) => {
+                    return Some(
+                        serde_json::from_str::<Value>(raw)
+                            .unwrap_or_else(|_| Value::String(raw.clone())),
+                    );
+                }
+                other => return Some(other.clone()),
+            }
+        }
     }
+    None
+}
+
+fn body_string<'a>(body: &'a Value, name: &str) -> Option<&'a str> {
+    body.get(name)
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+}
+
+fn optional_i32_body(body: &Value, name: &str) -> AppResult<Option<i32>> {
+    let Some(raw) = body.get(name) else {
+        return Ok(None);
+    };
+    if raw.is_null() {
+        return Ok(None);
+    }
+    let value = if let Some(value) = raw.as_i64() {
+        value
+    } else if let Some(value) = raw.as_str().and_then(|value| value.parse::<i64>().ok()) {
+        value
+    } else {
+        return Err(AppError::bad_request(format!("{name} must be an integer")));
+    };
+    i32::try_from(value)
+        .map(Some)
+        .map_err(|_| AppError::bad_request(format!("{name} is out of range")))
+}
+
+fn i32_body_or_default(body: &Value, name: &str, default: i32) -> AppResult<i32> {
+    optional_i32_body(body, name).map(|value| value.unwrap_or(default))
+}
+
+fn request_external_id(row: &rows::DbRow) -> String {
+    rows::string(row, "id")
+        .or_else(|| rows::string(row, "website_request_id"))
+        .or_else(|| rows::string(row, "bot_request_id"))
+        .or_else(|| rows::string(row, "request_uid"))
+        .unwrap_or_default()
 }
 
 fn iso_now() -> String {
-    Utc::now()
-        .naive_utc()
-        .format("%Y-%m-%dT%H:%M:%S%.f")
-        .to_string()
+    Utc::now().to_rfc3339()
 }

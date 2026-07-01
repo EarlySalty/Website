@@ -25,4 +25,5 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
 
 [dev-dependencies]
+dl-central-db = { path = "../../../Deadlock-Bots/rust/crates/dl-central-db", features = ["testing"] }
 tower = { version = "0.5", features = ["util"] }

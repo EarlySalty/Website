@@ -13,7 +13,6 @@ use sqlx::{postgres::PgArguments, Postgres};
 use crate::{
     app::AppState,
     auth::{self, User},
-    db,
     error::{AppError, AppResult},
     ids,
     routes::coaching::require_bot_token,
@@ -793,10 +792,37 @@ pub async fn notifications_due(
     headers: HeaderMap,
 ) -> AppResult<Json<Value>> {
     require_bot_token(&headers)?;
-    let now = Utc::now().to_rfc3339();
-    let in_2h = (Utc::now() + Duration::hours(2)).to_rfc3339();
+    let now = Utc::now();
+    let in_2h = now + Duration::hours(2);
     let rows = sqlx::query(
-        "SELECT 'created' AS type, a.id AS appointment_id, co.discord_user_id, COALESCE(co.display_name, co.discord_username) AS coachee_display, COALESCE(c.display_name, c.discord_username) AS coach_display, a.scheduled_at, a.duration_minutes, a.title, a.note FROM coaching_appointments a JOIN coachees co ON a.coachee_id=co.id JOIN coaches c ON a.coach_id=c.id WHERE a.status='scheduled' AND a.notify_created_at IS NULL UNION ALL SELECT 'reminder' AS type, a.id, co.discord_user_id, COALESCE(co.display_name, co.discord_username), COALESCE(c.display_name, c.discord_username), a.scheduled_at, a.duration_minutes, a.title, a.note FROM coaching_appointments a JOIN coachees co ON a.coachee_id=co.id JOIN coaches c ON a.coach_id=c.id WHERE a.status='scheduled' AND a.notify_reminder_at IS NULL AND a.notify_created_at IS NOT NULL AND a.scheduled_at BETWEEN ? AND ? UNION ALL SELECT 'cancelled' AS type, a.id, co.discord_user_id, COALESCE(co.display_name, co.discord_username), COALESCE(c.display_name, c.discord_username), a.scheduled_at, a.duration_minutes, a.title, a.note FROM coaching_appointments a JOIN coachees co ON a.coachee_id=co.id JOIN coaches c ON a.coach_id=c.id WHERE a.status='cancelled' AND a.notify_cancelled_at IS NULL AND a.notify_created_at IS NOT NULL",
+        "SELECT 'created' AS type, a.id AS appointment_id, co.discord_user_id, \
+                COALESCE(co.display_name, co.discord_username) AS coachee_display, \
+                COALESCE(c.display_name, c.discord_username) AS coach_display, \
+                a.scheduled_at, a.duration_minutes, a.title, a.note \
+         FROM coaching.appointments a \
+         JOIN coaching.coachees co ON a.coachee_id=co.id \
+         JOIN coaching.coaches c ON a.coach_id=c.id \
+         WHERE a.status='scheduled' AND a.notify_created_at IS NULL \
+         UNION ALL \
+         SELECT 'reminder' AS type, a.id, co.discord_user_id, \
+                COALESCE(co.display_name, co.discord_username), \
+                COALESCE(c.display_name, c.discord_username), \
+                a.scheduled_at, a.duration_minutes, a.title, a.note \
+         FROM coaching.appointments a \
+         JOIN coaching.coachees co ON a.coachee_id=co.id \
+         JOIN coaching.coaches c ON a.coach_id=c.id \
+         WHERE a.status='scheduled' AND a.notify_reminder_at IS NULL \
+           AND a.notify_created_at IS NOT NULL AND a.scheduled_at BETWEEN $1 AND $2 \
+         UNION ALL \
+         SELECT 'cancelled' AS type, a.id, co.discord_user_id, \
+                COALESCE(co.display_name, co.discord_username), \
+                COALESCE(c.display_name, c.discord_username), \
+                a.scheduled_at, a.duration_minutes, a.title, a.note \
+         FROM coaching.appointments a \
+         JOIN coaching.coachees co ON a.coachee_id=co.id \
+         JOIN coaching.coaches c ON a.coach_id=c.id \
+         WHERE a.status='cancelled' AND a.notify_cancelled_at IS NULL \
+           AND a.notify_created_at IS NOT NULL",
     )
     .bind(now)
     .bind(in_2h)
@@ -804,14 +830,18 @@ pub async fn notifications_due(
     .await?;
     let mut notifications: Vec<Value> = rows.iter().map(rows::row_json).collect();
 
-    let columns = db::table_columns(&state.pool, "coaching_requests").await?;
-    let preferred = if columns.contains("preferred_coach_id") {
-        "preferred_coach_id"
-    } else {
-        "NULL AS preferred_coach_id"
-    };
-    let request_sql = format!("SELECT id AS request_id, discord_user_id, discord_username, rank, subrank, hero, games_played, hours_played, availability, current_problems, {preferred} FROM coaching_requests WHERE notify_discord_at IS NULL AND status IN ('pending', 'analyzed', 'open', 'new') ORDER BY created_at ASC");
-    let reqs = sqlx::query(&request_sql).fetch_all(&state.pool).await?;
+    let reqs = sqlx::query(
+        "SELECT website_request_id AS request_id, \
+                discord_user_id, discord_username, rank, subrank, hero, games_played, \
+                hours_played, availability, current_problems, preferred_coach_id \
+         FROM coaching.requests \
+         WHERE website_request_id IS NOT NULL /* request_created mirrors only website-originated requests. */ \
+           AND notify_discord_at IS NULL \
+           AND status IN ('pending', 'analyzed', 'open', 'new') \
+         ORDER BY created_at ASC NULLS LAST",
+    )
+    .fetch_all(&state.pool)
+    .await?;
     for row in &reqs {
         let coachee_id = upsert_coachee(
             &state,
@@ -844,7 +874,6 @@ pub async fn notifications_ack(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     require_bot_token(&headers)?;
-    let ts = iso_now();
     let mut acked: u64 = 0;
     for item in body
         .get("items")
@@ -864,9 +893,9 @@ pub async fn notifications_ack(
         else {
             continue;
         };
-        let sql = format!("UPDATE coaching_appointments SET {col}=? WHERE id=?");
+        let sql = format!("UPDATE coaching.appointments SET {col}=$1 WHERE id=$2");
         sqlx::query(&sql)
-            .bind(&ts)
+            .bind(Utc::now())
             .bind(
                 item.get("appointment_id")
                     .and_then(Value::as_str)
@@ -883,11 +912,16 @@ pub async fn notifications_ack(
         .flatten()
     {
         if let Some(id) = request_id.as_str() {
-            let res = sqlx::query("UPDATE coaching_requests SET notify_discord_at=? WHERE id=? AND notify_discord_at IS NULL")
-                .bind(&ts)
-                .bind(id)
-                .execute(&state.pool)
-                .await?;
+            let res = sqlx::query(
+                "UPDATE coaching.requests \
+                 SET notify_discord_at=$1 \
+                 WHERE website_request_id=$2 \
+                   AND notify_discord_at IS NULL",
+            )
+            .bind(Utc::now())
+            .bind(id)
+            .execute(&state.pool)
+            .await?;
             acked += res.rows_affected();
         }
     }
@@ -1003,30 +1037,37 @@ async fn upsert_coachee(
     discord_user_id: i64,
     username: Option<&str>,
 ) -> AppResult<String> {
-    let row = sqlx::query("SELECT id FROM coachees WHERE discord_user_id=?")
+    let row = sqlx::query("SELECT id FROM coaching.coachees WHERE discord_user_id=$1")
         .bind(discord_user_id)
         .fetch_optional(&state.pool)
         .await?;
     if let Some(row) = row {
         let id = rows::required_string(&row, "id");
         if let Some(username) = username {
-            sqlx::query("UPDATE coachees SET discord_username=?, updated_at=? WHERE id=?")
-                .bind(username)
-                .bind(iso_now())
-                .bind(&id)
-                .execute(&state.pool)
-                .await?;
+            sqlx::query(
+                "UPDATE coaching.coachees \
+                 SET discord_username=$1, updated_at=now() \
+                 WHERE id=$2",
+            )
+            .bind(username)
+            .bind(&id)
+            .execute(&state.pool)
+            .await?;
         }
         return Ok(id);
     }
     let id = ids::id12();
-    sqlx::query("INSERT INTO coachees (id, discord_user_id, discord_username, display_name) VALUES (?, ?, ?, ?)")
-        .bind(&id)
-        .bind(discord_user_id)
-        .bind(username)
-        .bind(username)
-        .execute(&state.pool)
-        .await?;
+    sqlx::query(
+        "INSERT INTO coaching.coachees \
+         (id, discord_user_id, discord_username, display_name, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, now(), now())",
+    )
+    .bind(&id)
+    .bind(discord_user_id)
+    .bind(username)
+    .bind(username)
+    .execute(&state.pool)
+    .await?;
     Ok(id)
 }
 
