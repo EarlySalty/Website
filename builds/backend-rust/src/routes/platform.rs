@@ -8,7 +8,7 @@ use axum::{
 use chrono::{DateTime, Duration, NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use sqlx::{postgres::PgArguments, Postgres};
+use sqlx::{Postgres, QueryBuilder};
 
 use crate::{
     app::AppState,
@@ -413,16 +413,16 @@ pub async fn update_coachee(
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
     update_known_fields(
         &state,
-        "coaching.coachees",
-        "id",
-        &coachee_id,
+        PlatformTable::Coachees,
+        IdColumn::Id,
+        UpdateId::Text(&coachee_id),
         &body,
         &[
-            "display_name",
-            "rank",
-            "main_heroes_json",
-            "current_focus",
-            "notes",
+            UpdateColumn::DisplayName,
+            UpdateColumn::Rank,
+            UpdateColumn::MainHeroesJson,
+            UpdateColumn::CurrentFocus,
+            UpdateColumn::Notes,
         ],
         true,
     )
@@ -466,42 +466,36 @@ pub async fn update_goal(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    let mut sets = Vec::new();
-    let mut values: Vec<(String, Value)> = Vec::new();
+    let mut values = Vec::new();
     for key in [
-        "title",
-        "description",
-        "status",
-        "sort_order",
-        "target_date",
+        ("title", UpdateColumn::Title),
+        ("description", UpdateColumn::Description),
+        ("status", UpdateColumn::Status),
+        ("sort_order", UpdateColumn::SortOrder),
+        ("target_date", UpdateColumn::TargetDate),
     ] {
-        if let Some(value) = body.get(key).filter(|v| !v.is_null()) {
-            push_set(&mut sets, &mut values, key, value.clone());
+        if let Some(value) = body.get(key.0).filter(|v| !v.is_null()) {
+            values.push(UpdateAssignment::body(key.1, value.clone()));
         }
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
-    push_set(
-        &mut sets,
-        &mut values,
-        "completed_at".to_string(),
+    values.push(UpdateAssignment::datetime(
+        UpdateColumn::CompletedAt,
         if body.get("status").and_then(Value::as_str) == Some("done") {
-            json!(iso_now())
+            Some(Utc::now())
         } else {
-            Value::Null
+            None
         },
-    );
-    push_set(&mut sets, &mut values, "updated_at", json!(iso_now()));
-    let id_placeholder = values.len() + 1;
+    ));
+    values.push(UpdateAssignment::now(UpdateColumn::UpdatedAt));
     run_update(
         &state,
-        &format!(
-            "UPDATE coaching.goals SET {} WHERE id=${id_placeholder}",
-            sets.join(", ")
-        ),
+        PlatformTable::Goals,
+        IdColumn::Id,
+        UpdateId::Text(&goal_id),
         values,
-        &goal_id,
     )
     .await?;
     Ok(Json(json!({ "ok": true })))
@@ -560,39 +554,35 @@ pub async fn update_milestone(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    let mut sets = Vec::new();
-    let mut values: Vec<(String, Value)> = Vec::new();
+    let mut values = Vec::new();
     if let Some(value) = body.get("title").filter(|v| !v.is_null()) {
-        push_set(&mut sets, &mut values, "title", value.clone());
+        values.push(UpdateAssignment::body(UpdateColumn::Title, value.clone()));
     }
     if let Some(value) = body.get("sort_order").filter(|v| !v.is_null()) {
-        push_set(&mut sets, &mut values, "sort_order", value.clone());
+        values.push(UpdateAssignment::body(
+            UpdateColumn::SortOrder,
+            value.clone(),
+        ));
     }
     if let Some(achieved) = body.get("achieved").and_then(Value::as_bool) {
-        push_set(&mut sets, &mut values, "achieved", json!(achieved));
-        push_set(
-            &mut sets,
-            &mut values,
-            "achieved_at".to_string(),
-            if achieved {
-                json!(iso_now())
-            } else {
-                Value::Null
-            },
-        );
+        values.push(UpdateAssignment::body(
+            UpdateColumn::Achieved,
+            json!(achieved),
+        ));
+        values.push(UpdateAssignment::datetime(
+            UpdateColumn::AchievedAt,
+            if achieved { Some(Utc::now()) } else { None },
+        ));
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
-    let id_placeholder = values.len() + 1;
     run_update(
         &state,
-        &format!(
-            "UPDATE coaching.milestones SET {} WHERE id=${id_placeholder}",
-            sets.join(", ")
-        ),
+        PlatformTable::Milestones,
+        IdColumn::Id,
+        UpdateId::Text(&milestone_id),
         values,
-        &milestone_id,
     )
     .await?;
     Ok(Json(json!({ "ok": true })))
@@ -664,11 +654,11 @@ pub async fn update_note(
     }
     update_known_fields(
         &state,
-        "coaching.session_notes",
-        "id",
-        &note_id,
+        PlatformTable::SessionNotes,
+        IdColumn::Id,
+        UpdateId::Text(&note_id),
         &body,
-        &["content", "visibility"],
+        &[UpdateColumn::Content, UpdateColumn::Visibility],
         true,
     )
     .await?;
@@ -827,20 +817,19 @@ pub async fn coaches_sync(
                 .await?;
         }
     }
-    let placeholders = (1..=incoming.len())
-        .map(|idx| format!("${idx}"))
-        .collect::<Vec<_>>()
-        .join(",");
-    let sql = format!(
+    let mut query = QueryBuilder::<Postgres>::new(
         "UPDATE coaching.coaches \
          SET status='inactive', updated_at=now() \
-         WHERE status='active' AND discord_user_id NOT IN ({placeholders})"
+         WHERE status='active' AND discord_user_id NOT IN (",
     );
-    let mut q = sqlx::query(&sql);
-    for id in &incoming {
-        q = q.bind(id);
+    {
+        let mut separated = query.separated(", ");
+        for id in &incoming {
+            separated.push_bind(id);
+        }
     }
-    let result = q.execute(&state.pool).await?;
+    query.push(")");
+    let result = query.build().execute(&state.pool).await?;
     Ok(Json(
         json!({ "ok": true, "active": incoming.len(), "deactivated": result.rows_affected() }),
     ))
@@ -965,36 +954,38 @@ pub async fn update_appointment(
             "Nur der zuständige Coach darf diesen Termin ändern",
         ));
     }
-    let mut sets = Vec::new();
-    let mut values: Vec<(String, Value)> = Vec::new();
+    let mut values = Vec::new();
     for key in [
-        "scheduled_at",
-        "duration_minutes",
-        "title",
-        "note",
-        "status",
+        ("scheduled_at", UpdateColumn::ScheduledAt),
+        ("duration_minutes", UpdateColumn::DurationMinutes),
+        ("title", UpdateColumn::Title),
+        ("note", UpdateColumn::Note),
+        ("status", UpdateColumn::Status),
     ] {
-        if let Some(value) = body.get(key).filter(|v| !v.is_null()) {
-            push_set(&mut sets, &mut values, key, value.clone());
+        if let Some(value) = body.get(key.0).filter(|v| !v.is_null()) {
+            values.push(UpdateAssignment::body(key.1, value.clone()));
         }
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
     if body.get("scheduled_at").is_some() {
-        sets.push("notify_created_at=NULL".to_string());
-        sets.push("notify_reminder_at=NULL".to_string());
+        values.push(UpdateAssignment::datetime(
+            UpdateColumn::NotifyCreatedAt,
+            None,
+        ));
+        values.push(UpdateAssignment::datetime(
+            UpdateColumn::NotifyReminderAt,
+            None,
+        ));
     }
-    push_set(&mut sets, &mut values, "updated_at", json!(iso_now()));
-    let id_placeholder = values.len() + 1;
+    values.push(UpdateAssignment::now(UpdateColumn::UpdatedAt));
     run_update(
         &state,
-        &format!(
-            "UPDATE coaching.appointments SET {} WHERE id=${id_placeholder}",
-            sets.join(", ")
-        ),
+        PlatformTable::Appointments,
+        IdColumn::Id,
+        UpdateId::Text(&appointment_id),
         values,
-        &appointment_id,
     )
     .await?;
     Ok(Json(json!({ "ok": true })))
@@ -1098,24 +1089,26 @@ pub async fn notifications_ack(
             .get("type")
             .and_then(Value::as_str)
             .and_then(|kind| match kind {
-                "created" => Some("notify_created_at"),
-                "reminder" => Some("notify_reminder_at"),
-                "cancelled" => Some("notify_cancelled_at"),
+                "created" => Some(AppointmentNotifyColumn::Created),
+                "reminder" => Some(AppointmentNotifyColumn::Reminder),
+                "cancelled" => Some(AppointmentNotifyColumn::Cancelled),
                 _ => None,
             })
         else {
             continue;
         };
-        let sql = format!("UPDATE coaching.appointments SET {col}=$1 WHERE id=$2");
-        sqlx::query(&sql)
-            .bind(Utc::now())
-            .bind(
+        let mut query = QueryBuilder::<Postgres>::new("UPDATE coaching.appointments SET ");
+        query
+            .push(col.sql())
+            .push("=")
+            .push_bind(Utc::now())
+            .push(" WHERE id=")
+            .push_bind(
                 item.get("appointment_id")
                     .and_then(Value::as_str)
                     .unwrap_or_default(),
-            )
-            .execute(&state.pool)
-            .await?;
+            );
+        query.build().execute(&state.pool).await?;
         acked += 1;
     }
     for request_id in body
@@ -1190,30 +1183,29 @@ pub async fn update_my_coach_profile(
     if exists.is_none() {
         return Err(AppError::not_found("Coach-Profil nicht gefunden"));
     }
-    let mut sets = Vec::new();
-    let mut values: Vec<(String, Value)> = Vec::new();
+    let mut values = Vec::new();
     if let Some(v) = body.get("bio").filter(|v| !v.is_null()) {
-        push_set(&mut sets, &mut values, "bio", v.clone());
+        values.push(UpdateAssignment::body(UpdateColumn::Bio, v.clone()));
     }
     if let Some(v) = body.get("specialties").filter(|v| !v.is_null()) {
-        push_set(&mut sets, &mut values, "specialties_json", v.clone());
+        values.push(UpdateAssignment::body(
+            UpdateColumn::SpecialtiesJson,
+            v.clone(),
+        ));
     }
     if let Some(v) = body.get("twitch_url").filter(|v| !v.is_null()) {
-        push_set(&mut sets, &mut values, "twitch_url", v.clone());
+        values.push(UpdateAssignment::body(UpdateColumn::TwitchUrl, v.clone()));
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
-    push_set(&mut sets, &mut values, "updated_at", json!(iso_now()));
-    let id_placeholder = values.len() + 1;
-    run_update_by_i64(
+    values.push(UpdateAssignment::now(UpdateColumn::UpdatedAt));
+    run_update(
         &state,
-        &format!(
-            "UPDATE coaching.coaches SET {} WHERE discord_user_id=${id_placeholder}",
-            sets.join(", ")
-        ),
+        PlatformTable::Coaches,
+        IdColumn::DiscordUserId,
+        UpdateId::I64(discord_id),
         values,
-        discord_id,
     )
     .await?;
     Ok(Json(json!({ "ok": true })))
@@ -1438,76 +1430,272 @@ async fn goals_with_milestones(state: &AppState, coachee_id: &str) -> AppResult<
 
 async fn update_known_fields(
     state: &AppState,
-    table: &str,
-    id_col: &str,
-    id: &str,
+    table: PlatformTable,
+    id_column: IdColumn,
+    id: UpdateId<'_>,
     body: &Value,
-    allowed: &[&str],
+    allowed: &[UpdateColumn],
     updated_at: bool,
 ) -> AppResult<()> {
-    let mut sets = Vec::new();
-    let mut values: Vec<(String, Value)> = Vec::new();
-    for key in allowed {
-        if let Some(value) = body.get(*key).filter(|v| !v.is_null()) {
-            push_set(&mut sets, &mut values, *key, value.clone());
+    let mut values = Vec::new();
+    for column in allowed {
+        if let Some(value) = body.get(column.body_key()).filter(|v| !v.is_null()) {
+            values.push(UpdateAssignment::body(*column, value.clone()));
         }
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(());
     }
     if updated_at {
-        push_set(&mut sets, &mut values, "updated_at", json!(iso_now()));
+        values.push(UpdateAssignment::now(UpdateColumn::UpdatedAt));
     }
-    let id_placeholder = values.len() + 1;
-    run_update(
-        state,
-        &format!(
-            "UPDATE {table} SET {} WHERE {id_col}=${id_placeholder}",
-            sets.join(", ")
-        ),
-        values,
-        id,
-    )
-    .await
+    run_update(state, table, id_column, id, values).await
 }
 
 async fn run_update(
     state: &AppState,
-    sql: &str,
-    values: Vec<(String, Value)>,
-    id: &str,
+    table: PlatformTable,
+    id_column: IdColumn,
+    id: UpdateId<'_>,
+    values: Vec<UpdateAssignment>,
 ) -> AppResult<()> {
-    let mut q = sqlx::query(sql);
-    for (column, value) in values {
-        q = bind_json(q, &column, value)?;
+    if values.is_empty() {
+        return Ok(());
     }
-    q.bind(id).execute(&state.pool).await?;
+
+    let mut query = QueryBuilder::<Postgres>::new("UPDATE ");
+    query.push(table.sql()).push(" SET ");
+    for (idx, assignment) in values.into_iter().enumerate() {
+        if idx > 0 {
+            query.push(", ");
+        }
+        if !table.allows(assignment.column) {
+            return Err(AppError::bad_request("invalid update column"));
+        }
+        query.push(assignment.column.sql()).push("=");
+        bind_update_value(&mut query, assignment)?;
+    }
+    query.push(" WHERE ").push(id_column.sql()).push("=");
+    match id {
+        UpdateId::Text(value) => {
+            query.push_bind(value);
+        }
+        UpdateId::I64(value) => {
+            query.push_bind(value);
+        }
+    }
+    query.build().execute(&state.pool).await?;
     Ok(())
 }
 
-async fn run_update_by_i64(
-    state: &AppState,
-    sql: &str,
-    values: Vec<(String, Value)>,
-    id: i64,
-) -> AppResult<()> {
-    let mut q = sqlx::query(sql);
-    for (column, value) in values {
-        q = bind_json(q, &column, value)?;
-    }
-    q.bind(id).execute(&state.pool).await?;
-    Ok(())
+#[derive(Clone, Copy)]
+enum PlatformTable {
+    Coachees,
+    Goals,
+    Milestones,
+    SessionNotes,
+    Appointments,
+    Coaches,
 }
 
-fn push_set<S: Into<String>>(
-    sets: &mut Vec<String>,
-    values: &mut Vec<(String, Value)>,
-    column: S,
-    value: Value,
-) {
-    let column = column.into();
-    values.push((column.clone(), value));
-    sets.push(format!("{column}=${}", values.len()));
+impl PlatformTable {
+    fn sql(self) -> &'static str {
+        match self {
+            Self::Coachees => "coaching.coachees",
+            Self::Goals => "coaching.goals",
+            Self::Milestones => "coaching.milestones",
+            Self::SessionNotes => "coaching.session_notes",
+            Self::Appointments => "coaching.appointments",
+            Self::Coaches => "coaching.coaches",
+        }
+    }
+
+    fn allows(self, column: UpdateColumn) -> bool {
+        matches!(
+            (self, column),
+            (
+                Self::Coachees,
+                UpdateColumn::DisplayName
+                    | UpdateColumn::Rank
+                    | UpdateColumn::MainHeroesJson
+                    | UpdateColumn::CurrentFocus
+                    | UpdateColumn::Notes
+                    | UpdateColumn::UpdatedAt
+            ) | (
+                Self::Goals,
+                UpdateColumn::Title
+                    | UpdateColumn::Description
+                    | UpdateColumn::Status
+                    | UpdateColumn::SortOrder
+                    | UpdateColumn::TargetDate
+                    | UpdateColumn::CompletedAt
+                    | UpdateColumn::UpdatedAt
+            ) | (
+                Self::Milestones,
+                UpdateColumn::Title
+                    | UpdateColumn::Description
+                    | UpdateColumn::SortOrder
+                    | UpdateColumn::Achieved
+                    | UpdateColumn::AchievedAt
+            ) | (
+                Self::SessionNotes,
+                UpdateColumn::Content | UpdateColumn::Visibility | UpdateColumn::UpdatedAt
+            ) | (
+                Self::Appointments,
+                UpdateColumn::ScheduledAt
+                    | UpdateColumn::DurationMinutes
+                    | UpdateColumn::Title
+                    | UpdateColumn::Note
+                    | UpdateColumn::Status
+                    | UpdateColumn::NotifyCreatedAt
+                    | UpdateColumn::NotifyReminderAt
+                    | UpdateColumn::UpdatedAt
+            ) | (
+                Self::Coaches,
+                UpdateColumn::Bio
+                    | UpdateColumn::SpecialtiesJson
+                    | UpdateColumn::TwitchUrl
+                    | UpdateColumn::UpdatedAt
+            )
+        )
+    }
+}
+
+#[derive(Clone, Copy)]
+enum IdColumn {
+    Id,
+    DiscordUserId,
+}
+
+impl IdColumn {
+    fn sql(self) -> &'static str {
+        match self {
+            Self::Id => "id",
+            Self::DiscordUserId => "discord_user_id",
+        }
+    }
+}
+
+enum UpdateId<'a> {
+    Text(&'a str),
+    I64(i64),
+}
+
+#[derive(Clone, Copy)]
+enum AppointmentNotifyColumn {
+    Created,
+    Reminder,
+    Cancelled,
+}
+
+impl AppointmentNotifyColumn {
+    fn sql(self) -> &'static str {
+        match self {
+            Self::Created => "notify_created_at",
+            Self::Reminder => "notify_reminder_at",
+            Self::Cancelled => "notify_cancelled_at",
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum UpdateColumn {
+    DisplayName,
+    Rank,
+    MainHeroesJson,
+    CurrentFocus,
+    Notes,
+    Title,
+    Description,
+    Status,
+    SortOrder,
+    TargetDate,
+    CompletedAt,
+    Achieved,
+    AchievedAt,
+    Content,
+    Visibility,
+    ScheduledAt,
+    DurationMinutes,
+    Note,
+    NotifyCreatedAt,
+    NotifyReminderAt,
+    Bio,
+    SpecialtiesJson,
+    TwitchUrl,
+    UpdatedAt,
+}
+
+impl UpdateColumn {
+    fn sql(self) -> &'static str {
+        match self {
+            Self::DisplayName => "display_name",
+            Self::Rank => "rank",
+            Self::MainHeroesJson => "main_heroes_json",
+            Self::CurrentFocus => "current_focus",
+            Self::Notes => "notes",
+            Self::Title => "title",
+            Self::Description => "description",
+            Self::Status => "status",
+            Self::SortOrder => "sort_order",
+            Self::TargetDate => "target_date",
+            Self::CompletedAt => "completed_at",
+            Self::Achieved => "achieved",
+            Self::AchievedAt => "achieved_at",
+            Self::Content => "content",
+            Self::Visibility => "visibility",
+            Self::ScheduledAt => "scheduled_at",
+            Self::DurationMinutes => "duration_minutes",
+            Self::Note => "note",
+            Self::NotifyCreatedAt => "notify_created_at",
+            Self::NotifyReminderAt => "notify_reminder_at",
+            Self::Bio => "bio",
+            Self::SpecialtiesJson => "specialties_json",
+            Self::TwitchUrl => "twitch_url",
+            Self::UpdatedAt => "updated_at",
+        }
+    }
+
+    fn body_key(self) -> &'static str {
+        match self {
+            Self::SpecialtiesJson => "specialties",
+            other => other.sql(),
+        }
+    }
+}
+
+struct UpdateAssignment {
+    column: UpdateColumn,
+    value: UpdateValue,
+}
+
+impl UpdateAssignment {
+    fn body(column: UpdateColumn, value: Value) -> Self {
+        Self {
+            column,
+            value: UpdateValue::Body(value),
+        }
+    }
+
+    fn datetime(column: UpdateColumn, value: Option<DateTime<Utc>>) -> Self {
+        Self {
+            column,
+            value: UpdateValue::DateTime(value),
+        }
+    }
+
+    fn now(column: UpdateColumn) -> Self {
+        Self {
+            column,
+            value: UpdateValue::Now,
+        }
+    }
+}
+
+enum UpdateValue {
+    Body(Value),
+    DateTime(Option<DateTime<Utc>>),
+    Now,
 }
 
 fn body_string<'a>(body: &'a Value, key: &str) -> Option<&'a str> {
@@ -1580,102 +1768,104 @@ fn json_body_value_opt(body: &Value, keys: &[&str]) -> Option<Value> {
         .find_map(|key| body.get(*key).filter(|value| !value.is_null()).cloned())
 }
 
-type PgQuery<'q> = sqlx::query::Query<'q, Postgres, PgArguments>;
-
-fn bind_json<'q>(q: PgQuery<'q>, column: &str, value: Value) -> AppResult<PgQuery<'q>> {
-    let q = match column {
-        "specialties_json" | "availability_json" | "main_heroes_json" | "ai_insights_json" => {
-            bind_jsonb(q, value)
+fn bind_update_value(
+    query: &mut QueryBuilder<'_, Postgres>,
+    assignment: UpdateAssignment,
+) -> AppResult<()> {
+    match assignment.value {
+        UpdateValue::Now => {
+            query.push("now()");
         }
-        "achieved" | "is_public" | "would_recommend" | "is_active" => bind_bool(q, value)?,
-        "target_date" => bind_date(q, value)?,
-        "scheduled_at"
-        | "started_at"
-        | "completed_at"
-        | "updated_at"
-        | "achieved_at"
-        | "reserved_until"
-        | "notify_created_at"
-        | "notify_reminder_at"
-        | "notify_cancelled_at"
-        | "notify_discord_at" => bind_datetime(q, value)?,
-        _ => bind_dynamic_value(q, value),
-    };
-    Ok(q)
+        UpdateValue::DateTime(value) => {
+            query.push_bind(value);
+        }
+        UpdateValue::Body(value) => match assignment.column {
+            UpdateColumn::MainHeroesJson | UpdateColumn::SpecialtiesJson => {
+                query.push_bind(jsonb_from_value(value)?);
+            }
+            UpdateColumn::Achieved => {
+                query.push_bind(bool_from_value(value)?);
+            }
+            UpdateColumn::TargetDate => {
+                query.push_bind(date_from_value(value)?);
+            }
+            UpdateColumn::ScheduledAt
+            | UpdateColumn::CompletedAt
+            | UpdateColumn::AchievedAt
+            | UpdateColumn::NotifyCreatedAt
+            | UpdateColumn::NotifyReminderAt
+            | UpdateColumn::UpdatedAt => {
+                query.push_bind(datetime_from_value(&value)?);
+            }
+            UpdateColumn::SortOrder | UpdateColumn::DurationMinutes => {
+                query.push_bind(i32_from_value(value)?);
+            }
+            _ => {
+                query.push_bind(string_from_value(value)?);
+            }
+        },
+    }
+    Ok(())
 }
 
-fn bind_jsonb<'q>(q: PgQuery<'q>, value: Value) -> PgQuery<'q> {
+fn jsonb_from_value(value: Value) -> AppResult<Option<Value>> {
     match value {
-        Value::Null => q.bind(Option::<Value>::None),
-        Value::String(raw) => {
-            q.bind(serde_json::from_str::<Value>(&raw).unwrap_or(Value::String(raw)))
-        }
-        other => q.bind(other),
+        Value::Null => Ok(None),
+        Value::String(raw) if raw.trim().is_empty() => Ok(None),
+        Value::String(raw) => serde_json::from_str::<Value>(&raw)
+            .map(Some)
+            .map_err(|_| AppError::bad_request("invalid json value")),
+        other => Ok(Some(other)),
     }
 }
 
-fn bind_bool<'q>(q: PgQuery<'q>, value: Value) -> AppResult<PgQuery<'q>> {
-    let value = match value {
-        Value::Null => None,
-        Value::Bool(v) => Some(v),
-        Value::Number(n) => n.as_i64().map(|v| v != 0),
-        Value::String(raw) => match raw.to_ascii_lowercase().as_str() {
-            "true" | "t" | "1" | "yes" => Some(true),
-            "false" | "f" | "0" | "no" => Some(false),
-            _ => return Err(AppError::bad_request("invalid boolean value")),
-        },
-        _ => return Err(AppError::bad_request("invalid boolean value")),
-    };
-    Ok(q.bind(value))
-}
-
-fn bind_date<'q>(q: PgQuery<'q>, value: Value) -> AppResult<PgQuery<'q>> {
-    let value = match value {
-        Value::Null => None,
-        Value::String(raw) if raw.trim().is_empty() => None,
-        Value::String(raw) => Some(
-            NaiveDate::parse_from_str(&raw, "%Y-%m-%d")
-                .map_err(|_| AppError::bad_request("invalid date value"))?,
-        ),
-        _ => return Err(AppError::bad_request("invalid date value")),
-    };
-    Ok(q.bind(value))
-}
-
-fn bind_datetime<'q>(q: PgQuery<'q>, value: Value) -> AppResult<PgQuery<'q>> {
-    let value = match value {
-        Value::Null => None,
-        Value::String(raw) if raw.trim().is_empty() => None,
-        Value::String(raw) => Some(parse_datetime_utc(&raw)?),
-        Value::Number(n) => {
-            let Some(timestamp) = n.as_i64() else {
-                return Err(AppError::bad_request("invalid timestamp value"));
-            };
-            Some(
-                DateTime::from_timestamp(timestamp, 0)
-                    .ok_or_else(|| AppError::bad_request("invalid timestamp value"))?,
-            )
-        }
-        _ => return Err(AppError::bad_request("invalid timestamp value")),
-    };
-    Ok(q.bind(value))
-}
-
-fn bind_dynamic_value<'q>(q: PgQuery<'q>, value: Value) -> PgQuery<'q> {
+fn bool_from_value(value: Value) -> AppResult<Option<bool>> {
     match value {
-        Value::Null => q.bind(Option::<String>::None),
-        Value::Bool(v) => q.bind(v),
-        Value::Number(n) => {
-            if let Some(v) = n.as_i64() {
-                q.bind(v)
-            } else if let Some(v) = n.as_f64() {
-                q.bind(v)
-            } else {
-                q.bind(n.to_string())
-            }
-        }
-        Value::String(v) => q.bind(v),
-        other => q.bind(other),
+        Value::Null => Ok(None),
+        Value::Bool(v) => Ok(Some(v)),
+        Value::String(raw) => match raw.to_ascii_lowercase().as_str() {
+            "true" | "t" | "1" | "yes" => Ok(Some(true)),
+            "false" | "f" | "0" | "no" => Ok(Some(false)),
+            _ => Err(AppError::bad_request("invalid boolean value")),
+        },
+        _ => Err(AppError::bad_request("invalid boolean value")),
+    }
+}
+
+fn date_from_value(value: Value) -> AppResult<Option<NaiveDate>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::String(raw) if raw.trim().is_empty() => Ok(None),
+        Value::String(raw) => NaiveDate::parse_from_str(raw.trim(), "%Y-%m-%d")
+            .map(Some)
+            .map_err(|_| AppError::bad_request("invalid date value")),
+        _ => Err(AppError::bad_request("invalid date value")),
+    }
+}
+
+fn i32_from_value(value: Value) -> AppResult<Option<i32>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::Number(number) => number
+            .as_i64()
+            .and_then(|value| i32::try_from(value).ok())
+            .map(Some)
+            .ok_or_else(|| AppError::bad_request("invalid integer value")),
+        Value::String(raw) if raw.trim().is_empty() => Ok(None),
+        Value::String(raw) => raw
+            .trim()
+            .parse::<i32>()
+            .map(Some)
+            .map_err(|_| AppError::bad_request("invalid integer value")),
+        _ => Err(AppError::bad_request("invalid integer value")),
+    }
+}
+
+fn string_from_value(value: Value) -> AppResult<Option<String>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::String(raw) => Ok(Some(raw)),
+        _ => Err(AppError::bad_request("invalid string value")),
     }
 }
 
@@ -1693,8 +1883,4 @@ fn validate_iso(value: &str) -> AppResult<()> {
 
 fn empty_my_coaching() -> Value {
     json!({ "profile": null, "goals": [], "notes": [], "sessions": [], "appointments": [] })
-}
-
-fn iso_now() -> String {
-    Utc::now().to_rfc3339()
 }

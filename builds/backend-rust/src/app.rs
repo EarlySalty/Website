@@ -277,7 +277,157 @@ mod tests {
     use tower::ServiceExt;
 
     use super::*;
-    use crate::rows;
+    use crate::{auth, rows};
+
+    #[tokio::test]
+    async fn auth_upsert_erhaelt_existing_role() {
+        let (_db, state) = test_state().await;
+        let user_id = 940001_i64;
+
+        sqlx::query(
+            "INSERT INTO core.meta_users (id, username, display_name, avatar_url, role) \
+             VALUES ($1, $2, $3, $4, $5)",
+        )
+        .bind(user_id)
+        .bind("old_name")
+        .bind("Old Name")
+        .bind(Option::<&str>::None)
+        .bind("admin")
+        .execute(&state.pool)
+        .await
+        .expect("seed meta user");
+
+        let role = auth::upsert_meta_user(
+            &state,
+            user_id,
+            "new_name",
+            "New Name",
+            Some("https://example.invalid/avatar.png"),
+        )
+        .await
+        .expect("upsert meta user");
+
+        assert_eq!(role, "admin");
+        let row =
+            sqlx::query("SELECT username, display_name, role FROM core.meta_users WHERE id=$1")
+                .bind(user_id)
+                .fetch_one(&state.pool)
+                .await
+                .expect("meta user row");
+        assert_eq!(rows::required_string(&row, "username"), "new_name");
+        assert_eq!(rows::required_string(&row, "display_name"), "New Name");
+        assert_eq!(rows::required_string(&row, "role"), "admin");
+    }
+
+    #[tokio::test]
+    async fn hero_build_jsonb_roundtrip_postgres() {
+        let (_db, state) = test_state().await;
+        let pool = state.pool.clone();
+        let app = router(state);
+
+        let hero = request(
+            Method::POST,
+            "/api/heroes",
+            Some(json!({
+                "name": "Json Hero",
+                "tier": "A",
+                "role": "Flex",
+                "abilities": [{"slot": 1, "name": "Dash"}],
+                "stats": {"hp": 650, "tags": ["mobile", "test"]}
+            })),
+        );
+        let response = app.clone().oneshot(hero).await.expect("hero response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let hero_body = to_json(response).await;
+        let hero_id = hero_body["id"].as_str().expect("hero id").to_string();
+        assert_eq!(hero_body["abilities_json"][0]["name"], "Dash");
+        assert_eq!(hero_body["stats_json"]["hp"], 650);
+
+        let build = request(
+            Method::POST,
+            "/api/builds",
+            Some(json!({
+                "hero_id": hero_id,
+                "name": "Json Build",
+                "description": "jsonb test",
+                "ability_order": [1, 3, 2, 4],
+                "items": [{"id": "item-a", "phase": "early"}]
+            })),
+        );
+        let response = app.oneshot(build).await.expect("build response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let build_body = to_json(response).await;
+        let build_id = build_body["id"].as_str().expect("build id").to_string();
+        assert_eq!(build_body["ability_order_json"], json!([1, 3, 2, 4]));
+        assert_eq!(build_body["items_json"][0]["id"], "item-a");
+
+        let abilities: Value =
+            sqlx::query_scalar("SELECT abilities FROM tierlist.meta_heroes WHERE id=$1")
+                .bind(&hero_id)
+                .fetch_one(&pool)
+                .await
+                .expect("hero abilities jsonb");
+        let items: Value = sqlx::query_scalar("SELECT items FROM tierlist.meta_builds WHERE id=$1")
+            .bind(&build_id)
+            .fetch_one(&pool)
+            .await
+            .expect("build items jsonb");
+        assert_eq!(abilities[0]["slot"], 1);
+        assert_eq!(items[0]["phase"], "early");
+    }
+
+    #[tokio::test]
+    async fn website_coaching_request_erzeugt_request_uid_und_website_request_id() {
+        let ban_api = spawn_ban_api().await;
+        std::env::set_var("DASHBOARD_INTERNAL_API_BASE", ban_api);
+        let (_db, state) = test_state().await;
+        let pool = state.pool.clone();
+        let token = state
+            .auth
+            .create_session_jwt("940201", "website_user", "user", Some("Website User"), None)
+            .expect("session jwt");
+        let app = router(state);
+
+        let create = authenticated_request(
+            Method::POST,
+            "/api/coaching/requests",
+            &token,
+            Some(json!({
+                "id": "website-request-t8",
+                "rank": "Archon",
+                "subrank": "4",
+                "hero": "Haze",
+                "availability": "abends"
+            })),
+        );
+        let response = app.oneshot(create).await.expect("website request response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["id"], "website-request-t8");
+
+        let row = sqlx::query(
+            "SELECT request_uid, website_request_id, bot_request_id, discord_user_id, discord_username \
+             FROM coaching.requests WHERE website_request_id=$1",
+        )
+        .bind("website-request-t8")
+        .fetch_one(&pool)
+        .await
+        .expect("request row");
+        assert_eq!(
+            rows::required_string(&row, "request_uid"),
+            "website-request-t8"
+        );
+        assert_eq!(
+            rows::required_string(&row, "website_request_id"),
+            "website-request-t8"
+        );
+        assert!(rows::i64(&row, "bot_request_id").is_none());
+        assert_eq!(rows::i64(&row, "discord_user_id"), Some(940201));
+        assert_eq!(
+            rows::required_string(&row, "discord_username"),
+            "website_user"
+        );
+    }
 
     #[tokio::test]
     async fn website_request_erscheint_bot_request_nicht_in_notification_queue() {
@@ -966,6 +1116,322 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn appointment_notification_due_ack_roundtrip_postgres() {
+        let (_db, state) = test_state().await;
+        let pool = state.pool.clone();
+        let app = router(state);
+        let coach_id = "appt-notify-coach";
+        let coachee_id = "appt-notify-coachee";
+        let appointment_id = "appt-notify-t8";
+        let scheduled_at = Utc
+            .with_ymd_and_hms(2027, 4, 1, 18, 30, 0)
+            .single()
+            .expect("scheduled timestamp");
+
+        sqlx::query(
+            "INSERT INTO coaching.coaches \
+             (id, discord_user_id, discord_username, display_name, status, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, 'active', now(), now())",
+        )
+        .bind(coach_id)
+        .bind(940301_i64)
+        .bind("appt_notify_coach")
+        .bind("Appt Coach")
+        .execute(&pool)
+        .await
+        .expect("seed coach");
+        sqlx::query(
+            "INSERT INTO coaching.coachees \
+             (id, discord_user_id, discord_username, display_name, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, now(), now())",
+        )
+        .bind(coachee_id)
+        .bind(940302_i64)
+        .bind("appt_notify_user")
+        .bind("Appt User")
+        .execute(&pool)
+        .await
+        .expect("seed coachee");
+        sqlx::query(
+            "INSERT INTO coaching.appointments \
+             (id, coach_id, coachee_id, scheduled_at, duration_minutes, title, status, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, 60, $5, 'scheduled', now(), now())",
+        )
+        .bind(appointment_id)
+        .bind(coach_id)
+        .bind(coachee_id)
+        .bind(scheduled_at)
+        .bind("T8 Appointment")
+        .execute(&pool)
+        .await
+        .expect("seed appointment");
+
+        let due = request(
+            Method::GET,
+            "/api/coaching/platform/notifications/due",
+            None,
+        );
+        let response = app.clone().oneshot(due).await.expect("due response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        let notification = body["notifications"]
+            .as_array()
+            .expect("notifications")
+            .iter()
+            .find(|item| item["type"] == "created" && item["appointment_id"] == appointment_id)
+            .expect("created notification");
+        assert_eq!(notification["discord_user_id"], 940302);
+        let expected_scheduled_at = scheduled_at.to_rfc3339();
+        assert_eq!(
+            notification["scheduled_at"].as_str(),
+            Some(expected_scheduled_at.as_str())
+        );
+
+        let ack = request(
+            Method::POST,
+            "/api/coaching/platform/notifications/ack",
+            Some(json!({ "items": [{ "type": "created", "appointment_id": appointment_id }] })),
+        );
+        let response = app.oneshot(ack).await.expect("ack response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["acked"], 1);
+
+        let notify_created_at: Option<chrono::DateTime<Utc>> =
+            sqlx::query_scalar("SELECT notify_created_at FROM coaching.appointments WHERE id=$1")
+                .bind(appointment_id)
+                .fetch_one(&pool)
+                .await
+                .expect("notify created at");
+        assert!(notify_created_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn boolean_felder_roundtrippen_postgres_typkonform() {
+        let (_db, state) = test_state().await;
+        let pool = state.pool.clone();
+        let app = router(state);
+
+        let tierlist = request(
+            Method::POST,
+            "/api/tierlists",
+            Some(json!({
+                "name": "Public T8",
+                "is_public": true,
+                "tiers": {"S": ["hero-a"]}
+            })),
+        );
+        let response = app
+            .clone()
+            .oneshot(tierlist)
+            .await
+            .expect("tierlist response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let tierlist_body = to_json(response).await;
+        let tierlist_id = tierlist_body["id"]
+            .as_str()
+            .expect("tierlist id")
+            .to_string();
+        assert_eq!(tierlist_body["is_public"], true);
+
+        let coach_id = "bool-coach-t8";
+        let session_id = "bool-session-t8";
+        sqlx::query(
+            "INSERT INTO coaching.coaches \
+             (id, discord_user_id, discord_username, display_name, status, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, 'active', now(), now())",
+        )
+        .bind(coach_id)
+        .bind(940401_i64)
+        .bind("bool_coach")
+        .bind("Bool Coach")
+        .execute(&pool)
+        .await
+        .expect("seed bool coach");
+        sqlx::query(
+            "INSERT INTO coaching.sessions \
+             (id, coach_id, discord_user_id, discord_username, status, created_at) \
+             VALUES ($1, $2, $3, $4, 'active', now())",
+        )
+        .bind(session_id)
+        .bind(coach_id)
+        .bind(940402_i64)
+        .bind("bool_user")
+        .execute(&pool)
+        .await
+        .expect("seed bool session");
+
+        let survey = request(
+            Method::POST,
+            "/api/coaching/surveys",
+            Some(json!({
+                "session_id": session_id,
+                "rating": 5,
+                "feedback_text": "gut",
+                "would_recommend": true
+            })),
+        );
+        let response = app.clone().oneshot(survey).await.expect("survey response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let coachee_id = "bool-coachee-t8";
+        sqlx::query(
+            "INSERT INTO coaching.coachees \
+             (id, discord_user_id, discord_username, display_name, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, now(), now())",
+        )
+        .bind(coachee_id)
+        .bind(940403_i64)
+        .bind("bool_coachee")
+        .bind("Bool Coachee")
+        .execute(&pool)
+        .await
+        .expect("seed bool coachee");
+        let goal = admin_request(
+            Method::POST,
+            &format!("/api/coaching/platform/coachees/{coachee_id}/goals"),
+            Some(json!({ "title": "Bool Goal" })),
+        );
+        let response = app.clone().oneshot(goal).await.expect("goal response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let goal_id = to_json(response).await["id"]
+            .as_str()
+            .expect("goal id")
+            .to_string();
+        let milestone = admin_request(
+            Method::POST,
+            &format!("/api/coaching/platform/goals/{goal_id}/milestones"),
+            Some(json!({ "title": "Bool Milestone" })),
+        );
+        let response = app
+            .clone()
+            .oneshot(milestone)
+            .await
+            .expect("milestone response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let milestone_id = to_json(response).await["id"]
+            .as_str()
+            .expect("milestone id")
+            .to_string();
+        let update = admin_request(
+            Method::PATCH,
+            &format!("/api/coaching/platform/milestones/{milestone_id}"),
+            Some(json!({ "achieved": true })),
+        );
+        let response = app.oneshot(update).await.expect("milestone update");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let is_public: bool =
+            sqlx::query_scalar("SELECT is_public FROM tierlist.meta_tier_lists WHERE id=$1")
+                .bind(&tierlist_id)
+                .fetch_one(&pool)
+                .await
+                .expect("is_public");
+        let would_recommend: bool =
+            sqlx::query_scalar("SELECT would_recommend FROM coaching.surveys WHERE session_id=$1")
+                .bind(session_id)
+                .fetch_one(&pool)
+                .await
+                .expect("would recommend");
+        let achieved: bool =
+            sqlx::query_scalar("SELECT achieved FROM coaching.milestones WHERE id=$1")
+                .bind(&milestone_id)
+                .fetch_one(&pool)
+                .await
+                .expect("achieved");
+        assert!(is_public);
+        assert!(would_recommend);
+        assert!(achieved);
+    }
+
+    #[tokio::test]
+    async fn reserved_until_und_scheduled_at_sind_echte_zeittypen() {
+        let (_db, state) = test_state().await;
+        let pool = state.pool.clone();
+        let app = router(state);
+        let scheduled_at = "2027-05-01T16:45:00Z";
+
+        let sync = request(
+            Method::POST,
+            "/api/coaching/platform/sync",
+            Some(json!({
+                "bot_request_id": 7501,
+                "discord_user_id": 950501,
+                "discord_username": "time_type_user",
+                "rank": "Oracle",
+                "subrank": "2",
+                "reserved_until": "2027-05-01T15:00:00Z"
+            })),
+        );
+        let response = app.clone().oneshot(sync).await.expect("sync response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let coachee_id = "time-type-coachee";
+        sqlx::query(
+            "INSERT INTO coaching.coachees \
+             (id, discord_user_id, discord_username, display_name, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, now(), now()) \
+             ON CONFLICT (discord_user_id) DO UPDATE SET id=EXCLUDED.id, updated_at=now()",
+        )
+        .bind(coachee_id)
+        .bind(950501_i64)
+        .bind("time_type_user")
+        .bind("Time Type User")
+        .execute(&pool)
+        .await
+        .expect("seed time coachee");
+        let appointment = admin_request(
+            Method::POST,
+            "/api/coaching/platform/appointments",
+            Some(json!({
+                "coachee_id": coachee_id,
+                "scheduled_at": scheduled_at,
+                "duration_minutes": 45,
+                "title": "Time Type"
+            })),
+        );
+        let response = app
+            .oneshot(appointment)
+            .await
+            .expect("appointment response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let appointment_id = to_json(response).await["id"]
+            .as_str()
+            .expect("appointment id")
+            .to_string();
+
+        let reserved_until: Option<chrono::DateTime<Utc>> = sqlx::query_scalar(
+            "SELECT reserved_until FROM coaching.requests WHERE bot_request_id=$1",
+        )
+        .bind(7501_i32)
+        .fetch_one(&pool)
+        .await
+        .expect("reserved_until");
+        let scheduled_at_db: chrono::DateTime<Utc> =
+            sqlx::query_scalar("SELECT scheduled_at FROM coaching.appointments WHERE id=$1")
+                .bind(&appointment_id)
+                .fetch_one(&pool)
+                .await
+                .expect("scheduled_at");
+        assert_eq!(
+            reserved_until.map(|dt| dt.timestamp()),
+            Some(
+                Utc.with_ymd_and_hms(2027, 5, 1, 15, 0, 0)
+                    .single()
+                    .expect("reserved timestamp")
+                    .timestamp()
+            )
+        );
+        assert_eq!(
+            scheduled_at_db.timestamp(),
+            Utc.with_ymd_and_hms(2027, 5, 1, 16, 45, 0)
+                .single()
+                .expect("scheduled timestamp")
+                .timestamp()
+        );
+    }
+
     async fn test_state() -> (dl_central_db::TestDb, AppState) {
         std::env::set_var("TWITCH_INTERNAL_API_TOKEN", "test-secret-xyz");
         std::env::set_var("AUTH_SESSION_SECRET", "test-session-secret");
@@ -1019,6 +1485,41 @@ mod tests {
             12345,
         )));
         req
+    }
+
+    fn authenticated_request(
+        method: Method,
+        uri: &str,
+        token: &str,
+        body: Option<Value>,
+    ) -> Request<Body> {
+        let builder = Request::builder()
+            .method(method)
+            .uri(uri)
+            .header("Cookie", format!("ddc_session={token}"))
+            .header("content-type", "application/json");
+        let bytes = body.map(|v| v.to_string()).unwrap_or_default();
+        let mut req = builder.body(Body::from(bytes)).expect("request");
+        req.extensions_mut().insert(ConnectInfo(SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::LOCALHOST),
+            12345,
+        )));
+        req
+    }
+
+    async fn spawn_ban_api() -> String {
+        let listener = tokio::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+            .await
+            .expect("ban api listener");
+        let addr = listener.local_addr().expect("ban api addr");
+        let app = axum::Router::new().route(
+            "/internal/coaching/v1/no-show-ban",
+            axum::routing::post(|| async { axum::Json(json!({ "banned": false })) }),
+        );
+        tokio::spawn(async move {
+            axum::serve(listener, app).await.expect("ban api server");
+        });
+        format!("http://{addr}")
     }
 
     async fn to_json(response: axum::response::Response) -> Value {

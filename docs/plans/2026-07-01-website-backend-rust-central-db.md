@@ -435,6 +435,11 @@ Akzeptanz:
 - Keine dynamischen SQLite-`?`-Updates bleiben.
 - Alle Plattform-Workflows schreiben Central-typkonform.
 
+Status (2026-07-02): erledigt. Platform-Update-Helfer nutzen
+`QueryBuilder<Postgres>` mit festen Table-/Column-Whitelists; JSONB, DATE,
+Boolean und TIMESTAMPTZ werden typisiert gebunden, `coaches_sync` bindet
+`NOT IN` typsicher.
+
 ### T8 - Tests + SQLX Gate
 
 Abhaengig von: T4 und T7
@@ -468,6 +473,12 @@ Akzeptanz:
 
 - Tests laufen ohne Zugriff auf produktive Central-Daten.
 - `SQLX_OFFLINE=true cargo check` ist moeglich, sofern Offline-Cache genutzt wird.
+
+Status (2026-07-02): erledigt. Wegwerf-Postgres-Testlauf via
+`central_test_db.sh` mit explizitem Backend-`cd` gruen; 14 Rust-Tests decken
+Auth-Rollenerhalt, JSONB, Request-IDs, Platform-Sync-Idempotenz,
+Appointment-Due/Ack, Boolean- und Zeittyp-Roundtrips ab. `fmt`, `check`,
+`clippy`, `release build` und `SQLX_OFFLINE=true cargo check` gruen.
 
 ### T9 - Runtime/Docs/Cutover-Runbook
 
