@@ -346,6 +346,7 @@ pub async fn create_coaching_request(
                 None
             }
         });
+    validate_website_request_id(website_request_id.as_deref())?;
     let request_uid = website_request_id
         .clone()
         .unwrap_or_else(|| format!("bot:{}", bot_request_id.expect("bot request id present")));
@@ -801,6 +802,15 @@ fn body_string<'a>(body: &'a Value, name: &str) -> Option<&'a str> {
         .and_then(Value::as_str)
         .map(str::trim)
         .filter(|value| !value.is_empty())
+}
+
+fn validate_website_request_id(website_request_id: Option<&str>) -> AppResult<()> {
+    if website_request_id.is_some_and(|value| value.starts_with("bot:")) {
+        return Err(AppError::bad_request(
+            "website_request_id must not start with bot:",
+        ));
+    }
+    Ok(())
 }
 
 fn optional_i32_body(body: &Value, name: &str) -> AppResult<Option<i32>> {

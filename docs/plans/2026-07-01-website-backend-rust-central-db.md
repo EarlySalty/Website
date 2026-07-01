@@ -352,6 +352,8 @@ Akzeptanz:
 
 ### T6 - Coaching Platform Sync + ID-Semantik
 
+Status (2026-07-02): erledigt.
+
 Abhaengig von: T5
 
 Dateien:
@@ -368,13 +370,17 @@ noch Zeilen mit `website_request_id IS NOT NULL`, Ack matcht ausschliesslich
 `website_request_id`. Mit Regressionstests belegt (Bot-Request unsichtbar im
 Notification-Feed; Ack trifft bei ID-Kollision nur die Website-Zeile).
 
-Noch offen (Rest-T6, per Kritiker-Bestandsaufnahme identifiziert, alle
-weiterhin auf altem SQLite-Query-Format mit `?`-Platzhaltern und
-unqualifizierten Tabellennamen wie `coaching_requests`/`coachees`/
-`coaching_appointments` — brechen zur Laufzeit gegen die zentrale Postgres
-mit "relation does not exist"): `platform_sync`, Overview/Queue/Coachees,
-Goals/Milestones/Notes, My-/Coaches-/Appointments-/Profil-Endpunkte, sowie
-zwei Helper mit alten `?`-Platzhaltern.
+Abschluss (2026-07-02): Rest-T6 umgesetzt. `platform_sync`,
+Overview/Queue/Coachees, Goals/Milestones/Notes,
+My-/Coaches-/Appointments-/Profil-Endpunkte sowie die dynamischen
+Update-Helper nutzen jetzt qualifizierte `coaching.*`-Tabellen und
+Postgres-Parameter. `platform_sync` matcht Request-Referenzen in der
+Reihenfolge `website_request_id`, `bot_request_id`, `request_uid`, legt
+Bot-only-Requests als `bot:{bot_request_id}` an, schreibt Sessions mit
+`request_uid`/`website_request_id`/`bot_request_id` statt alter
+`request_id`-Spalte und normalisiert `reserved_until` aus Epoch oder
+RFC3339 nach `DateTime<Utc>`. Queue-Responses liefern `reserved_until`
+weiter als Epoch.
 
 Aufgaben:
 
@@ -398,6 +404,9 @@ Akzeptanz:
 
 - Bot- und Website-Requests werden nicht dupliziert.
 - Notification-Ack markiert die richtige zentrale Request-Zeile.
+- Belegt durch Central-Postgres-Integrationstests fuer Bot-Request-Anlage/
+  Update, Session-Sync mit Epoch/RFC3339-`reserved_until` und
+  Goals/Milestones/Notes/Appointments-Smoke.
 
 ### T7 - Coaching Platform Workspace
 
