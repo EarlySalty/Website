@@ -70,6 +70,11 @@ case "${WEBSITE_BACKEND_IMPL:-rust}" in
       echo "Rust Website Backend fehlt oder ist nicht ausführbar: $RUST_BACKEND_BIN" >&2
       exit 1
     fi
+    if [[ -z "${DEADLOCK_CENTRAL_DSN:-}" ]]; then
+      echo "DEADLOCK_CENTRAL_DSN fehlt nach Infisical-Export; Rust Website Backend startet nicht." >&2
+      exit 1
+    fi
+    echo "Rust Website Backend: central DB DSN present: true" >&2
     exec "$RUST_BACKEND_BIN"
     ;;
   python)

@@ -14,8 +14,36 @@ to the central Postgres/TimescaleDB database:
 - internal bot auth: `TWITCH_INTERNAL_API_TOKEN`, `MASTER_BROKER_TOKEN`, or `COACHING_BOT_TOKEN`
 
 `scripts/run_builds_backend.sh` loads Infisical secrets first, then starts
-`builds/backend-rust/target/release/ddc-website-backend` by default. Set
-`WEBSITE_BACKEND_IMPL=python` only for rollback.
+`builds/backend-rust/target/release/ddc-website-backend` by default. For the
+Rust backend, `DEADLOCK_CENTRAL_DSN` must be exported by Infisical; the wrapper
+fails fast when it is missing and never prints the value. There is no `DB_PATH`
+runtime mode for the Rust backend anymore.
+
+Set `WEBSITE_BACKEND_IMPL=python` only for rollback. The Python backend remains a
+fallback path, not the target of the Central-Postgres migration.
+
+## Cutover Runbook
+
+Pre-review checks:
+
+```bash
+bash -n scripts/run_builds_backend.sh
+cd builds/backend-rust
+cargo fmt --check
+cargo check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo build --release
+```
+
+Read-only database checks must use the throwaway Central test wrapper, for
+example `/home/naniadm/Documents/Deadlock-Bots/rust/scripts/central_test_db.sh`.
+Do not point verification commands at a live or production DSN.
+
+After review approval only:
+
+```bash
+systemctl --user restart deadlock-website-backend.service
+```
 
 ## Verification
 

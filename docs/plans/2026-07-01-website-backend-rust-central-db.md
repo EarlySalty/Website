@@ -506,6 +506,14 @@ Akzeptanz:
 - Runtime-Doku beschreibt den tatsaechlichen Rust-Default.
 - Kein Secret steht in Unit-Dateien, Doku oder Logs.
 
+Status (2026-07-02): erledigt. `builds/backend-rust/README.md` beschreibt
+Central-Postgres als Rust-Runtime, `DEADLOCK_CENTRAL_DSN` als Pflicht-Env,
+`WEBSITE_BACKEND_IMPL=python` nur als Rollback-Fallback und den Cutover-Restart
+`systemctl --user restart deadlock-website-backend.service` ausdruecklich erst
+nach Review. `scripts/run_builds_backend.sh` bricht im Rust-Pfad bei fehlender
+DSN nach Infisical-Export ab und loggt nur `central DB DSN present: true`, nie
+den Secret-Wert.
+
 ### T10 - Review Gate + optionale Live-Freigabe
 
 Abhaengig von: T9
@@ -525,6 +533,13 @@ Akzeptanz:
 
 - Keine Live-Aenderung vor expliziter Freigabe.
 - Rollback-Pfad ist dokumentiert.
+
+Status (2026-07-02): erledigt als Review-Gate ohne Live-Freigabe. T0-T8-Diff
+gegen `main` wurde statisch geprueft; Read-only-Sanity gegen
+`central_test_db.sh`-Wegwerf-Postgres wurde ausgefuehrt. Ergebnis: erwartete
+Coaching-Tabellen vorhanden, frisch migrierte Testdatenbank ohne
+`request_uid`/`website_request_id`/`bot_request_id`-Duplikate; kein
+Service-Restart, kein Live-DSN-Zugriff.
 
 ## Kritiker-Checkliste
 
