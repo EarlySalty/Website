@@ -5,7 +5,7 @@ use axum::{
     Router,
 };
 use reqwest::Client;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::{auth::Auth, config::Config, db, routes};
@@ -17,14 +17,14 @@ pub struct AppState {
 
 pub struct AppInner {
     pub cfg: Config,
-    pub pool: SqlitePool,
+    pub pool: PgPool,
     pub http: Client,
     pub auth: Auth,
 }
 
 impl AppState {
     pub async fn new(cfg: Config) -> anyhow::Result<Self> {
-        let pool = db::connect(&cfg.db_path).await?;
+        let pool = db::connect().await?;
         db::init(&pool).await?;
         let http = Client::builder()
             .timeout(std::time::Duration::from_secs(20))

@@ -4,11 +4,12 @@ Rust replacement for the former FastAPI backend behind `127.0.0.1:8772`.
 
 ## Runtime
 
-The service keeps the same public API prefix and SQLite database as the Python backend:
+The service keeps the same public API prefix as the Python backend and connects
+to the central Postgres/TimescaleDB database:
 
 - public reverse proxy path: `/coaching/api/*`
 - local bind: `WEBSITE_BACKEND_HOST` / `WEBSITE_BACKEND_PORT`
-- database: `DB_PATH`, defaults to `./deadlock.db`
+- database: `DEADLOCK_CENTRAL_DSN` is required
 - auth cookie/session envs: `AUTH_*`
 - internal bot auth: `TWITCH_INTERNAL_API_TOKEN`, `MASTER_BROKER_TOKEN`, or `COACHING_BOT_TOKEN`
 
@@ -19,9 +20,8 @@ The service keeps the same public API prefix and SQLite database as the Python b
 ## Verification
 
 ```bash
-cargo fmt
+cargo fmt --check
 cargo check
-cargo test
 cargo build --release
 ```
 

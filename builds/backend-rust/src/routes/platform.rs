@@ -5,9 +5,10 @@ use axum::{
     http::HeaderMap,
     Json,
 };
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use sqlx::{postgres::PgArguments, Postgres};
 
 use crate::{
     app::AppState,
@@ -328,7 +329,7 @@ pub async fn update_goal(
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
     let mut sets = Vec::new();
-    let mut values: Vec<Value> = Vec::new();
+    let mut values: Vec<(String, Value)> = Vec::new();
     for key in [
         "title",
         "description",
@@ -338,22 +339,23 @@ pub async fn update_goal(
     ] {
         if let Some(value) = body.get(key).filter(|v| !v.is_null()) {
             sets.push(format!("{key}=?"));
-            values.push(value.clone());
+            values.push((key.to_string(), value.clone()));
         }
     }
     if sets.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
     sets.push("completed_at=?".to_string());
-    values.push(
+    values.push((
+        "completed_at".to_string(),
         if body.get("status").and_then(Value::as_str) == Some("done") {
             json!(iso_now())
         } else {
             Value::Null
         },
-    );
+    ));
     sets.push("updated_at=?".to_string());
-    values.push(json!(iso_now()));
+    values.push(("updated_at".to_string(), json!(iso_now())));
     run_update(
         &state,
         &format!("UPDATE coaching_goals SET {} WHERE id=?", sets.join(", ")),
@@ -416,24 +418,27 @@ pub async fn update_milestone(
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
     let mut sets = Vec::new();
-    let mut values = Vec::new();
+    let mut values: Vec<(String, Value)> = Vec::new();
     if let Some(value) = body.get("title").filter(|v| !v.is_null()) {
         sets.push("title=?".to_string());
-        values.push(value.clone());
+        values.push(("title".to_string(), value.clone()));
     }
     if let Some(value) = body.get("sort_order").filter(|v| !v.is_null()) {
         sets.push("sort_order=?".to_string());
-        values.push(value.clone());
+        values.push(("sort_order".to_string(), value.clone()));
     }
     if let Some(achieved) = body.get("achieved").and_then(Value::as_bool) {
         sets.push("achieved=?".to_string());
-        values.push(json!(if achieved { 1 } else { 0 }));
+        values.push(("achieved".to_string(), json!(achieved)));
         sets.push("achieved_at=?".to_string());
-        values.push(if achieved {
-            json!(iso_now())
-        } else {
-            Value::Null
-        });
+        values.push((
+            "achieved_at".to_string(),
+            if achieved {
+                json!(iso_now())
+            } else {
+                Value::Null
+            },
+        ));
     }
     if sets.is_empty() {
         return Ok(Json(json!({ "ok": true })));
@@ -749,7 +754,7 @@ pub async fn update_appointment(
         ));
     }
     let mut sets = Vec::new();
-    let mut values = Vec::new();
+    let mut values: Vec<(String, Value)> = Vec::new();
     for key in [
         "scheduled_at",
         "duration_minutes",
@@ -759,7 +764,7 @@ pub async fn update_appointment(
     ] {
         if let Some(value) = body.get(key).filter(|v| !v.is_null()) {
             sets.push(format!("{key}=?"));
-            values.push(value.clone());
+            values.push((key.to_string(), value.clone()));
         }
     }
     if sets.is_empty() {
@@ -770,7 +775,7 @@ pub async fn update_appointment(
         sets.push("notify_reminder_at=NULL".to_string());
     }
     sets.push("updated_at=?".to_string());
-    values.push(json!(iso_now()));
+    values.push(("updated_at".to_string(), json!(iso_now())));
     run_update(
         &state,
         &format!(
@@ -940,26 +945,24 @@ pub async fn update_my_coach_profile(
         return Err(AppError::not_found("Coach-Profil nicht gefunden"));
     }
     let mut sets = Vec::new();
-    let mut values = Vec::new();
+    let mut values: Vec<(String, Value)> = Vec::new();
     if let Some(v) = body.get("bio").filter(|v| !v.is_null()) {
         sets.push("bio=?".to_string());
-        values.push(v.clone());
+        values.push(("bio".to_string(), v.clone()));
     }
     if let Some(v) = body.get("specialties").filter(|v| !v.is_null()) {
         sets.push("specialties_json=?".to_string());
-        values.push(json!(
-            serde_json::to_string(v).unwrap_or_else(|_| "[]".to_string())
-        ));
+        values.push(("specialties_json".to_string(), v.clone()));
     }
     if let Some(v) = body.get("twitch_url").filter(|v| !v.is_null()) {
         sets.push("twitch_url=?".to_string());
-        values.push(v.clone());
+        values.push(("twitch_url".to_string(), v.clone()));
     }
     if sets.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
     sets.push("updated_at=?".to_string());
-    values.push(json!(iso_now()));
+    values.push(("updated_at".to_string(), json!(iso_now())));
     run_update_by_i64(
         &state,
         &format!(
@@ -1075,11 +1078,11 @@ async fn update_known_fields(
     updated_at: bool,
 ) -> AppResult<()> {
     let mut sets = Vec::new();
-    let mut values = Vec::new();
+    let mut values: Vec<(String, Value)> = Vec::new();
     for key in allowed {
         if let Some(value) = body.get(*key).filter(|v| !v.is_null()) {
             sets.push(format!("{key}=?"));
-            values.push(value.clone());
+            values.push(((*key).to_string(), value.clone()));
         }
     }
     if sets.is_empty() {
@@ -1087,7 +1090,7 @@ async fn update_known_fields(
     }
     if updated_at {
         sets.push("updated_at=?".to_string());
-        values.push(json!(iso_now()));
+        values.push(("updated_at".to_string(), json!(iso_now())));
     }
     run_update(
         state,
@@ -1098,10 +1101,15 @@ async fn update_known_fields(
     .await
 }
 
-async fn run_update(state: &AppState, sql: &str, values: Vec<Value>, id: &str) -> AppResult<()> {
+async fn run_update(
+    state: &AppState,
+    sql: &str,
+    values: Vec<(String, Value)>,
+    id: &str,
+) -> AppResult<()> {
     let mut q = sqlx::query(sql);
-    for value in values {
-        q = bind_json(q, value);
+    for (column, value) in values {
+        q = bind_json(q, &column, value)?;
     }
     q.bind(id).execute(&state.pool).await?;
     Ok(())
@@ -1110,24 +1118,102 @@ async fn run_update(state: &AppState, sql: &str, values: Vec<Value>, id: &str) -
 async fn run_update_by_i64(
     state: &AppState,
     sql: &str,
-    values: Vec<Value>,
+    values: Vec<(String, Value)>,
     id: i64,
 ) -> AppResult<()> {
     let mut q = sqlx::query(sql);
-    for value in values {
-        q = bind_json(q, value);
+    for (column, value) in values {
+        q = bind_json(q, &column, value)?;
     }
     q.bind(id).execute(&state.pool).await?;
     Ok(())
 }
 
-fn bind_json<'q>(
-    q: sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'q>>,
-    value: Value,
-) -> sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'q>> {
+type PgQuery<'q> = sqlx::query::Query<'q, Postgres, PgArguments>;
+
+fn bind_json<'q>(q: PgQuery<'q>, column: &str, value: Value) -> AppResult<PgQuery<'q>> {
+    let q = match column {
+        "specialties_json" | "availability_json" | "main_heroes_json" | "ai_insights_json" => {
+            bind_jsonb(q, value)
+        }
+        "achieved" | "is_public" | "would_recommend" | "is_active" => bind_bool(q, value)?,
+        "target_date" => bind_date(q, value)?,
+        "scheduled_at"
+        | "started_at"
+        | "completed_at"
+        | "updated_at"
+        | "achieved_at"
+        | "reserved_until"
+        | "notify_created_at"
+        | "notify_reminder_at"
+        | "notify_cancelled_at"
+        | "notify_discord_at" => bind_datetime(q, value)?,
+        _ => bind_dynamic_value(q, value),
+    };
+    Ok(q)
+}
+
+fn bind_jsonb<'q>(q: PgQuery<'q>, value: Value) -> PgQuery<'q> {
+    match value {
+        Value::Null => q.bind(Option::<Value>::None),
+        Value::String(raw) => {
+            q.bind(serde_json::from_str::<Value>(&raw).unwrap_or(Value::String(raw)))
+        }
+        other => q.bind(other),
+    }
+}
+
+fn bind_bool<'q>(q: PgQuery<'q>, value: Value) -> AppResult<PgQuery<'q>> {
+    let value = match value {
+        Value::Null => None,
+        Value::Bool(v) => Some(v),
+        Value::Number(n) => n.as_i64().map(|v| v != 0),
+        Value::String(raw) => match raw.to_ascii_lowercase().as_str() {
+            "true" | "t" | "1" | "yes" => Some(true),
+            "false" | "f" | "0" | "no" => Some(false),
+            _ => return Err(AppError::bad_request("invalid boolean value")),
+        },
+        _ => return Err(AppError::bad_request("invalid boolean value")),
+    };
+    Ok(q.bind(value))
+}
+
+fn bind_date<'q>(q: PgQuery<'q>, value: Value) -> AppResult<PgQuery<'q>> {
+    let value = match value {
+        Value::Null => None,
+        Value::String(raw) if raw.trim().is_empty() => None,
+        Value::String(raw) => Some(
+            NaiveDate::parse_from_str(&raw, "%Y-%m-%d")
+                .map_err(|_| AppError::bad_request("invalid date value"))?,
+        ),
+        _ => return Err(AppError::bad_request("invalid date value")),
+    };
+    Ok(q.bind(value))
+}
+
+fn bind_datetime<'q>(q: PgQuery<'q>, value: Value) -> AppResult<PgQuery<'q>> {
+    let value = match value {
+        Value::Null => None,
+        Value::String(raw) if raw.trim().is_empty() => None,
+        Value::String(raw) => Some(parse_datetime_utc(&raw)?),
+        Value::Number(n) => {
+            let Some(timestamp) = n.as_i64() else {
+                return Err(AppError::bad_request("invalid timestamp value"));
+            };
+            Some(
+                DateTime::from_timestamp(timestamp, 0)
+                    .ok_or_else(|| AppError::bad_request("invalid timestamp value"))?,
+            )
+        }
+        _ => return Err(AppError::bad_request("invalid timestamp value")),
+    };
+    Ok(q.bind(value))
+}
+
+fn bind_dynamic_value<'q>(q: PgQuery<'q>, value: Value) -> PgQuery<'q> {
     match value {
         Value::Null => q.bind(Option::<String>::None),
-        Value::Bool(v) => q.bind(if v { 1_i64 } else { 0_i64 }),
+        Value::Bool(v) => q.bind(v),
         Value::Number(n) => {
             if let Some(v) = n.as_i64() {
                 q.bind(v)
@@ -1138,8 +1224,14 @@ fn bind_json<'q>(
             }
         }
         Value::String(v) => q.bind(v),
-        other => q.bind(other.to_string()),
+        other => q.bind(other),
     }
+}
+
+fn parse_datetime_utc(value: &str) -> AppResult<DateTime<Utc>> {
+    chrono::DateTime::parse_from_rfc3339(value)
+        .map(|dt| dt.with_timezone(&Utc))
+        .map_err(|_| AppError::bad_request("invalid timestamp value"))
 }
 
 fn validate_iso(value: &str) -> AppResult<()> {
@@ -1153,8 +1245,5 @@ fn empty_my_coaching() -> Value {
 }
 
 fn iso_now() -> String {
-    Utc::now()
-        .naive_utc()
-        .format("%Y-%m-%dT%H:%M:%S%.f")
-        .to_string()
+    Utc::now().to_rfc3339()
 }

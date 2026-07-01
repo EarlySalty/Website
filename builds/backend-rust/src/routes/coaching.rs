@@ -10,7 +10,6 @@ use constant_time_eq::constant_time_eq;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use sqlx::sqlite::SqliteRow;
 
 use crate::{
     app::AppState,
@@ -589,7 +588,7 @@ async fn fetch_no_show_ban_status(state: &AppState, discord_user_id: i64) -> App
     Ok(data)
 }
 
-fn coach_from_row(row: &SqliteRow) -> Value {
+fn coach_from_row(row: &rows::DbRow) -> Value {
     json!({
         "id": rows::required_string(row, "id"),
         "display_name": rows::string(row, "display_name").or_else(|| rows::string(row, "discord_username")).unwrap_or_default(),
@@ -606,7 +605,7 @@ fn coach_from_row(row: &SqliteRow) -> Value {
     })
 }
 
-fn review_from_row(row: &SqliteRow) -> Value {
+fn review_from_row(row: &rows::DbRow) -> Value {
     json!({
         "id": rows::required_string(row, "id"),
         "coach_id": rows::required_string(row, "coach_id"),
@@ -618,7 +617,7 @@ fn review_from_row(row: &SqliteRow) -> Value {
     })
 }
 
-fn request_from_row(row: &SqliteRow) -> Value {
+fn request_from_row(row: &rows::DbRow) -> Value {
     json!({
         "id": rows::required_string(row, "id"),
         "discord_username": rows::required_string(row, "discord_username"),

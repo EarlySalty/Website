@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
         .await
         .with_context(|| format!("Port binden: {addr}"))?;
 
-    tracing::info!(%addr, db_path = %cfg.db_path, "ddc-website-backend läuft");
+    tracing::info!(%addr, "ddc-website-backend läuft");
     axum::serve(
         listener,
         router.into_make_service_with_connect_info::<std::net::SocketAddr>(),

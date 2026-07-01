@@ -4,7 +4,6 @@ use axum::{
 };
 use serde::Deserialize;
 use serde_json::{json, Map, Value};
-use sqlx::sqlite::SqliteRow;
 
 use crate::{
     app::AppState,
@@ -557,7 +556,7 @@ pub async fn update_user_role(
     Ok(Json(json!({ "message": "User role updated" })))
 }
 
-fn hero_from_row(row: &SqliteRow) -> Value {
+fn hero_from_row(row: &rows::DbRow) -> Value {
     let mut obj = base_map(
         row,
         &[
@@ -570,19 +569,17 @@ fn hero_from_row(row: &SqliteRow) -> Value {
             "stats_json",
         ],
     );
-    obj.insert(
-        "abilities".to_string(),
-        rows::parse_json_or(rows::string(row, "abilities_json"), json!([])),
-    );
-    obj.insert(
-        "stats".to_string(),
-        rows::parse_json_or(rows::string(row, "stats_json"), json!({})),
-    );
+    let abilities = rows::json_or(row, &["abilities_json", "abilities"], json!([]));
+    let stats = rows::json_or(row, &["stats_json", "stats"], json!({}));
+    obj.insert("abilities_json".to_string(), abilities.clone());
+    obj.insert("abilities".to_string(), abilities);
+    obj.insert("stats_json".to_string(), stats.clone());
+    obj.insert("stats".to_string(), stats);
     Value::Object(obj)
 }
 
-fn build_from_row(row: &SqliteRow) -> Value {
-    Value::Object(base_map(
+fn build_from_row(row: &rows::DbRow) -> Value {
+    let mut obj = base_map(
         row,
         &[
             "id",
@@ -598,10 +595,19 @@ fn build_from_row(row: &SqliteRow) -> Value {
             "status",
             "created_at",
         ],
-    ))
+    );
+    obj.insert(
+        "ability_order_json".to_string(),
+        rows::json_or(row, &["ability_order_json", "ability_order"], json!([])),
+    );
+    obj.insert(
+        "items_json".to_string(),
+        rows::json_or(row, &["items_json", "items"], json!([])),
+    );
+    Value::Object(obj)
 }
 
-fn tierlist_from_row(row: &SqliteRow) -> Value {
+fn tierlist_from_row(row: &rows::DbRow) -> Value {
     let mut obj = base_map(
         row,
         &[
@@ -614,15 +620,19 @@ fn tierlist_from_row(row: &SqliteRow) -> Value {
             "created_at",
         ],
     );
+    obj.insert(
+        "tiers_json".to_string(),
+        rows::json_or(row, &["tiers_json", "tiers"], json!({})),
+    );
     obj.insert("owner_name".to_string(), json!("Admin"));
     obj.insert(
         "is_public".to_string(),
-        json!(rows::i64(row, "is_public").unwrap_or(0) != 0),
+        json!(rows::bool(row, "is_public").unwrap_or(false)),
     );
     Value::Object(obj)
 }
 
-fn base_map(row: &SqliteRow, keys: &[&str]) -> Map<String, Value> {
+fn base_map(row: &rows::DbRow, keys: &[&str]) -> Map<String, Value> {
     let mut obj = Map::new();
     for key in keys {
         obj.insert((*key).to_string(), rows::value_from_row(row, key));

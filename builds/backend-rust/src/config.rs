@@ -4,7 +4,6 @@ use std::env;
 pub struct Config {
     pub host: String,
     pub port: u16,
-    pub db_path: String,
     pub auth_cookie_name: String,
     pub pre_auth_cookie_name: String,
     pub session_ttl_seconds: i64,
@@ -28,7 +27,6 @@ impl Config {
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(8772),
-            db_path: env_or("DB_PATH", "./deadlock.db"),
             auth_cookie_name: env_or("AUTH_COOKIE_NAME", "ddc_session"),
             pre_auth_cookie_name: env_or("AUTH_PRE_AUTH_COOKIE_NAME", "ddc_pre_auth"),
             session_ttl_seconds: env::var("AUTH_SESSION_TTL_SECONDS")
