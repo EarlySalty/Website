@@ -643,8 +643,7 @@ pub async fn coaches_sync(
                 .await?;
         }
     }
-    let placeholders = std::iter::repeat("?")
-        .take(incoming.len())
+    let placeholders = std::iter::repeat_n("?", incoming.len())
         .collect::<Vec<_>>()
         .join(",");
     let sql = format!(

@@ -24,10 +24,29 @@ pub struct TierQuery {
     secret: Option<String>,
 }
 
+const HERO_SELECT: &str = "\
+    SELECT id, name, tier, role, image_url, \
+           abilities AS abilities_json, stats AS stats_json \
+    FROM tierlist.meta_heroes";
+
+const BUILD_SELECT: &str = "\
+    SELECT id, hero_id, name, author_id, author_name, description, \
+           ability_order AS ability_order_json, items AS items_json, \
+           upvotes, downvotes, status, created_at \
+    FROM tierlist.meta_builds";
+
+const ITEM_SELECT: &str = "\
+    SELECT id, name, \"type\", stats AS stats_json, image_url \
+    FROM tierlist.meta_items";
+
+const TIERLIST_SELECT: &str = "\
+    SELECT id, name, owner_id, is_public, secret_code, \
+           tiers AS tiers_json, forked_from, created_at \
+    FROM tierlist.meta_tier_lists";
+
 pub async fn list_heroes(State(state): State<AppState>) -> AppResult<Json<Value>> {
-    let rows = sqlx::query("SELECT * FROM meta_heroes ORDER BY name")
-        .fetch_all(&state.pool)
-        .await?;
+    let sql = format!("{HERO_SELECT} ORDER BY name");
+    let rows = sqlx::query(&sql).fetch_all(&state.pool).await?;
     Ok(Json(Value::Array(rows.iter().map(hero_from_row).collect())))
 }
 
@@ -35,7 +54,8 @@ pub async fn get_hero(
     State(state): State<AppState>,
     Path(hero_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    let row = sqlx::query("SELECT * FROM meta_heroes WHERE id=?")
+    let sql = format!("{HERO_SELECT} WHERE id=$1");
+    let row = sqlx::query(&sql)
         .bind(hero_id)
         .fetch_optional(&state.pool)
         .await?
@@ -49,15 +69,20 @@ pub async fn create_hero(
 ) -> AppResult<Json<Value>> {
     let id = ids::id16();
     sqlx::query(
-        "INSERT INTO meta_heroes (id, name, tier, role, image_url, abilities_json, stats_json) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO tierlist.meta_heroes (id, name, tier, role, image_url, abilities, stats) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
     )
     .bind(&id)
     .bind(body.get("name").and_then(Value::as_str).unwrap_or_default())
     .bind(body.get("tier").and_then(Value::as_str).unwrap_or("C"))
     .bind(body.get("role").and_then(Value::as_str))
     .bind(body.get("image_url").and_then(Value::as_str))
-    .bind(body.get("abilities_json").and_then(Value::as_str).unwrap_or("[]"))
-    .bind(body.get("stats_json").and_then(Value::as_str).unwrap_or("{}"))
+    .bind(json_body_value(
+        &body,
+        &["abilities_json", "abilities"],
+        json!([]),
+    ))
+    .bind(json_body_value(&body, &["stats_json", "stats"], json!({})))
     .execute(&state.pool)
     .await?;
     get_hero(State(state), Path(id)).await
@@ -69,14 +94,21 @@ pub async fn update_hero(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     sqlx::query(
-        "UPDATE meta_heroes SET name=?, tier=?, role=?, image_url=?, abilities_json=?, stats_json=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+        "UPDATE tierlist.meta_heroes \
+         SET name=$1, tier=$2, role=$3, image_url=$4, abilities=$5, stats=$6, \
+             updated_at=CURRENT_TIMESTAMP \
+         WHERE id=$7",
     )
     .bind(body.get("name").and_then(Value::as_str).unwrap_or_default())
     .bind(body.get("tier").and_then(Value::as_str).unwrap_or("C"))
     .bind(body.get("role").and_then(Value::as_str))
     .bind(body.get("image_url").and_then(Value::as_str))
-    .bind(body.get("abilities_json").and_then(Value::as_str).unwrap_or("[]"))
-    .bind(body.get("stats_json").and_then(Value::as_str).unwrap_or("{}"))
+    .bind(json_body_value(
+        &body,
+        &["abilities_json", "abilities"],
+        json!([]),
+    ))
+    .bind(json_body_value(&body, &["stats_json", "stats"], json!({})))
     .bind(&hero_id)
     .execute(&state.pool)
     .await?;
@@ -87,7 +119,7 @@ pub async fn delete_hero(
     State(state): State<AppState>,
     Path(hero_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    sqlx::query("DELETE FROM meta_heroes WHERE id=?")
+    sqlx::query("DELETE FROM tierlist.meta_heroes WHERE id=$1")
         .bind(hero_id)
         .execute(&state.pool)
         .await?;
@@ -100,28 +132,34 @@ pub async fn list_builds(
 ) -> AppResult<Json<Value>> {
     let rows = match (query.hero_id, query.status) {
         (Some(hero_id), Some(status)) => {
-            sqlx::query("SELECT * FROM meta_builds WHERE hero_id=? AND status=? ORDER BY upvotes DESC, created_at DESC")
+            let sql = format!(
+                "{BUILD_SELECT} WHERE hero_id=$1 AND status=$2 ORDER BY upvotes DESC, created_at DESC"
+            );
+            sqlx::query(&sql)
                 .bind(hero_id)
                 .bind(status)
                 .fetch_all(&state.pool)
                 .await?
         }
         (Some(hero_id), None) => {
-            sqlx::query("SELECT * FROM meta_builds WHERE hero_id=? ORDER BY upvotes DESC, created_at DESC")
+            let sql =
+                format!("{BUILD_SELECT} WHERE hero_id=$1 ORDER BY upvotes DESC, created_at DESC");
+            sqlx::query(&sql)
                 .bind(hero_id)
                 .fetch_all(&state.pool)
                 .await?
         }
         (None, Some(status)) => {
-            sqlx::query("SELECT * FROM meta_builds WHERE status=? ORDER BY upvotes DESC, created_at DESC")
+            let sql =
+                format!("{BUILD_SELECT} WHERE status=$1 ORDER BY upvotes DESC, created_at DESC");
+            sqlx::query(&sql)
                 .bind(status)
                 .fetch_all(&state.pool)
                 .await?
         }
         (None, None) => {
-            sqlx::query("SELECT * FROM meta_builds ORDER BY upvotes DESC, created_at DESC")
-                .fetch_all(&state.pool)
-                .await?
+            let sql = format!("{BUILD_SELECT} ORDER BY upvotes DESC, created_at DESC");
+            sqlx::query(&sql).fetch_all(&state.pool).await?
         }
     };
     Ok(Json(Value::Array(
@@ -133,7 +171,8 @@ pub async fn get_build(
     State(state): State<AppState>,
     Path(build_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    let row = sqlx::query("SELECT * FROM meta_builds WHERE id=?")
+    let sql = format!("{BUILD_SELECT} WHERE id=$1");
+    let row = sqlx::query(&sql)
         .bind(build_id)
         .fetch_optional(&state.pool)
         .await?
@@ -147,16 +186,26 @@ pub async fn create_build(
 ) -> AppResult<Json<Value>> {
     let id = ids::id16();
     sqlx::query(
-        "INSERT INTO meta_builds (id, hero_id, name, author_id, author_name, description, ability_order_json, items_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO tierlist.meta_builds \
+         (id, hero_id, name, author_id, author_name, description, ability_order, items) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(&id)
-    .bind(body.get("hero_id").and_then(Value::as_str).unwrap_or_default())
+    .bind(
+        body.get("hero_id")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )
     .bind(body.get("name").and_then(Value::as_str).unwrap_or_default())
     .bind("anonymous")
     .bind("Anonymous")
     .bind(body.get("description").and_then(Value::as_str))
-    .bind(body.get("ability_order_json").and_then(Value::as_str).unwrap_or("[]"))
-    .bind(body.get("items_json").and_then(Value::as_str).unwrap_or("[]"))
+    .bind(json_body_value(
+        &body,
+        &["ability_order_json", "ability_order"],
+        json!([]),
+    ))
+    .bind(json_body_value(&body, &["items_json", "items"], json!([])))
     .execute(&state.pool)
     .await?;
     get_build(State(state), Path(id)).await
@@ -168,13 +217,23 @@ pub async fn update_build(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     sqlx::query(
-        "UPDATE meta_builds SET hero_id=?, name=?, description=?, ability_order_json=?, items_json=? WHERE id=?",
+        "UPDATE tierlist.meta_builds \
+         SET hero_id=$1, name=$2, description=$3, ability_order=$4, items=$5 \
+         WHERE id=$6",
     )
-    .bind(body.get("hero_id").and_then(Value::as_str).unwrap_or_default())
+    .bind(
+        body.get("hero_id")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )
     .bind(body.get("name").and_then(Value::as_str).unwrap_or_default())
     .bind(body.get("description").and_then(Value::as_str))
-    .bind(body.get("ability_order_json").and_then(Value::as_str).unwrap_or("[]"))
-    .bind(body.get("items_json").and_then(Value::as_str).unwrap_or("[]"))
+    .bind(json_body_value(
+        &body,
+        &["ability_order_json", "ability_order"],
+        json!([]),
+    ))
+    .bind(json_body_value(&body, &["items_json", "items"], json!([])))
     .bind(&build_id)
     .execute(&state.pool)
     .await?;
@@ -185,7 +244,7 @@ pub async fn delete_build(
     State(state): State<AppState>,
     Path(build_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    sqlx::query("DELETE FROM meta_builds WHERE id=?")
+    sqlx::query("DELETE FROM tierlist.meta_builds WHERE id=$1")
         .bind(build_id)
         .execute(&state.pool)
         .await?;
@@ -198,15 +257,21 @@ pub async fn vote_build(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     let up = body.get("vote").and_then(Value::as_str) == Some("up");
-    let sql = if up {
-        "UPDATE meta_builds SET upvotes = upvotes + 1 WHERE id=?"
-    } else {
-        "UPDATE meta_builds SET downvotes = downvotes + 1 WHERE id=?"
-    };
-    sqlx::query(sql)
+    if up {
+        sqlx::query(
+            "UPDATE tierlist.meta_builds SET upvotes = COALESCE(upvotes, 0) + 1 WHERE id=$1",
+        )
         .bind(&build_id)
         .execute(&state.pool)
         .await?;
+    } else {
+        sqlx::query(
+            "UPDATE tierlist.meta_builds SET downvotes = COALESCE(downvotes, 0) + 1 WHERE id=$1",
+        )
+        .bind(&build_id)
+        .execute(&state.pool)
+        .await?;
+    }
     get_build(State(state), Path(build_id)).await
 }
 
@@ -216,17 +281,20 @@ pub async fn report_build(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     let id = ids::id16();
-    sqlx::query("INSERT INTO meta_reports (id, build_id, reason, status) VALUES (?, ?, ?, 'open')")
-        .bind(id)
-        .bind(&build_id)
-        .bind(
-            body.get("reason")
-                .and_then(Value::as_str)
-                .unwrap_or_default(),
-        )
-        .execute(&state.pool)
-        .await?;
-    sqlx::query("UPDATE meta_builds SET status='reported' WHERE id=?")
+    sqlx::query(
+        "INSERT INTO content.meta_reports (id, build_id, reason, status) \
+         VALUES ($1, $2, $3, 'open')",
+    )
+    .bind(id)
+    .bind(&build_id)
+    .bind(
+        body.get("reason")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )
+    .execute(&state.pool)
+    .await?;
+    sqlx::query("UPDATE tierlist.meta_builds SET status='reported' WHERE id=$1")
         .bind(build_id)
         .execute(&state.pool)
         .await?;
@@ -234,9 +302,8 @@ pub async fn report_build(
 }
 
 pub async fn list_items(State(state): State<AppState>) -> AppResult<Json<Value>> {
-    let rows = sqlx::query("SELECT * FROM meta_items ORDER BY name")
-        .fetch_all(&state.pool)
-        .await?;
+    let sql = format!("{ITEM_SELECT} ORDER BY name");
+    let rows = sqlx::query(&sql).fetch_all(&state.pool).await?;
     Ok(Json(Value::Array(
         rows.iter().map(rows::row_json).collect(),
     )))
@@ -246,7 +313,8 @@ pub async fn get_item(
     State(state): State<AppState>,
     Path(item_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    let row = sqlx::query("SELECT * FROM meta_items WHERE id=?")
+    let sql = format!("{ITEM_SELECT} WHERE id=$1");
+    let row = sqlx::query(&sql)
         .bind(item_id)
         .fetch_optional(&state.pool)
         .await?
@@ -255,21 +323,19 @@ pub async fn get_item(
 }
 
 pub async fn list_tierlists(State(state): State<AppState>) -> AppResult<Json<Value>> {
-    let rows =
-        sqlx::query("SELECT * FROM meta_tier_lists WHERE is_public=1 ORDER BY created_at DESC")
-            .fetch_all(&state.pool)
-            .await?;
+    let sql = format!("{TIERLIST_SELECT} WHERE is_public=$1 ORDER BY created_at DESC");
+    let rows = sqlx::query(&sql).bind(true).fetch_all(&state.pool).await?;
     Ok(Json(Value::Array(
         rows.iter().map(tierlist_from_row).collect(),
     )))
 }
 
 pub async fn my_tierlists(State(state): State<AppState>) -> AppResult<Json<Value>> {
-    let rows =
-        sqlx::query("SELECT * FROM meta_tier_lists WHERE owner_id=? ORDER BY created_at DESC")
-            .bind("admin")
-            .fetch_all(&state.pool)
-            .await?;
+    let sql = format!("{TIERLIST_SELECT} WHERE owner_id=$1 ORDER BY created_at DESC");
+    let rows = sqlx::query(&sql)
+        .bind("admin")
+        .fetch_all(&state.pool)
+        .await?;
     Ok(Json(Value::Array(
         rows.iter().map(tierlist_from_row).collect(),
     )))
@@ -280,13 +346,14 @@ pub async fn get_tierlist(
     Path(list_id): Path<String>,
     Query(query): Query<TierQuery>,
 ) -> AppResult<Json<Value>> {
-    let row =
-        sqlx::query("SELECT * FROM meta_tier_lists WHERE id=? AND (is_public=1 OR secret_code=?)")
-            .bind(list_id)
-            .bind(query.secret.unwrap_or_default())
-            .fetch_optional(&state.pool)
-            .await?
-            .ok_or_else(|| AppError::not_found("Tier list not found"))?;
+    let sql = format!("{TIERLIST_SELECT} WHERE id=$1 AND (is_public=$2 OR secret_code=$3)");
+    let row = sqlx::query(&sql)
+        .bind(list_id)
+        .bind(true)
+        .bind(query.secret.unwrap_or_default())
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or_else(|| AppError::not_found("Tier list not found"))?;
     Ok(Json(tierlist_from_row(&row)))
 }
 
@@ -305,20 +372,20 @@ pub async fn create_tierlist(
         Some(ids::token_urlsafe(8))
     };
     sqlx::query(
-        "INSERT INTO meta_tier_lists (id, name, owner_id, is_public, secret_code, tiers_json) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO tierlist.meta_tier_lists \
+         (id, name, owner_id, is_public, secret_code, tiers) \
+         VALUES ($1, $2, $3, $4, $5, $6)",
     )
     .bind(&id)
     .bind(body.get("name").and_then(Value::as_str).unwrap_or_default())
     .bind("admin")
-    .bind(if is_public { 1 } else { 0 })
+    .bind(is_public)
     .bind(secret)
-    .bind(body.get("tiers_json").and_then(Value::as_str).unwrap_or("{}"))
+    .bind(json_body_value(&body, &["tiers_json", "tiers"], json!({})))
     .execute(&state.pool)
     .await?;
-    let row = sqlx::query("SELECT * FROM meta_tier_lists WHERE id=?")
-        .bind(id)
-        .fetch_one(&state.pool)
-        .await?;
+    let sql = format!("{TIERLIST_SELECT} WHERE id=$1");
+    let row = sqlx::query(&sql).bind(id).fetch_one(&state.pool).await?;
     Ok(Json(tierlist_from_row(&row)))
 }
 
@@ -331,18 +398,15 @@ pub async fn update_tierlist(
         .get("is_public")
         .and_then(Value::as_bool)
         .unwrap_or(false);
-    sqlx::query("UPDATE meta_tier_lists SET name=?, is_public=?, tiers_json=? WHERE id=?")
+    sqlx::query("UPDATE tierlist.meta_tier_lists SET name=$1, is_public=$2, tiers=$3 WHERE id=$4")
         .bind(body.get("name").and_then(Value::as_str).unwrap_or_default())
-        .bind(if is_public { 1 } else { 0 })
-        .bind(
-            body.get("tiers_json")
-                .and_then(Value::as_str)
-                .unwrap_or("{}"),
-        )
+        .bind(is_public)
+        .bind(json_body_value(&body, &["tiers_json", "tiers"], json!({})))
         .bind(&list_id)
         .execute(&state.pool)
         .await?;
-    let row = sqlx::query("SELECT * FROM meta_tier_lists WHERE id=?")
+    let sql = format!("{TIERLIST_SELECT} WHERE id=$1");
+    let row = sqlx::query(&sql)
         .bind(list_id)
         .fetch_one(&state.pool)
         .await?;
@@ -353,7 +417,7 @@ pub async fn delete_tierlist(
     State(state): State<AppState>,
     Path(list_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    sqlx::query("DELETE FROM meta_tier_lists WHERE id=?")
+    sqlx::query("DELETE FROM tierlist.meta_tier_lists WHERE id=$1")
         .bind(list_id)
         .execute(&state.pool)
         .await?;
@@ -364,30 +428,33 @@ pub async fn fork_tierlist(
     State(state): State<AppState>,
     Path(list_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    let row = sqlx::query("SELECT * FROM meta_tier_lists WHERE id=?")
+    let sql = format!("{TIERLIST_SELECT} WHERE id=$1");
+    let row = sqlx::query(&sql)
         .bind(&list_id)
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| AppError::not_found("Tier list not found"))?;
     let id = ids::id16();
-    sqlx::query("INSERT INTO meta_tier_lists (id, name, owner_id, is_public, tiers_json, forked_from) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(&id)
-        .bind(format!("Fork of {}", rows::required_string(&row, "name")))
-        .bind("admin")
-        .bind(0)
-        .bind(rows::string(&row, "tiers_json"))
-        .bind(list_id)
-        .execute(&state.pool)
-        .await?;
-    let row = sqlx::query("SELECT * FROM meta_tier_lists WHERE id=?")
-        .bind(id)
-        .fetch_one(&state.pool)
-        .await?;
+    sqlx::query(
+        "INSERT INTO tierlist.meta_tier_lists \
+         (id, name, owner_id, is_public, tiers, forked_from) \
+         VALUES ($1, $2, $3, $4, $5, $6)",
+    )
+    .bind(&id)
+    .bind(format!("Fork of {}", rows::required_string(&row, "name")))
+    .bind("admin")
+    .bind(false)
+    .bind(rows::json_or(&row, &["tiers_json", "tiers"], json!({})))
+    .bind(list_id)
+    .execute(&state.pool)
+    .await?;
+    let sql = format!("{TIERLIST_SELECT} WHERE id=$1");
+    let row = sqlx::query(&sql).bind(id).fetch_one(&state.pool).await?;
     Ok(Json(tierlist_from_row(&row)))
 }
 
 pub async fn list_patchnotes(State(state): State<AppState>) -> AppResult<Json<Value>> {
-    let rows = sqlx::query("SELECT * FROM meta_patch_notes ORDER BY created_at DESC")
+    let rows = sqlx::query("SELECT * FROM patchnotes.meta_patch_notes ORDER BY created_at DESC")
         .fetch_all(&state.pool)
         .await?;
     Ok(Json(Value::Array(
@@ -400,25 +467,28 @@ pub async fn create_patchnote(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     let id = ids::id16();
-    sqlx::query("INSERT INTO meta_patch_notes (id, title, content, version) VALUES (?, ?, ?, ?)")
-        .bind(&id)
-        .bind(
-            body.get("title")
-                .and_then(Value::as_str)
-                .unwrap_or_default(),
-        )
-        .bind(
-            body.get("content")
-                .and_then(Value::as_str)
-                .unwrap_or_default(),
-        )
-        .bind(
-            body.get("version")
-                .and_then(Value::as_str)
-                .unwrap_or_default(),
-        )
-        .execute(&state.pool)
-        .await?;
+    sqlx::query(
+        "INSERT INTO patchnotes.meta_patch_notes (id, title, content, version) \
+         VALUES ($1, $2, $3, $4)",
+    )
+    .bind(&id)
+    .bind(
+        body.get("title")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )
+    .bind(
+        body.get("content")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )
+    .bind(
+        body.get("version")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )
+    .execute(&state.pool)
+    .await?;
     Ok(Json(json!({
         "id": id,
         "title": body.get("title").and_then(Value::as_str).unwrap_or_default(),
@@ -432,7 +502,7 @@ pub async fn delete_patchnote(
     State(state): State<AppState>,
     Path(note_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    sqlx::query("DELETE FROM meta_patch_notes WHERE id=?")
+    sqlx::query("DELETE FROM patchnotes.meta_patch_notes WHERE id=$1")
         .bind(note_id)
         .execute(&state.pool)
         .await?;
@@ -440,9 +510,10 @@ pub async fn delete_patchnote(
 }
 
 pub async fn list_history(State(state): State<AppState>) -> AppResult<Json<Value>> {
-    let rows = sqlx::query("SELECT * FROM meta_tier_history ORDER BY changed_at DESC LIMIT 50")
-        .fetch_all(&state.pool)
-        .await?;
+    let rows =
+        sqlx::query("SELECT * FROM tierlist.meta_tier_history ORDER BY changed_at DESC LIMIT 50")
+            .fetch_all(&state.pool)
+            .await?;
     Ok(Json(Value::Array(
         rows.iter().map(rows::row_json).collect(),
     )))
@@ -450,7 +521,10 @@ pub async fn list_history(State(state): State<AppState>) -> AppResult<Json<Value
 
 pub async fn list_reports(State(state): State<AppState>) -> AppResult<Json<Value>> {
     let rows = sqlx::query(
-        "SELECT r.*, b.name AS build_name FROM meta_reports r LEFT JOIN meta_builds b ON r.build_id=b.id ORDER BY r.created_at DESC",
+        "SELECT r.*, b.name AS build_name \
+         FROM content.meta_reports r \
+         LEFT JOIN tierlist.meta_builds b ON r.build_id=b.id \
+         ORDER BY r.created_at DESC",
     )
     .fetch_all(&state.pool)
     .await?;
@@ -464,7 +538,7 @@ pub async fn update_report(
     Path(report_id): Path<String>,
     Query(query): Query<std::collections::HashMap<String, String>>,
 ) -> AppResult<Json<Value>> {
-    sqlx::query("UPDATE meta_reports SET status=? WHERE id=?")
+    sqlx::query("UPDATE content.meta_reports SET status=$1 WHERE id=$2")
         .bind(query.get("status").cloned().unwrap_or_default())
         .bind(report_id)
         .execute(&state.pool)
@@ -474,7 +548,11 @@ pub async fn update_report(
 
 pub async fn list_votes(State(state): State<AppState>) -> AppResult<Json<Value>> {
     let rows = sqlx::query(
-        "SELECT build_id, SUM(CASE WHEN vote_type='up' THEN 1 ELSE 0 END) AS upvotes, SUM(CASE WHEN vote_type='down' THEN 1 ELSE 0 END) AS downvotes FROM meta_votes GROUP BY build_id",
+        "SELECT build_id, \
+                SUM(CASE WHEN vote_type='up' THEN 1 ELSE 0 END) AS upvotes, \
+                SUM(CASE WHEN vote_type='down' THEN 1 ELSE 0 END) AS downvotes \
+         FROM tierlist.meta_votes \
+         GROUP BY build_id",
     )
     .fetch_all(&state.pool)
     .await?;
@@ -495,7 +573,7 @@ pub async fn delete_vote(
     State(state): State<AppState>,
     Path(vote_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    sqlx::query("DELETE FROM meta_votes WHERE id=?")
+    sqlx::query("DELETE FROM tierlist.meta_votes WHERE id=$1")
         .bind(vote_id)
         .execute(&state.pool)
         .await?;
@@ -511,14 +589,19 @@ pub async fn set_announcement(
         .get("message")
         .and_then(Value::as_str)
         .unwrap_or_default();
-    sqlx::query("UPDATE meta_announcements SET is_active=0")
+    sqlx::query("UPDATE content.meta_announcements SET is_active=$1")
+        .bind(false)
         .execute(&state.pool)
         .await?;
-    sqlx::query("INSERT INTO meta_announcements (id, message, is_active) VALUES (?, ?, 1)")
-        .bind(&id)
-        .bind(message)
-        .execute(&state.pool)
-        .await?;
+    sqlx::query(
+        "INSERT INTO content.meta_announcements (id, message, is_active) \
+         VALUES ($1, $2, $3)",
+    )
+    .bind(&id)
+    .bind(message)
+    .bind(true)
+    .execute(&state.pool)
+    .await?;
     Ok(Json(
         json!({ "id": id, "message": message, "is_active": true, "created_at": "" }),
     ))
@@ -528,7 +611,7 @@ pub async fn delete_announcement(
     State(state): State<AppState>,
     Path(ann_id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    sqlx::query("DELETE FROM meta_announcements WHERE id=?")
+    sqlx::query("DELETE FROM content.meta_announcements WHERE id=$1")
         .bind(ann_id)
         .execute(&state.pool)
         .await?;
@@ -632,6 +715,23 @@ fn tierlist_from_row(row: &rows::DbRow) -> Value {
         json!(rows::bool(row, "is_public").unwrap_or(false)),
     );
     Value::Object(obj)
+}
+
+fn json_body_value(body: &Value, names: &[&str], fallback: Value) -> Value {
+    for name in names {
+        if let Some(value) = body.get(*name) {
+            match value {
+                Value::Null => {}
+                Value::String(raw) if raw.trim().is_empty() => {}
+                Value::String(raw) => {
+                    return serde_json::from_str::<Value>(raw)
+                        .unwrap_or_else(|_| Value::String(raw.clone()));
+                }
+                other => return other.clone(),
+            }
+        }
+    }
+    fallback
 }
 
 fn base_map(row: &rows::DbRow, keys: &[&str]) -> Map<String, Value> {

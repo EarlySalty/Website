@@ -291,6 +291,9 @@ Akzeptanz:
 
 Abhaengig von: T2
 
+Status: umgesetzt am 2026-07-01. Verifikation: Build, Clippy und Fmt gruen;
+keine Meta-Routentests vorhanden.
+
 Dateien:
 
 - `builds/backend-rust/src/routes/meta.rs`
