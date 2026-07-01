@@ -6,7 +6,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # .../Website
 BACKEND_DIR="$ROOT_DIR/builds/backend"
-INFISICAL_CONFIG_FILE="${INFISICAL_CONFIG_FILE:-$HOME/.config/deadlock-bots/infisical.env}"
+RUST_BACKEND_BIN="${RUST_BACKEND_BIN:-$ROOT_DIR/builds/backend-rust/target/release/ddc-website-backend}"
+INFISICAL_CONFIG_FILE="${INFISICAL_CONFIG_FILE:-$HOME/.config/deadlock-bots/infisical.conf}"
 EXPORT_SCRIPT="${INFISICAL_EXPORT_SCRIPT:-/home/naniadm/Documents/Deadlock-Bots/scripts/export_infisical_env.py}"
 
 if [[ ! -f "$INFISICAL_CONFIG_FILE" ]]; then
@@ -17,6 +18,16 @@ fi
 set -a
 source "$INFISICAL_CONFIG_FILE"
 set +a
+
+if [[ -n "${CREDENTIALS_DIRECTORY:-}" && -f "$CREDENTIALS_DIRECTORY/infisical-token" ]]; then
+  INFISICAL_SERVICE_TOKEN="$(<"$CREDENTIALS_DIRECTORY/infisical-token")"
+  export INFISICAL_SERVICE_TOKEN
+fi
+
+if [[ -z "${INFISICAL_SERVICE_TOKEN:-}" ]]; then
+  echo "INFISICAL_SERVICE_TOKEN nicht gesetzt — weder in $INFISICAL_CONFIG_FILE noch via systemd-creds." >&2
+  exit 1
+fi
 
 if [[ -x "$BACKEND_DIR/.venv/bin/python" ]]; then
   PYTHON_BIN="${PYTHON_BIN:-$BACKEND_DIR/.venv/bin/python}"
@@ -52,6 +63,23 @@ export PYTHONUNBUFFERED=1
 export AUTH_PUBLIC_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/callback"
 
 cd "$BACKEND_DIR"
+
+case "${WEBSITE_BACKEND_IMPL:-rust}" in
+  rust)
+    if [[ ! -x "$RUST_BACKEND_BIN" ]]; then
+      echo "Rust Website Backend fehlt oder ist nicht ausführbar: $RUST_BACKEND_BIN" >&2
+      exit 1
+    fi
+    exec "$RUST_BACKEND_BIN"
+    ;;
+  python)
+    ;;
+  *)
+    echo "Ungültiges WEBSITE_BACKEND_IMPL=${WEBSITE_BACKEND_IMPL:-}; erlaubt: rust|python" >&2
+    exit 1
+    ;;
+esac
+
 exec "$PYTHON_BIN" -m uvicorn app.main:app \
   --host "${WEBSITE_BACKEND_HOST:-127.0.0.1}" \
   --port "${WEBSITE_BACKEND_PORT:-8772}"

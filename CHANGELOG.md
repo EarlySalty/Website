@@ -1,3 +1,11 @@
+## #43 — Website-Backend läuft in Rust
+
+**Ausgangslage:** Die Website selbst war größtenteils statisch oder hing schon an Rust-Diensten, aber die Coaching-API lief noch als Python-Prozess. Damit blieb ein extra Runtime-Pfad übrig, obwohl die eigentlichen Website-Aufrufe schnelle, schlanke Antwortzeiten brauchen.
+
+**Geändert:** Die Coaching- und Meta-API ist als Rust-Service nachgebaut. Auth, Bot-Sync, Coach-Cockpit, Termine, Benachrichtigungen und die bestehende SQLite-Ablage bleiben kompatibel; der Startweg lädt weiter dieselben Secrets und startet standardmäßig Rust.
+
+**Wie's jetzt läuft:** Der öffentliche Coaching-API-Pfad bleibt gleich, intern hängt er aber an einem optimierten Rust-Binary auf demselben lokalen Port. Python bleibt nur noch als bewusst auswählbarer Rückfall erhalten.
+
 ## #42 — Coaching-Frontend-Lint läuft wieder
 
 **Ausgangslage:** Die Coaching-App hatte zwar einen Lint-Befehl, aber die nötige ESLint-Toolchain fehlte. Dadurch konnte der Frontend-Check nicht laufen und echte React-/TypeScript-Probleme wären erst später aufgefallen.
