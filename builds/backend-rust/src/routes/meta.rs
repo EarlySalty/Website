@@ -7,6 +7,7 @@ use serde_json::{json, Map, Value};
 
 use crate::{
     app::AppState,
+    auth,
     error::{AppError, AppResult},
     ids, rows,
 };
@@ -535,7 +536,7 @@ pub async fn delete_announcement(
 }
 
 pub async fn list_users(State(state): State<AppState>) -> AppResult<Json<Value>> {
-    let rows = sqlx::query("SELECT * FROM meta_users ORDER BY created_at DESC")
+    let rows = sqlx::query("SELECT * FROM core.meta_users ORDER BY created_at DESC")
         .fetch_all(&state.pool)
         .await?;
     Ok(Json(Value::Array(
@@ -548,7 +549,8 @@ pub async fn update_user_role(
     Path(user_id): Path<String>,
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
-    sqlx::query("UPDATE meta_users SET role=? WHERE id=?")
+    let user_id = auth::parse_discord_user_id(&user_id)?;
+    sqlx::query("UPDATE core.meta_users SET role=$1 WHERE id=$2")
         .bind(body.get("role").and_then(Value::as_str).unwrap_or("user"))
         .bind(user_id)
         .execute(&state.pool)
