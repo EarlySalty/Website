@@ -274,9 +274,17 @@ pub fn router(state: AppState) -> Router {
                 .patch(routes::platform::update_my_coach_profile),
         )
         .route("/api/scrim/me", get(routes::scrim::get_me))
+        .route(
+            "/api/scrim/me/availability",
+            put(routes::scrim::put_my_availability),
+        )
         .route("/api/scrim/signup", post(routes::scrim::signup))
         .route("/api/scrim/pool", get(routes::scrim::pool))
         .route("/api/scrim/teams", get(routes::scrim::teams))
+        .route(
+            "/api/scrim/teams/{id}/board",
+            get(routes::scrim::team_board),
+        )
         .route(
             "/api/scrim/participants/{id}",
             patch(routes::scrim::patch_participant),
