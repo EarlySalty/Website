@@ -1,3 +1,11 @@
+## #45 — Scrim-Verwaltung mit Verfügbarkeit statt Excel
+
+**Ausgangslage:** Die Scrim-Planung lief über eine Hand-Excel. Wann ein ganzes Team gemeinsam Zeit hat, musste man mühsam aus einer bunten Tabelle heraussuchen — fehleranfällig und für niemanden live.
+
+**Geändert:** Spieler pflegen ihre Wochen-Verfügbarkeit jetzt selbst unter „Mein Team" — pro Tag „verfügbar/keine Zeit/unbekannt" plus optionale Von-bis-Zeit. Coaches bekommen ein Cockpit: den Pool mit Verfügbarkeits-Übersicht, Team-Zuweisung samt Bank/Captain und Notizen, und pro Team ein Board, das den besten gemeinsamen Scrim-Zeitpunkt automatisch berechnet. Die alten Excel-Angaben sind direkt übernommen und lassen sich einfach überschreiben.
+
+**Wie's jetzt läuft:** Das Team-Board zeigt für jeden Wochentag, wie viele Stamm-Spieler können und in welchem gemeinsamen Zeitfenster; Tage, an denen das komplette Team kann, sind hervorgehoben. Damit wird die Excel überflüssig.
+
 ## #44 — Scrim-Team-Bereich auf der Coaching-Seite
 
 **Ausgangslage:** Die Scrim-Teams liefen über Discord und eine Hand-Excel. Spieler sahen ihren Team-Status nirgends, und Coaches pflegten den Pool von Hand — Anmeldung und Übersicht fehlten auf der Website komplett.
