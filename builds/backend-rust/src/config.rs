@@ -16,6 +16,9 @@ pub struct Config {
     pub cookie_samesite: String,
     pub auth_public_callback_url: Option<String>,
     pub dashboard_internal_api_base: String,
+    pub master_broker_base: String,
+    pub master_broker_token: Option<String>,
+    pub scrim_guild_id: u64,
     pub auth_session_secret: Option<String>,
 }
 
@@ -58,6 +61,16 @@ impl Config {
                 "DASHBOARD_INTERNAL_API_BASE",
                 "http://127.0.0.1:8766",
             ),
+            master_broker_base: env_or("MASTER_BROKER_BASE", "http://127.0.0.1:8770"),
+            master_broker_token: first_env(&[
+                "MASTER_BROKER_TOKEN",
+                "MAIN_BOT_INTERNAL_TOKEN",
+                "TWITCH_INTERNAL_API_TOKEN",
+            ]),
+            scrim_guild_id: env::var("SCRIM_GUILD_ID")
+                .ok()
+                .and_then(|v| v.trim().parse().ok())
+                .unwrap_or(1_289_721_245_281_292_288),
             auth_session_secret: first_env(&[
                 "AUTH_SESSION_SECRET",
                 "JWT_SECRET",

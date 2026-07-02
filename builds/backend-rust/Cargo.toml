@@ -26,4 +26,5 @@ url = "2"
 
 [dev-dependencies]
 dl-central-db = { path = "../../../Deadlock-Bots/rust/crates/dl-central-db", features = ["testing"] }
+serial_test = "3"
 tower = { version = "0.5", features = ["util"] }

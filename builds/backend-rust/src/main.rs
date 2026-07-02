@@ -2,6 +2,7 @@ mod app;
 mod auth;
 mod config;
 mod db;
+mod discord_broker;
 mod error;
 mod http;
 mod ids;

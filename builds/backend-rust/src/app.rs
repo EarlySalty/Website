@@ -8,7 +8,13 @@ use reqwest::Client;
 use sqlx::PgPool;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::{auth::Auth, config::Config, db, routes};
+use crate::{
+    auth::Auth,
+    config::Config,
+    db,
+    discord_broker::{DynDiscordRoleBroker, ReqwestDiscordRoleBroker},
+    routes,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -19,6 +25,7 @@ pub struct AppInner {
     pub cfg: Config,
     pub pool: PgPool,
     pub http: Client,
+    pub discord_role_broker: DynDiscordRoleBroker,
     pub auth: Auth,
 }
 
@@ -29,19 +36,25 @@ impl AppState {
         let http = Client::builder()
             .timeout(std::time::Duration::from_secs(20))
             .build()?;
+        let discord_role_broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg)?);
         let auth = Auth::new(cfg.clone());
         Ok(Self {
             inner: Arc::new(AppInner {
                 cfg,
                 pool,
                 http,
+                discord_role_broker,
                 auth,
             }),
         })
     }
 
     #[cfg(test)]
-    pub(crate) fn for_test_pool(pool: PgPool, cfg: Config) -> Self {
+    pub(crate) fn for_test_pool_with_broker(
+        pool: PgPool,
+        cfg: Config,
+        discord_role_broker: DynDiscordRoleBroker,
+    ) -> Self {
         let http = Client::builder()
             .timeout(std::time::Duration::from_secs(20))
             .build()
@@ -52,6 +65,7 @@ impl AppState {
                 cfg,
                 pool,
                 http,
+                discord_role_broker,
                 auth,
             }),
         }
@@ -284,6 +298,10 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/scrim/teams/{id}/board",
             get(routes::scrim::team_board),
+        )
+        .route(
+            "/api/scrim/participants/{id}/resync-discord",
+            post(routes::scrim::resync_participant_discord),
         )
         .route(
             "/api/scrim/participants/{id}",
@@ -1482,12 +1500,15 @@ mod tests {
             .timeout(std::time::Duration::from_secs(20))
             .build()
             .expect("http client");
+        let discord_role_broker =
+            Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg).expect("broker client"));
         let auth = Auth::new(cfg.clone());
         let state = AppState {
             inner: Arc::new(AppInner {
                 cfg,
                 pool: db.pool().clone(),
                 http,
+                discord_role_broker,
                 auth,
             }),
         };

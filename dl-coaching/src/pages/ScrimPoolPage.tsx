@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { scrims, type ScrimParticipantPatch, type ScrimPoolParticipant, type ScrimTeam } from '@/api/client'
+import { scrims, type DiscordSyncStatus, type ScrimParticipantPatch, type ScrimPoolParticipant, type ScrimTeam } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 import AvailabilityGrid from '@/components/AvailabilityGrid'
 import { CoachOnly, EmptyState, PageSpinner, SectionHead } from '@/components/ui'
@@ -94,17 +94,29 @@ export default function ScrimPoolPage() {
 function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; teams: ScrimTeam[] }) {
   const qc = useQueryClient()
   const [notesDraft, setNotesDraft] = useState(participant.notes ?? '')
+  const [sync, setSync] = useState<DiscordSyncStatus | null>(null)
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['scrim-pool'] })
+    qc.invalidateQueries({ queryKey: ['scrim-me'] })
+    qc.invalidateQueries({ queryKey: ['scrim-board'] })
+  }
 
   const mutation = useMutation({
     mutationFn: (patch: ScrimParticipantPatch) => scrims.updateParticipant(participant.id, patch),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['scrim-pool'] })
-      qc.invalidateQueries({ queryKey: ['scrim-me'] })
-      qc.invalidateQueries({ queryKey: ['scrim-board'] })
+    onSuccess: data => {
+      setSync(data.discord_sync)
+      invalidate()
     },
   })
 
+  const resyncMutation = useMutation({
+    mutationFn: () => scrims.resyncDiscord(participant.id),
+    onSuccess: data => setSync(data.discord_sync),
+  })
+
   const patch = (data: ScrimParticipantPatch) => mutation.mutate(data)
+  const busy = mutation.isPending || resyncMutation.isPending
 
   return (
     <div className="card p-4">
@@ -134,7 +146,7 @@ function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; te
             <select
               className="input-field !py-1.5"
               value={participant.status}
-              disabled={mutation.isPending}
+              disabled={busy}
               onChange={e => patch({ status: e.target.value })}
             >
               {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -142,17 +154,23 @@ function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; te
             <select
               className="input-field !py-1.5"
               value={participant.team?.id ?? ''}
-              disabled={mutation.isPending || teams.length === 0}
-              onChange={e => e.target.value && patch({ team_id: Number(e.target.value), status: 'assigned' })}
+              disabled={busy || teams.length === 0}
+              onChange={e => {
+                const v = e.target.value
+                if (v === '') return
+                if (v === 'none') patch({ team_id: null })
+                else patch({ team_id: Number(v), status: 'assigned' })
+              }}
             >
               <option value="">Team zuweisen…</option>
+              {participant.team && <option value="none">— aus Team nehmen —</option>}
               {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
           <div className="flex gap-2">
             <button
               type="button"
-              disabled={mutation.isPending || !participant.team}
+              disabled={busy || !participant.team}
               onClick={() => patch({ is_captain: !participant.is_captain })}
               className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-semibold transition ${participant.is_captain ? 'btn-amber' : 'btn-ghost'}`}
             >
@@ -160,7 +178,7 @@ function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; te
             </button>
             <button
               type="button"
-              disabled={mutation.isPending || !participant.team}
+              disabled={busy || !participant.team}
               onClick={() => patch({ is_bench: !participant.is_bench })}
               className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-semibold transition ${participant.is_bench ? 'btn-amber' : 'btn-ghost'}`}
             >
@@ -172,20 +190,36 @@ function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; te
               className="input-field !py-1.5 flex-1"
               placeholder="Coach-Notiz…"
               value={notesDraft}
-              disabled={mutation.isPending}
+              disabled={busy}
               onChange={e => setNotesDraft(e.target.value)}
             />
             <button
               type="button"
-              disabled={mutation.isPending || notesDraft === (participant.notes ?? '')}
+              disabled={busy || notesDraft === (participant.notes ?? '')}
               onClick={() => patch({ notes: notesDraft })}
               className="btn-ghost rounded-sm px-3 py-1.5 text-xs"
             >
               Notiz
             </button>
           </div>
-          {mutation.isError && (
-            <span className="text-xs" style={{ color: 'rgba(229, 72, 77, 0.9)' }}>{(mutation.error as Error).message}</span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => resyncMutation.mutate()}
+            className="btn-ghost rounded-sm px-3 py-1.5 text-xs"
+            title="Discord-Rollen dieses Spielers anhand der aktuellen Team-Zuweisung neu setzen"
+          >
+            Discord-Rollen syncen
+          </button>
+          {sync && (
+            <span className="text-xs" style={{ color: sync.ok ? 'var(--green)' : 'var(--amber)' }}>
+              {sync.detail}
+            </span>
+          )}
+          {(mutation.isError || resyncMutation.isError) && (
+            <span className="text-xs" style={{ color: 'var(--red)' }}>
+              {((mutation.error ?? resyncMutation.error) as Error)?.message}
+            </span>
           )}
         </div>
       </div>

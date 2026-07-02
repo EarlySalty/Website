@@ -1,3 +1,11 @@
+## #46 — Scrim-Teams: Discord-Rollen automatisch
+
+**Ausgangslage:** Wer ins Scrim-Team kam, musste die passende Discord-Rolle — und damit die Team-Channels — noch von Hand bekommen. Team-Wechsel oder Rauswürfe hießen: dran denken, alte Rolle abziehen, neue geben.
+
+**Geändert:** Weist ein Coach im Cockpit ein Team zu, wechselt es oder nimmt jemanden aus dem Team, setzt das System die zugehörige Discord-Rolle jetzt selbst — alte runter, neue drauf, nur für Spieler mit verknüpftem Discord. Dazu gibt es pro Spieler einen „Discord-Rollen syncen"-Knopf für den manuellen Nachzug.
+
+**Wie's jetzt läuft:** Die Team-Zuweisung wird immer gespeichert, auch wenn Discord gerade nicht erreichbar ist; der Sync-Status steht direkt an der Zeile. Scharf wird die automatische Rollenvergabe, sobald die Discord-Anbindung verbunden ist.
+
 ## #45 — Scrim-Verwaltung mit Verfügbarkeit statt Excel
 
 **Ausgangslage:** Die Scrim-Planung lief über eine Hand-Excel. Wann ein ganzes Team gemeinsam Zeit hat, musste man mühsam aus einer bunten Tabelle heraussuchen — fehleranfällig und für niemanden live.

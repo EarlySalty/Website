@@ -236,9 +236,23 @@ export interface ScrimTeamBoardResponse {
   overlap: WeeklyOverlap
 }
 
+export interface DiscordSyncStatus {
+  ok: boolean
+  detail: string
+}
+
+export interface ScrimParticipantPatchResponse extends ScrimPoolParticipant {
+  discord_sync: DiscordSyncStatus
+}
+
+export interface ScrimDiscordResyncResponse {
+  discord_sync: DiscordSyncStatus
+}
+
 export interface ScrimParticipantPatch {
   status?: string
-  team_id?: number
+  // number = Team zuweisen, null = aus Team entfernen, weggelassen = unverändert
+  team_id?: number | null
   is_bench?: boolean
   is_captain?: boolean
   notes?: string
@@ -259,7 +273,12 @@ export const scrims = {
     return request<ScrimPoolParticipant[]>(`/scrim/pool${query}`)
   },
   updateParticipant: (id: number, data: ScrimParticipantPatch) =>
-    request<ScrimPoolParticipant>(`/scrim/participants/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    request<ScrimParticipantPatchResponse>(`/scrim/participants/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  resyncDiscord: (id: number) =>
+    request<ScrimDiscordResyncResponse>(`/scrim/participants/${id}/resync-discord`, { method: 'POST' }),
 }
 
 // ===== Coaching-Plattform (Coach-/Spieler-Bereich, vom Bot gespiegelt) =====
