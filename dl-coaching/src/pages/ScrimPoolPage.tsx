@@ -1,232 +1,194 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { scrims, type ScrimParticipantPatch, type ScrimPoolParticipant, type ScrimTeam } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
+import AvailabilityGrid from '@/components/AvailabilityGrid'
 import { CoachOnly, EmptyState, PageSpinner, SectionHead } from '@/components/ui'
 
 const STATUS_OPTIONS = [
   { value: 'new', label: 'Neu' },
+  { value: 'waitlist', label: 'Warteliste' },
   { value: 'assigned', label: 'Zugewiesen' },
+  { value: 'inactive', label: 'Inaktiv' },
 ] as const
 
-const FILTER_OPTIONS = [
-  { value: '', label: 'Alle' },
-  ...STATUS_OPTIONS,
-] as const
+const FILTER_OPTIONS = [{ value: '', label: 'Alle' }, ...STATUS_OPTIONS] as const
 
-const EMPTY_VALUE = 'Keine Angabe'
-
-function valueOrEmpty(value: string | null | undefined): string {
-  return value?.trim() || EMPTY_VALUE
+function statusLabel(value: string): string {
+  return STATUS_OPTIONS.find(o => o.value === value)?.label ?? value
 }
 
-function statusLabel(status: string): string {
-  return STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status
-}
+export default function ScrimPoolPage() {
+  const { isCoach } = useAuth()
+  const [filter, setFilter] = useState('')
 
-function PoolParticipantRow({ participant, teams }: { participant: ScrimPoolParticipant; teams: ScrimTeam[] }) {
-  const qc = useQueryClient()
-  const [status, setStatus] = useState(participant.status)
-  const [teamId, setTeamId] = useState(participant.team ? String(participant.team.id) : '')
-  const [isBench, setIsBench] = useState(participant.is_bench)
-  const [isCaptain, setIsCaptain] = useState(participant.is_captain)
-
-  const save = useMutation({
-    mutationFn: (payload: ScrimParticipantPatch) => scrims.updateParticipant(participant.id, payload),
-    onSuccess: (updated) => {
-      setStatus(updated.status)
-      setTeamId(updated.team ? String(updated.team.id) : '')
-      setIsBench(updated.is_bench)
-      setIsCaptain(updated.is_captain)
-      qc.invalidateQueries({ queryKey: ['scrim-pool'] })
-      qc.invalidateQueries({ queryKey: ['scrim-me'] })
-    },
+  const teamsQuery = useQuery({ queryKey: ['scrim-teams'], queryFn: () => scrims.teams(), enabled: isCoach })
+  const poolQuery = useQuery({
+    queryKey: ['scrim-pool', filter],
+    queryFn: () => scrims.pool(filter || undefined),
+    enabled: isCoach,
   })
 
-  const selectedTeamId = teamId ? Number(teamId) : undefined
-  const hasTeamSelection = selectedTeamId !== undefined
-  const selectedTeamMissing = !!participant.team
-    && String(participant.team.id) === teamId
-    && !teams.some((team) => String(team.id) === teamId)
-  const hasStatusOption = STATUS_OPTIONS.some((option) => option.value === status)
+  if (!isCoach) return <CoachOnly />
+
+  const teams = teamsQuery.data ?? []
+  const pool = poolQuery.data ?? []
 
   return (
-    <div className="card p-4">
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_1.4fr] lg:items-start">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-display text-[15px] font-bold uppercase tracking-[0.04em] text-white">
-              {participant.display_name}
-            </h3>
-            <span className="badge badge-amber">{statusLabel(participant.status)}</span>
+    <div className="content-grid space-y-8 py-8">
+      <div>
+        <h1 className="section-title">Scrim-Verwaltung</h1>
+        <p className="section-copy">
+          Teams, Kader und Verfügbarkeit an einem Ort. Öffne ein Team-Board, um den besten gemeinsamen Scrim-Termin zu sehen.
+        </p>
+      </div>
+
+      {/* Teams → Boards */}
+      <div>
+        <SectionHead label="Teams" count={teams.length} />
+        {teams.length === 0 ? (
+          <EmptyState title="Noch keine Teams" copy="Sobald Teams angelegt sind, erscheinen hier die Boards." />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {teams.map(team => (
+              <Link key={team.id} to={`/scrims/teams/${team.id}`} className="card card-hover p-4">
+                <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{team.name}</span>
+                {team.coach && <p className="stat-label mt-1">Coach {team.coach}</p>}
+                <span className="eyebrow mt-3 inline-block">Board öffnen →</span>
+              </Link>
+            ))}
           </div>
-          <div className="mt-2 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2" style={{ color: 'var(--text-secondary)' }}>
-            <p><span className="stat-label">Rang</span> {valueOrEmpty(participant.rank)}</p>
-            <p><span className="stat-label">Rollen</span> {valueOrEmpty(participant.roles)}</p>
-            <p className="sm:col-span-2">
-              <span className="stat-label">Verfügbarkeit</span> {valueOrEmpty(participant.availability)}
-            </p>
+        )}
+      </div>
+
+      {/* Pool */}
+      <div>
+        <SectionHead
+          label="Spieler-Pool"
+          count={pool.length}
+          action={
+            <select className="input-field !w-40 !py-1.5" value={filter} onChange={e => setFilter(e.target.value)}>
+              {FILTER_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          }
+        />
+        {poolQuery.isLoading ? (
+          <PageSpinner />
+        ) : pool.length === 0 ? (
+          <EmptyState title="Keine Spieler" copy="Für diesen Filter gibt es aktuell keine Einträge." />
+        ) : (
+          <div className="space-y-3">
+            {pool.map(p => (
+              <PoolRow key={p.id} participant={p} teams={teams} />
+            ))}
           </div>
-        </div>
-
-        <div className="text-sm">
-          <p className="stat-label mb-1">Team</p>
-          {participant.team ? (
-            <div style={{ color: 'var(--text-secondary)' }}>
-              <p className="font-display font-bold text-white">{participant.team.name}</p>
-              <p className="text-xs">
-                ID {participant.team.id}
-                {participant.team.coach ? ` · ${participant.team.coach}` : ''}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {participant.is_captain && <span className="badge badge-amber">Captain</span>}
-                {participant.is_bench && <span className="badge badge-completed">Bench</span>}
-              </div>
-            </div>
-          ) : (
-            <p style={{ color: 'var(--text-muted)' }}>Kein Team</p>
-          )}
-        </div>
-
-        <form
-          className="space-y-3"
-          onSubmit={(event) => {
-            event.preventDefault()
-            const payload: ScrimParticipantPatch = {
-              status,
-            }
-            if (selectedTeamId !== undefined) {
-              payload.team_id = selectedTeamId
-              payload.is_bench = isBench
-              payload.is_captain = isCaptain
-            }
-            save.mutate(payload)
-          }}
-        >
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="flex flex-col gap-1">
-              <span className="stat-label">Status</span>
-              <select value={status} onChange={(event) => setStatus(event.target.value)} className="input-field">
-                {!hasStatusOption && <option value={status}>{status}</option>}
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="stat-label">Team</span>
-              <select
-                value={teamId}
-                onChange={(event) => setTeamId(event.target.value)}
-                className="input-field"
-              >
-                <option value="">Kein Team</option>
-                {selectedTeamMissing && (
-                  <option value={teamId}>{participant.team?.name ?? teamId}</option>
-                )}
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>{team.name}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          {hasTeamSelection && (
-            <div className="flex flex-wrap gap-4">
-              <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <input type="checkbox" checked={isBench} onChange={(event) => setIsBench(event.target.checked)} />
-                Bench
-              </label>
-              <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <input type="checkbox" checked={isCaptain} onChange={(event) => setIsCaptain(event.target.checked)} />
-                Captain
-              </label>
-            </div>
-          )}
-
-          {save.isError && (
-            <p className="text-xs" style={{ color: 'var(--red)' }}>Änderung konnte nicht gespeichert werden.</p>
-          )}
-          {save.isSuccess && (
-            <p className="text-xs" style={{ color: 'var(--green)' }}>Änderung gespeichert.</p>
-          )}
-
-          <button type="submit" className="btn-amber !px-3 !py-1.5 !text-xs" disabled={save.isPending}>
-            Speichern
-          </button>
-        </form>
+        )}
       </div>
     </div>
   )
 }
 
-export default function ScrimPoolPage() {
-  const { isCoach, isLoading: authLoading } = useAuth()
-  const [statusFilter, setStatusFilter] = useState('')
+function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; teams: ScrimTeam[] }) {
+  const qc = useQueryClient()
+  const [notesDraft, setNotesDraft] = useState(participant.notes ?? '')
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['scrim-pool', statusFilter],
-    queryFn: () => scrims.pool(statusFilter || undefined),
-    enabled: isCoach,
-  })
-  const {
-    data: teamsData,
-    isLoading: teamsLoading,
-    isError: teamsIsError,
-    error: teamsError,
-  } = useQuery({
-    queryKey: ['scrim-teams'],
-    queryFn: () => scrims.teams(),
-    enabled: isCoach,
+  const mutation = useMutation({
+    mutationFn: (patch: ScrimParticipantPatch) => scrims.updateParticipant(participant.id, patch),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['scrim-pool'] })
+      qc.invalidateQueries({ queryKey: ['scrim-me'] })
+      qc.invalidateQueries({ queryKey: ['scrim-board'] })
+    },
   })
 
-  if (authLoading) return <PageSpinner />
-  if (!isCoach) return <CoachOnly />
-
-  const participants = data ?? []
-  const teams = teamsData ?? []
-  const combinedError = error ?? teamsError
-  const errorMessage = combinedError instanceof Error ? combinedError.message : 'Pool konnte nicht geladen werden.'
-  const loading = isLoading || teamsLoading
-  const hasError = isError || teamsIsError
+  const patch = (data: ScrimParticipantPatch) => mutation.mutate(data)
 
   return (
-    <div className="content-grid pb-16 pt-10 md:pt-14">
-      <div className="animate-in-left mb-8">
-        <div className="eyebrow mb-4">Coach-Bereich</div>
-        <h1 className="section-title">Scrim-Pool</h1>
-        <p className="section-copy mt-2">Teilnehmer filtern, Status setzen und Team-Zuweisungen speichern.</p>
-      </div>
-
-      <SectionHead
-        label="Teilnehmer"
-        count={loading ? undefined : participants.length}
-        action={
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="input-field w-44 !py-1.5"
-          >
-            {FILTER_OPTIONS.map((option) => (
-              <option key={option.value || 'all'} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        }
-      />
-
-      {loading ? (
-        <div className="flex justify-center py-10"><div className="spinner h-7 w-7" /></div>
-      ) : hasError ? (
-        <EmptyState title="Fehler beim Laden" copy={errorMessage} />
-      ) : participants.length > 0 ? (
-        <div className="space-y-3">
-          {participants.map((participant) => (
-            <PoolParticipantRow key={participant.id} participant={participant} teams={teams} />
-          ))}
+    <div className="card p-4">
+      <div className="flex flex-col gap-4 lg:flex-row">
+        {/* Info + Verfügbarkeit */}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-display text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+              {participant.display_name}
+            </span>
+            <span className="badge">{statusLabel(participant.status)}</span>
+            {participant.team && <span className="badge badge-amber">{participant.team.name}{participant.is_captain ? ' · C' : ''}{participant.is_bench ? ' · Bank' : ''}</span>}
+            {!participant.availability_confirmed && <span className="badge" title="Verfügbarkeit nicht selbst bestätigt">unbestätigt</span>}
+            {!participant.discord_linked && <span className="badge" title="Kein Discord verknüpft">kein Discord</span>}
+            {(participant.rank || participant.roles) && (
+              <span className="stat-label ml-auto">{[participant.rank, participant.roles].filter(Boolean).join(' · ')}</span>
+            )}
+          </div>
+          <div className="mt-3">
+            <AvailabilityGrid weekly={participant.availability_slots} />
+          </div>
         </div>
-      ) : (
-        <EmptyState title="Pool ist leer" copy="Für diesen Status gibt es aktuell keine Teilnehmer." />
-      )}
+
+        {/* Controls */}
+        <div className="flex flex-col gap-2 lg:w-72">
+          <div className="flex gap-2">
+            <select
+              className="input-field !py-1.5"
+              value={participant.status}
+              disabled={mutation.isPending}
+              onChange={e => patch({ status: e.target.value })}
+            >
+              {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select
+              className="input-field !py-1.5"
+              value={participant.team?.id ?? ''}
+              disabled={mutation.isPending || teams.length === 0}
+              onChange={e => e.target.value && patch({ team_id: Number(e.target.value), status: 'assigned' })}
+            >
+              <option value="">Team zuweisen…</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={mutation.isPending || !participant.team}
+              onClick={() => patch({ is_captain: !participant.is_captain })}
+              className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-semibold transition ${participant.is_captain ? 'btn-amber' : 'btn-ghost'}`}
+            >
+              Captain
+            </button>
+            <button
+              type="button"
+              disabled={mutation.isPending || !participant.team}
+              onClick={() => patch({ is_bench: !participant.is_bench })}
+              className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-semibold transition ${participant.is_bench ? 'btn-amber' : 'btn-ghost'}`}
+            >
+              Bank
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <input
+              className="input-field !py-1.5 flex-1"
+              placeholder="Coach-Notiz…"
+              value={notesDraft}
+              disabled={mutation.isPending}
+              onChange={e => setNotesDraft(e.target.value)}
+            />
+            <button
+              type="button"
+              disabled={mutation.isPending || notesDraft === (participant.notes ?? '')}
+              onClick={() => patch({ notes: notesDraft })}
+              className="btn-ghost rounded-sm px-3 py-1.5 text-xs"
+            >
+              Notiz
+            </button>
+          </div>
+          {mutation.isError && (
+            <span className="text-xs" style={{ color: 'rgba(229, 72, 77, 0.9)' }}>{(mutation.error as Error).message}</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

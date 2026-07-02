@@ -117,12 +117,57 @@ export const coaching = {
 }
 
 // Scrims
+
+/** Struktur der Wochen-Verfügbarkeit — 1:1 zum Backend (serde). from/to = Minuten seit Mitternacht (0..1440). */
+export type DayStatus = 'available' | 'unavailable' | 'unknown'
+
+export interface DaySlot {
+  status: DayStatus
+  from: number | null
+  to: number | null
+}
+
+export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+
+export interface WeeklyAvailability {
+  mon: DaySlot
+  tue: DaySlot
+  wed: DaySlot
+  thu: DaySlot
+  fri: DaySlot
+  sat: DaySlot
+  sun: DaySlot
+}
+
+export interface DayOverlap {
+  available: number
+  unavailable: number
+  unknown: number
+  window_from: number | null
+  window_to: number | null
+  full_squad: boolean
+  unavailable_ids: number[]
+  unknown_ids: number[]
+}
+
+export interface WeeklyOverlap {
+  mon: DayOverlap
+  tue: DayOverlap
+  wed: DayOverlap
+  thu: DayOverlap
+  fri: DayOverlap
+  sat: DayOverlap
+  sun: DayOverlap
+}
+
 export interface ScrimParticipant {
   id: number
   display_name: string
   rank: string | null
   roles: string | null
   availability: string | null
+  availability_slots: WeeklyAvailability
+  availability_confirmed: boolean
   status: string
   source: string
 }
@@ -164,10 +209,31 @@ export interface ScrimSignupRequest {
 }
 
 export interface ScrimPoolParticipant extends ScrimParticipant {
+  discord_linked: boolean
+  notes: string | null
   team: ScrimTeam | null
   role: string | null
   is_captain: boolean
   is_bench: boolean
+}
+
+export interface ScrimTeamBoardMember {
+  participant_id: number
+  display_name: string
+  rank: string | null
+  roles: string | null
+  is_captain: boolean
+  is_bench: boolean
+  discord_linked: boolean
+  availability_confirmed: boolean
+  availability: WeeklyAvailability
+  notes: string | null
+}
+
+export interface ScrimTeamBoardResponse {
+  team: ScrimTeam
+  members: ScrimTeamBoardMember[]
+  overlap: WeeklyOverlap
 }
 
 export interface ScrimParticipantPatch {
@@ -175,13 +241,19 @@ export interface ScrimParticipantPatch {
   team_id?: number
   is_bench?: boolean
   is_captain?: boolean
+  notes?: string
+  rank?: string
+  roles?: string
 }
 
 export const scrims = {
   me: () => request<ScrimMeResponse>('/scrim/me'),
   signup: (data: ScrimSignupRequest) =>
     request<ScrimParticipant>('/scrim/signup', { method: 'POST', body: JSON.stringify(data) }),
+  setAvailability: (data: WeeklyAvailability) =>
+    request<ScrimParticipant>('/scrim/me/availability', { method: 'PUT', body: JSON.stringify(data) }),
   teams: () => request<ScrimTeam[]>('/scrim/teams'),
+  teamBoard: (id: number) => request<ScrimTeamBoardResponse>(`/scrim/teams/${id}/board`),
   pool: (status?: string) => {
     const query = status ? `?${new URLSearchParams({ status }).toString()}` : ''
     return request<ScrimPoolParticipant[]>(`/scrim/pool${query}`)

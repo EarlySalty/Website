@@ -9,6 +9,7 @@ import CoachingRequestPage from './pages/CoachingRequestPage'
 import MyCoachingPage from './pages/MyCoachingPage'
 import MyScrimPage from './pages/MyScrimPage'
 import ScrimPoolPage from './pages/ScrimPoolPage'
+import ScrimBoardPage from './pages/ScrimBoardPage'
 import ScrimSignupPage from './pages/ScrimSignupPage'
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="me" element={<MyCoachingPage />} />
         <Route path="me/scrims" element={<MyScrimPage />} />
         <Route path="scrims" element={<ScrimPoolPage />} />
+        <Route path="scrims/teams/:id" element={<ScrimBoardPage />} />
         <Route path="scrims/signup" element={<ScrimSignupPage />} />
       </Route>
     </Routes>

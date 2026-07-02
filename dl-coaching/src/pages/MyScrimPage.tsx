@@ -1,65 +1,44 @@
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { scrims, type ScrimTeamMember } from '@/api/client'
+import type { WeeklyAvailability } from '@/api/client'
+import { scrims } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
+import AvailabilityEditor from '@/components/AvailabilityEditor'
 import { EmptyState, PageSpinner, SectionHead } from '@/components/ui'
-import { fmtDateTime } from '@/lib/format'
-
-const EMPTY_VALUE = 'Keine Angabe'
-
-const STATUS_LABELS: Record<string, string> = {
-  new: 'Neu',
-  assigned: 'Zugewiesen',
-  planned: 'Geplant',
-}
-
-function valueOrEmpty(value: string | null | undefined): string {
-  return value?.trim() || EMPTY_VALUE
-}
-
-function statusLabel(status: string): string {
-  return STATUS_LABELS[status] ?? status
-}
-
-function MemberRow({ member }: { member: ScrimTeamMember }) {
-  return (
-    <div className="card flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
-      <div className="min-w-0 flex-1">
-        <p className="font-display truncate font-bold uppercase tracking-[0.04em] text-white">
-          {member.display_name}
-        </p>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          {valueOrEmpty(member.role)}
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {member.is_captain && <span className="badge badge-amber">Captain</span>}
-        {member.is_bench && <span className="badge badge-completed">Bench</span>}
-      </div>
-    </div>
-  )
-}
+import { emptyWeekly } from '@/lib/availability'
 
 export default function MyScrimPage() {
-  const { user, login, isLoading: authLoading } = useAuth()
-  const { data, isLoading, isError, error } = useQuery({
+  const { user, login } = useAuth()
+  const qc = useQueryClient()
+
+  const { data, isLoading } = useQuery({
     queryKey: ['scrim-me'],
     queryFn: () => scrims.me(),
     enabled: !!user,
   })
 
-  if (authLoading) return <PageSpinner />
+  const [draft, setDraft] = useState<WeeklyAvailability>(emptyWeekly())
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (data?.participant) setDraft(data.participant.availability_slots)
+  }, [data?.participant])
+
+  const mutation = useMutation({
+    mutationFn: (weekly: WeeklyAvailability) => scrims.setAvailability(weekly),
+    onSuccess: () => {
+      setSaved(true)
+      qc.invalidateQueries({ queryKey: ['scrim-me'] })
+      qc.invalidateQueries({ queryKey: ['scrim-pool'] })
+    },
+  })
 
   if (!user) {
     return (
-      <div className="content-grid pb-16 pt-10 md:pt-14">
-        <div className="eyebrow mb-4">Scrims</div>
-        <h1 className="section-title mb-8">Mein Team</h1>
-        <EmptyState
-          title="Anmeldung nötig"
-          copy="Melde dich mit Discord an, um dein Scrim-Team zu sehen."
-        >
-          <button onClick={login} className="btn-amber">Login mit Discord</button>
+      <div className="content-grid py-16">
+        <EmptyState title="Melde dich an" copy="Logge dich mit Discord ein, um dein Scrim-Team und deine Verfügbarkeit zu sehen.">
+          <button onClick={login} className="btn-amber rounded-sm px-5 py-2 text-sm">Mit Discord anmelden</button>
         </EmptyState>
       </div>
     )
@@ -67,118 +46,90 @@ export default function MyScrimPage() {
 
   if (isLoading) return <PageSpinner />
 
-  if (isError) {
-    const message = error instanceof Error ? error.message : 'Daten konnten nicht geladen werden.'
-    return (
-      <div className="content-grid pb-16 pt-10 md:pt-14">
-        <div className="eyebrow mb-4">Scrims</div>
-        <h1 className="section-title mb-8">Mein Team</h1>
-        <EmptyState title="Fehler beim Laden" copy={message} />
-      </div>
-    )
-  }
+  const participant = data?.participant ?? null
+  const team = data?.team ?? null
+  const members = data?.members ?? []
+  const nextMatch = data?.next_match ?? null
 
-  if (!data?.participant) {
+  if (!participant) {
     return (
-      <div className="content-grid pb-16 pt-10 md:pt-14">
-        <div className="eyebrow mb-4">Scrims</div>
-        <h1 className="section-title mb-8">Mein Team</h1>
+      <div className="content-grid py-16">
         <EmptyState
-          title="Noch nicht angemeldet"
-          copy="Trage dich in die Web-Anmeldung ein, damit Coaches dich im Pool sehen."
+          title="Noch nicht im Scrim-Pool"
+          copy="Melde dich einmal für den Scrim-Pool an, dann kannst du hier deine Verfügbarkeit pflegen."
         >
-          <Link to="/scrims/signup" className="btn-amber">Zur Anmeldung</Link>
+          <Link to="/scrims/signup" className="btn-amber rounded-sm px-5 py-2 text-sm">Zum Scrim-Pool anmelden</Link>
         </EmptyState>
       </div>
     )
   }
 
-  const { participant, team, members, next_match } = data
-  const nextMatchTime = next_match?.when_text || fmtDateTime(next_match?.scheduled_at)
-
   return (
-    <div className="content-grid pb-16 pt-10 md:pt-14">
-      <div className="animate-in-left mb-8">
-        <div className="eyebrow mb-4">Scrims</div>
-        <h1 className="section-title">Mein Team</h1>
-        <p className="section-copy mt-2">Dein Status, dein Team und das nächste Match auf einen Blick.</p>
-      </div>
-
-      <div className="panel animate-in mb-10 p-6">
-        <div className="flex flex-wrap items-start gap-8">
-          <div>
-            <p className="stat-label mb-0.5">Spieler</p>
-            <p className="font-display text-lg font-bold uppercase text-white">{participant.display_name}</p>
-          </div>
-          <div>
-            <p className="stat-label mb-0.5">Status</p>
-            <p className="font-display text-lg font-bold text-white">{statusLabel(participant.status)}</p>
-          </div>
-          <div>
-            <p className="stat-label mb-0.5">Rang</p>
-            <p className="font-display text-lg font-bold text-white">{valueOrEmpty(participant.rank)}</p>
-          </div>
-          <div className="min-w-[180px] flex-1">
-            <p className="stat-label mb-0.5">Rollen</p>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{valueOrEmpty(participant.roles)}</p>
-          </div>
-          <div className="min-w-[180px] flex-1">
-            <p className="stat-label mb-0.5">Verfügbarkeit</p>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{valueOrEmpty(participant.availability)}</p>
-          </div>
-        </div>
+    <div className="content-grid space-y-8 py-8">
+      <div>
+        <h1 className="section-title">Mein Scrim-Team</h1>
+        <p className="section-copy">Halte deine Verfügbarkeit aktuell — daraus finden die Coaches den besten Scrim-Termin.</p>
       </div>
 
       {team ? (
-        <>
-          <div
-            className="panel-strong animate-in relative mb-8 overflow-hidden p-6"
-            style={{ borderColor: 'var(--amber-border)' }}
-          >
-            <div className="flex flex-wrap items-start gap-x-10 gap-y-4">
-              <div>
-                <p className="stat-label mb-1">Team</p>
-                <p className="font-display text-2xl font-bold uppercase text-white">{team.name}</p>
-              </div>
-              <div>
-                <p className="stat-label mb-1">Coach</p>
-                <p className="font-display text-lg font-bold text-white">{valueOrEmpty(team.coach)}</p>
-              </div>
-              <div className="min-w-[220px] flex-1">
-                <p className="stat-label mb-1">Nächstes Match</p>
-                {next_match ? (
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    <span className="font-semibold text-white">
-                      {valueOrEmpty(next_match.opponent_team_name)}
-                    </span>{' '}
-                    · {nextMatchTime} · {statusLabel(next_match.status)}
-                  </p>
-                ) : (
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Noch kein Match geplant.</p>
-                )}
-              </div>
-            </div>
+        <div className="panel-strong p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="font-display text-xl font-extrabold" style={{ color: 'var(--amber)' }}>{team.name}</span>
+            {team.coach && <span className="stat-label">Coach {team.coach}</span>}
           </div>
-
-          <section>
-            <SectionHead label="Mitglieder" count={members.length} />
-            {members.length > 0 ? (
-              <div className="space-y-2">
-                {members.map((member) => <MemberRow key={member.participant_id} member={member} />)}
-              </div>
-            ) : (
-              <EmptyState title="Keine Mitglieder" copy="Das Team hat aktuell keine sichtbaren Einträge." />
-            )}
-          </section>
-        </>
+          {nextMatch && (
+            <p className="mt-2 text-sm" style={{ color: 'var(--text-primary)' }}>
+              Nächstes Match: {nextMatch.opponent_team_name ?? 'Gegner offen'}
+              {nextMatch.when_text ? ` · ${nextMatch.when_text}` : ''}
+            </p>
+          )}
+          {members.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {members.map(m => (
+                <span key={m.participant_id} className={`badge${m.is_captain ? ' badge-amber' : ''}`}>
+                  {m.display_name}{m.is_captain ? ' · C' : ''}{m.is_bench ? ' · Bank' : ''}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       ) : (
-        <EmptyState
-          title="Noch kein Team"
-          copy="Du bist im Scrim-Pool sichtbar, aber noch keinem Team zugewiesen."
-        >
-          <Link to="/scrims/signup" className="btn-ghost">Anmeldung bearbeiten</Link>
-        </EmptyState>
+        <div className="panel p-5">
+          <p className="section-copy">
+            Du bist im Pool, aber noch keinem Team zugeordnet. Halte deine Verfügbarkeit trotzdem aktuell — so kann dich ein Coach passend einplanen.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {participant.rank && <span className="badge">{participant.rank}</span>}
+            {participant.roles && <span className="badge">{participant.roles}</span>}
+            <span className="badge">Status: {participant.status}</span>
+          </div>
+        </div>
       )}
+
+      <div>
+        <SectionHead
+          label="Meine Verfügbarkeit"
+          action={
+            <button
+              onClick={() => mutation.mutate(draft)}
+              disabled={mutation.isPending}
+              className="btn-amber rounded-sm px-4 py-1.5 text-xs"
+            >
+              {mutation.isPending ? 'Speichert…' : 'Speichern'}
+            </button>
+          }
+        />
+        {!participant.availability_confirmed && (
+          <p className="mb-3 text-xs" style={{ color: 'var(--amber)' }}>
+            Deine Verfügbarkeit wurde aus der alten Scrim-Liste übernommen — bitte einmal prüfen und speichern.
+          </p>
+        )}
+        <AvailabilityEditor value={draft} onChange={next => { setDraft(next); setSaved(false) }} disabled={mutation.isPending} />
+        <div className="mt-3 min-h-[1.25rem] text-sm">
+          {mutation.isError && <span style={{ color: 'rgba(229, 72, 77, 0.9)' }}>{(mutation.error as Error).message}</span>}
+          {saved && !mutation.isPending && <span style={{ color: 'var(--amber)' }}>Verfügbarkeit gespeichert.</span>}
+        </div>
+      </div>
     </div>
   )
 }
