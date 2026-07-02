@@ -116,6 +116,80 @@ export const coaching = {
     request<CoachingRequest>('/coaching/requests', { method: 'POST', body: JSON.stringify(data) }),
 }
 
+// Scrims
+export interface ScrimParticipant {
+  id: number
+  display_name: string
+  rank: string | null
+  roles: string | null
+  availability: string | null
+  status: string
+  source: string
+}
+
+export interface ScrimTeam {
+  id: number
+  name: string
+  coach: string | null
+  discord_channel_id: number | null
+}
+
+export interface ScrimTeamMember {
+  participant_id: number
+  display_name: string
+  role: string | null
+  is_captain: boolean
+  is_bench: boolean
+}
+
+export interface ScrimNextMatch {
+  id: number
+  opponent_team_name: string | null
+  when_text: string | null
+  scheduled_at: string | null
+  status: string
+}
+
+export interface ScrimMeResponse {
+  participant: ScrimParticipant | null
+  team: ScrimTeam | null
+  members: ScrimTeamMember[]
+  next_match: ScrimNextMatch | null
+}
+
+export interface ScrimSignupRequest {
+  rank?: string
+  roles?: string
+  availability?: string
+}
+
+export interface ScrimPoolParticipant extends ScrimParticipant {
+  team: ScrimTeam | null
+  role: string | null
+  is_captain: boolean
+  is_bench: boolean
+}
+
+export interface ScrimParticipantPatch {
+  status?: string
+  team_id?: number
+  is_bench?: boolean
+  is_captain?: boolean
+}
+
+export const scrims = {
+  me: () => request<ScrimMeResponse>('/scrim/me'),
+  signup: (data: ScrimSignupRequest) =>
+    request<ScrimParticipant>('/scrim/signup', { method: 'POST', body: JSON.stringify(data) }),
+  teams: () => request<ScrimTeam[]>('/scrim/teams'),
+  pool: (status?: string) => {
+    const query = status ? `?${new URLSearchParams({ status }).toString()}` : ''
+    return request<ScrimPoolParticipant[]>(`/scrim/pool${query}`)
+  },
+  updateParticipant: (id: number, data: ScrimParticipantPatch) =>
+    request<ScrimPoolParticipant>(`/scrim/participants/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+}
+
 // ===== Coaching-Plattform (Coach-/Spieler-Bereich, vom Bot gespiegelt) =====
 
 export interface PlatformCoachStat {

@@ -288,6 +288,23 @@ pub async fn pool(
     Ok(Json(rows.iter().map(pool_participant_from_row).collect()))
 }
 
+pub async fn teams(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+) -> AppResult<Json<Vec<ScrimTeam>>> {
+    require_scrim_coach(&state, &headers, Some(peer)).await?;
+
+    let rows = sqlx::query(
+        "SELECT id, name, coach, discord_channel_id \
+         FROM scrim.teams \
+         ORDER BY name ASC",
+    )
+    .fetch_all(&state.pool)
+    .await?;
+    Ok(Json(rows.iter().map(team_from_row).collect()))
+}
+
 pub async fn patch_participant(
     State(state): State<AppState>,
     Path(participant_id): Path<i32>,
@@ -304,7 +321,7 @@ pub async fn patch_participant(
             .fetch_optional(&mut *tx)
             .await?;
     if participant_exists.is_none() {
-        return Err(AppError::not_found("Platzhalter"));
+        return Err(AppError::not_found("Teilnehmer nicht gefunden."));
     }
 
     if let Some(status) = body.status.as_deref() {
@@ -321,7 +338,7 @@ pub async fn patch_participant(
             .fetch_optional(&mut *tx)
             .await?;
         if team_exists.is_none() {
-            return Err(AppError::not_found("Platzhalter"));
+            return Err(AppError::not_found("Team nicht gefunden."));
         }
 
         sqlx::query("DELETE FROM scrim.team_members WHERE participant_id=$1 AND team_id<>$2")
@@ -423,7 +440,10 @@ async fn require_scrim_coach(
     if is_coach(state, &user).await? {
         return Ok(user);
     }
-    Err(AppError::http(StatusCode::FORBIDDEN, "Platzhalter"))
+    Err(AppError::http(
+        StatusCode::FORBIDDEN,
+        "Kein Zugriff – dieser Bereich ist nur für Coaches.",
+    ))
 }
 
 async fn is_coach(state: &AppState, user: &User) -> AppResult<bool> {
@@ -443,7 +463,7 @@ async fn is_coach(state: &AppState, user: &User) -> AppResult<bool> {
 }
 
 fn parse_required_discord_id(user: &User) -> AppResult<i64> {
-    parse_discord_id(&user.id).map_err(|_| AppError::bad_request("Platzhalter"))
+    parse_discord_id(&user.id).map_err(|_| AppError::bad_request("Ungültige Discord-ID in der Sitzung."))
 }
 
 fn parse_discord_id(value: &str) -> Result<i64, std::num::ParseIntError> {
@@ -731,6 +751,23 @@ mod tests {
         assert!(pool
             .iter()
             .any(|participant| participant["display_name"] == "Signup User"));
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/teams",
+                &coach_token,
+                None,
+            ))
+            .await
+            .expect("teams response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        let teams = body.as_array().expect("teams array");
+        assert_eq!(teams.len(), 2);
+        assert_eq!(teams[0]["name"], "Alpha");
+        assert_eq!(teams[1]["name"], "Beta");
 
         let signup_id: i32 =
             sqlx::query_scalar("SELECT id FROM scrim.participants WHERE discord_id=$1")

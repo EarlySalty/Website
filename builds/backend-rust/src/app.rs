@@ -276,6 +276,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/scrim/me", get(routes::scrim::get_me))
         .route("/api/scrim/signup", post(routes::scrim::signup))
         .route("/api/scrim/pool", get(routes::scrim::pool))
+        .route("/api/scrim/teams", get(routes::scrim::teams))
         .route(
             "/api/scrim/participants/{id}",
             patch(routes::scrim::patch_participant),
