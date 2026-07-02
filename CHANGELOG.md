@@ -1,3 +1,11 @@
+## #44 — Scrim-Team-Bereich auf der Coaching-Seite
+
+**Ausgangslage:** Die Scrim-Teams liefen über Discord und eine Hand-Excel. Spieler sahen ihren Team-Status nirgends, und Coaches pflegten den Pool von Hand — Anmeldung und Übersicht fehlten auf der Website komplett.
+
+**Geändert:** Die Coaching-Seite hat jetzt einen Scrim-Bereich. „Mein Team" zeigt Spielern ihren Status, ihr Team samt Mitgliedern und das nächste Match. Über die Web-Anmeldung tragen sie sich mit Rang, Rollen und Verfügbarkeit selbst in den Pool ein. Coaches bekommen einen Pool-Überblick mit Statusfilter und weisen Teams direkt per Auswahl zu.
+
+**Wie's jetzt läuft:** Discord-Reaktion und Web-Anmeldung landen im selben Pool — doppelte Einträge werden dabei sauber zusammengeführt statt doppelt angelegt. Der Coach-Bereich ist nur für Coaches sichtbar.
+
 ## #43 — Website-Backend läuft in Rust
 
 **Ausgangslage:** Die Website selbst war größtenteils statisch oder hing schon an Rust-Diensten, aber die Coaching-API lief noch als Python-Prozess. Damit blieb ein extra Runtime-Pfad übrig, obwohl die eigentlichen Website-Aufrufe schnelle, schlanke Antwortzeiten brauchen.
