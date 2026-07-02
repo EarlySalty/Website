@@ -52,6 +52,11 @@ impl std::ops::Deref for AppState {
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/api/health", get(routes::health))
+        .route(
+            "/api/public/patch-timeline",
+            get(routes::public::patch_timeline),
+        )
+        .route("/api/public/patch-notes", get(routes::public::patch_notes))
         .route("/api/auth/discord/login", get(routes::auth::discord_login))
         .route(
             "/api/auth/discord/callback",

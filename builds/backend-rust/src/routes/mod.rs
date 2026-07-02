@@ -5,6 +5,7 @@ pub mod auth;
 pub mod coaching;
 pub mod meta;
 pub mod platform;
+pub mod public;
 
 pub async fn health() -> Json<serde_json::Value> {
     Json(json!({ "status": "ok" }))
