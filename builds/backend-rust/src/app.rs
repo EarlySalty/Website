@@ -39,6 +39,23 @@ impl AppState {
             }),
         })
     }
+
+    #[cfg(test)]
+    pub(crate) fn for_test_pool(pool: PgPool, cfg: Config) -> Self {
+        let http = Client::builder()
+            .timeout(std::time::Duration::from_secs(20))
+            .build()
+            .expect("test http client");
+        let auth = Auth::new(cfg.clone());
+        Self {
+            inner: Arc::new(AppInner {
+                cfg,
+                pool,
+                http,
+                auth,
+            }),
+        }
+    }
 }
 
 impl std::ops::Deref for AppState {
@@ -255,6 +272,13 @@ pub fn router(state: AppState) -> Router {
             "/api/coaching/platform/coaches/me",
             get(routes::platform::get_my_coach_profile)
                 .patch(routes::platform::update_my_coach_profile),
+        )
+        .route("/api/scrim/me", get(routes::scrim::get_me))
+        .route("/api/scrim/signup", post(routes::scrim::signup))
+        .route("/api/scrim/pool", get(routes::scrim::pool))
+        .route(
+            "/api/scrim/participants/{id}",
+            patch(routes::scrim::patch_participant),
         )
         .layer(
             CorsLayer::new()
