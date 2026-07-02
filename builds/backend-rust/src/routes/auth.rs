@@ -130,9 +130,16 @@ pub async fn discord_callback(
     if discord_id.is_empty() || discord_name.is_empty() {
         return Ok(http::redirect(&next_path, response_headers));
     }
+    let discord_user_id = auth::parse_discord_user_id(&discord_id)?;
     let avatar = data.get("discord_avatar").and_then(Value::as_str);
-    let role =
-        auth::upsert_meta_user(&state, &discord_id, &discord_name, &discord_name, avatar).await?;
+    let role = auth::upsert_meta_user(
+        &state,
+        discord_user_id,
+        &discord_name,
+        &discord_name,
+        avatar,
+    )
+    .await?;
     let session = state.auth.create_session_jwt(
         &discord_id,
         &discord_name,

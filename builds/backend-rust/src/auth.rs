@@ -226,54 +226,53 @@ pub async fn require_coach_user(
 }
 
 pub async fn is_active_coach(state: &AppState, user_id: &str) -> AppResult<bool> {
-    let Ok(discord_id) = user_id.parse::<i64>() else {
-        return Ok(false);
-    };
-    let exists: Option<i64> =
-        sqlx::query_scalar("SELECT 1 FROM coaches WHERE discord_user_id=? AND status='active'")
-            .bind(discord_id)
-            .fetch_optional(&state.pool)
-            .await?;
+    let discord_id = parse_discord_user_id(user_id)?;
+    let exists: Option<i32> = sqlx::query_scalar(
+        "SELECT 1 FROM coaching.coaches WHERE discord_user_id=$1 AND status='active'",
+    )
+    .bind(discord_id)
+    .fetch_optional(&state.pool)
+    .await?;
     Ok(exists.is_some())
 }
 
 pub async fn upsert_meta_user(
     state: &AppState,
-    user_id: &str,
+    user_id: i64,
     username: &str,
     display_name: &str,
     avatar_url: Option<&str>,
 ) -> AppResult<String> {
-    let existing = sqlx::query("SELECT role FROM meta_users WHERE id=?")
-        .bind(user_id)
-        .fetch_optional(&state.pool)
-        .await?;
-    let role = existing
-        .as_ref()
-        .and_then(|row| row.try_get::<Option<String>, _>("role").ok().flatten())
-        .unwrap_or_else(|| "user".to_string());
-
-    if existing.is_some() {
-        sqlx::query("UPDATE meta_users SET username=?, display_name=?, avatar_url=? WHERE id=?")
-            .bind(username)
-            .bind(display_name)
-            .bind(avatar_url)
-            .bind(user_id)
-            .execute(&state.pool)
-            .await?;
-    } else {
-        sqlx::query(
-            "INSERT INTO meta_users (id, username, display_name, avatar_url, role) VALUES (?, ?, ?, ?, ?)",
-        )
-        .bind(user_id)
-        .bind(username)
-        .bind(display_name)
-        .bind(avatar_url)
-        .bind(&role)
-        .execute(&state.pool)
-        .await?;
-    }
+    let role = sqlx::query_scalar(
+        "INSERT INTO core.meta_users (id, username, display_name, avatar_url, role) \
+         VALUES ($1, $2, $3, $4, 'user') \
+         ON CONFLICT (id) DO UPDATE SET \
+             username=EXCLUDED.username, \
+             display_name=EXCLUDED.display_name, \
+             avatar_url=EXCLUDED.avatar_url \
+         RETURNING role",
+    )
+    .bind(user_id)
+    .bind(username)
+    .bind(display_name)
+    .bind(avatar_url)
+    .fetch_one(&state.pool)
+    .await?;
     Ok(role)
+}
+
+pub fn parse_discord_user_id(value: &str) -> AppResult<i64> {
+    let value = value.trim();
+    if value.is_empty() || !value.chars().all(|ch| ch.is_ascii_digit()) {
+        return Err(AppError::bad_request("Discord user id is invalid"));
+    }
+    let id = value
+        .parse::<i64>()
+        .map_err(|_| AppError::bad_request("Discord user id is invalid"))?;
+    if id <= 0 {
+        return Err(AppError::bad_request("Discord user id is invalid"));
+    }
+    Ok(id)
 }
 
 pub fn session_cookie_value(state: &AppState, headers: &HeaderMap) -> String {
@@ -441,7 +440,8 @@ fn trusted_loopback(peer: Option<SocketAddr>) -> bool {
 }
 
 async fn load_user_role(state: &AppState, user_id: &str, fallback: &str) -> AppResult<String> {
-    let row = sqlx::query("SELECT role FROM meta_users WHERE id=?")
+    let user_id = parse_discord_user_id(user_id)?;
+    let row = sqlx::query("SELECT role FROM core.meta_users WHERE id=$1")
         .bind(user_id)
         .fetch_optional(&state.pool)
         .await?;

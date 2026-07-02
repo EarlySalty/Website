@@ -2,17 +2,17 @@ use std::net::SocketAddr;
 
 use axum::{
     extract::{ConnectInfo, Path, Query, State},
-    http::HeaderMap,
+    http::{HeaderMap, StatusCode},
     Json,
 };
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{json, Value};
+use sqlx::{Postgres, QueryBuilder};
 
 use crate::{
     app::AppState,
     auth::{self, User},
-    db,
     error::{AppError, AppResult},
     ids,
     routes::coaching::require_bot_token,
@@ -30,96 +30,159 @@ pub async fn platform_sync(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     require_bot_token(&headers)?;
-    let bot_request_id = body
-        .get("bot_request_id")
-        .and_then(Value::as_i64)
-        .ok_or_else(|| AppError::bad_request("bot_request_id is required"))?;
-    let website_request_id = body.get("website_request_id").and_then(Value::as_str);
+    let bot_request_id = optional_i32_body(&body, "bot_request_id")?;
+    let website_request_id = body_string(&body, "website_request_id").map(str::to_string);
+    validate_website_request_id(website_request_id.as_deref())?;
+    let explicit_request_uid = body_string(&body, "request_uid").map(str::to_string);
+    if bot_request_id.is_none() && website_request_id.is_none() && explicit_request_uid.is_none() {
+        return Err(AppError::bad_request(
+            "website_request_id, bot_request_id or request_uid is required",
+        ));
+    }
     let discord_user_id = body
         .get("discord_user_id")
         .and_then(Value::as_i64)
         .ok_or_else(|| AppError::bad_request("discord_user_id is required"))?;
     let discord_username = body.get("discord_username").and_then(Value::as_str);
-    let req_id = website_request_id
-        .map(str::to_string)
-        .unwrap_or_else(|| bot_request_id.to_string());
     let assigned_id = body
         .get("assigned_coach_discord_id")
         .and_then(Value::as_i64)
-        .map(|id| id.to_string());
+        .map(|id| id.to_string())
+        .or_else(|| {
+            body.get("assigned_coach_id")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        });
     let status = body
         .get("status")
         .and_then(Value::as_str)
         .unwrap_or("analyzed");
-
-    let coachee_id;
-    if let Some(website_id) = website_request_id {
-        let exists: Option<String> =
-            sqlx::query_scalar("SELECT id FROM coaching_requests WHERE id=?")
-                .bind(website_id)
-                .fetch_optional(&state.pool)
-                .await?;
-        if exists.is_none() {
-            return Ok(Json(json!({ "ok": true, "skipped": true })));
-        }
-        coachee_id = upsert_coachee(&state, discord_user_id, discord_username).await?;
-        sqlx::query("UPDATE coaching_requests SET assigned_coach_id=?, assigned_coach_username=?, status=?, reserved_until=?, updated_at=? WHERE id=?")
-            .bind(assigned_id.as_deref())
-            .bind(body.get("assigned_coach_username").and_then(Value::as_str))
-            .bind(status)
-            .bind(body.get("reserved_until").and_then(Value::as_i64))
-            .bind(iso_now())
-            .bind(website_id)
-            .execute(&state.pool)
-            .await?;
+    let reserved_until = optional_datetime_body(&body, "reserved_until")?;
+    let coachee_id = upsert_coachee(&state, discord_user_id, discord_username).await?;
+    let existing_request = find_request_by_references(
+        &state,
+        website_request_id.as_deref(),
+        bot_request_id,
+        explicit_request_uid.as_deref(),
+    )
+    .await?;
+    let request_uid_for_insert = if website_request_id.is_none() && bot_request_id.is_none() {
+        explicit_request_uid.as_deref()
     } else {
-        coachee_id = upsert_coachee(&state, discord_user_id, discord_username).await?;
-        let exists: Option<String> =
-            sqlx::query_scalar("SELECT id FROM coaching_requests WHERE id=?")
-                .bind(&req_id)
-                .fetch_optional(&state.pool)
-                .await?;
-        if exists.is_some() {
-            sqlx::query("UPDATE coaching_requests SET discord_user_id=?, discord_username=?, rank=?, subrank=?, hero=?, games_played=?, hours_played=?, availability=?, current_problems=?, ai_summary=?, status=?, assigned_coach_id=?, assigned_coach_username=?, reserved_until=?, updated_at=? WHERE id=?")
-                .bind(discord_user_id)
-                .bind(discord_username)
-                .bind(body.get("rank").and_then(Value::as_str).unwrap_or(""))
-                .bind(body.get("subrank").and_then(Value::as_str).unwrap_or(""))
-                .bind(body.get("hero").and_then(Value::as_str))
-                .bind(body.get("games_played").and_then(Value::as_str))
-                .bind(body.get("hours_played").and_then(Value::as_str))
-                .bind(body.get("availability").and_then(Value::as_str))
-                .bind(body.get("current_problems").and_then(Value::as_str))
-                .bind(body.get("ai_summary").and_then(Value::as_str))
-                .bind(status)
-                .bind(assigned_id.as_deref())
-                .bind(body.get("assigned_coach_username").and_then(Value::as_str))
-                .bind(body.get("reserved_until").and_then(Value::as_i64))
-                .bind(iso_now())
-                .bind(&req_id)
-                .execute(&state.pool)
-                .await?;
-        } else {
-            sqlx::query("INSERT INTO coaching_requests (id, discord_user_id, discord_username, rank, subrank, hero, games_played, hours_played, availability, current_problems, ai_summary, status, assigned_coach_id, assigned_coach_username, reserved_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                .bind(&req_id)
-                .bind(discord_user_id)
-                .bind(discord_username)
-                .bind(body.get("rank").and_then(Value::as_str).unwrap_or(""))
-                .bind(body.get("subrank").and_then(Value::as_str).unwrap_or(""))
-                .bind(body.get("hero").and_then(Value::as_str))
-                .bind(body.get("games_played").and_then(Value::as_str))
-                .bind(body.get("hours_played").and_then(Value::as_str))
-                .bind(body.get("availability").and_then(Value::as_str))
-                .bind(body.get("current_problems").and_then(Value::as_str))
-                .bind(body.get("ai_summary").and_then(Value::as_str))
-                .bind(status)
-                .bind(assigned_id.as_deref())
-                .bind(body.get("assigned_coach_username").and_then(Value::as_str))
-                .bind(body.get("reserved_until").and_then(Value::as_i64))
-                .execute(&state.pool)
-                .await?;
-        }
+        None
+    };
+    let request_uid = existing_request
+        .as_ref()
+        .map(|row| rows::required_string(row, "request_uid"))
+        .unwrap_or_else(|| {
+            new_request_uid(
+                website_request_id.as_deref(),
+                bot_request_id,
+                request_uid_for_insert,
+            )
+        });
+    let stored_website_request_id = existing_request
+        .as_ref()
+        .and_then(|row| rows::string(row, "website_request_id"))
+        .or_else(|| website_request_id.clone());
+    let stored_bot_request_id = existing_request
+        .as_ref()
+        .and_then(|row| rows::i64(row, "bot_request_id"))
+        .and_then(|value| i32::try_from(value).ok())
+        .or(bot_request_id);
+    let ai_insights = json_body_value_opt(&body, &["ai_insights_json", "ai_insights"]);
+
+    if existing_request.is_some() {
+        sqlx::query(
+            "UPDATE coaching.requests \
+             SET bot_request_id=COALESCE( \
+                     bot_request_id, \
+                     CASE WHEN $1 IS NOT NULL AND NOT EXISTS ( \
+                         SELECT 1 FROM coaching.requests other \
+                         WHERE other.bot_request_id=$1 \
+                           AND other.request_uid<>coaching.requests.request_uid \
+                     ) THEN $1 ELSE NULL END \
+                 ), \
+                 website_request_id=COALESCE( \
+                     website_request_id, \
+                     CASE WHEN $2 IS NOT NULL AND NOT EXISTS ( \
+                         SELECT 1 FROM coaching.requests other \
+                         WHERE other.website_request_id=$2 \
+                           AND other.request_uid<>coaching.requests.request_uid \
+                     ) THEN $2 ELSE NULL END \
+                 ), \
+                 discord_user_id=$3, discord_username=$4, rank=$5, subrank=$6, hero=$7, \
+                 games_played=$8, hours_played=$9, availability=$10, current_problems=$11, \
+                 ai_summary=$12, ai_insights_json=COALESCE($13, ai_insights_json), \
+                 status=$14, assigned_coach_id=$15, assigned_coach_username=$16, \
+                 reserved_until=$17, coachee_id=$18, updated_at=now() \
+             WHERE request_uid=$19",
+        )
+        .bind(stored_bot_request_id)
+        .bind(stored_website_request_id.as_deref())
+        .bind(discord_user_id)
+        .bind(discord_username)
+        .bind(body.get("rank").and_then(Value::as_str).unwrap_or(""))
+        .bind(body.get("subrank").and_then(Value::as_str).unwrap_or(""))
+        .bind(body.get("hero").and_then(Value::as_str))
+        .bind(body.get("games_played").and_then(Value::as_str))
+        .bind(body.get("hours_played").and_then(Value::as_str))
+        .bind(body.get("availability").and_then(Value::as_str))
+        .bind(body.get("current_problems").and_then(Value::as_str))
+        .bind(body.get("ai_summary").and_then(Value::as_str))
+        .bind(ai_insights.clone())
+        .bind(status)
+        .bind(assigned_id.as_deref())
+        .bind(body.get("assigned_coach_username").and_then(Value::as_str))
+        .bind(reserved_until)
+        .bind(&coachee_id)
+        .bind(&request_uid)
+        .execute(&state.pool)
+        .await?;
+    } else {
+        sqlx::query(
+            "INSERT INTO coaching.requests \
+             (request_uid, bot_request_id, website_request_id, discord_user_id, discord_username, \
+              rank, subrank, hero, games_played, hours_played, availability, current_problems, \
+              ai_summary, ai_insights_json, status, assigned_coach_id, assigned_coach_username, \
+              reserved_until, coachee_id, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, \
+                     $15, $16, $17, $18, $19, now(), now())",
+        )
+        .bind(&request_uid)
+        .bind(stored_bot_request_id)
+        .bind(stored_website_request_id.as_deref())
+        .bind(discord_user_id)
+        .bind(discord_username)
+        .bind(body.get("rank").and_then(Value::as_str).unwrap_or(""))
+        .bind(body.get("subrank").and_then(Value::as_str).unwrap_or(""))
+        .bind(body.get("hero").and_then(Value::as_str))
+        .bind(body.get("games_played").and_then(Value::as_str))
+        .bind(body.get("hours_played").and_then(Value::as_str))
+        .bind(body.get("availability").and_then(Value::as_str))
+        .bind(body.get("current_problems").and_then(Value::as_str))
+        .bind(body.get("ai_summary").and_then(Value::as_str))
+        .bind(ai_insights)
+        .bind(status)
+        .bind(assigned_id.as_deref())
+        .bind(body.get("assigned_coach_username").and_then(Value::as_str))
+        .bind(reserved_until)
+        .bind(&coachee_id)
+        .execute(&state.pool)
+        .await?;
     }
+
+    let canonical_request = sqlx::query(
+        "SELECT request_uid, website_request_id, bot_request_id \
+         FROM coaching.requests \
+         WHERE request_uid=$1",
+    )
+    .bind(&request_uid)
+    .fetch_one(&state.pool)
+    .await?;
+    let stored_website_request_id = rows::string(&canonical_request, "website_request_id");
+    let stored_bot_request_id =
+        rows::i64(&canonical_request, "bot_request_id").and_then(|value| i32::try_from(value).ok());
 
     if let (Some(coach_discord_id), Some(session_status)) = (
         body.get("coach_discord_id").and_then(Value::as_i64),
@@ -132,30 +195,54 @@ pub async fn platform_sync(
         )
         .await?;
         let completed = if matches!(session_status, "completed" | "cancelled") {
-            Some(iso_now())
+            Some(Utc::now())
         } else {
             None
         };
-        let existing = sqlx::query("SELECT id FROM coaching_sessions WHERE request_id=?")
-            .bind(&req_id)
-            .fetch_optional(&state.pool)
-            .await?;
+        let bot_session_id = body.get("bot_session_id").and_then(Value::as_str);
+        let existing = find_session_by_references(
+            &state,
+            stored_website_request_id.as_deref(),
+            stored_bot_request_id,
+            Some(&request_uid),
+            bot_session_id,
+        )
+        .await?;
         if let Some(row) = existing {
-            sqlx::query("UPDATE coaching_sessions SET coach_id=?, coachee_id=?, discord_user_id=?, discord_username=?, status=?, completed_at=COALESCE(?, completed_at) WHERE id=?")
-                .bind(coach_id)
-                .bind(&coachee_id)
-                .bind(discord_user_id)
-                .bind(discord_username)
-                .bind(session_status)
-                .bind(completed)
-                .bind(rows::required_string(&row, "id"))
-                .execute(&state.pool)
-                .await?;
+            sqlx::query(
+                "UPDATE coaching.sessions \
+                 SET request_uid=$1, bot_request_id=$2, website_request_id=$3, \
+                     bot_session_id=COALESCE($4, bot_session_id), coach_id=$5, \
+                     coachee_id=$6, discord_user_id=$7, discord_username=$8, status=$9, \
+                     completed_at=COALESCE($10, completed_at) \
+                 WHERE id=$11",
+            )
+            .bind(&request_uid)
+            .bind(stored_bot_request_id)
+            .bind(stored_website_request_id.as_deref())
+            .bind(bot_session_id)
+            .bind(&coach_id)
+            .bind(&coachee_id)
+            .bind(discord_user_id)
+            .bind(discord_username)
+            .bind(session_status)
+            .bind(completed)
+            .bind(rows::required_string(&row, "id"))
+            .execute(&state.pool)
+            .await?;
         } else {
-            sqlx::query("INSERT INTO coaching_sessions (id, request_id, coach_id, coachee_id, discord_user_id, discord_username, status, completed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+            sqlx::query(
+                "INSERT INTO coaching.sessions \
+                 (id, request_uid, bot_request_id, website_request_id, bot_session_id, coach_id, \
+                  coachee_id, discord_user_id, discord_username, status, started_at, completed_at, created_at) \
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), $11, now())",
+            )
                 .bind(ids::id12())
-                .bind(&req_id)
-                .bind(coach_id)
+                .bind(&request_uid)
+                .bind(stored_bot_request_id)
+                .bind(stored_website_request_id.as_deref())
+                .bind(bot_session_id)
+                .bind(&coach_id)
                 .bind(&coachee_id)
                 .bind(discord_user_id)
                 .bind(discord_username)
@@ -176,12 +263,27 @@ pub async fn platform_overview(
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
     let coaches = sqlx::query(
-        "SELECT c.id, c.display_name, c.discord_username, SUM(CASE WHEN s.status='active' THEN 1 ELSE 0 END) AS active, SUM(CASE WHEN s.status='completed' THEN 1 ELSE 0 END) AS completed, COUNT(s.id) AS total FROM coaches c LEFT JOIN coaching_sessions s ON s.coach_id=c.id WHERE c.status='active' GROUP BY c.id ORDER BY total DESC, c.display_name",
+        "SELECT c.id, c.display_name, c.discord_username, \
+                SUM(CASE WHEN s.status='active' THEN 1 ELSE 0 END) AS active, \
+                SUM(CASE WHEN s.status='completed' THEN 1 ELSE 0 END) AS completed, \
+                COUNT(s.id) AS total \
+         FROM coaching.coaches c \
+         LEFT JOIN coaching.sessions s ON s.coach_id=c.id \
+         WHERE c.status='active' \
+         GROUP BY c.id \
+         ORDER BY total DESC, c.display_name",
     )
     .fetch_all(&state.pool)
     .await?;
     let recent = sqlx::query(
-        "SELECT s.id, s.status, s.started_at, s.completed_at, s.discord_username, co.id AS coachee_id, co.display_name AS coachee_display, c.display_name AS coach_display FROM coaching_sessions s LEFT JOIN coaches c ON s.coach_id=c.id LEFT JOIN coachees co ON s.coachee_id=co.id ORDER BY s.started_at DESC LIMIT 40",
+        "SELECT s.id, s.status, s.started_at, s.completed_at, s.discord_username, \
+                co.id AS coachee_id, co.display_name AS coachee_display, \
+                c.display_name AS coach_display \
+         FROM coaching.sessions s \
+         LEFT JOIN coaching.coaches c ON s.coach_id=c.id \
+         LEFT JOIN coaching.coachees co ON s.coachee_id=co.id \
+         ORDER BY s.started_at DESC NULLS LAST, s.created_at DESC NULLS LAST \
+         LIMIT 40",
     )
     .fetch_all(&state.pool)
     .await?;
@@ -197,10 +299,17 @@ pub async fn platform_queue(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
 ) -> AppResult<Json<Value>> {
     let user = auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    let queue = sqlx::query("SELECT * FROM coaching_requests WHERE status='analyzed' AND (assigned_coach_id IS NULL OR assigned_coach_id=?) ORDER BY created_at DESC LIMIT 50")
-        .bind(&user.sub)
-        .fetch_all(&state.pool)
-        .await?;
+    let queue = sqlx::query(
+        "SELECT COALESCE(website_request_id, bot_request_id::text, request_uid) AS id, r.* \
+         FROM coaching.requests r \
+         WHERE status='analyzed' \
+           AND (assigned_coach_id IS NULL OR assigned_coach_id=$1) \
+         ORDER BY created_at DESC NULLS LAST \
+         LIMIT 50",
+    )
+    .bind(&user.sub)
+    .fetch_all(&state.pool)
+    .await?;
     let now = Utc::now().timestamp();
     let mut requests = Vec::new();
     for row in &queue {
@@ -215,6 +324,7 @@ pub async fn platform_queue(
             "is_open".to_string(),
             json!(assigned.is_none() || reserved_until.is_some_and(|v| v <= now)),
         );
+        obj.insert("reserved_until".to_string(), json!(reserved_until));
         requests.push(Value::Object(obj));
     }
     Ok(Json(json!({ "requests": requests })))
@@ -226,9 +336,17 @@ pub async fn list_coachees(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    let rows = sqlx::query("SELECT co.id, co.discord_username, co.display_name, co.rank, co.current_focus, (SELECT COUNT(*) FROM coaching_goals g WHERE g.coachee_id=co.id AND g.status IN ('open','active')) AS open_goals, (SELECT COUNT(*) FROM coaching_sessions s WHERE s.coachee_id=co.id) AS sessions FROM coachees co ORDER BY co.updated_at DESC LIMIT 200")
-        .fetch_all(&state.pool)
-        .await?;
+    let rows = sqlx::query(
+        "SELECT co.id, co.discord_username, co.display_name, co.rank, co.current_focus, \
+                (SELECT COUNT(*) FROM coaching.goals g \
+                 WHERE g.coachee_id=co.id AND g.status IN ('open','active')) AS open_goals, \
+                (SELECT COUNT(*) FROM coaching.sessions s WHERE s.coachee_id=co.id) AS sessions \
+         FROM coaching.coachees co \
+         ORDER BY co.updated_at DESC NULLS LAST \
+         LIMIT 200",
+    )
+    .fetch_all(&state.pool)
+    .await?;
     Ok(Json(
         json!({ "coachees": rows.iter().map(rows::row_json).collect::<Vec<_>>() }),
     ))
@@ -241,25 +359,41 @@ pub async fn get_coachee(
     Path(coachee_id): Path<String>,
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    let coachee = sqlx::query("SELECT * FROM coachees WHERE id=?")
+    let coachee = sqlx::query("SELECT * FROM coaching.coachees WHERE id=$1")
         .bind(&coachee_id)
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| AppError::not_found("Coachee nicht gefunden"))?;
     let goals = goals_with_milestones(&state, &coachee_id).await?;
-    let notes =
-        sqlx::query("SELECT * FROM session_notes WHERE coachee_id=? ORDER BY created_at DESC")
-            .bind(&coachee_id)
-            .fetch_all(&state.pool)
-            .await?;
-    let sessions = sqlx::query("SELECT s.*, c.display_name AS coach_display FROM coaching_sessions s LEFT JOIN coaches c ON s.coach_id=c.id WHERE s.coachee_id=? ORDER BY s.started_at DESC")
-        .bind(&coachee_id)
-        .fetch_all(&state.pool)
-        .await?;
-    let appointments = sqlx::query("SELECT a.id, a.scheduled_at, a.duration_minutes, a.title, a.note, a.status, a.created_at, COALESCE(c.display_name, c.discord_username) AS coach_display FROM coaching_appointments a LEFT JOIN coaches c ON a.coach_id=c.id WHERE a.coachee_id=? ORDER BY a.scheduled_at DESC")
-        .bind(&coachee_id)
-        .fetch_all(&state.pool)
-        .await?;
+    let notes = sqlx::query(
+        "SELECT * FROM coaching.session_notes \
+             WHERE coachee_id=$1 \
+             ORDER BY created_at DESC NULLS LAST",
+    )
+    .bind(&coachee_id)
+    .fetch_all(&state.pool)
+    .await?;
+    let sessions = sqlx::query(
+        "SELECT s.*, c.display_name AS coach_display \
+         FROM coaching.sessions s \
+         LEFT JOIN coaching.coaches c ON s.coach_id=c.id \
+         WHERE s.coachee_id=$1 \
+         ORDER BY s.started_at DESC NULLS LAST, s.created_at DESC NULLS LAST",
+    )
+    .bind(&coachee_id)
+    .fetch_all(&state.pool)
+    .await?;
+    let appointments = sqlx::query(
+        "SELECT a.id, a.scheduled_at, a.duration_minutes, a.title, a.note, a.status, \
+                a.created_at, COALESCE(c.display_name, c.discord_username) AS coach_display \
+         FROM coaching.appointments a \
+         LEFT JOIN coaching.coaches c ON a.coach_id=c.id \
+         WHERE a.coachee_id=$1 \
+         ORDER BY a.scheduled_at DESC",
+    )
+    .bind(&coachee_id)
+    .fetch_all(&state.pool)
+    .await?;
     Ok(Json(json!({
         "profile": rows::row_json(&coachee),
         "goals": goals,
@@ -279,16 +413,16 @@ pub async fn update_coachee(
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
     update_known_fields(
         &state,
-        "coachees",
-        "id",
-        &coachee_id,
+        PlatformTable::Coachees,
+        IdColumn::Id,
+        UpdateId::Text(&coachee_id),
         &body,
         &[
-            "display_name",
-            "rank",
-            "main_heroes_json",
-            "current_focus",
-            "notes",
+            UpdateColumn::DisplayName,
+            UpdateColumn::Rank,
+            UpdateColumn::MainHeroesJson,
+            UpdateColumn::CurrentFocus,
+            UpdateColumn::Notes,
         ],
         true,
     )
@@ -306,14 +440,19 @@ pub async fn create_goal(
     let user = auth::require_coach_user(&state, &headers, Some(peer)).await?;
     let coach_id = acting_coach_id(&state, &user).await?;
     let id = ids::id12();
-    sqlx::query("INSERT INTO coaching_goals (id, coachee_id, coach_id, session_id, title, description, target_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'open')")
+    let target_date = optional_date_body(&body, "target_date")?;
+    sqlx::query(
+        "INSERT INTO coaching.goals \
+         (id, coachee_id, coach_id, session_id, title, description, target_date, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'open', now(), now())",
+    )
         .bind(&id)
         .bind(coachee_id)
         .bind(coach_id)
         .bind(body.get("session_id").and_then(Value::as_str))
         .bind(body.get("title").and_then(Value::as_str).unwrap_or_default())
         .bind(body.get("description").and_then(Value::as_str))
-        .bind(body.get("target_date").and_then(Value::as_str))
+        .bind(target_date)
         .execute(&state.pool)
         .await?;
     Ok(Json(json!({ "id": id })))
@@ -327,38 +466,36 @@ pub async fn update_goal(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    let mut sets = Vec::new();
-    let mut values: Vec<Value> = Vec::new();
+    let mut values = Vec::new();
     for key in [
-        "title",
-        "description",
-        "status",
-        "sort_order",
-        "target_date",
+        ("title", UpdateColumn::Title),
+        ("description", UpdateColumn::Description),
+        ("status", UpdateColumn::Status),
+        ("sort_order", UpdateColumn::SortOrder),
+        ("target_date", UpdateColumn::TargetDate),
     ] {
-        if let Some(value) = body.get(key).filter(|v| !v.is_null()) {
-            sets.push(format!("{key}=?"));
-            values.push(value.clone());
+        if let Some(value) = body.get(key.0).filter(|v| !v.is_null()) {
+            values.push(UpdateAssignment::body(key.1, value.clone()));
         }
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
-    sets.push("completed_at=?".to_string());
-    values.push(
+    values.push(UpdateAssignment::datetime(
+        UpdateColumn::CompletedAt,
         if body.get("status").and_then(Value::as_str) == Some("done") {
-            json!(iso_now())
+            Some(Utc::now())
         } else {
-            Value::Null
+            None
         },
-    );
-    sets.push("updated_at=?".to_string());
-    values.push(json!(iso_now()));
+    ));
+    values.push(UpdateAssignment::now(UpdateColumn::UpdatedAt));
     run_update(
         &state,
-        &format!("UPDATE coaching_goals SET {} WHERE id=?", sets.join(", ")),
+        PlatformTable::Goals,
+        IdColumn::Id,
+        UpdateId::Text(&goal_id),
         values,
-        &goal_id,
     )
     .await?;
     Ok(Json(json!({ "ok": true })))
@@ -371,11 +508,11 @@ pub async fn delete_goal(
     Path(goal_id): Path<String>,
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    sqlx::query("DELETE FROM coaching_milestones WHERE goal_id=?")
+    sqlx::query("DELETE FROM coaching.milestones WHERE goal_id=$1")
         .bind(&goal_id)
         .execute(&state.pool)
         .await?;
-    sqlx::query("DELETE FROM coaching_goals WHERE id=?")
+    sqlx::query("DELETE FROM coaching.goals WHERE id=$1")
         .bind(goal_id)
         .execute(&state.pool)
         .await?;
@@ -392,7 +529,9 @@ pub async fn create_milestone(
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
     let id = ids::id12();
     sqlx::query(
-        "INSERT INTO coaching_milestones (id, goal_id, title, description) VALUES (?, ?, ?, ?)",
+        "INSERT INTO coaching.milestones \
+         (id, goal_id, title, description, achieved, created_at) \
+         VALUES ($1, $2, $3, $4, false, now())",
     )
     .bind(&id)
     .bind(goal_id)
@@ -415,37 +554,35 @@ pub async fn update_milestone(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    let mut sets = Vec::new();
     let mut values = Vec::new();
     if let Some(value) = body.get("title").filter(|v| !v.is_null()) {
-        sets.push("title=?".to_string());
-        values.push(value.clone());
+        values.push(UpdateAssignment::body(UpdateColumn::Title, value.clone()));
     }
     if let Some(value) = body.get("sort_order").filter(|v| !v.is_null()) {
-        sets.push("sort_order=?".to_string());
-        values.push(value.clone());
+        values.push(UpdateAssignment::body(
+            UpdateColumn::SortOrder,
+            value.clone(),
+        ));
     }
     if let Some(achieved) = body.get("achieved").and_then(Value::as_bool) {
-        sets.push("achieved=?".to_string());
-        values.push(json!(if achieved { 1 } else { 0 }));
-        sets.push("achieved_at=?".to_string());
-        values.push(if achieved {
-            json!(iso_now())
-        } else {
-            Value::Null
-        });
+        values.push(UpdateAssignment::body(
+            UpdateColumn::Achieved,
+            json!(achieved),
+        ));
+        values.push(UpdateAssignment::datetime(
+            UpdateColumn::AchievedAt,
+            if achieved { Some(Utc::now()) } else { None },
+        ));
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
     run_update(
         &state,
-        &format!(
-            "UPDATE coaching_milestones SET {} WHERE id=?",
-            sets.join(", ")
-        ),
+        PlatformTable::Milestones,
+        IdColumn::Id,
+        UpdateId::Text(&milestone_id),
         values,
-        &milestone_id,
     )
     .await?;
     Ok(Json(json!({ "ok": true })))
@@ -458,7 +595,7 @@ pub async fn delete_milestone(
     Path(milestone_id): Path<String>,
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    sqlx::query("DELETE FROM coaching_milestones WHERE id=?")
+    sqlx::query("DELETE FROM coaching.milestones WHERE id=$1")
         .bind(milestone_id)
         .execute(&state.pool)
         .await?;
@@ -479,15 +616,23 @@ pub async fn create_note(
         Some("shared_with_user") => "shared_with_user",
         _ => "coach_only",
     };
-    sqlx::query("INSERT INTO session_notes (id, session_id, coachee_id, coach_id, content, visibility) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(&id)
-        .bind(body.get("session_id").and_then(Value::as_str))
-        .bind(coachee_id)
-        .bind(coach_id)
-        .bind(body.get("content").and_then(Value::as_str).unwrap_or_default())
-        .bind(visibility)
-        .execute(&state.pool)
-        .await?;
+    sqlx::query(
+        "INSERT INTO coaching.session_notes \
+         (id, session_id, coachee_id, coach_id, content, visibility, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, now(), now())",
+    )
+    .bind(&id)
+    .bind(body.get("session_id").and_then(Value::as_str))
+    .bind(coachee_id)
+    .bind(coach_id)
+    .bind(
+        body.get("content")
+            .and_then(Value::as_str)
+            .unwrap_or_default(),
+    )
+    .bind(visibility)
+    .execute(&state.pool)
+    .await?;
     Ok(Json(json!({ "id": id })))
 }
 
@@ -509,11 +654,11 @@ pub async fn update_note(
     }
     update_known_fields(
         &state,
-        "session_notes",
-        "id",
-        &note_id,
+        PlatformTable::SessionNotes,
+        IdColumn::Id,
+        UpdateId::Text(&note_id),
         &body,
-        &["content", "visibility"],
+        &[UpdateColumn::Content, UpdateColumn::Visibility],
         true,
     )
     .await?;
@@ -527,7 +672,7 @@ pub async fn delete_note(
     Path(note_id): Path<String>,
 ) -> AppResult<Json<Value>> {
     auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    sqlx::query("DELETE FROM session_notes WHERE id=?")
+    sqlx::query("DELETE FROM coaching.session_notes WHERE id=$1")
         .bind(note_id)
         .execute(&state.pool)
         .await?;
@@ -543,25 +688,49 @@ pub async fn my_coaching(
     let Ok(discord_id) = user.sub.parse::<i64>() else {
         return Ok(Json(empty_my_coaching()));
     };
-    let coachee = sqlx::query("SELECT id, discord_user_id, discord_username, display_name, rank, main_heroes_json, current_focus, created_at, updated_at FROM coachees WHERE discord_user_id=?")
-        .bind(discord_id)
-        .fetch_optional(&state.pool)
-        .await?;
+    let coachee = sqlx::query(
+        "SELECT id, discord_user_id, discord_username, display_name, rank, main_heroes_json, \
+                current_focus, created_at, updated_at \
+         FROM coaching.coachees \
+         WHERE discord_user_id=$1",
+    )
+    .bind(discord_id)
+    .fetch_optional(&state.pool)
+    .await?;
     let Some(coachee) = coachee else {
         return Ok(Json(empty_my_coaching()));
     };
     let coachee_id = rows::required_string(&coachee, "id");
     let goals = goals_with_milestones(&state, &coachee_id).await?;
-    let notes = sqlx::query("SELECT * FROM session_notes WHERE coachee_id=? AND visibility='shared_with_user' ORDER BY created_at DESC")
-        .bind(&coachee_id)
-        .fetch_all(&state.pool)
-        .await?;
-    let sessions = sqlx::query("SELECT s.status, s.started_at, s.completed_at, c.display_name AS coach_display FROM coaching_sessions s LEFT JOIN coaches c ON s.coach_id=c.id WHERE s.discord_user_id=? ORDER BY s.started_at DESC")
-        .bind(discord_id)
-        .fetch_all(&state.pool)
-        .await?;
-    let cutoff = (Utc::now() - Duration::hours(6)).to_rfc3339();
-    let appts = sqlx::query("SELECT a.id, a.scheduled_at, a.duration_minutes, a.title, a.status, c.display_name AS coach_display FROM coaching_appointments a LEFT JOIN coaches c ON a.coach_id=c.id WHERE a.coachee_id=? AND ((a.status='scheduled' AND a.scheduled_at >= ?) OR a.status IN ('done','cancelled')) ORDER BY CASE WHEN a.status='scheduled' THEN 0 ELSE 1 END, a.scheduled_at ASC LIMIT 50")
+    let notes = sqlx::query(
+        "SELECT * FROM coaching.session_notes \
+         WHERE coachee_id=$1 AND visibility='shared_with_user' \
+         ORDER BY created_at DESC NULLS LAST",
+    )
+    .bind(&coachee_id)
+    .fetch_all(&state.pool)
+    .await?;
+    let sessions = sqlx::query(
+        "SELECT s.status, s.started_at, s.completed_at, c.display_name AS coach_display \
+         FROM coaching.sessions s \
+         LEFT JOIN coaching.coaches c ON s.coach_id=c.id \
+         WHERE s.discord_user_id=$1 \
+         ORDER BY s.started_at DESC NULLS LAST, s.created_at DESC NULLS LAST",
+    )
+    .bind(discord_id)
+    .fetch_all(&state.pool)
+    .await?;
+    let cutoff = Utc::now() - Duration::hours(6);
+    let appts = sqlx::query(
+        "SELECT a.id, a.scheduled_at, a.duration_minutes, a.title, a.status, \
+                c.display_name AS coach_display \
+         FROM coaching.appointments a \
+         LEFT JOIN coaching.coaches c ON a.coach_id=c.id \
+         WHERE a.coachee_id=$1 \
+           AND ((a.status='scheduled' AND a.scheduled_at >= $2) OR a.status IN ('done','cancelled')) \
+         ORDER BY CASE WHEN a.status='scheduled' THEN 0 ELSE 1 END, a.scheduled_at ASC \
+         LIMIT 50",
+    )
         .bind(&coachee_id)
         .bind(cutoff)
         .fetch_all(&state.pool)
@@ -614,21 +783,31 @@ pub async fn coaches_sync(
             continue;
         };
         incoming.push(discord_id);
-        let row = sqlx::query("SELECT id FROM coaches WHERE discord_user_id=?")
+        let row = sqlx::query("SELECT id FROM coaching.coaches WHERE discord_user_id=$1")
             .bind(discord_id)
             .fetch_optional(&state.pool)
             .await?;
         if row.is_some() {
-            sqlx::query("UPDATE coaches SET discord_username=COALESCE(?, discord_username), display_name=COALESCE(?, display_name), avatar_url=COALESCE(?, avatar_url), status='active', updated_at=? WHERE discord_user_id=?")
-                .bind(entry.get("discord_username").and_then(Value::as_str))
-                .bind(entry.get("display_name").and_then(Value::as_str))
-                .bind(entry.get("avatar_url").and_then(Value::as_str))
-                .bind(iso_now())
-                .bind(discord_id)
-                .execute(&state.pool)
-                .await?;
+            sqlx::query(
+                "UPDATE coaching.coaches \
+                 SET discord_username=COALESCE($1, discord_username), \
+                     display_name=COALESCE($2, display_name), \
+                     avatar_url=COALESCE($3, avatar_url), \
+                     status='active', updated_at=now() \
+                 WHERE discord_user_id=$4",
+            )
+            .bind(entry.get("discord_username").and_then(Value::as_str))
+            .bind(entry.get("display_name").and_then(Value::as_str))
+            .bind(entry.get("avatar_url").and_then(Value::as_str))
+            .bind(discord_id)
+            .execute(&state.pool)
+            .await?;
         } else {
-            sqlx::query("INSERT INTO coaches (id, discord_user_id, discord_username, display_name, avatar_url, status) VALUES (?, ?, ?, ?, ?, 'active')")
+            sqlx::query(
+                "INSERT INTO coaching.coaches \
+                 (id, discord_user_id, discord_username, display_name, avatar_url, status, created_at, updated_at) \
+                 VALUES ($1, $2, $3, $4, $5, 'active', now(), now())",
+            )
                 .bind(ids::id12())
                 .bind(discord_id)
                 .bind(entry.get("discord_username").and_then(Value::as_str))
@@ -638,18 +817,19 @@ pub async fn coaches_sync(
                 .await?;
         }
     }
-    let placeholders = std::iter::repeat("?")
-        .take(incoming.len())
-        .collect::<Vec<_>>()
-        .join(",");
-    let sql = format!(
-        "UPDATE coaches SET status='inactive', updated_at=? WHERE status='active' AND discord_user_id NOT IN ({placeholders})"
+    let mut query = QueryBuilder::<Postgres>::new(
+        "UPDATE coaching.coaches \
+         SET status='inactive', updated_at=now() \
+         WHERE status='active' AND discord_user_id NOT IN (",
     );
-    let mut q = sqlx::query(&sql).bind(iso_now());
-    for id in &incoming {
-        q = q.bind(id);
+    {
+        let mut separated = query.separated(", ");
+        for id in &incoming {
+            separated.push_bind(id);
+        }
     }
-    let result = q.execute(&state.pool).await?;
+    query.push(")");
+    let result = query.build().execute(&state.pool).await?;
     Ok(Json(
         json!({ "ok": true, "active": incoming.len(), "deactivated": result.rows_affected() }),
     ))
@@ -671,7 +851,7 @@ pub async fn create_appointment(
         .get("coachee_id")
         .and_then(Value::as_str)
         .unwrap_or_default();
-    let exists: Option<String> = sqlx::query_scalar("SELECT id FROM coachees WHERE id=?")
+    let exists: Option<String> = sqlx::query_scalar("SELECT id FROM coaching.coachees WHERE id=$1")
         .bind(coachee_id)
         .fetch_optional(&state.pool)
         .await?;
@@ -680,12 +860,18 @@ pub async fn create_appointment(
     }
     let coach_id = acting_coach_id(&state, &user).await?;
     let id = ids::id12();
-    sqlx::query("INSERT INTO coaching_appointments (id, coach_id, coachee_id, scheduled_at, duration_minutes, title, note) VALUES (?, ?, ?, ?, ?, ?, ?)")
+    let scheduled_at = parse_datetime_utc(scheduled_at)?;
+    let duration_minutes = i32_body_or_default(&body, "duration_minutes", 60)?;
+    sqlx::query(
+        "INSERT INTO coaching.appointments \
+         (id, coach_id, coachee_id, scheduled_at, duration_minutes, title, note, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'scheduled', now(), now())",
+    )
         .bind(&id)
         .bind(coach_id)
         .bind(coachee_id)
         .bind(scheduled_at)
-        .bind(body.get("duration_minutes").and_then(Value::as_i64).unwrap_or(60))
+        .bind(duration_minutes)
         .bind(body.get("title").and_then(Value::as_str))
         .bind(body.get("note").and_then(Value::as_str))
         .execute(&state.pool)
@@ -700,19 +886,39 @@ pub async fn list_appointments(
     Query(query): Query<AppointmentQuery>,
 ) -> AppResult<Json<Value>> {
     let user = auth::require_coach_user(&state, &headers, Some(peer)).await?;
-    let cutoff = (Utc::now() - Duration::days(7)).to_rfc3339();
+    let cutoff = Utc::now() - Duration::days(7);
     let rows = if query.scope.as_deref().unwrap_or("mine") == "mine" {
         let coach_id = acting_coach_id(&state, &user).await?;
-        sqlx::query("SELECT a.id, a.coach_id, a.coachee_id, a.scheduled_at, a.duration_minutes, a.title, a.note, a.status, a.created_at, COALESCE(co.display_name, co.discord_username) AS coachee_display, COALESCE(c.display_name, c.discord_username) AS coach_display FROM coaching_appointments a LEFT JOIN coachees co ON a.coachee_id=co.id LEFT JOIN coaches c ON a.coach_id=c.id WHERE a.coach_id=? AND a.scheduled_at >= ? ORDER BY a.scheduled_at ASC")
-            .bind(coach_id)
-            .bind(cutoff)
-            .fetch_all(&state.pool)
-            .await?
+        sqlx::query(
+            "SELECT a.id, a.coach_id, a.coachee_id, a.scheduled_at, a.duration_minutes, \
+                    a.title, a.note, a.status, a.created_at, \
+                    COALESCE(co.display_name, co.discord_username) AS coachee_display, \
+                    COALESCE(c.display_name, c.discord_username) AS coach_display \
+             FROM coaching.appointments a \
+             LEFT JOIN coaching.coachees co ON a.coachee_id=co.id \
+             LEFT JOIN coaching.coaches c ON a.coach_id=c.id \
+             WHERE a.coach_id=$1 AND a.scheduled_at >= $2 \
+             ORDER BY a.scheduled_at ASC",
+        )
+        .bind(coach_id)
+        .bind(cutoff)
+        .fetch_all(&state.pool)
+        .await?
     } else {
-        sqlx::query("SELECT a.id, a.coach_id, a.coachee_id, a.scheduled_at, a.duration_minutes, a.title, a.note, a.status, a.created_at, COALESCE(co.display_name, co.discord_username) AS coachee_display, COALESCE(c.display_name, c.discord_username) AS coach_display FROM coaching_appointments a LEFT JOIN coachees co ON a.coachee_id=co.id LEFT JOIN coaches c ON a.coach_id=c.id WHERE a.scheduled_at >= ? ORDER BY a.scheduled_at ASC")
-            .bind(cutoff)
-            .fetch_all(&state.pool)
-            .await?
+        sqlx::query(
+            "SELECT a.id, a.coach_id, a.coachee_id, a.scheduled_at, a.duration_minutes, \
+                    a.title, a.note, a.status, a.created_at, \
+                    COALESCE(co.display_name, co.discord_username) AS coachee_display, \
+                    COALESCE(c.display_name, c.discord_username) AS coach_display \
+             FROM coaching.appointments a \
+             LEFT JOIN coaching.coachees co ON a.coachee_id=co.id \
+             LEFT JOIN coaching.coaches c ON a.coach_id=c.id \
+             WHERE a.scheduled_at >= $1 \
+             ORDER BY a.scheduled_at ASC",
+        )
+        .bind(cutoff)
+        .fetch_all(&state.pool)
+        .await?
     };
     Ok(Json(
         json!({ "appointments": rows.iter().map(rows::row_json).collect::<Vec<_>>() }),
@@ -737,7 +943,7 @@ pub async fn update_appointment(
     if let Some(scheduled_at) = body.get("scheduled_at").and_then(Value::as_str) {
         validate_iso(scheduled_at)?;
     }
-    let appt = sqlx::query("SELECT coach_id, status FROM coaching_appointments WHERE id=?")
+    let appt = sqlx::query("SELECT coach_id, status FROM coaching.appointments WHERE id=$1")
         .bind(&appointment_id)
         .fetch_optional(&state.pool)
         .await?
@@ -748,37 +954,38 @@ pub async fn update_appointment(
             "Nur der zuständige Coach darf diesen Termin ändern",
         ));
     }
-    let mut sets = Vec::new();
     let mut values = Vec::new();
     for key in [
-        "scheduled_at",
-        "duration_minutes",
-        "title",
-        "note",
-        "status",
+        ("scheduled_at", UpdateColumn::ScheduledAt),
+        ("duration_minutes", UpdateColumn::DurationMinutes),
+        ("title", UpdateColumn::Title),
+        ("note", UpdateColumn::Note),
+        ("status", UpdateColumn::Status),
     ] {
-        if let Some(value) = body.get(key).filter(|v| !v.is_null()) {
-            sets.push(format!("{key}=?"));
-            values.push(value.clone());
+        if let Some(value) = body.get(key.0).filter(|v| !v.is_null()) {
+            values.push(UpdateAssignment::body(key.1, value.clone()));
         }
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
     if body.get("scheduled_at").is_some() {
-        sets.push("notify_created_at=NULL".to_string());
-        sets.push("notify_reminder_at=NULL".to_string());
+        values.push(UpdateAssignment::datetime(
+            UpdateColumn::NotifyCreatedAt,
+            None,
+        ));
+        values.push(UpdateAssignment::datetime(
+            UpdateColumn::NotifyReminderAt,
+            None,
+        ));
     }
-    sets.push("updated_at=?".to_string());
-    values.push(json!(iso_now()));
+    values.push(UpdateAssignment::now(UpdateColumn::UpdatedAt));
     run_update(
         &state,
-        &format!(
-            "UPDATE coaching_appointments SET {} WHERE id=?",
-            sets.join(", ")
-        ),
+        PlatformTable::Appointments,
+        IdColumn::Id,
+        UpdateId::Text(&appointment_id),
         values,
-        &appointment_id,
     )
     .await?;
     Ok(Json(json!({ "ok": true })))
@@ -789,10 +996,37 @@ pub async fn notifications_due(
     headers: HeaderMap,
 ) -> AppResult<Json<Value>> {
     require_bot_token(&headers)?;
-    let now = Utc::now().to_rfc3339();
-    let in_2h = (Utc::now() + Duration::hours(2)).to_rfc3339();
+    let now = Utc::now();
+    let in_2h = now + Duration::hours(2);
     let rows = sqlx::query(
-        "SELECT 'created' AS type, a.id AS appointment_id, co.discord_user_id, COALESCE(co.display_name, co.discord_username) AS coachee_display, COALESCE(c.display_name, c.discord_username) AS coach_display, a.scheduled_at, a.duration_minutes, a.title, a.note FROM coaching_appointments a JOIN coachees co ON a.coachee_id=co.id JOIN coaches c ON a.coach_id=c.id WHERE a.status='scheduled' AND a.notify_created_at IS NULL UNION ALL SELECT 'reminder' AS type, a.id, co.discord_user_id, COALESCE(co.display_name, co.discord_username), COALESCE(c.display_name, c.discord_username), a.scheduled_at, a.duration_minutes, a.title, a.note FROM coaching_appointments a JOIN coachees co ON a.coachee_id=co.id JOIN coaches c ON a.coach_id=c.id WHERE a.status='scheduled' AND a.notify_reminder_at IS NULL AND a.notify_created_at IS NOT NULL AND a.scheduled_at BETWEEN ? AND ? UNION ALL SELECT 'cancelled' AS type, a.id, co.discord_user_id, COALESCE(co.display_name, co.discord_username), COALESCE(c.display_name, c.discord_username), a.scheduled_at, a.duration_minutes, a.title, a.note FROM coaching_appointments a JOIN coachees co ON a.coachee_id=co.id JOIN coaches c ON a.coach_id=c.id WHERE a.status='cancelled' AND a.notify_cancelled_at IS NULL AND a.notify_created_at IS NOT NULL",
+        "SELECT 'created' AS type, a.id AS appointment_id, co.discord_user_id, \
+                COALESCE(co.display_name, co.discord_username) AS coachee_display, \
+                COALESCE(c.display_name, c.discord_username) AS coach_display, \
+                a.scheduled_at, a.duration_minutes, a.title, a.note \
+         FROM coaching.appointments a \
+         JOIN coaching.coachees co ON a.coachee_id=co.id \
+         JOIN coaching.coaches c ON a.coach_id=c.id \
+         WHERE a.status='scheduled' AND a.notify_created_at IS NULL \
+         UNION ALL \
+         SELECT 'reminder' AS type, a.id, co.discord_user_id, \
+                COALESCE(co.display_name, co.discord_username), \
+                COALESCE(c.display_name, c.discord_username), \
+                a.scheduled_at, a.duration_minutes, a.title, a.note \
+         FROM coaching.appointments a \
+         JOIN coaching.coachees co ON a.coachee_id=co.id \
+         JOIN coaching.coaches c ON a.coach_id=c.id \
+         WHERE a.status='scheduled' AND a.notify_reminder_at IS NULL \
+           AND a.notify_created_at IS NOT NULL AND a.scheduled_at BETWEEN $1 AND $2 \
+         UNION ALL \
+         SELECT 'cancelled' AS type, a.id, co.discord_user_id, \
+                COALESCE(co.display_name, co.discord_username), \
+                COALESCE(c.display_name, c.discord_username), \
+                a.scheduled_at, a.duration_minutes, a.title, a.note \
+         FROM coaching.appointments a \
+         JOIN coaching.coachees co ON a.coachee_id=co.id \
+         JOIN coaching.coaches c ON a.coach_id=c.id \
+         WHERE a.status='cancelled' AND a.notify_cancelled_at IS NULL \
+           AND a.notify_created_at IS NOT NULL",
     )
     .bind(now)
     .bind(in_2h)
@@ -800,14 +1034,18 @@ pub async fn notifications_due(
     .await?;
     let mut notifications: Vec<Value> = rows.iter().map(rows::row_json).collect();
 
-    let columns = db::table_columns(&state.pool, "coaching_requests").await?;
-    let preferred = if columns.contains("preferred_coach_id") {
-        "preferred_coach_id"
-    } else {
-        "NULL AS preferred_coach_id"
-    };
-    let request_sql = format!("SELECT id AS request_id, discord_user_id, discord_username, rank, subrank, hero, games_played, hours_played, availability, current_problems, {preferred} FROM coaching_requests WHERE notify_discord_at IS NULL AND status IN ('pending', 'analyzed', 'open', 'new') ORDER BY created_at ASC");
-    let reqs = sqlx::query(&request_sql).fetch_all(&state.pool).await?;
+    let reqs = sqlx::query(
+        "SELECT website_request_id AS request_id, \
+                discord_user_id, discord_username, rank, subrank, hero, games_played, \
+                hours_played, availability, current_problems, preferred_coach_id \
+         FROM coaching.requests \
+         WHERE website_request_id IS NOT NULL /* request_created mirrors only website-originated requests. */ \
+           AND notify_discord_at IS NULL \
+           AND status IN ('pending', 'analyzed', 'open', 'new') \
+         ORDER BY created_at ASC NULLS LAST",
+    )
+    .fetch_all(&state.pool)
+    .await?;
     for row in &reqs {
         let coachee_id = upsert_coachee(
             &state,
@@ -840,7 +1078,6 @@ pub async fn notifications_ack(
     Json(body): Json<Value>,
 ) -> AppResult<Json<Value>> {
     require_bot_token(&headers)?;
-    let ts = iso_now();
     let mut acked: u64 = 0;
     for item in body
         .get("items")
@@ -852,24 +1089,26 @@ pub async fn notifications_ack(
             .get("type")
             .and_then(Value::as_str)
             .and_then(|kind| match kind {
-                "created" => Some("notify_created_at"),
-                "reminder" => Some("notify_reminder_at"),
-                "cancelled" => Some("notify_cancelled_at"),
+                "created" => Some(AppointmentNotifyColumn::Created),
+                "reminder" => Some(AppointmentNotifyColumn::Reminder),
+                "cancelled" => Some(AppointmentNotifyColumn::Cancelled),
                 _ => None,
             })
         else {
             continue;
         };
-        let sql = format!("UPDATE coaching_appointments SET {col}=? WHERE id=?");
-        sqlx::query(&sql)
-            .bind(&ts)
-            .bind(
+        let mut query = QueryBuilder::<Postgres>::new("UPDATE coaching.appointments SET ");
+        query
+            .push(col.sql())
+            .push("=")
+            .push_bind(Utc::now())
+            .push(" WHERE id=")
+            .push_bind(
                 item.get("appointment_id")
                     .and_then(Value::as_str)
                     .unwrap_or_default(),
-            )
-            .execute(&state.pool)
-            .await?;
+            );
+        query.build().execute(&state.pool).await?;
         acked += 1;
     }
     for request_id in body
@@ -879,11 +1118,16 @@ pub async fn notifications_ack(
         .flatten()
     {
         if let Some(id) = request_id.as_str() {
-            let res = sqlx::query("UPDATE coaching_requests SET notify_discord_at=? WHERE id=? AND notify_discord_at IS NULL")
-                .bind(&ts)
-                .bind(id)
-                .execute(&state.pool)
-                .await?;
+            let res = sqlx::query(
+                "UPDATE coaching.requests \
+                 SET notify_discord_at=$1 \
+                 WHERE website_request_id=$2 \
+                   AND notify_discord_at IS NULL",
+            )
+            .bind(Utc::now())
+            .bind(id)
+            .execute(&state.pool)
+            .await?;
             acked += res.rows_affected();
         }
     }
@@ -900,7 +1144,7 @@ pub async fn get_my_coach_profile(
         .sub
         .parse::<i64>()
         .map_err(|_| AppError::not_found("Coach-Profil nicht gefunden"))?;
-    let row = sqlx::query("SELECT * FROM coaches WHERE discord_user_id=?")
+    let row = sqlx::query("SELECT * FROM coaching.coaches WHERE discord_user_id=$1")
         .bind(discord_id)
         .fetch_optional(&state.pool)
         .await?
@@ -932,45 +1176,149 @@ pub async fn update_my_coach_profile(
         .parse::<i64>()
         .map_err(|_| AppError::not_found("Coach-Profil nicht gefunden"))?;
     let exists: Option<String> =
-        sqlx::query_scalar("SELECT id FROM coaches WHERE discord_user_id=?")
+        sqlx::query_scalar("SELECT id FROM coaching.coaches WHERE discord_user_id=$1")
             .bind(discord_id)
             .fetch_optional(&state.pool)
             .await?;
     if exists.is_none() {
         return Err(AppError::not_found("Coach-Profil nicht gefunden"));
     }
-    let mut sets = Vec::new();
     let mut values = Vec::new();
     if let Some(v) = body.get("bio").filter(|v| !v.is_null()) {
-        sets.push("bio=?".to_string());
-        values.push(v.clone());
+        values.push(UpdateAssignment::body(UpdateColumn::Bio, v.clone()));
     }
     if let Some(v) = body.get("specialties").filter(|v| !v.is_null()) {
-        sets.push("specialties_json=?".to_string());
-        values.push(json!(
-            serde_json::to_string(v).unwrap_or_else(|_| "[]".to_string())
+        values.push(UpdateAssignment::body(
+            UpdateColumn::SpecialtiesJson,
+            v.clone(),
         ));
     }
     if let Some(v) = body.get("twitch_url").filter(|v| !v.is_null()) {
-        sets.push("twitch_url=?".to_string());
-        values.push(v.clone());
+        values.push(UpdateAssignment::body(UpdateColumn::TwitchUrl, v.clone()));
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(Json(json!({ "ok": true })));
     }
-    sets.push("updated_at=?".to_string());
-    values.push(json!(iso_now()));
-    run_update_by_i64(
+    values.push(UpdateAssignment::now(UpdateColumn::UpdatedAt));
+    run_update(
         &state,
-        &format!(
-            "UPDATE coaches SET {} WHERE discord_user_id=?",
-            sets.join(", ")
-        ),
+        PlatformTable::Coaches,
+        IdColumn::DiscordUserId,
+        UpdateId::I64(discord_id),
         values,
-        discord_id,
     )
     .await?;
     Ok(Json(json!({ "ok": true })))
+}
+
+async fn find_request_by_references(
+    state: &AppState,
+    website_request_id: Option<&str>,
+    bot_request_id: Option<i32>,
+    request_uid: Option<&str>,
+) -> AppResult<Option<rows::DbRow>> {
+    let matches = sqlx::query(
+        "SELECT * \
+         FROM coaching.requests \
+         WHERE ($1::text IS NOT NULL AND website_request_id=$1) \
+            OR ($2::integer IS NOT NULL AND bot_request_id=$2) \
+            OR ($3::text IS NOT NULL AND request_uid=$3) \
+         ORDER BY CASE \
+             WHEN $1::text IS NOT NULL AND website_request_id=$1 THEN 0 \
+             WHEN $2::integer IS NOT NULL AND bot_request_id=$2 THEN 1 \
+             ELSE 2 \
+         END",
+    )
+    .bind(website_request_id)
+    .bind(bot_request_id)
+    .bind(request_uid)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(AppError::from)?;
+
+    let has_external_reference = website_request_id.is_some() || bot_request_id.is_some();
+    let mut matched_external_reference = false;
+    let mut first_request_uid = None;
+    for row in &matches {
+        let row_request_uid = rows::required_string(row, "request_uid");
+        let matches_website = website_request_id
+            .is_some_and(|id| rows::string(row, "website_request_id").as_deref() == Some(id));
+        let matches_bot = bot_request_id
+            .is_some_and(|id| rows::i64(row, "bot_request_id") == Some(i64::from(id)));
+        matched_external_reference |= matches_website || matches_bot;
+        if let Some(first_request_uid) = &first_request_uid {
+            if first_request_uid != &row_request_uid {
+                return Err(AppError::http(
+                    StatusCode::CONFLICT,
+                    "conflicting request references",
+                ));
+            }
+        } else {
+            first_request_uid = Some(row_request_uid);
+        }
+    }
+    if has_external_reference && !matches.is_empty() && !matched_external_reference {
+        return Err(AppError::http(
+            StatusCode::CONFLICT,
+            "conflicting request references",
+        ));
+    }
+
+    Ok(matches.into_iter().next())
+}
+
+async fn find_session_by_references(
+    state: &AppState,
+    website_request_id: Option<&str>,
+    bot_request_id: Option<i32>,
+    request_uid: Option<&str>,
+    bot_session_id: Option<&str>,
+) -> AppResult<Option<rows::DbRow>> {
+    sqlx::query(
+        "SELECT id \
+         FROM coaching.sessions \
+         WHERE ($1::text IS NOT NULL AND website_request_id=$1) \
+            OR ($2::integer IS NOT NULL AND bot_request_id=$2) \
+            OR ($3::text IS NOT NULL AND request_uid=$3) \
+            OR ($4::text IS NOT NULL AND bot_session_id=$4) \
+         ORDER BY CASE \
+             WHEN $1::text IS NOT NULL AND website_request_id=$1 THEN 0 \
+             WHEN $2::integer IS NOT NULL AND bot_request_id=$2 THEN 1 \
+             WHEN $3::text IS NOT NULL AND request_uid=$3 THEN 2 \
+             ELSE 3 \
+         END \
+         LIMIT 1",
+    )
+    .bind(website_request_id)
+    .bind(bot_request_id)
+    .bind(request_uid)
+    .bind(bot_session_id)
+    .fetch_optional(&state.pool)
+    .await
+    .map_err(AppError::from)
+}
+
+fn new_request_uid(
+    website_request_id: Option<&str>,
+    bot_request_id: Option<i32>,
+    explicit_request_uid: Option<&str>,
+) -> String {
+    if let Some(website_request_id) = website_request_id {
+        return website_request_id.to_string();
+    }
+    if let Some(bot_request_id) = bot_request_id {
+        return format!("bot:{bot_request_id}");
+    }
+    explicit_request_uid.unwrap_or_default().to_string()
+}
+
+fn validate_website_request_id(website_request_id: Option<&str>) -> AppResult<()> {
+    if website_request_id.is_some_and(|value| value.starts_with("bot:")) {
+        return Err(AppError::bad_request(
+            "website_request_id must not start with bot:",
+        ));
+    }
+    Ok(())
 }
 
 async fn upsert_coach(
@@ -978,7 +1326,7 @@ async fn upsert_coach(
     discord_user_id: i64,
     username: Option<&str>,
 ) -> AppResult<String> {
-    let row = sqlx::query("SELECT id FROM coaches WHERE discord_user_id=?")
+    let row = sqlx::query("SELECT id FROM coaching.coaches WHERE discord_user_id=$1")
         .bind(discord_user_id)
         .fetch_optional(&state.pool)
         .await?;
@@ -986,13 +1334,17 @@ async fn upsert_coach(
         return Ok(rows::required_string(&row, "id"));
     }
     let id = ids::id12();
-    sqlx::query("INSERT INTO coaches (id, discord_user_id, discord_username, display_name, status) VALUES (?, ?, ?, ?, 'active')")
-        .bind(&id)
-        .bind(discord_user_id)
-        .bind(username)
-        .bind(username)
-        .execute(&state.pool)
-        .await?;
+    sqlx::query(
+        "INSERT INTO coaching.coaches \
+         (id, discord_user_id, discord_username, display_name, status, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, 'active', now(), now())",
+    )
+    .bind(&id)
+    .bind(discord_user_id)
+    .bind(username)
+    .bind(username)
+    .execute(&state.pool)
+    .await?;
     Ok(id)
 }
 
@@ -1001,30 +1353,37 @@ async fn upsert_coachee(
     discord_user_id: i64,
     username: Option<&str>,
 ) -> AppResult<String> {
-    let row = sqlx::query("SELECT id FROM coachees WHERE discord_user_id=?")
+    let row = sqlx::query("SELECT id FROM coaching.coachees WHERE discord_user_id=$1")
         .bind(discord_user_id)
         .fetch_optional(&state.pool)
         .await?;
     if let Some(row) = row {
         let id = rows::required_string(&row, "id");
         if let Some(username) = username {
-            sqlx::query("UPDATE coachees SET discord_username=?, updated_at=? WHERE id=?")
-                .bind(username)
-                .bind(iso_now())
-                .bind(&id)
-                .execute(&state.pool)
-                .await?;
+            sqlx::query(
+                "UPDATE coaching.coachees \
+                 SET discord_username=$1, updated_at=now() \
+                 WHERE id=$2",
+            )
+            .bind(username)
+            .bind(&id)
+            .execute(&state.pool)
+            .await?;
         }
         return Ok(id);
     }
     let id = ids::id12();
-    sqlx::query("INSERT INTO coachees (id, discord_user_id, discord_username, display_name) VALUES (?, ?, ?, ?)")
-        .bind(&id)
-        .bind(discord_user_id)
-        .bind(username)
-        .bind(username)
-        .execute(&state.pool)
-        .await?;
+    sqlx::query(
+        "INSERT INTO coaching.coachees \
+         (id, discord_user_id, discord_username, display_name, created_at, updated_at) \
+         VALUES ($1, $2, $3, $4, now(), now())",
+    )
+    .bind(&id)
+    .bind(discord_user_id)
+    .bind(username)
+    .bind(username)
+    .execute(&state.pool)
+    .await?;
     Ok(id)
 }
 
@@ -1039,7 +1398,9 @@ async fn acting_coach_id(state: &AppState, user: &User) -> AppResult<Option<Stri
 
 async fn goals_with_milestones(state: &AppState, coachee_id: &str) -> AppResult<Vec<Value>> {
     let goals = sqlx::query(
-        "SELECT * FROM coaching_goals WHERE coachee_id=? ORDER BY sort_order, created_at",
+        "SELECT * FROM coaching.goals \
+         WHERE coachee_id=$1 \
+         ORDER BY sort_order NULLS LAST, created_at",
     )
     .bind(coachee_id)
     .fetch_all(&state.pool)
@@ -1051,7 +1412,9 @@ async fn goals_with_milestones(state: &AppState, coachee_id: &str) -> AppResult<
             .cloned()
             .unwrap_or_default();
         let ms = sqlx::query(
-            "SELECT * FROM coaching_milestones WHERE goal_id=? ORDER BY sort_order, created_at",
+            "SELECT * FROM coaching.milestones \
+             WHERE goal_id=$1 \
+             ORDER BY sort_order NULLS LAST, created_at",
         )
         .bind(rows::required_string(&goal, "id"))
         .fetch_all(&state.pool)
@@ -1067,79 +1430,449 @@ async fn goals_with_milestones(state: &AppState, coachee_id: &str) -> AppResult<
 
 async fn update_known_fields(
     state: &AppState,
-    table: &str,
-    id_col: &str,
-    id: &str,
+    table: PlatformTable,
+    id_column: IdColumn,
+    id: UpdateId<'_>,
     body: &Value,
-    allowed: &[&str],
+    allowed: &[UpdateColumn],
     updated_at: bool,
 ) -> AppResult<()> {
-    let mut sets = Vec::new();
     let mut values = Vec::new();
-    for key in allowed {
-        if let Some(value) = body.get(*key).filter(|v| !v.is_null()) {
-            sets.push(format!("{key}=?"));
-            values.push(value.clone());
+    for column in allowed {
+        if let Some(value) = body.get(column.body_key()).filter(|v| !v.is_null()) {
+            values.push(UpdateAssignment::body(*column, value.clone()));
         }
     }
-    if sets.is_empty() {
+    if values.is_empty() {
         return Ok(());
     }
     if updated_at {
-        sets.push("updated_at=?".to_string());
-        values.push(json!(iso_now()));
+        values.push(UpdateAssignment::now(UpdateColumn::UpdatedAt));
     }
-    run_update(
-        state,
-        &format!("UPDATE {table} SET {} WHERE {id_col}=?", sets.join(", ")),
-        values,
-        id,
-    )
-    .await
+    run_update(state, table, id_column, id, values).await
 }
 
-async fn run_update(state: &AppState, sql: &str, values: Vec<Value>, id: &str) -> AppResult<()> {
-    let mut q = sqlx::query(sql);
-    for value in values {
-        q = bind_json(q, value);
-    }
-    q.bind(id).execute(&state.pool).await?;
-    Ok(())
-}
-
-async fn run_update_by_i64(
+async fn run_update(
     state: &AppState,
-    sql: &str,
-    values: Vec<Value>,
-    id: i64,
+    table: PlatformTable,
+    id_column: IdColumn,
+    id: UpdateId<'_>,
+    values: Vec<UpdateAssignment>,
 ) -> AppResult<()> {
-    let mut q = sqlx::query(sql);
-    for value in values {
-        q = bind_json(q, value);
+    if values.is_empty() {
+        return Ok(());
     }
-    q.bind(id).execute(&state.pool).await?;
+
+    let mut query = QueryBuilder::<Postgres>::new("UPDATE ");
+    query.push(table.sql()).push(" SET ");
+    for (idx, assignment) in values.into_iter().enumerate() {
+        if idx > 0 {
+            query.push(", ");
+        }
+        if !table.allows(assignment.column) {
+            return Err(AppError::bad_request("invalid update column"));
+        }
+        query.push(assignment.column.sql()).push("=");
+        bind_update_value(&mut query, assignment)?;
+    }
+    query.push(" WHERE ").push(id_column.sql()).push("=");
+    match id {
+        UpdateId::Text(value) => {
+            query.push_bind(value);
+        }
+        UpdateId::I64(value) => {
+            query.push_bind(value);
+        }
+    }
+    query.build().execute(&state.pool).await?;
     Ok(())
 }
 
-fn bind_json<'q>(
-    q: sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'q>>,
-    value: Value,
-) -> sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'q>> {
-    match value {
-        Value::Null => q.bind(Option::<String>::None),
-        Value::Bool(v) => q.bind(if v { 1_i64 } else { 0_i64 }),
-        Value::Number(n) => {
-            if let Some(v) = n.as_i64() {
-                q.bind(v)
-            } else if let Some(v) = n.as_f64() {
-                q.bind(v)
-            } else {
-                q.bind(n.to_string())
-            }
+#[derive(Clone, Copy)]
+enum PlatformTable {
+    Coachees,
+    Goals,
+    Milestones,
+    SessionNotes,
+    Appointments,
+    Coaches,
+}
+
+impl PlatformTable {
+    fn sql(self) -> &'static str {
+        match self {
+            Self::Coachees => "coaching.coachees",
+            Self::Goals => "coaching.goals",
+            Self::Milestones => "coaching.milestones",
+            Self::SessionNotes => "coaching.session_notes",
+            Self::Appointments => "coaching.appointments",
+            Self::Coaches => "coaching.coaches",
         }
-        Value::String(v) => q.bind(v),
-        other => q.bind(other.to_string()),
     }
+
+    fn allows(self, column: UpdateColumn) -> bool {
+        matches!(
+            (self, column),
+            (
+                Self::Coachees,
+                UpdateColumn::DisplayName
+                    | UpdateColumn::Rank
+                    | UpdateColumn::MainHeroesJson
+                    | UpdateColumn::CurrentFocus
+                    | UpdateColumn::Notes
+                    | UpdateColumn::UpdatedAt
+            ) | (
+                Self::Goals,
+                UpdateColumn::Title
+                    | UpdateColumn::Description
+                    | UpdateColumn::Status
+                    | UpdateColumn::SortOrder
+                    | UpdateColumn::TargetDate
+                    | UpdateColumn::CompletedAt
+                    | UpdateColumn::UpdatedAt
+            ) | (
+                Self::Milestones,
+                UpdateColumn::Title
+                    | UpdateColumn::Description
+                    | UpdateColumn::SortOrder
+                    | UpdateColumn::Achieved
+                    | UpdateColumn::AchievedAt
+            ) | (
+                Self::SessionNotes,
+                UpdateColumn::Content | UpdateColumn::Visibility | UpdateColumn::UpdatedAt
+            ) | (
+                Self::Appointments,
+                UpdateColumn::ScheduledAt
+                    | UpdateColumn::DurationMinutes
+                    | UpdateColumn::Title
+                    | UpdateColumn::Note
+                    | UpdateColumn::Status
+                    | UpdateColumn::NotifyCreatedAt
+                    | UpdateColumn::NotifyReminderAt
+                    | UpdateColumn::UpdatedAt
+            ) | (
+                Self::Coaches,
+                UpdateColumn::Bio
+                    | UpdateColumn::SpecialtiesJson
+                    | UpdateColumn::TwitchUrl
+                    | UpdateColumn::UpdatedAt
+            )
+        )
+    }
+}
+
+#[derive(Clone, Copy)]
+enum IdColumn {
+    Id,
+    DiscordUserId,
+}
+
+impl IdColumn {
+    fn sql(self) -> &'static str {
+        match self {
+            Self::Id => "id",
+            Self::DiscordUserId => "discord_user_id",
+        }
+    }
+}
+
+enum UpdateId<'a> {
+    Text(&'a str),
+    I64(i64),
+}
+
+#[derive(Clone, Copy)]
+enum AppointmentNotifyColumn {
+    Created,
+    Reminder,
+    Cancelled,
+}
+
+impl AppointmentNotifyColumn {
+    fn sql(self) -> &'static str {
+        match self {
+            Self::Created => "notify_created_at",
+            Self::Reminder => "notify_reminder_at",
+            Self::Cancelled => "notify_cancelled_at",
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum UpdateColumn {
+    DisplayName,
+    Rank,
+    MainHeroesJson,
+    CurrentFocus,
+    Notes,
+    Title,
+    Description,
+    Status,
+    SortOrder,
+    TargetDate,
+    CompletedAt,
+    Achieved,
+    AchievedAt,
+    Content,
+    Visibility,
+    ScheduledAt,
+    DurationMinutes,
+    Note,
+    NotifyCreatedAt,
+    NotifyReminderAt,
+    Bio,
+    SpecialtiesJson,
+    TwitchUrl,
+    UpdatedAt,
+}
+
+impl UpdateColumn {
+    fn sql(self) -> &'static str {
+        match self {
+            Self::DisplayName => "display_name",
+            Self::Rank => "rank",
+            Self::MainHeroesJson => "main_heroes_json",
+            Self::CurrentFocus => "current_focus",
+            Self::Notes => "notes",
+            Self::Title => "title",
+            Self::Description => "description",
+            Self::Status => "status",
+            Self::SortOrder => "sort_order",
+            Self::TargetDate => "target_date",
+            Self::CompletedAt => "completed_at",
+            Self::Achieved => "achieved",
+            Self::AchievedAt => "achieved_at",
+            Self::Content => "content",
+            Self::Visibility => "visibility",
+            Self::ScheduledAt => "scheduled_at",
+            Self::DurationMinutes => "duration_minutes",
+            Self::Note => "note",
+            Self::NotifyCreatedAt => "notify_created_at",
+            Self::NotifyReminderAt => "notify_reminder_at",
+            Self::Bio => "bio",
+            Self::SpecialtiesJson => "specialties_json",
+            Self::TwitchUrl => "twitch_url",
+            Self::UpdatedAt => "updated_at",
+        }
+    }
+
+    fn body_key(self) -> &'static str {
+        match self {
+            Self::SpecialtiesJson => "specialties",
+            other => other.sql(),
+        }
+    }
+}
+
+struct UpdateAssignment {
+    column: UpdateColumn,
+    value: UpdateValue,
+}
+
+impl UpdateAssignment {
+    fn body(column: UpdateColumn, value: Value) -> Self {
+        Self {
+            column,
+            value: UpdateValue::Body(value),
+        }
+    }
+
+    fn datetime(column: UpdateColumn, value: Option<DateTime<Utc>>) -> Self {
+        Self {
+            column,
+            value: UpdateValue::DateTime(value),
+        }
+    }
+
+    fn now(column: UpdateColumn) -> Self {
+        Self {
+            column,
+            value: UpdateValue::Now,
+        }
+    }
+}
+
+enum UpdateValue {
+    Body(Value),
+    DateTime(Option<DateTime<Utc>>),
+    Now,
+}
+
+fn body_string<'a>(body: &'a Value, key: &str) -> Option<&'a str> {
+    body.get(key)
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+}
+
+fn optional_i32_body(body: &Value, key: &str) -> AppResult<Option<i32>> {
+    let Some(value) = body.get(key).filter(|value| !value.is_null()) else {
+        return Ok(None);
+    };
+    let raw = match value {
+        Value::Number(number) => number
+            .as_i64()
+            .ok_or_else(|| AppError::bad_request("invalid integer value"))?,
+        Value::String(raw) => raw
+            .trim()
+            .parse::<i64>()
+            .map_err(|_| AppError::bad_request("invalid integer value"))?,
+        _ => return Err(AppError::bad_request("invalid integer value")),
+    };
+    i32::try_from(raw)
+        .map(Some)
+        .map_err(|_| AppError::bad_request("invalid integer value"))
+}
+
+fn i32_body_or_default(body: &Value, key: &str, default: i32) -> AppResult<i32> {
+    optional_i32_body(body, key).map(|value| value.unwrap_or(default))
+}
+
+fn optional_date_body(body: &Value, key: &str) -> AppResult<Option<NaiveDate>> {
+    match body.get(key) {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(raw)) if raw.trim().is_empty() => Ok(None),
+        Some(Value::String(raw)) => NaiveDate::parse_from_str(raw.trim(), "%Y-%m-%d")
+            .map(Some)
+            .map_err(|_| AppError::bad_request("invalid date value")),
+        _ => Err(AppError::bad_request("invalid date value")),
+    }
+}
+
+fn optional_datetime_body(body: &Value, key: &str) -> AppResult<Option<DateTime<Utc>>> {
+    match body.get(key) {
+        None | Some(Value::Null) => Ok(None),
+        Some(value) => datetime_from_value(value),
+    }
+}
+
+fn datetime_from_value(value: &Value) -> AppResult<Option<DateTime<Utc>>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::String(raw) if raw.trim().is_empty() => Ok(None),
+        Value::String(raw) => parse_datetime_utc(raw).map(Some),
+        Value::Number(number) => {
+            let Some(timestamp) = number.as_i64() else {
+                return Err(AppError::bad_request("invalid timestamp value"));
+            };
+            DateTime::from_timestamp(timestamp, 0)
+                .ok_or_else(|| AppError::bad_request("invalid timestamp value"))
+                .map(Some)
+        }
+        _ => Err(AppError::bad_request("invalid timestamp value")),
+    }
+}
+
+fn json_body_value_opt(body: &Value, keys: &[&str]) -> Option<Value> {
+    keys.iter()
+        .find_map(|key| body.get(*key).filter(|value| !value.is_null()).cloned())
+}
+
+fn bind_update_value(
+    query: &mut QueryBuilder<'_, Postgres>,
+    assignment: UpdateAssignment,
+) -> AppResult<()> {
+    match assignment.value {
+        UpdateValue::Now => {
+            query.push("now()");
+        }
+        UpdateValue::DateTime(value) => {
+            query.push_bind(value);
+        }
+        UpdateValue::Body(value) => match assignment.column {
+            UpdateColumn::MainHeroesJson | UpdateColumn::SpecialtiesJson => {
+                query.push_bind(jsonb_from_value(value)?);
+            }
+            UpdateColumn::Achieved => {
+                query.push_bind(bool_from_value(value)?);
+            }
+            UpdateColumn::TargetDate => {
+                query.push_bind(date_from_value(value)?);
+            }
+            UpdateColumn::ScheduledAt
+            | UpdateColumn::CompletedAt
+            | UpdateColumn::AchievedAt
+            | UpdateColumn::NotifyCreatedAt
+            | UpdateColumn::NotifyReminderAt
+            | UpdateColumn::UpdatedAt => {
+                query.push_bind(datetime_from_value(&value)?);
+            }
+            UpdateColumn::SortOrder | UpdateColumn::DurationMinutes => {
+                query.push_bind(i32_from_value(value)?);
+            }
+            _ => {
+                query.push_bind(string_from_value(value)?);
+            }
+        },
+    }
+    Ok(())
+}
+
+fn jsonb_from_value(value: Value) -> AppResult<Option<Value>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::String(raw) if raw.trim().is_empty() => Ok(None),
+        Value::String(raw) => serde_json::from_str::<Value>(&raw)
+            .map(Some)
+            .map_err(|_| AppError::bad_request("invalid json value")),
+        other => Ok(Some(other)),
+    }
+}
+
+fn bool_from_value(value: Value) -> AppResult<Option<bool>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::Bool(v) => Ok(Some(v)),
+        Value::String(raw) => match raw.to_ascii_lowercase().as_str() {
+            "true" | "t" | "1" | "yes" => Ok(Some(true)),
+            "false" | "f" | "0" | "no" => Ok(Some(false)),
+            _ => Err(AppError::bad_request("invalid boolean value")),
+        },
+        _ => Err(AppError::bad_request("invalid boolean value")),
+    }
+}
+
+fn date_from_value(value: Value) -> AppResult<Option<NaiveDate>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::String(raw) if raw.trim().is_empty() => Ok(None),
+        Value::String(raw) => NaiveDate::parse_from_str(raw.trim(), "%Y-%m-%d")
+            .map(Some)
+            .map_err(|_| AppError::bad_request("invalid date value")),
+        _ => Err(AppError::bad_request("invalid date value")),
+    }
+}
+
+fn i32_from_value(value: Value) -> AppResult<Option<i32>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::Number(number) => number
+            .as_i64()
+            .and_then(|value| i32::try_from(value).ok())
+            .map(Some)
+            .ok_or_else(|| AppError::bad_request("invalid integer value")),
+        Value::String(raw) if raw.trim().is_empty() => Ok(None),
+        Value::String(raw) => raw
+            .trim()
+            .parse::<i32>()
+            .map(Some)
+            .map_err(|_| AppError::bad_request("invalid integer value")),
+        _ => Err(AppError::bad_request("invalid integer value")),
+    }
+}
+
+fn string_from_value(value: Value) -> AppResult<Option<String>> {
+    match value {
+        Value::Null => Ok(None),
+        Value::String(raw) => Ok(Some(raw)),
+        _ => Err(AppError::bad_request("invalid string value")),
+    }
+}
+
+fn parse_datetime_utc(value: &str) -> AppResult<DateTime<Utc>> {
+    chrono::DateTime::parse_from_rfc3339(value)
+        .map(|dt| dt.with_timezone(&Utc))
+        .map_err(|_| AppError::bad_request("invalid timestamp value"))
 }
 
 fn validate_iso(value: &str) -> AppResult<()> {
@@ -1150,11 +1883,4 @@ fn validate_iso(value: &str) -> AppResult<()> {
 
 fn empty_my_coaching() -> Value {
     json!({ "profile": null, "goals": [], "notes": [], "sessions": [], "appointments": [] })
-}
-
-fn iso_now() -> String {
-    Utc::now()
-        .naive_utc()
-        .format("%Y-%m-%dT%H:%M:%S%.f")
-        .to_string()
 }
