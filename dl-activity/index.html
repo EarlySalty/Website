@@ -128,6 +128,20 @@
                   <div class="state state-loading">Lade Leaderboard…</div>
                 </div>
               </div>
+              <div class="leaderboard-card rank-leaderboard-card" id="rank-leaderboard-card">
+                <div class="leaderboard-head chart-head-wrap">
+                  <div>
+                    <h2>Rang-Leaderboard</h2>
+                  </div>
+                  <div class="metric-toggle" id="rank-leaderboard-sort-toggle" role="tablist">
+                    <button class="metric-btn is-active" type="button" data-rank-sort="climb">Top Climber</button>
+                    <button class="metric-btn" type="button" data-rank-sort="top">Top-Ränge</button>
+                  </div>
+                </div>
+                <div class="leaderboard-body" id="rank-leaderboard-body">
+                  <div class="state state-loading">Lade Rang-Leaderboard…</div>
+                </div>
+              </div>
             </div>
             <div class="panel-side">
               <div class="insight-card">
@@ -294,6 +308,33 @@
                 <span class="stat-meta" id="stat-text-30-meta">–</span>
               </div>
             </div>
+            <section class="rank-history-section" id="personal-rank-history-section">
+              <div class="leaderboard-card">
+                <div class="leaderboard-head chart-head-wrap">
+                  <div>
+                    <h2>Dein Rangverlauf</h2>
+                  </div>
+                  <div class="metric-toggle" id="rank-history-range-toggle" role="tablist">
+                    <button class="metric-btn is-active" type="button" data-rank-days="30">30 Tage</button>
+                    <button class="metric-btn" type="button" data-rank-days="90">90 Tage</button>
+                    <button class="metric-btn" type="button" data-rank-days="0">Alles</button>
+                  </div>
+                </div>
+                <div class="rank-history-body" id="personal-rank-history-body">
+                  <div class="state state-loading">Lade Rangverlauf…</div>
+                </div>
+                <div class="rank-visibility" id="rank-visibility">
+                  <div class="rank-visibility-label">Sichtbarkeit deines Rangverlaufs</div>
+                  <div class="metric-toggle rank-visibility-toggle" id="rank-visibility-toggle" role="tablist">
+                    <button class="metric-btn" type="button" data-rank-visibility="private">Privat (nur du)</button>
+                    <button class="metric-btn" type="button" data-rank-visibility="members">Nur Server-Mitglieder</button>
+                    <button class="metric-btn" type="button" data-rank-visibility="public">Öffentlich</button>
+                  </div>
+                  <p class="rank-visibility-hint">Standard: privat. Mit Mitglieder oder Öffentlich erscheinst du im Rang-Leaderboard.</p>
+                  <p class="rank-visibility-feedback" id="rank-visibility-feedback" aria-live="polite"></p>
+                </div>
+              </div>
+            </section>
             <div class="chart-grid">
               <div class="chart-card">
                 <div class="chart-head">

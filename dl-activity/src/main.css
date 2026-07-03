@@ -290,6 +290,12 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   gap: 1.5rem;
   align-items: start;
 }
+.panel-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
 
 /* ── Leaderboard ── */
 .leaderboard-card {
@@ -334,6 +340,74 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 
 .leaderboard-body { padding: 0.4rem 0; }
+
+.rank-lb-table .rank-board-row {
+  cursor: pointer;
+}
+.rank-lb-table .rank-board-row[aria-expanded="true"] {
+  background: rgba(201, 168, 106, 0.08);
+}
+.rank-lb-table .rank-board-row.is-not-expandable {
+  cursor: default;
+}
+.rank-board-detail td {
+  padding: 0;
+  background: rgba(11, 9, 7, 0.28);
+}
+.rank-history-expand {
+  padding: 0.9rem 1rem 1.2rem;
+  border-top: 1px solid var(--border);
+}
+.rank-badge {
+  --rank-color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 34px;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--rank-color) 56%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--rank-color) 16%, transparent);
+  color: var(--text);
+  white-space: nowrap;
+}
+.rank-badge-lg {
+  min-height: 48px;
+  padding: 0.65rem 0.85rem;
+  font-size: 1.02rem;
+}
+.rank-badge-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--rank-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rank-color) 18%, transparent);
+  flex: 0 0 auto;
+}
+.rank-badge-name {
+  font-weight: 800;
+  font-family: var(--font-display, 'Sora', sans-serif);
+  letter-spacing: 0;
+}
+.rank-delta {
+  display: block;
+  font-family: var(--font-display, 'Sora', sans-serif);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.rank-delta.is-positive { color: var(--success); }
+.rank-delta.is-negative { color: var(--danger); }
+.rank-delta.is-zero { color: var(--muted); }
+.rank-coaching-link {
+  display: inline-flex;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-decoration: none;
+}
+.rank-coaching-link:hover {
+  color: var(--text);
+}
 
 /* ── Insights ── */
 .insight-grid {
@@ -690,6 +764,78 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .stat-meta { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
 
+.rank-history-section {
+  margin-bottom: 1.5rem;
+}
+.rank-history-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.6fr);
+  gap: 1rem;
+  padding: 1.25rem 1.35rem;
+  align-items: stretch;
+}
+.rank-current-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+.rank-current-level {
+  font-family: var(--font-display, 'Sora', sans-serif);
+  font-size: 2.1rem;
+  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.rank-current-date {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.rank-chart-card {
+  min-width: 0;
+}
+.rank-coaching-box {
+  display: block;
+  margin: 0 1.35rem 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 38%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--text);
+  font-weight: 700;
+}
+.rank-visibility {
+  padding: 1.1rem 1.35rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: rgba(11, 9, 7, 0.2);
+}
+.rank-visibility-label {
+  margin-bottom: 0.75rem;
+  color: var(--text);
+  font-family: var(--font-display, 'Sora', sans-serif);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.rank-visibility-toggle {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  border-radius: var(--radius-md);
+}
+.rank-visibility-toggle .metric-btn {
+  white-space: normal;
+}
+.rank-visibility-hint,
+.rank-visibility-feedback {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.rank-visibility-feedback {
+  min-height: 1.4em;
+}
+
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -855,6 +1001,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   .rank-chip-grid { grid-template-columns: 1fr; }
   .metric-toggle { width: 100%; justify-content: center; }
   .section-head { margin-bottom: 1.25rem; }
+  .rank-history-layout { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
