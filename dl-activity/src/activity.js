@@ -60,14 +60,33 @@ const RANK_COLORS = {
   ascendant: '#ee9922',
   eternus:   '#f5cc11',
 }
+const BRAND_CHART = {
+  tooltipBg: 'rgba(11, 9, 7, 0.95)',
+  border: 'rgba(201, 168, 106, 0.24)',
+  grid: 'rgba(201, 168, 106, 0.08)',
+  gridSoft: 'rgba(201, 168, 106, 0.06)',
+  tick: '#b7aa91',
+  donutBorder: '#130f0b',
+  gold: 'rgba(201, 168, 106, 1)',
+  goldFill: 'rgba(201, 168, 106, 0.16)',
+  rust: 'rgba(221, 106, 77, 1)',
+  rustFill: 'rgba(221, 106, 77, 0.14)',
+}
 
 const state = {
   tab: 'voice',
   me: null,
   voiceBoard: null,
   textBoard: null,
+  rankLeaderboardSort: 'climb',
+  rankLeaderboardEntries: null,
+  rankLeaderboardExpanded: null,
+  rankLeaderboardNotFound: new Set(),
+  rankLeaderboardCharts: new Map(),
+  rankChartSeq: 0,
   voiceChart: null,
   textChart: null,
+  rankHistoryChart: null,
   distributionChart: null,
   weeklyChart: null,
   timelineChart: null,
@@ -76,14 +95,16 @@ const state = {
   timelineDays: 7,
   weeklyWeeks: 4,
   personalRange: 30,
+  rankHistoryDays: 30,
+  rankThirtyDayDelta: null,
+  rankVisibility: 'private',
+  rankVisibilitySaving: false,
   overallChartType: 'bar',
   timelineData: null,
   distributionData: null,
   distributionInitialized: false,
   peaksInitialized: false,
 }
-
-document.getElementById('year').textContent = new Date().getFullYear()
 
 init()
 
@@ -93,8 +114,13 @@ async function init() {
   bindTimelineToggle()
   bindWeeklyToggle()
   bindPersonalRangeToggle()
+  bindRankLeaderboardSortToggle()
+  bindRankHistoryRangeToggle()
+  bindRankVisibilityToggle()
+  await loadRankColors()
   loadLeaderboard('voice')
   loadTextLeaderboard()
+  loadRankLeaderboard()
   loadDistribution()
   state.distributionInitialized = true
   const me = await fetchMe()
@@ -144,6 +170,8 @@ function switchTab(tabId, pushHash = true) {
     state.overallChart,
     state.voiceChart,
     state.textChart,
+    state.rankHistoryChart,
+    ...state.rankLeaderboardCharts.values(),
   ].forEach((chart) => {
     if (chart) chart.resize()
   })
@@ -185,7 +213,7 @@ function renderAuthSlot(me) {
   if (me) {
     const chip = document.createElement('span')
     chip.className = 'auth-placeholder'
-    chip.innerHTML = `<strong style="color:var(--text)">${escapeHtml(me.name || 'User')}</strong>`
+    chip.innerHTML = `<strong style="color:var(--text)">${escapeHtml(me.name || 'Spieler')}</strong>`
     slot.appendChild(chip)
   } else {
     const btn = document.createElement('button')
@@ -263,6 +291,44 @@ function bindPersonalRangeToggle() {
   })
 }
 
+function bindRankLeaderboardSortToggle() {
+  document.querySelectorAll('#rank-leaderboard-sort-toggle .metric-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const sort = btn.dataset.rankSort
+      if (!sort || sort === state.rankLeaderboardSort) return
+      state.rankLeaderboardSort = sort
+      document.querySelectorAll('#rank-leaderboard-sort-toggle .metric-btn').forEach((node) => {
+        node.classList.toggle('is-active', node.dataset.rankSort === sort)
+      })
+      loadRankLeaderboard()
+    })
+  })
+}
+
+function bindRankHistoryRangeToggle() {
+  document.querySelectorAll('#rank-history-range-toggle .metric-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const days = Number(btn.dataset.rankDays)
+      if (!Number.isFinite(days) || days === state.rankHistoryDays) return
+      state.rankHistoryDays = days
+      document.querySelectorAll('#rank-history-range-toggle .metric-btn').forEach((node) => {
+        node.classList.toggle('is-active', Number(node.dataset.rankDays) === days)
+      })
+      if (state.me) loadPersonalRankHistory()
+    })
+  })
+}
+
+function bindRankVisibilityToggle() {
+  document.querySelectorAll('#rank-visibility-toggle .metric-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const visibility = btn.dataset.rankVisibility
+      if (!visibility || visibility === state.rankVisibility || state.rankVisibilitySaving) return
+      saveRankVisibility(visibility)
+    })
+  })
+}
+
 /* ── Leaderboard ── */
 async function loadLeaderboard(kind) {
   const title = document.getElementById('leaderboard-title')
@@ -321,7 +387,7 @@ function renderBoardInto(body, kind, entries) {
   const meId = state.me?.user_id
   const headerHtml = kind === 'voice'
     ? `<thead><tr><th>#</th><th>Spieler</th><th class="num hide-mobile">Zeit</th><th class="num">Punkte</th></tr></thead>`
-    : `<thead><tr><th>#</th><th>Spieler</th><th class="num hide-mobile">Messages</th><th class="num">Punkte</th></tr></thead>`
+    : `<thead><tr><th>#</th><th>Spieler</th><th class="num hide-mobile">Nachrichten</th><th class="num">Punkte</th></tr></thead>`
   const rowsHtml = entries.map((e) => rowHtml(e, kind, meId)).join('')
   body.innerHTML = `<table class="lb-table">${headerHtml}<tbody>${rowsHtml}</tbody></table>`
 }
@@ -376,6 +442,144 @@ function appendMeStickyRow(kind) {
       table.appendChild(innerTr)
     })
     .catch(() => {})
+}
+
+async function loadRankLeaderboard() {
+  const body = document.getElementById('rank-leaderboard-body')
+  if (!body) return
+  collapseRankLeaderboardDetail()
+  body.innerHTML = '<div class="state state-loading">Lade Rang-Leaderboard…</div>'
+  try {
+    const sort = state.rankLeaderboardSort
+    const r = await fetch(`${API_BASE}/api/public/leaderboard/rank?sort=${encodeURIComponent(sort)}&days=30&limit=50`, {
+      credentials: 'include',
+    })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const data = await r.json()
+    const entries = Array.isArray(data) ? data : data?.entries || []
+    state.rankLeaderboardEntries = entries
+    renderRankLeaderboard(entries)
+  } catch {
+    body.innerHTML = '<div class="state state-error">Rang-Leaderboard konnte nicht geladen werden.</div>'
+  }
+}
+
+function renderRankLeaderboard(entries) {
+  const body = document.getElementById('rank-leaderboard-body')
+  if (!body) return
+  if (!entries.length) {
+    body.innerHTML = '<div class="state">Noch niemand sichtbar — schalte deinen Verlauf auf Öffentlich, um hier aufzutauchen.</div>'
+    return
+  }
+
+  const showDelta = state.rankLeaderboardSort === 'climb'
+  const headerHtml = showDelta
+    ? '<thead><tr><th>Platz</th><th>Spieler</th><th>Rang</th><th class="num">Veränderung</th></tr></thead>'
+    : '<thead><tr><th>Platz</th><th>Spieler</th><th>Rang</th></tr></thead>'
+  const rowsHtml = entries.map((entry, idx) => rankLeaderboardRowHtml(entry, idx, showDelta)).join('')
+  body.innerHTML = `<table class="lb-table rank-lb-table">${headerHtml}<tbody>${rowsHtml}</tbody></table>`
+  body.onclick = handleRankLeaderboardClick
+}
+
+function rankLeaderboardRowHtml(entry, idx, showDelta) {
+  const userId = String(entry.user_id ?? '')
+  const place = idx + 1
+  const rankClass = place === 1 ? 'rank-top-1' : place === 2 ? 'rank-top-2' : place === 3 ? 'rank-top-3' : ''
+  const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : `#${place}`
+  const name = escapeHtml(entry.display_name || 'Unbekannt')
+  const disabled = !userId || state.rankLeaderboardNotFound.has(userId)
+  const deltaCell = showDelta ? `<td class="num">${rankDeltaHtml(entry.delta)}</td>` : ''
+  return `<tr class="rank-board-row ${rankClass} ${disabled ? 'is-not-expandable' : ''}" data-user-id="${escapeHtml(userId)}" data-rank-index="${idx}" aria-expanded="false">
+    <td class="rank-cell"><span class="medal">${medal}</span></td>
+    <td><div class="player-cell"><span class="avatar">${escapeHtml(initialsOf(entry.display_name || 'Unbekannt'))}</span><span class="player-name">${name}</span></div></td>
+    <td>${rankBadgeHtml(entry.rank_name, entry.badge_level)}</td>
+    ${deltaCell}
+  </tr>`
+}
+
+function rankDeltaHtml(delta) {
+  const value = Number(delta || 0)
+  const className = value > 0 ? 'is-positive' : value < 0 ? 'is-negative' : 'is-zero'
+  const label = value > 0 ? `+${value}` : value < 0 ? `−${Math.abs(value)}` : '0'
+  const coaching = value < 0
+    ? '<a class="rank-coaching-link" href="/coaching/">Coaching-Etage →</a>'
+    : ''
+  return `<span class="rank-delta ${className}">${label}</span>${coaching}`
+}
+
+function handleRankLeaderboardClick(event) {
+  if (event.target.closest('a')) return
+  const row = event.target.closest('.rank-board-row')
+  if (!row || row.classList.contains('is-not-expandable')) return
+  const userId = row.dataset.userId
+  if (!userId || state.rankLeaderboardNotFound.has(userId)) return
+  toggleRankLeaderboardDetail(row, userId)
+}
+
+async function toggleRankLeaderboardDetail(row, userId) {
+  if (state.rankLeaderboardExpanded === userId) {
+    collapseRankLeaderboardDetail()
+    return
+  }
+
+  collapseRankLeaderboardDetail()
+  state.rankLeaderboardExpanded = userId
+  row.setAttribute('aria-expanded', 'true')
+
+  const colSpan = state.rankLeaderboardSort === 'climb' ? 4 : 3
+  const detailRow = document.createElement('tr')
+  detailRow.className = 'rank-board-detail'
+  detailRow.innerHTML = `<td colspan="${colSpan}"><div class="state state-loading">Lade Rangverlauf…</div></td>`
+  row.after(detailRow)
+
+  try {
+    const r = await fetch(`${API_BASE}/api/public/rank-history/${encodeURIComponent(userId)}?days=30`, {
+      credentials: 'include',
+    })
+    if (r.status === 404) {
+      state.rankLeaderboardNotFound.add(userId)
+      markRankLeaderboardRowNotFound(userId)
+      if (state.rankLeaderboardExpanded === userId) collapseRankLeaderboardDetail()
+      return
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const data = await r.json()
+    if (state.rankLeaderboardExpanded !== userId || !detailRow.isConnected) return
+    renderRankLeaderboardDetail(detailRow, data, userId)
+  } catch {
+    if (state.rankLeaderboardExpanded === userId) collapseRankLeaderboardDetail()
+  }
+}
+
+function renderRankLeaderboardDetail(detailRow, data, userId) {
+  const colSpan = state.rankLeaderboardSort === 'climb' ? 4 : 3
+  const chartId = `rank-leaderboard-chart-${++state.rankChartSeq}`
+  detailRow.innerHTML = `<td colspan="${colSpan}">
+    <div class="rank-history-expand">
+      <div class="chart-wrapper chart-wrapper-md"><canvas id="${chartId}"></canvas></div>
+    </div>
+  </td>`
+  const chart = createRankHistoryChart(document.getElementById(chartId), data)
+  if (chart) state.rankLeaderboardCharts.set(userId, chart)
+}
+
+function collapseRankLeaderboardDetail() {
+  document.querySelectorAll('.rank-board-row[aria-expanded="true"]').forEach((row) => {
+    row.setAttribute('aria-expanded', 'false')
+  })
+  document.querySelectorAll('.rank-board-detail').forEach((row) => row.remove())
+  state.rankLeaderboardCharts.forEach((chart) => chart.destroy())
+  state.rankLeaderboardCharts.clear()
+  state.rankLeaderboardExpanded = null
+}
+
+function markRankLeaderboardRowNotFound(userId) {
+  document.querySelectorAll('.rank-board-row').forEach((row) => {
+    if (row.dataset.userId === userId) {
+      row.classList.add('is-not-expandable')
+      row.setAttribute('aria-expanded', 'false')
+    }
+  })
 }
 
 async function loadDistribution() {
@@ -457,7 +661,7 @@ function renderDistribution(data) {
       datasets: [{
         data: rankOrder.map((rank) => distribution[rank] || 0),
         backgroundColor: rankOrder.map(rankColor),
-        borderColor: '#10243a',
+        borderColor: BRAND_CHART.donutBorder,
         borderWidth: 2,
         hoverOffset: 6,
       }],
@@ -469,8 +673,8 @@ function renderDistribution(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
           callbacks: {
@@ -510,8 +714,8 @@ function renderWeeklyChart(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
         },
@@ -520,13 +724,13 @@ function renderWeeklyChart(data) {
         x: {
           stacked: true,
           grid: { display: false },
-          ticks: { color: '#9bb3c5', font: { size: 11 } },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 } },
         },
         y: {
           stacked: true,
           beginAtZero: true,
-          grid: { color: 'rgba(194, 221, 240, 0.08)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, precision: 0 },
+          grid: { color: BRAND_CHART.grid },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, precision: 0 },
         },
       },
     },
@@ -564,8 +768,8 @@ function renderTimeline(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
           callbacks: {
@@ -575,13 +779,13 @@ function renderTimeline(data) {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(194, 221, 240, 0.06)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+          grid: { color: BRAND_CHART.gridSoft },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
         },
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(194, 221, 240, 0.08)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 } },
+          grid: { color: BRAND_CHART.grid },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 } },
         },
       },
     },
@@ -630,8 +834,8 @@ function renderOverallTimeline(data) {
         {
           label: `Gesamt ${unit}`,
           data: totals,
-          backgroundColor: isBar ? 'rgba(30, 204, 192, 0.5)' : 'rgba(30, 204, 192, 0.15)',
-          borderColor: 'rgba(30, 204, 192, 0.9)',
+          backgroundColor: BRAND_CHART.goldFill,
+          borderColor: BRAND_CHART.gold,
           borderWidth: isBar ? 1 : 2,
           borderRadius: isBar ? 4 : 0,
           borderSkipped: false,
@@ -649,8 +853,8 @@ function renderOverallTimeline(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
           callbacks: {
@@ -660,13 +864,13 @@ function renderOverallTimeline(data) {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(194, 221, 240, 0.06)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+          grid: { color: BRAND_CHART.gridSoft },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
         },
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(194, 221, 240, 0.08)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 } },
+          grid: { color: BRAND_CHART.grid },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 } },
         },
       },
     },
@@ -708,6 +912,7 @@ async function loadPersonal() {
   renderTextChart(textHist)
   renderHeatmap(heatmap)
   renderCoPlayers(coplayers)
+  loadPersonalRankHistory()
 
   const meta = document.getElementById('me-meta')
   if (stats?.voice?.rank && stats?.text?.rank) {
@@ -734,14 +939,111 @@ async function reloadPersonalCharts() {
   renderHeatmap(heatmap)
 }
 
+async function loadPersonalRankHistory() {
+  const body = document.getElementById('personal-rank-history-body')
+  if (!body) return
+  body.innerHTML = '<div class="state state-loading">Lade Rangverlauf…</div>'
+  state.rankHistoryChart?.destroy()
+  state.rankHistoryChart = null
+
+  try {
+    const r = await fetch(`${API_BASE}/api/public/me/rank-history?days=${state.rankHistoryDays}`, {
+      credentials: 'include',
+    })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const data = await r.json()
+    setRankVisibilitySelection(data?.visibility || 'private')
+    renderPersonalRankHistory(data)
+  } catch {
+    setRankVisibilitySelection('private')
+    renderPersonalRankHistory(null)
+  }
+}
+
+function renderPersonalRankHistory(data) {
+  const body = document.getElementById('personal-rank-history-body')
+  if (!body) return
+  const points = rankHistoryPoints(data)
+  if (!points.length) {
+    body.innerHTML = '<div class="state">Noch keine Rang-Daten vorhanden.</div>'
+    return
+  }
+
+  const current = normalizeRankEntry(data?.current) || points[points.length - 1]
+  if (state.rankHistoryDays === 30) {
+    state.rankThirtyDayDelta = rankDeltaFromPoints(points)
+  }
+  const showCoaching = state.rankThirtyDayDelta < 0
+  const chartId = 'chart-personal-rank-history'
+  body.innerHTML = `
+    <div class="rank-history-layout">
+      <div class="rank-current-card">
+        ${rankBadgeHtml(current.rank_name, current.badge_level, 'rank-badge-lg')}
+        <span class="rank-current-level">${formatNum(current.badge_level)}</span>
+        <span class="rank-current-date">${escapeHtml(formatDateTime(current.captured_at))}</span>
+      </div>
+      <div class="rank-chart-card">
+        <div class="chart-wrapper"><canvas id="${chartId}"></canvas></div>
+      </div>
+    </div>
+    ${showCoaching ? '<a class="rank-coaching-box" href="/coaching/">Rang im Sinkflug? Auf der Coaching-Etage helfen wir dir zurück nach oben →</a>' : ''}
+  `
+  state.rankHistoryChart = createRankHistoryChart(document.getElementById(chartId), data)
+}
+
+async function saveRankVisibility(visibility) {
+  const previous = state.rankVisibility
+  const feedback = document.getElementById('rank-visibility-feedback')
+  if (feedback) feedback.textContent = ''
+  syncRankVisibilityButtons(visibility)
+  setRankVisibilityDisabled(true)
+  state.rankVisibilitySaving = true
+  try {
+    const r = await fetch(`${API_BASE}/api/public/me/rank-visibility`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility }),
+    })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const data = await r.json().catch(() => null)
+    setRankVisibilitySelection(data?.visibility || visibility)
+    if (feedback) feedback.textContent = 'Gespeichert.'
+    loadRankLeaderboard()
+  } catch {
+    syncRankVisibilityButtons(previous)
+    if (feedback) feedback.textContent = 'Speichern fehlgeschlagen.'
+  } finally {
+    state.rankVisibilitySaving = false
+    setRankVisibilityDisabled(false)
+  }
+}
+
+function setRankVisibilitySelection(visibility) {
+  state.rankVisibility = visibility
+  syncRankVisibilityButtons(visibility)
+}
+
+function syncRankVisibilityButtons(visibility) {
+  document.querySelectorAll('#rank-visibility-toggle .metric-btn').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.rankVisibility === visibility)
+  })
+}
+
+function setRankVisibilityDisabled(disabled) {
+  document.querySelectorAll('#rank-visibility-toggle .metric-btn').forEach((btn) => {
+    btn.disabled = disabled
+  })
+}
+
 function renderStats(stats) {
   if (!stats) return
   const v = stats.voice || {}
   const t = stats.text || {}
-  setStat('stat-voice-rank', v.rank ? `#${v.rank}` : '–', `${formatNum(v.lifetime_points || 0)} Pkt lifetime`)
-  setStat('stat-text-rank', t.rank ? `#${t.rank}` : '–', `${formatNum(t.lifetime_points || 0)} Pkt lifetime`)
+  setStat('stat-voice-rank', v.rank ? `#${v.rank}` : '–', `${formatNum(v.lifetime_points || 0)} Pkt gesamt`)
+  setStat('stat-text-rank', t.rank ? `#${t.rank}` : '–', `${formatNum(t.lifetime_points || 0)} Pkt gesamt`)
   setStat('stat-voice-30', formatHours(v.range_seconds ?? 0), `${formatNum(v.range_points || 0)} Punkte · ${v.range_sessions || 0} Sessions`)
-  setStat('stat-text-30', formatNum(t.range_points || 0), `${formatNum(t.range_messages || 0)} Messages · ${t.range_sessions || 0} Sessions`)
+  setStat('stat-text-30', formatNum(t.range_points || 0), `${formatNum(t.range_messages || 0)} Nachrichten · ${t.range_sessions || 0} Sessions`)
 }
 
 function setStat(id, value, meta) {
@@ -757,7 +1059,7 @@ function renderVoiceChart(data) {
   const labels = daily.map((d) => formatDayShort(d.day))
   const hours = daily.map((d) => +((d.total_seconds || 0) / 3600).toFixed(2))
   state.voiceChart?.destroy()
-  state.voiceChart = new Chart(ctx, lineChartConfig(labels, hours, 'Stunden', 'rgba(6,182,212,1)', 'rgba(6,182,212,0.15)'))
+  state.voiceChart = new Chart(ctx, lineChartConfig(labels, hours, 'Stunden', BRAND_CHART.gold, BRAND_CHART.goldFill))
 }
 
 function renderTextChart(data) {
@@ -767,7 +1069,7 @@ function renderTextChart(data) {
   const labels = daily.map((d) => formatDayShort(d.day))
   const values = daily.map((d) => d.total_points || 0)
   state.textChart?.destroy()
-  state.textChart = new Chart(ctx, lineChartConfig(labels, values, 'Punkte', 'rgba(168,85,247,1)', 'rgba(168,85,247,0.15)'))
+  state.textChart = new Chart(ctx, lineChartConfig(labels, values, 'Punkte', BRAND_CHART.rust, BRAND_CHART.rustFill))
 }
 
 function lineChartConfig(labels, data, label, stroke, fill) {
@@ -794,8 +1096,8 @@ function lineChartConfig(labels, data, label, stroke, fill) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
           titleFont: { family: 'Sora' },
@@ -805,16 +1107,83 @@ function lineChartConfig(labels, data, label, stroke, fill) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
         },
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(194, 221, 240, 0.08)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, precision: 0 },
+          grid: { color: BRAND_CHART.grid },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, precision: 0 },
         },
       },
     },
   }
+}
+
+function createRankHistoryChart(canvas, data) {
+  if (!canvas) return null
+  const points = rankHistoryPoints(data)
+  if (!points.length) return null
+  const labels = points.map((point) => formatDayShort(point.captured_at))
+  const values = points.map((point) => point.badge_level)
+  const colors = points.map((point) => rankColor(point.rank_name))
+  const stroke = colors[colors.length - 1] || BRAND_CHART.gold
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+
+  return new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'badge_level',
+        data: values,
+        borderColor: stroke,
+        segment: {
+          borderColor: (ctx) => colors[ctx.p1DataIndex] || stroke,
+        },
+        backgroundColor: colorWithAlpha(stroke, '22'),
+        borderWidth: 2,
+        tension: 0.32,
+        fill: false,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: colors,
+        pointBorderColor: colors,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
+          borderWidth: 1,
+          padding: 10,
+          titleFont: { family: 'Sora' },
+          bodyFont: { family: 'Manrope' },
+          callbacks: {
+            title: (items) => formatDateTime(points[items?.[0]?.dataIndex]?.captured_at),
+            label: (ctx) => `${rankBadgeLabel(points[ctx.dataIndex]?.rank_name, points[ctx.dataIndex]?.badge_level)} · ${formatNum(ctx.raw)}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+        },
+        y: {
+          suggestedMin: Math.max(0, min - 1),
+          suggestedMax: max + 1,
+          grid: { color: BRAND_CHART.grid },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, precision: 0 },
+        },
+      },
+    },
+  })
 }
 
 function renderHeatmap(data) {
@@ -861,11 +1230,10 @@ function renderHeatmap(data) {
 }
 
 function heatmapColor(t) {
-  if (t <= 0) return 'rgba(6, 182, 212, 0.05)'
-  // cyan → purple
-  const r = Math.round(6 + (168 - 6) * t)
-  const g = Math.round(182 + (85 - 182) * t)
-  const b = Math.round(212 + (247 - 212) * t)
+  if (t <= 0) return 'rgba(201, 168, 106, 0.05)'
+  const r = Math.round(201 + (221 - 201) * t)
+  const g = Math.round(168 + (106 - 168) * t)
+  const b = Math.round(106 + (77 - 106) * t)
   const a = 0.25 + t * 0.75
   return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`
 }
@@ -893,6 +1261,16 @@ function renderCoPlayers(data) {
 }
 
 /* ── Helpers ── */
+async function loadRankColors() {
+  const data = await fetchJson(`${API_BASE}/api/rank-colors`)
+  const colors = data?.colors
+  if (!colors || typeof colors !== 'object') return
+  Object.entries(colors).forEach(([rank, color]) => {
+    const safeColor = normalizeCssColor(color)
+    if (rank && safeColor) RANK_COLORS[String(rank).toLowerCase()] = safeColor
+  })
+}
+
 async function fetchJson(url) {
   try {
     const r = await fetch(url, { credentials: 'include' })
@@ -963,8 +1341,67 @@ function prettyRank(rank) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+function rankBadgeHtml(rankName, badgeLevel, extraClass = '') {
+  const color = rankColor(rankName)
+  return `<span class="rank-badge ${extraClass}" style="--rank-color:${color}">
+    <span class="rank-badge-dot" aria-hidden="true"></span>
+    <span class="rank-badge-name">${escapeHtml(rankBadgeLabel(rankName, badgeLevel))}</span>
+  </span>`
+}
+
+function rankBadgeLabel(rankName, badgeLevel) {
+  const subrank = subrankFromBadgeLevel(badgeLevel)
+  const rank = prettyRank(rankName)
+  return subrank ? `${rank} ${subrank}` : rank
+}
+
+function subrankFromBadgeLevel(badgeLevel) {
+  const level = Number(badgeLevel)
+  if (!Number.isFinite(level)) return ''
+  const subrank = Math.abs(Math.trunc(level)) % 10
+  return subrank > 0 ? String(subrank) : ''
+}
+
 function rankColor(rank) {
-  return RANK_COLORS[String(rank || '').toLowerCase()] || '#06b6d4'
+  return RANK_COLORS[String(rank || '').toLowerCase()] || '#c8a86b'
+}
+
+function normalizeRankEntry(entry) {
+  if (!entry) return null
+  const badgeLevel = Number(entry.badge_level)
+  const capturedAt = String(entry.captured_at || '')
+  if (!Number.isFinite(badgeLevel) || !capturedAt) return null
+  return {
+    badge_level: badgeLevel,
+    rank_name: String(entry.rank_name || ''),
+    captured_at: capturedAt,
+  }
+}
+
+function rankHistoryPoints(data) {
+  const raw = Array.isArray(data?.history) ? [...data.history] : []
+  if (data?.current) raw.push(data.current)
+  const seen = new Set()
+  return raw
+    .map(normalizeRankEntry)
+    .filter(Boolean)
+    .filter((entry) => {
+      const key = `${entry.captured_at}|${entry.badge_level}|${entry.rank_name}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .sort((a, b) => timestampOf(a.captured_at) - timestampOf(b.captured_at))
+}
+
+function rankDeltaFromPoints(points) {
+  if (!points.length) return 0
+  return Math.trunc(points[points.length - 1].badge_level) - Math.trunc(points[0].badge_level)
+}
+
+function timestampOf(iso) {
+  const ts = Date.parse(iso)
+  return Number.isFinite(ts) ? ts : 0
 }
 
 function formatTimelineValue(value) {
@@ -979,6 +1416,27 @@ function normalizeBase(value) {
   const raw = String(value ?? '').trim()
   if (!raw || raw === '/' || raw === '.') return ''
   return raw.replace(/\/+$/, '')
+}
+
+function formatDateTime(iso) {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  } catch {
+    return iso
+  }
+}
+
+function colorWithAlpha(color, alphaHex) {
+  const s = String(color || '').trim()
+  if (/^#[0-9a-f]{6}$/i.test(s)) return `${s}${alphaHex}`
+  return 'rgba(201, 168, 106, 0.14)'
+}
+
+function normalizeCssColor(color) {
+  const s = String(color || '').trim()
+  if (/^#[0-9a-f]{6}$/i.test(s)) return s
+  return null
 }
 
 function escapeHtml(s) {

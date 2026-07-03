@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 72" role="img" aria-label="Deutsche Deadlock Community">
+  <defs>
+    <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0d79f"/>
+      <stop offset=".42" stop-color="#c8a86b"/>
+      <stop offset=".72" stop-color="#806534"/>
+      <stop offset="1" stop-color="#d4b878"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <path d="M35 4 66 35 35 66 4 35Z" fill="#100c08" stroke="url(#brass)" stroke-width="2.2" filter="url(#glow)"/>
+  <path d="M35 14 56 35 35 56 14 35Z" fill="none" stroke="#806534" stroke-width="1"/>
+  <circle cx="35" cy="35" r="4" fill="#66ae91"/>
+  <path d="M35 19v11M30 25l5 5 5-5M25 35h20M29 41l6-6 6 6" fill="none" stroke="#d9bd7c" stroke-width="1.4"/>
+  <text x="80" y="28" fill="#ece0c8" font-family="Georgia,serif" font-size="20" font-weight="700" letter-spacing=".8">DEUTSCHE DEADLOCK</text>
+  <path d="M80 36h268" stroke="url(#brass)" stroke-width="1"/>
+  <text x="214" y="55" text-anchor="middle" fill="#c8a86b" font-family="Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="5">COMMUNITY</text>
+</svg>

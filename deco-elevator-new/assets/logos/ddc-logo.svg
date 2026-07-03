@@ -18,7 +18,7 @@
 
   <polygon points="28,4 54,30 28,56 2,30" fill="rgba(6,182,212,0.08)" stroke="url(#b1)" stroke-width="2" filter="url(#bglow)"></polygon>
   <polygon points="28,15 43,30 28,45 13,30" fill="none" stroke="url(#b1)" stroke-width="1.2" opacity="0.45"></polygon>
-  <text font-family="&#39;Sora&#39;,&#39;Segoe UI&#39;,sans-serif" font-weight="800" font-size="9.5" fill="url(#b1)" text-anchor="middle" dominant-baseline="middle" x="28" y="30">DDC</text>
+  <circle cx="28" cy="30" r="4" fill="url(#b1)"></circle>
 
   <text font-family="&#39;Sora&#39;,&#39;Segoe UI&#39;,sans-serif" font-weight="800" font-size="22" fill="url(#b2)" letter-spacing="-0.5" y="30" x="66">Deutsche Deadlock</text>
   <rect x="66" y="38" width="210" height="1.5" fill="url(#b2)" rx="1" opacity="0.35"></rect>

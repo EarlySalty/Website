@@ -4,17 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-  <title>Patchnotes · Deutsche Deadlock Community</title>
-  <meta name="description" content="Alle Deadlock-Patchnotes auf Deutsch – übersetzt, durchsuchbar und nach Kategorien filterbar." />
+  <title>Patch Timeline · Deutsche Deadlock Community</title>
+  <meta name="description" content="Deadlock Patch Timeline mit Brain-Daten, Balance-Verlauf, Hero- und Item-Änderungen." />
   <link rel="canonical" href="https://deutsche-deadlock-community.de/patch/" />
   <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/patch/" />
   <link rel="alternate" hreflang="x-default" href="https://deutsche-deadlock-community.de/patch/" />
-  <meta name="theme-color" content="#07151d" />
-  <meta name="keywords" content="Deadlock Patchnotes, Deadlock Patch deutsch, Deadlock Update, Deadlock Änderungen, Deadlock Hero Changes, Deadlock Items Patch, Deadlock News deutsch" />
+  <meta name="theme-color" content="#0b0b0b" />
+  <meta name="keywords" content="Deadlock Patch Timeline, Deadlock Patchnotes, Deadlock Balance Verlauf, Deadlock Hero Changes, Deadlock Items Patch, Deadlock Brain" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://deutsche-deadlock-community.de/patch/" />
-  <meta property="og:title" content="Patchnotes – Deutsche Deadlock Community" />
-  <meta property="og:description" content="Deadlock-Patchnotes auf Deutsch mit Suche und Kategoriefilter." />
+  <meta property="og:title" content="Patch Timeline – Deutsche Deadlock Community" />
+  <meta property="og:description" content="Deadlock-Patchdaten als Timeline mit Hero-, Item- und Balance-Analysen." />
   <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -22,8 +22,8 @@
   <meta property="og:locale" content="de_DE" />
   <meta property="og:site_name" content="Deutsche Deadlock Community" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Patchnotes – Deutsche Deadlock Community" />
-  <meta name="twitter:description" content="Deadlock-Patchnotes auf Deutsch mit Suche und Kategoriefilter." />
+  <meta name="twitter:title" content="Patch Timeline – Deutsche Deadlock Community" />
+  <meta name="twitter:description" content="Deadlock-Patchdaten als Timeline mit Hero-, Item- und Balance-Analysen." />
   <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
   <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
@@ -34,9 +34,9 @@
         {
           "@type": "WebPage",
           "@id": "https://deutsche-deadlock-community.de/patch/#webpage",
-          "name": "Deadlock Patchnotes auf Deutsch",
+          "name": "Deadlock Patch Timeline",
           "url": "https://deutsche-deadlock-community.de/patch/",
-          "description": "Alle Deadlock-Patchnotes auf Deutsch – übersetzt, durchsuchbar und nach Kategorien filterbar.",
+          "description": "Deadlock-Patchdaten als Timeline mit Hero-, Item- und Balance-Analysen.",
           "inLanguage": "de-DE",
           "isPartOf": { "@id": "https://deutsche-deadlock-community.de/#website" },
           "breadcrumb": { "@id": "https://deutsche-deadlock-community.de/patch/#breadcrumb" }
@@ -58,14 +58,31 @@
   <div class="site-shell">
 
     <header class="site-header">
-      <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="nav-drawer" aria-label="Navigation öffnen">
-        <svg class="icon-menu" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect x="2" y="5" width="18" height="2" rx="1" fill="currentColor"/><rect x="2" y="10" width="18" height="2" rx="1" fill="currentColor"/><rect x="2" y="15" width="18" height="2" rx="1" fill="currentColor"/></svg>
-        <svg class="icon-close" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 5L17 17M17 5L5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
-      <a class="brand" href="/">
-        <img src="%BASE_URL%ddc-logo.svg" alt="Deutsche Deadlock Community" class="brand-logo" height="38" />
-      </a>
-      <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Beitreten</a>
+      <div class="container">
+        <div class="header-row">
+          <div class="header-left">
+            <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="nav-drawer" aria-label="Navigation öffnen">
+              <svg class="icon-menu" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect x="2" y="5" width="18" height="2" rx="1" fill="currentColor"/><rect x="2" y="10" width="18" height="2" rx="1" fill="currentColor"/><rect x="2" y="15" width="18" height="2" rx="1" fill="currentColor"/></svg>
+              <svg class="icon-close" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 5L17 17M17 5L5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <a class="brand patch-brand" href="/" aria-label="Deutsche Deadlock Community">
+              <span class="patch-brand-mark">DDC</span>
+              <span class="patch-brand-copy">
+                <strong>Deutsche Deadlock</strong>
+                <small>Community</small>
+              </span>
+            </a>
+          </div>
+          <nav class="nav-links" aria-label="Hauptnavigation">
+            <a class="nav-link" data-nav-link href="/mitspieler/">Mitspieler</a>
+            <a class="nav-link" data-nav-link href="/coaching/">Coaching</a>
+            <a class="nav-link" data-nav-link href="/patch/">Patch</a>
+          </nav>
+          <div class="header-actions">
+            <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Beitreten</a>
+          </div>
+        </div>
+      </div>
     </header>
 
     <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
@@ -88,53 +105,105 @@
           <a class="nav-drawer-link" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Discord beitreten ↗</a>
         </div>
       </nav>
-      <div class="nav-backdrop" data-menu-backdrop aria-hidden="true"></div>
+      <div class="nav-drawer-backdrop" data-menu-backdrop aria-hidden="true"></div>
     </div>
 
     <main id="main">
 
-      <section class="patch-hero">
+      <section class="patch-dashboard-hero">
         <div class="container">
-          <div class="patch-hero-content" data-reveal>
-            <div class="patch-hero-eyebrow">Deadlock Updates</div>
-            <h1 class="patch-hero-title">Patchnotes</h1>
-            <p class="patch-hero-desc">Alle Deadlock-Updates auf Deutsch – vollständig übersetzt, durchsuchbar und nach Kategorien filterbar.</p>
+          <div class="patch-hero-layout" data-reveal>
+            <div class="patch-hero-content">
+              <div class="patch-hero-eyebrow">Deadlock Brain</div>
+              <h1 class="patch-hero-title">Patch Timeline</h1>
+              <p class="patch-hero-desc">Historische Patchdaten aus dem Brain, sortiert von alt nach neu, mit Hero-, Item-, Wert- und Quellenbezug.</p>
+            </div>
+            <aside class="latest-patch-card" aria-label="Neuester Patch">
+              <span class="live-pill"><i></i><span id="data-status">Initialisiere</span></span>
+              <strong id="latest-patch-title">Patchdaten laden</strong>
+              <small id="latest-patch-meta">-</small>
+              <a id="latest-patch-link" href="#" target="_blank" rel="noopener" hidden>Original öffnen</a>
+            </aside>
           </div>
         </div>
       </section>
 
-      <section class="patch-filter-bar">
+      <section class="patch-dashboard" id="patch-dashboard">
         <div class="container">
-          <div class="patch-filters">
+          <div class="patch-filter-bar">
             <div class="patch-search-wrap">
               <svg class="patch-search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M13 13L16 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              <input class="patch-search" id="patch-search" type="search" placeholder="Suche nach Helden, Items, Änderungen…" aria-label="Patchnotes durchsuchen" />
+              <input class="patch-search" id="patch-search" type="search" placeholder="Suche Hero, Item, Stat, Patch…" aria-label="Patch Timeline durchsuchen" />
             </div>
-            <div class="patch-category-filters" role="group" aria-label="Kategoriefilter">
-              <button class="patch-cat-btn is-active" data-category="all">Alle</button>
-              <button class="patch-cat-btn" data-category="allgemein">Allgemein</button>
-              <button class="patch-cat-btn" data-category="items">Items</button>
-              <button class="patch-cat-btn" data-category="helden">Helden</button>
+            <div class="patch-segment" role="group" aria-label="Entity Filter">
+              <button class="patch-filter-btn is-active" data-entity-filter="all" aria-pressed="true">Alles</button>
+              <button class="patch-filter-btn" data-entity-filter="hero" aria-pressed="false">Heroes</button>
+              <button class="patch-filter-btn" data-entity-filter="item" aria-pressed="false">Items</button>
+              <button class="patch-filter-btn" data-entity-filter="ability" aria-pressed="false">Abilities</button>
             </div>
-            <div class="patch-meta-right">
-              <span class="patch-count" id="patch-count" aria-live="polite"></span>
+            <div class="patch-segment" role="group" aria-label="Change Filter">
+              <button class="patch-filter-btn is-active" data-change-filter="all" aria-pressed="true">Alle</button>
+              <button class="patch-filter-btn" data-change-filter="buff" aria-pressed="false">Buff</button>
+              <button class="patch-filter-btn" data-change-filter="nerf" aria-pressed="false">Nerf</button>
+              <button class="patch-filter-btn" data-change-filter="mechanic_change" aria-pressed="false">Mechanik</button>
+              <button class="patch-filter-btn" data-change-filter="fix" aria-pressed="false">Fix</button>
             </div>
+            <label class="source-select-label">
+              <span>Quelle</span>
+              <select id="patch-source-filter" class="source-select" aria-label="Quelle filtern">
+                <option value="all">Alle</option>
+                <option value="forum">Forum</option>
+                <option value="steam">Steam</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
           </div>
-        </div>
-      </section>
 
-      <section class="patch-list-section">
-        <div class="container">
-          <div class="patch-list" id="patch-list" aria-label="Patchnotes-Liste">
-            <div class="patch-skeleton" id="patch-skeleton" aria-hidden="true">
-              <div class="patch-skel-card"></div>
-              <div class="patch-skel-card"></div>
-              <div class="patch-skel-card"></div>
+          <div class="patch-kpis" id="patch-kpis" aria-live="polite"></div>
+
+          <section class="timeline-panel" aria-labelledby="timeline-title">
+            <div class="panel-head">
+              <div>
+                <span class="panel-kicker">Old to New</span>
+                <h2 id="timeline-title">Balance Timeline</h2>
+              </div>
+              <div class="timeline-tools">
+                <span id="timeline-count">-</span>
+                <span class="legend-dot is-buff">Buff</span>
+                <span class="legend-dot is-nerf">Nerf</span>
+                <span class="legend-dot is-fix">Fix</span>
+              </div>
             </div>
+            <div class="timeline-track" id="timeline-track" aria-label="Patch Timeline"></div>
+          </section>
+
+          <div class="dashboard-grid">
+            <section class="analysis-panel entity-panel" aria-labelledby="entity-title">
+              <div class="panel-head">
+                <div>
+                  <span class="panel-kicker">Entities</span>
+                  <h2 id="entity-title">Hotspots</h2>
+                </div>
+                <span id="entity-count">-</span>
+              </div>
+              <div class="entity-grid" id="entity-grid"></div>
+            </section>
+
+            <section class="analysis-panel detail-panel" id="detail-panel" aria-label="Entity Details">
+              <div class="panel-empty">Detaildaten werden geladen.</div>
+            </section>
           </div>
-          <div class="patch-empty" id="patch-empty" hidden>
-            <p>Keine Patchnotes gefunden. Versuche andere Suchbegriffe.</p>
-          </div>
+
+          <section class="analysis-panel event-panel" aria-labelledby="event-title">
+            <div class="panel-head">
+              <div>
+                <span class="panel-kicker">Sources</span>
+                <h2 id="event-title">Change Feed</h2>
+              </div>
+              <span id="event-count">-</span>
+            </div>
+            <div class="event-feed" id="event-feed"></div>
+          </section>
         </div>
       </section>
 

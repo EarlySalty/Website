@@ -1,589 +1,276 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DDC — Turmaufzug</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0907">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Deutsche Deadlock Community — Neue Website</title>
+  <meta name="description" content="Die neue Website der Deutschen Deadlock Community – Mitspieler, Coaching, Builds, Helden und Streamer.">
   <link rel="icon" href="assets/logos/favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --navy:   #07151d;
-      --deep:   #091525;
-      --panel:  #0c1a2b;
-      --cyan:   #06B6D4;
-      --violet: #A855F7;
-      --indigo: #6D4AE8;
-      --gold:   #C9A84C;
-      --gold-bright: #E8C96B;
-      --gold-dim:    #7a6030;
-      --gold-faint:  rgba(201,168,76,0.12);
-      --text:   #e9f1f7;
-      --muted:  #9bb3c5;
-      --border: rgba(194,221,240,0.12);
-      --border-gold: rgba(201,168,76,0.22);
-      --grad:   linear-gradient(120deg, #06B6D4 10%, #6D4AE8 60%, #A855F7);
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { height: 100%; background: var(--navy); }
-
-    body {
-      font-family: 'Manrope', sans-serif;
-      color: var(--text);
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      background:
-        radial-gradient(1200px 520px at 90% -10%, rgba(6,182,212,0.08), transparent 65%),
-        radial-gradient(900px 460px at 12% -20%, rgba(109,74,232,0.10), transparent 60%),
-        linear-gradient(160deg, #0c1a30 0%, #091525 55%, #0b1a2e 100%);
-    }
-
-    /* subtle grid */
-    body::before {
-      content: '';
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-      background-size: 40px 40px;
-      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
-    }
-
-    /* ── Background hotel imagery ── */
-    .bg-scene {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    }
-    .bg-scene img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      opacity: 0.09;
-      filter: saturate(0.4) brightness(0.6);
-      mix-blend-mode: luminosity;
-    }
-    /* vignette */
-    .bg-scene::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 70% 80% at 50% 50%, transparent 30%, rgba(7,21,29,0.92) 100%);
-    }
-
-    /* ── Elevator doors (slide open on load) ── */
-    .doors {
-      position: fixed; inset: 0; z-index: 200;
-      display: flex; pointer-events: none;
-    }
-    .door {
-      width: 50%; height: 100%;
-      background: linear-gradient(160deg, #0d1e30 0%, #081422 50%, #0c1827 100%);
-      transition: transform 1.1s cubic-bezier(0.77, 0, 0.175, 1);
-      position: relative; overflow: hidden;
-    }
-    /* diamond lattice on doors */
-    .door::before {
-      content: '';
-      position: absolute; inset: 0;
-      background-image:
-        repeating-linear-gradient(45deg, rgba(201,168,76,0.07) 0, rgba(201,168,76,0.07) 1px, transparent 0, transparent 50%),
-        repeating-linear-gradient(-45deg, rgba(201,168,76,0.07) 0, rgba(201,168,76,0.07) 1px, transparent 0, transparent 50%);
-      background-size: 24px 24px;
-    }
-    /* sheen */
-    .door::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(to bottom, rgba(201,168,76,0.06) 0%, transparent 40%);
-    }
-    .door-left  { border-right: 1px solid rgba(201,168,76,0.3); }
-    .door-right { border-left:  1px solid rgba(201,168,76,0.3); }
-    .doors.open .door-left  { transform: translateX(-100%); }
-    .doors.open .door-right { transform: translateX(100%); }
-
-    /* ── Shaft: outer container ── */
-    .shaft {
-      position: relative; z-index: 10;
-      width: 400px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* ── Ornament header ── */
-    .ornament-wrap {
-      width: 100%;
-      opacity: 0; transform: translateY(-12px);
-      transition: opacity 0.7s ease 1.3s, transform 0.7s ease 1.3s;
-    }
-    .ornament-wrap.in { opacity: 1; transform: translateY(0); }
-
-    .eyebrow {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 2px;
-    }
-    .eyebrow-line {
-      flex: 1; height: 1px;
-      background: linear-gradient(to right, transparent, var(--gold-dim));
-    }
-    .eyebrow-line.r {
-      background: linear-gradient(to left, transparent, var(--gold-dim));
-    }
-    .eyebrow-text {
-      font-family: 'Sora', sans-serif;
-      font-size: 8.5px; font-weight: 700;
-      letter-spacing: 0.28em; text-transform: uppercase;
-      color: var(--gold-dim);
-      white-space: nowrap;
-    }
-
-    /* Sunburst SVG */
-    .sunburst { width: 100%; height: 78px; display: block; }
-
-    /* ── Main panel card ── */
-    .panel {
-      width: 100%;
-      background: linear-gradient(170deg, rgba(14,28,44,0.97) 0%, rgba(8,18,30,0.97) 100%);
-      border: 1px solid var(--border-gold);
-      border-radius: 6px 6px 4px 4px;
-      box-shadow:
-        0 0 0 1px rgba(201,168,76,0.06),
-        0 24px 64px rgba(0,0,0,0.55),
-        inset 0 1px 0 rgba(201,168,76,0.18),
-        inset 0 -1px 0 rgba(0,0,0,0.4);
-      position: relative; overflow: hidden;
-      opacity: 0; transform: translateY(16px);
-      transition: opacity 0.7s ease 1.5s, transform 0.7s ease 1.5s;
-    }
-    .panel.in { opacity: 1; transform: translateY(0); }
-
-    /* top accent line */
-    .panel::before {
-      content: ''; position: absolute;
-      top: 0; left: 0; right: 0; height: 2px;
-      background: var(--grad); opacity: 0.9;
-    }
-
-    /* ── Floor indicator ── */
-    .indicator {
-      padding: 22px 24px 18px;
-      border-bottom: 1px solid rgba(201,168,76,0.1);
-      display: flex; flex-direction: column;
-      align-items: center; gap: 14px;
-    }
-
-    .floor-row {
-      display: flex; align-items: center; gap: 18px;
-    }
-    .arrows {
-      display: flex; flex-direction: column; gap: 3px;
-    }
-    .arrow {
-      font-size: 14px; line-height: 1;
-      color: var(--gold-dim);
-      opacity: 0.25;
-      transition: opacity 0.25s, color 0.25s;
-      user-select: none;
-    }
-    .arrow.lit { opacity: 1; color: var(--gold-bright); }
-
-    .floor-num {
-      font-family: 'Sora', sans-serif;
-      font-size: 68px; font-weight: 800;
-      letter-spacing: -0.05em; line-height: 1;
-      background: var(--grad);
-      -webkit-background-clip: text; background-clip: text;
-      color: transparent;
-      min-width: 72px; text-align: center;
-      transition: opacity 0.18s ease;
-    }
-    .spacer { width: 32px; }
-
-    /* travel progress bar */
-    .travel {
-      width: 100%; height: 2px;
-      background: rgba(201,168,76,0.08); border-radius: 1px;
-      overflow: hidden;
-      opacity: 0; transition: opacity 0.25s;
-    }
-    .travel.on { opacity: 1; }
-    .travel::after {
-      content: ''; display: block;
-      width: 35%; height: 100%;
-      background: var(--grad); border-radius: 1px;
-      animation: sweep 0.75s linear infinite;
-    }
-    @keyframes sweep {
-      from { transform: translateX(-100%); }
-      to   { transform: translateX(390%); }
-    }
-
-    /* ── Floor buttons ── */
-    .btn-section {
-      padding: 18px 22px 16px;
-    }
-    .section-label {
-      font-size: 8.5px; font-weight: 700;
-      letter-spacing: 0.22em; text-transform: uppercase;
-      color: var(--gold-dim); margin-bottom: 12px;
-    }
-
-    .floor-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 7px;
-    }
-    /* Last row: 3 items — center them */
-    .floor-grid .floor-btn:nth-child(5) { grid-column: 1; }
-    .floor-grid .floor-btn:nth-child(6) { grid-column: 2; }
-    .floor-grid .floor-btn:nth-child(7) { grid-column: 3; }
-
-    .floor-btn {
-      background: rgba(8,18,30,0.8);
-      border: 1px solid var(--border-gold);
-      border-radius: 5px;
-      padding: 11px 6px 10px;
-      cursor: pointer;
-      display: flex; flex-direction: column;
-      align-items: center; gap: 5px;
-      transition: border-color 0.2s, background 0.2s, transform 0.15s, box-shadow 0.2s;
-      position: relative; overflow: hidden;
-    }
-    .floor-btn::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(circle at 50% 50%, rgba(201,168,76,0.18), transparent 70%);
-      opacity: 0; transition: opacity 0.3s;
-    }
-    .floor-btn:hover { border-color: rgba(201,168,76,0.45); transform: translateY(-1px); }
-    .floor-btn:hover::after { opacity: 0.6; }
-    .floor-btn.sel {
-      border-color: var(--gold);
-      background: rgba(201,168,76,0.07);
-      box-shadow: 0 0 14px rgba(201,168,76,0.18), inset 0 1px 0 rgba(201,168,76,0.25);
-    }
-    .floor-btn.sel::after { opacity: 1; }
-    .floor-btn:active { transform: translateY(0) scale(0.97); }
-
-    .btn-lbl {
-      font-family: 'Sora', sans-serif;
-      font-size: 16px; font-weight: 800; line-height: 1;
-      color: var(--gold-dim);
-      transition: color 0.2s;
-    }
-    .floor-btn.sel .btn-lbl { color: var(--gold-bright); }
-    .btn-name {
-      font-size: 8px; font-weight: 700;
-      letter-spacing: 0.07em; text-transform: uppercase;
-      color: var(--muted); text-align: center; line-height: 1.3;
-      transition: color 0.2s;
-    }
-    .floor-btn.sel .btn-name { color: var(--text); }
-
-    /* ── Destination ── */
-    .dest-section {
-      padding: 0 22px 18px;
-      min-height: 70px;
-    }
-    .dest-title {
-      font-family: 'Sora', sans-serif;
-      font-size: 17px; font-weight: 700;
-      letter-spacing: -0.025em; line-height: 1;
-      background: var(--grad);
-      -webkit-background-clip: text; background-clip: text;
-      color: transparent;
-      margin-bottom: 6px;
-      opacity: 0; transform: translateY(5px);
-      transition: opacity 0.35s, transform 0.35s;
-    }
-    .dest-body {
-      font-size: 12.5px; color: var(--muted); line-height: 1.55;
-      opacity: 0; transform: translateY(5px);
-      transition: opacity 0.35s 0.06s, transform 0.35s 0.06s;
-    }
-    .dest-title.show, .dest-body.show { opacity: 1; transform: translateY(0); }
-
-    /* ── Enter button ── */
-    .enter-wrap { padding: 0 22px 22px; }
-    .enter-btn {
-      width: 100%; height: 46px;
-      border: none; border-radius: 5px;
-      background: var(--grad);
-      color: #fff;
-      font-family: 'Sora', sans-serif;
-      font-size: 12px; font-weight: 700;
-      letter-spacing: 0.14em; text-transform: uppercase;
-      cursor: pointer;
-      opacity: 0; transform: translateY(6px);
-      transition: opacity 0.35s 0.12s, transform 0.35s 0.12s, box-shadow 0.2s;
-      position: relative; overflow: hidden;
-    }
-    .enter-btn::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: rgba(255,255,255,0.12);
-      opacity: 0; transition: opacity 0.2s;
-    }
-    .enter-btn:hover::before { opacity: 1; }
-    .enter-btn:hover { box-shadow: 0 8px 28px rgba(6,182,212,0.28); }
-    .enter-btn.show { opacity: 1; transform: translateY(0); }
-    .enter-btn:disabled { opacity: 0.35; cursor: default; }
-
-    /* ── Panel ding flash ── */
-    @keyframes flash {
-      0%   { box-shadow: 0 0 0 0 rgba(6,182,212,0.5), 0 24px 64px rgba(0,0,0,0.55); }
-      60%  { box-shadow: 0 0 0 10px rgba(6,182,212,0), 0 24px 64px rgba(0,0,0,0.55); }
-      100% { box-shadow: 0 0 0 0 rgba(6,182,212,0), 0 24px 64px rgba(0,0,0,0.55); }
-    }
-    .panel.ding { animation: flash 0.55s ease; }
-
-    /* ── Bottom plate ── */
-    .bottom-plate {
-      margin-top: 8px;
-      display: flex; align-items: center; gap: 10px;
-      opacity: 0; transition: opacity 0.6s ease 2s;
-    }
-    .bottom-plate.in { opacity: 1; }
-    .pl { width: 28px; height: 1px; background: rgba(201,168,76,0.25); }
-    .pt {
-      font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase;
-      color: rgba(201,168,76,0.35); font-family: 'Manrope', sans-serif;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
 </head>
 <body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
 
-<!-- Atmospheric background -->
-<div class="bg-scene">
-  <img src="assets/deco/hotel-hall-dark.png" alt="">
-</div>
-
-<!-- Elevator doors — slide open on load -->
-<div class="doors" id="doors">
-  <div class="door door-left"></div>
-  <div class="door door-right"></div>
-</div>
-
-<!-- Shaft -->
-<div class="shaft">
-
-  <!-- Ornament header -->
-  <div class="ornament-wrap" id="ornament">
-    <div class="eyebrow">
-      <div class="eyebrow-line"></div>
-      <span class="eyebrow-text">Deutsche Deadlock Community</span>
-      <div class="eyebrow-line r"></div>
-    </div>
-
-    <!-- Art Deco sunburst (from ref-indicator) -->
-    <svg class="sunburst" viewBox="0 0 400 78" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Outer bounding arc -->
-      <path d="M48 74 Q200 4 352 74" stroke="#C9A84C" stroke-width="0.8" fill="none" opacity="0.35"/>
-      <!-- Inner arc -->
-      <path d="M80 74 Q200 24 320 74" stroke="#C9A84C" stroke-width="1.2" fill="none" opacity="0.55"/>
-
-      <!-- Fan rays — left half -->
-      <line x1="200" y1="43" x2="48"  y2="74" stroke="#C9A84C" stroke-width="0.9" opacity="0.45"/>
-      <line x1="200" y1="43" x2="80"  y2="66" stroke="#C9A84C" stroke-width="0.9" opacity="0.45"/>
-      <line x1="200" y1="43" x2="110" y2="58" stroke="#C9A84C" stroke-width="0.9" opacity="0.45"/>
-      <line x1="200" y1="43" x2="142" y2="52" stroke="#C9A84C" stroke-width="0.9" opacity="0.45"/>
-      <line x1="200" y1="43" x2="170" y2="47" stroke="#C9A84C" stroke-width="1.0" opacity="0.55"/>
-      <!-- Center vertical -->
-      <line x1="200" y1="43" x2="200" y2="47" stroke="#C9A84C" stroke-width="1.5" opacity="0.7"/>
-      <!-- Fan rays — right half -->
-      <line x1="200" y1="43" x2="230" y2="47" stroke="#C9A84C" stroke-width="1.0" opacity="0.55"/>
-      <line x1="200" y1="43" x2="258" y2="52" stroke="#C9A84C" stroke-width="0.9" opacity="0.45"/>
-      <line x1="200" y1="43" x2="290" y2="58" stroke="#C9A84C" stroke-width="0.9" opacity="0.45"/>
-      <line x1="200" y1="43" x2="320" y2="66" stroke="#C9A84C" stroke-width="0.9" opacity="0.45"/>
-      <line x1="200" y1="43" x2="352" y2="74" stroke="#C9A84C" stroke-width="0.9" opacity="0.45"/>
-
-      <!-- Leaf dots on arc -->
-      <circle cx="48"  cy="74" r="2.5" fill="#C9A84C" opacity="0.5"/>
-      <circle cx="80"  cy="66" r="2.0" fill="#C9A84C" opacity="0.45"/>
-      <circle cx="110" cy="58" r="2.0" fill="#C9A84C" opacity="0.45"/>
-      <circle cx="142" cy="52" r="2.0" fill="#C9A84C" opacity="0.45"/>
-      <circle cx="170" cy="47" r="2.0" fill="#C9A84C" opacity="0.5"/>
-      <circle cx="200" cy="44" r="2.5" fill="#C9A84C" opacity="0.65"/>
-      <circle cx="230" cy="47" r="2.0" fill="#C9A84C" opacity="0.5"/>
-      <circle cx="258" cy="52" r="2.0" fill="#C9A84C" opacity="0.45"/>
-      <circle cx="290" cy="58" r="2.0" fill="#C9A84C" opacity="0.45"/>
-      <circle cx="320" cy="66" r="2.0" fill="#C9A84C" opacity="0.45"/>
-      <circle cx="352" cy="74" r="2.5" fill="#C9A84C" opacity="0.5"/>
-
-      <!-- Central medallion -->
-      <circle cx="200" cy="43" r="22" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
-      <circle cx="200" cy="43" r="15" stroke="#C9A84C" stroke-width="0.7" fill="rgba(201,168,76,0.04)"/>
-      <!-- Inscribed triangle (Déco motif) -->
-      <path d="M200 32 L210 51 L190 51 Z" fill="none" stroke="#C9A84C" stroke-width="1.1" opacity="0.8"/>
-      <circle cx="200" cy="43" r="3.5" fill="#C9A84C" opacity="0.55"/>
-
-      <!-- Top finial -->
-      <line x1="200" y1="6" x2="200" y2="20" stroke="#C9A84C" stroke-width="1" opacity="0.35"/>
-      <polygon points="195,10 200,4 205,10" fill="#C9A84C" opacity="0.4"/>
-
-      <!-- Horizontal base rule -->
-      <line x1="30" y1="76" x2="370" y2="76" stroke="#C9A84C" stroke-width="0.7" opacity="0.3"/>
-    </svg>
-  </div>
-
-  <!-- Panel card -->
-  <div class="panel" id="panel">
-
-    <!-- Floor indicator display -->
-    <div class="indicator">
-      <div class="floor-row">
-        <div class="arrows">
-          <span class="arrow" id="arr-up">▲</span>
-          <span class="arrow" id="arr-dn">▼</span>
-        </div>
-        <div class="floor-num" id="floor-num">L</div>
-        <div class="spacer"></div>
+  <aside class="elevator-nav" aria-label="Aufzug-Navigation">
+    <button class="elevator-call" type="button" aria-label="Etagenmenü öffnen" aria-expanded="false">
+      <span class="call-arrow">▲</span>
+      <span class="call-jewel"></span>
+      <span class="call-arrow">▼</span>
+    </button>
+    <div class="elevator-panel">
+      <span class="panel-screw screw-tl"></span><span class="panel-screw screw-tr"></span>
+      <span class="panel-screw screw-bl"></span><span class="panel-screw screw-br"></span>
+      <div class="elevator-brand">DEUTSCHE DEADLOCK<br>COMMUNITY</div>
+      <div class="floor-indicator"><span class="indicator-arrow">▲</span><b>E</b></div>
+      <div class="elevator-buttons">
+        <button type="button" class="floor-button is-active" data-target="top" data-floor="E" data-label="Empfang" data-background="assets/deco/cityscape-portal.png"><i></i><span>E</span><em>Empfang</em></button>
+        <button type="button" class="floor-button" data-target="community" data-floor="1" data-label="Community" data-background="assets/deco/green-windows.png"><i></i><span>1</span><em>Community</em></button>
+        <button type="button" class="floor-button" data-target="mitspieler" data-floor="2" data-label="Mitspieler" data-background="assets/deco/mitspieler.png"><i></i><span>2</span><em>Mitspieler</em></button>
+        <button type="button" class="floor-button" data-target="coaching" data-floor="3" data-label="Coaching" data-background="assets/deco/coaching.png"><i></i><span>3</span><em>Coaching</em></button>
+        <button type="button" class="floor-button" data-target="helden" data-floor="4" data-label="Helden" data-background="assets/deco/streamer.png"><i></i><span>4</span><em>Helden</em></button>
+        <button type="button" class="floor-button" data-target="beitreten" data-floor="5" data-label="Beitreten" data-background="assets/deco/newsroom.png"><i></i><span>5</span><em>Beitreten</em></button>
       </div>
-      <div class="travel" id="travel"></div>
+      <div class="elevator-lever"><span>AN</span><i><b></b></i><span>STOP</span></div>
+      <small>DEUTSCHE DEADLOCK COMMUNITY · MCMXXIV</small>
     </div>
+  </aside>
 
-    <!-- Floor buttons -->
-    <div class="btn-section">
-      <div class="section-label">Etage wählen</div>
-      <div class="floor-grid" id="grid"></div>
+  <dialog class="elevator-ride" aria-label="Aufzug fährt">
+    <img class="ride-background" src="assets/deco/cityscape-portal.png" alt="">
+    <div class="ride-indicator"><span>ETAGE</span><b>E</b><small>EMPFANG</small></div>
+    <div class="ride-rank"><img src="assets/deco/ranks/initiate.png" alt=""></div>
+    <div class="ride-gate ride-gate-left"></div>
+    <div class="ride-gate ride-gate-right"></div>
+  </dialog>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Startseite der Deutschen Deadlock Community">
+      <img src="assets/logos/community-logo-deco.svg" alt="Deutsche Deadlock Community">
+    </a>
+    <button class="menu-button" type="button" aria-label="Menü öffnen" aria-expanded="false">
+      <span></span><span></span>
+    </button>
+    <nav class="main-nav" aria-label="Hauptnavigation">
+      <a href="#community">Community</a>
+      <a href="#angebote">Angebote</a>
+      <a href="#helden">Helden</a>
+      <a href="https://deutsche-deadlock-community.de/streamer/">Streamer</a>
+      <a class="nav-cta" href="https://discord.gg/PhkP3WgY7w">Discord beitreten</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-art" aria-hidden="true"></div>
+      <div class="hero-emblem" aria-hidden="true">
+        <img src="assets/logos/community-icon-deco.svg" alt="">
+      </div>
+      <div class="hero-content">
+        <p class="overline reveal">Dein Team wartet in der nächsten Lane</p>
+        <h1 class="reveal">
+          Deadlock ist besser<br>
+          <span>mit den richtigen Leuten.</span>
+        </h1>
+        <p class="hero-copy reveal">
+          Finde deutschsprachige Mitspieler für deine Queue, lerne von erfahrenen
+          Spielern und bleib bei Builds, Helden und Patches auf dem Laufenden.
+        </p>
+        <div class="hero-actions reveal">
+          <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w">
+            Mitspieler auf Discord finden <span aria-hidden="true">→</span>
+          </a>
+          <a class="button button-ghost" href="#community">Warum diese Community?</a>
+        </div>
+      </div>
+      <a class="scroll-cue" href="#community">
+        <span>Entdecken</span>
+        <i></i>
+      </a>
+    </section>
+
+    <section class="signal-strip" aria-label="Community Vorteile">
+      <div><span class="signal-dot"></span> Gruppen statt Solo-Queue</div>
+      <div>Deadlock komplett auf Deutsch</div>
+      <div>Coaching ohne Paywall</div>
+      <div>Platz für Spieler & Creator</div>
+    </section>
+
+    <section class="section intro" id="community">
+      <div class="wrap">
+        <div class="chapter reveal">
+          <div class="chapter-number"><i></i><span>01</span><i></i></div>
+          <p class="overline">Mehr als ein weiterer Discord</p>
+          <h2>Aus einer Runde wird<br>deine Stammgruppe.</h2>
+          <p>Egal ob erste Matches, entspannte Abende oder der nächste Ranked-Push: Bei uns findest du Leute, die Deadlock genauso ernst oder locker spielen wie du.</p>
+        </div>
+
+        <div class="stats framed reveal">
+          <article>
+            <strong>6v6</strong>
+            <span>Zusammen statt zufällig</span>
+            <small>Spielstil und Rank passend wählen</small>
+          </article>
+          <article>
+            <strong>DE</strong>
+            <span>Alles verständlich</span>
+            <small>Guides, Hilfe und Austausch</small>
+          </article>
+          <article>
+            <strong>0 €</strong>
+            <span>Coaching & Community</span>
+            <small>Keine Paywall, kein Abo</small>
+          </article>
+          <article>
+            <strong>∞</strong>
+            <span>Mehr gute Matches</span>
+            <small>Weil Teamplay den Unterschied macht</small>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section services-section" id="angebote">
+      <div class="wrap wrap-wide">
+        <div class="section-head reveal">
+          <div>
+            <p class="overline">Deine Etagen in der Community</p>
+            <h2>Alles, was dir in Deadlock<br>wirklich weiterhilft.</h2>
+          </div>
+          <p>Vom ersten Hero-Pick bis zur festen Ranked-Gruppe: Du bekommst Antworten, Mitspieler und konkrete Hilfe an einem Ort.</p>
+        </div>
+
+        <div class="service-grid">
+          <a class="service-card service-card-large reveal" id="mitspieler" href="https://deutsche-deadlock-community.de/mitspieler/">
+            <img src="assets/deco/mitspieler.png" alt="" loading="lazy">
+            <div class="card-shade"></div>
+            <div class="card-index">01</div>
+            <div class="card-content">
+              <p class="overline">Nie wieder fünf Randoms</p>
+              <h3>Finde Spieler, die zu dir passen</h3>
+              <p>Ranked, Casual oder erste Matches: Wähle deine Lane, lerne dein Team kennen und geh gemeinsam in die Queue.</p>
+              <span class="text-link">Meine Gruppe finden <b>→</b></span>
+            </div>
+          </a>
+
+          <a class="service-card reveal" id="coaching" href="https://deutsche-deadlock-community.de/coaching/">
+            <img src="assets/deco/coaching.png" alt="" loading="lazy">
+            <div class="card-shade"></div>
+            <div class="card-index">02</div>
+            <div class="card-content">
+              <p class="overline">Verstehen statt nur verlieren</p>
+              <h3>Kostenloses Coaching</h3>
+              <p>Replay-Analyse, Lane-Grundlagen und ehrliches Feedback von Spielern, die dir konkrete nächste Schritte zeigen.</p>
+              <span class="text-link">Coaching anfragen <b>→</b></span>
+            </div>
+          </a>
+
+          <a class="service-card reveal" href="https://deutsche-deadlock-community.de/helden/">
+            <img src="assets/deco/helden.png" alt="" loading="lazy">
+            <div class="card-shade"></div>
+            <div class="card-index">03</div>
+            <div class="card-content">
+              <p class="overline">Dein nächster Main wartet</p>
+              <h3>Helden verstehen. Builds verbessern.</h3>
+              <p>Rollen, Fähigkeiten und Einstiegshilfen auf Deutsch – damit du im Match Entscheidungen triffst statt Tooltips zu übersetzen.</p>
+              <span class="text-link">Helden entdecken <b>→</b></span>
+            </div>
+          </a>
+
+          <a class="service-card service-card-wide reveal" href="https://deutsche-deadlock-community.de/streamer/">
+            <img src="assets/deco/streamer.png" alt="" loading="lazy">
+            <div class="card-shade"></div>
+            <div class="card-index">04</div>
+            <div class="card-content">
+              <p class="overline">Deadlock live auf Deutsch</p>
+              <h3>Wachse mit anderen Creatorn</h3>
+              <p>Automatische Raids, gemeinsame Sichtbarkeit und direkter Kontakt zu einer Community, die Deadlock-Inhalte sehen will.</p>
+              <span class="text-link">Streamer-Netzwerk ansehen <b>→</b></span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section ranks-section">
+      <div class="rank-backdrop" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="split-copy">
+          <div class="chapter chapter-left reveal">
+            <div class="chapter-number"><i></i><span>02</span><i></i></div>
+            <p class="overline">Jeder Rank hat hier eine Etage</p>
+            <h2>Du musst nicht Eternus sein.<br>Du musst nur Deadlock mögen.</h2>
+          </div>
+          <p class="reveal">Neu im Spiel oder mitten im Ranked-Grind: Du findest Spieler auf deinem Niveau, kannst Fragen stellen und ohne Leistungsdruck besser werden.</p>
+        </div>
+
+        <div class="rank-track reveal" aria-label="Deadlock Ränge">
+          <div><img src="assets/deco/ranks/initiate.png" alt=""><span>Initiate</span></div>
+          <div><img src="assets/deco/ranks/seeker.png" alt=""><span>Seeker</span></div>
+          <div><img src="assets/deco/ranks/arcanist.png" alt=""><span>Arcanist</span></div>
+          <div><img src="assets/deco/ranks/ritualist.png" alt=""><span>Ritualist</span></div>
+          <div><img src="assets/deco/ranks/emissary.png" alt=""><span>Emissary</span></div>
+          <div><img src="assets/deco/ranks/archon.png" alt=""><span>Archon</span></div>
+          <div><img src="assets/deco/ranks/oracle.png" alt=""><span>Oracle</span></div>
+          <div><img src="assets/deco/ranks/phantom.png" alt=""><span>Phantom</span></div>
+          <div><img src="assets/deco/ranks/ascendant.png" alt=""><span>Ascendant</span></div>
+          <div><img src="assets/deco/ranks/eternus.png" alt=""><span>Eternus</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section heroes-section" id="helden">
+      <div class="wrap wrap-wide">
+        <div class="section-head reveal">
+          <div>
+            <p class="overline">Weniger raten. Mehr Wirkung.</p>
+            <h2>Finde den Helden,<br>der zu deinem Spielstil passt.</h2>
+          </div>
+          <p>Verstehe Rollen, Fähigkeiten und Synergien schneller – und finde einen Main, mit dem du deinem Team wirklich hilfst.</p>
+        </div>
+        <div class="hero-roster reveal">
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/abrams.png" alt="Abrams"><span>Abrams</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/haze.png" alt="Haze"><span>Haze</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/ivy.png" alt="Ivy"><span>Ivy</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/lash.png" alt="Lash"><span>Lash</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/paradox.png" alt="Paradox"><span>Paradox</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/pocket.png" alt="Pocket"><span>Pocket</span></a>
+        </div>
+        <div class="center reveal">
+          <a class="button button-ghost" href="https://deutsche-deadlock-community.de/helden/">Alle Helden ansehen <span>→</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta" id="beitreten">
+      <div class="final-art" aria-hidden="true"></div>
+      <div class="final-content reveal">
+        <img src="assets/logos/community-icon-deco.svg" alt="" class="final-mark">
+        <p class="overline">Die Aufzugtür ist offen</p>
+        <h2>Deine nächste gute Runde<br><span>beginnt mit den richtigen Leuten.</span></h2>
+        <p>Discord öffnen, Rank und Spielstil auswählen und deine erste Gruppe finden. Kein Bewerbungsprozess. Einfach Deadlock.</p>
+        <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w">Jetzt der Community beitreten <span>→</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-main">
+      <img src="assets/logos/community-logo-deco.svg" alt="Deutsche Deadlock Community">
+      <p>Dein deutschsprachiges Zuhause für Deadlock.</p>
+      <div class="footer-links">
+        <a href="https://deutsche-deadlock-community.de/impressum/">Impressum</a>
+        <a href="https://deutsche-deadlock-community.de/datenschutz/">Datenschutz</a>
+        <a href="https://discord.gg/PhkP3WgY7w">Discord</a>
+      </div>
     </div>
-
-    <!-- Destination info -->
-    <div class="dest-section">
-      <div class="dest-title" id="dest-title"></div>
-      <div class="dest-body"  id="dest-body"></div>
+    <div class="footer-bottom">
+      <span>Deutsche Deadlock Community</span>
+      <span>Inoffizielles Community-Projekt · Nicht mit Valve verbunden</span>
     </div>
-
-    <!-- Enter -->
-    <div class="enter-wrap">
-      <button class="enter-btn" id="enter-btn" disabled>Etage betreten</button>
-    </div>
-
-  </div>
-
-  <!-- Bottom nameplate -->
-  <div class="bottom-plate" id="plate">
-    <div class="pl"></div>
-    <span class="pt">DDC Aufzug Co. · Modell E · Baujahr 2024</span>
-    <div class="pl"></div>
-  </div>
-
-</div>
-
-<script>
-  const FLOORS = [
-    { lbl:'L', name:'Lobby',       title:'Startseite',      body:'Die Heimat der deutschen Deadlock Community.', url:'../dl-landing/' },
-    { lbl:'1', name:'Mitspieler',  title:'Mitspieler',      body:'Finde Teamkameraden für die nächste Runde.',   url:'../dl-landing/#mitspieler' },
-    { lbl:'2', name:'Coaching',    title:'Coaching',         body:'Kostenloser Community-Coaching-Service.',      url:'../dl-coaching/' },
-    { lbl:'3', name:'Tier-Liste',  title:'Tier-Liste',       body:'Aktuelle Stärke-Einschätzung aller Helden.',  url:'../dl-tierlist/' },
-    { lbl:'4', name:'Patchnotes',  title:'Patchnotes',       body:'Alle Updates auf Deutsch erklärt.',           url:'../dl-patch/' },
-    { lbl:'5', name:'Streamer',    title:'Streamer',         body:'Deutsche Deadlock-Streamer entdecken.',       url:'../dl-landing/#streamer' },
-    { lbl:'D', name:'Discord',     title:'Discord-Server',   body:'2000+ Mitglieder, Voice-Lanes und Events.',   url:'https://discord.gg/z5TfVHuQq2' },
-  ];
-
-  const SYMS = FLOORS.map(f => f.lbl);
-
-  const grid     = document.getElementById('grid');
-  const floorNum = document.getElementById('floor-num');
-  const travel   = document.getElementById('travel');
-  const destT    = document.getElementById('dest-title');
-  const destB    = document.getElementById('dest-body');
-  const enterBtn = document.getElementById('enter-btn');
-  const arrUp    = document.getElementById('arr-up');
-  const arrDn    = document.getElementById('arr-dn');
-  const panel    = document.getElementById('panel');
-
-  let cur = 0;  // current index (L = 0)
-  let busy = false;
-
-  // Build buttons
-  FLOORS.forEach((f, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'floor-btn';
-    btn.innerHTML = `<span class="btn-lbl">${f.lbl}</span><span class="btn-name">${f.name}</span>`;
-    btn.addEventListener('click', () => go(i));
-    grid.appendChild(btn);
-  });
-
-  function btns() { return document.querySelectorAll('.floor-btn'); }
-
-  function setNum(sym) {
-    floorNum.style.opacity = '0.35';
-    setTimeout(() => { floorNum.textContent = sym; floorNum.style.opacity = '1'; }, 80);
-  }
-
-  function go(target) {
-    if (busy || target === cur) {
-      if (target === cur) arrive(target);
-      return;
-    }
-    busy = true;
-
-    // highlight button immediately
-    btns().forEach((b, i) => b.classList.toggle('sel', i === target));
-
-    // direction arrows
-    arrUp.classList.toggle('lit', target > cur);
-    arrDn.classList.toggle('lit', target < cur);
-
-    // hide destination, show travel
-    destT.classList.remove('show'); destB.classList.remove('show');
-    enterBtn.classList.remove('show'); enterBtn.disabled = true;
-    travel.classList.add('on');
-
-    // animate counter through intermediate floors
-    const dir   = target > cur ? 1 : -1;
-    const steps = Math.abs(target - cur);
-    const delay = steps > 1 ? Math.max(90, 500 / steps) : 500;
-    let i = cur;
-
-    function step() {
-      i += dir;
-      setNum(SYMS[i]);
-      if (i !== target) { setTimeout(step, delay); }
-      else { setTimeout(() => arrive(target), delay + 80); }
-    }
-    setTimeout(step, 160);
-  }
-
-  function arrive(target) {
-    travel.classList.remove('on');
-    arrUp.classList.remove('lit'); arrDn.classList.remove('lit');
-    cur = target;
-    busy = false;
-
-    panel.classList.add('ding');
-    setTimeout(() => panel.classList.remove('ding'), 600);
-
-    floorNum.textContent = SYMS[target];
-    floorNum.style.opacity = '1';
-
-    const f = FLOORS[target];
-    destT.textContent = f.title;
-    destB.textContent = f.body;
-    setTimeout(() => {
-      destT.classList.add('show');
-      destB.classList.add('show');
-      enterBtn.textContent = target === 6 ? 'Discord öffnen' : 'Etage betreten';
-      enterBtn.classList.add('show');
-      enterBtn.disabled = false;
-      enterBtn.onclick = () => { window.open(f.url, target === 6 ? '_blank' : '_self'); };
-    }, 60);
-  }
-
-  // Open doors + reveal UI
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      document.getElementById('doors').classList.add('open');
-      document.getElementById('ornament').classList.add('in');
-      panel.classList.add('in');
-      document.getElementById('plate').classList.add('in');
-    }, 350);
-  });
-</script>
+  </footer>
 </body>
 </html>

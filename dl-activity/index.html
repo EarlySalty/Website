@@ -11,7 +11,7 @@
     <link rel="canonical" href="https://deutsche-deadlock-community.de/aktivitaet/" />
     <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/aktivitaet/" />
     <link rel="alternate" hreflang="x-default" href="https://deutsche-deadlock-community.de/aktivitaet/" />
-    <meta name="theme-color" content="#07151d" />
+    <meta name="theme-color" content="#0b0907" />
     <meta
       name="keywords"
       content="Deadlock Aktivität, Deadlock Voice Leaderboard, Deadlock Discord aktiv, Deadlock Community Stats, Deadlock Spielzeit deutsch, Deadlock Heatmap"
@@ -34,7 +34,7 @@
       content="Voice- und Text-Leaderboards plus persönliches Dashboard für den DE-Deadlock-Discord."
     />
     <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
-    <link rel="icon" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/brand/logo/deadlock-d-logo.png" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -60,19 +60,17 @@
         ]
       }
     </script>
+    <link rel="stylesheet" href="/brand/tokens.css" />
+    <link rel="stylesheet" href="/brand/nav.css" />
+    <script src="/brand/nav.js" defer></script>
     <script type="module" src="/src/activity.js"></script>
   </head>
-  <body>
+  <body class="brand-body">
     <header class="site-header">
       <div class="container">
         <a class="brand" href="/">
-          <img src="/ddc-logo.svg" alt="Deutsche Deadlock Community" class="brand-logo" height="38" />
+          <img src="/brand/logo/deadlock-d-logo.png" alt="Deutsche Deadlock Community" class="brand-logo" height="38" />
         </a>
-        <nav class="site-nav" aria-label="Hauptnavigation">
-          <a href="/">Start</a>
-          <a href="/tierlist/">Tier-Liste</a>
-          <a href="/aktivitaet/" class="is-active" aria-current="page">Aktivität</a>
-        </nav>
         <div class="auth-slot" id="auth-slot" aria-live="polite">
           <span class="auth-placeholder">…</span>
         </div>
@@ -85,8 +83,8 @@
           <p class="hero-eyebrow">Grind, Gespräche, Glory</p>
           <h1 class="hero-title">Aktivität auf dem Server</h1>
           <p class="hero-subtitle">
-            Voice-Zeit und echte Konversationen zählen. Spam nicht. Log dich mit Discord ein,
-            um dein persönliches Dashboard zu sehen — Rang, Verlauf, Heatmap, Co-Player.
+            Voice-Zeit und echte Konversationen zählen. Spam nicht. Melde dich mit Discord an,
+            um dein persönliches Dashboard zu sehen — Rang, Verlauf, Heatmap, Mitspieler.
           </p>
         </div>
       </section>
@@ -100,7 +98,7 @@
             💬 Text
           </button>
           <button class="page-tab" role="tab" data-tab="peaks" aria-selected="false">
-            📊 Peaks
+            📊 Stoßzeiten
           </button>
           <button class="page-tab" role="tab" data-tab="ich" aria-selected="false">
             👤 Ich
@@ -128,6 +126,20 @@
                 </div>
                 <div class="leaderboard-body" id="leaderboard-body">
                   <div class="state state-loading">Lade Leaderboard…</div>
+                </div>
+              </div>
+              <div class="leaderboard-card rank-leaderboard-card" id="rank-leaderboard-card">
+                <div class="leaderboard-head chart-head-wrap">
+                  <div>
+                    <h2>Rang-Leaderboard</h2>
+                  </div>
+                  <div class="metric-toggle" id="rank-leaderboard-sort-toggle" role="tablist">
+                    <button class="metric-btn is-active" type="button" data-rank-sort="climb">Top-Aufsteiger</button>
+                    <button class="metric-btn" type="button" data-rank-sort="top">Top-Ränge</button>
+                  </div>
+                </div>
+                <div class="leaderboard-body" id="rank-leaderboard-body">
+                  <div class="state state-loading">Lade Rang-Leaderboard…</div>
                 </div>
               </div>
             </div>
@@ -296,6 +308,33 @@
                 <span class="stat-meta" id="stat-text-30-meta">–</span>
               </div>
             </div>
+            <section class="rank-history-section" id="personal-rank-history-section">
+              <div class="leaderboard-card">
+                <div class="leaderboard-head chart-head-wrap">
+                  <div>
+                    <h2>Dein Rangverlauf</h2>
+                  </div>
+                  <div class="metric-toggle" id="rank-history-range-toggle" role="tablist">
+                    <button class="metric-btn is-active" type="button" data-rank-days="30">30 Tage</button>
+                    <button class="metric-btn" type="button" data-rank-days="90">90 Tage</button>
+                    <button class="metric-btn" type="button" data-rank-days="0">Alles</button>
+                  </div>
+                </div>
+                <div class="rank-history-body" id="personal-rank-history-body">
+                  <div class="state state-loading">Lade Rangverlauf…</div>
+                </div>
+                <div class="rank-visibility" id="rank-visibility">
+                  <div class="rank-visibility-label">Sichtbarkeit deines Rangverlaufs</div>
+                  <div class="metric-toggle rank-visibility-toggle" id="rank-visibility-toggle" role="tablist">
+                    <button class="metric-btn" type="button" data-rank-visibility="private">Privat (nur du)</button>
+                    <button class="metric-btn" type="button" data-rank-visibility="members">Nur Server-Mitglieder</button>
+                    <button class="metric-btn" type="button" data-rank-visibility="public">Öffentlich</button>
+                  </div>
+                  <p class="rank-visibility-hint">Standard ist „Privat". „Nur Server-Mitglieder" zeigt deinen Verlauf nur eingeloggten Server-Mitgliedern, „Öffentlich" jedem — beide bringen dich ins Rang-Leaderboard.</p>
+                  <p class="rank-visibility-feedback" id="rank-visibility-feedback" aria-live="polite"></p>
+                </div>
+              </div>
+            </section>
             <div class="chart-grid">
               <div class="chart-card">
                 <div class="chart-head">
@@ -327,7 +366,7 @@
               </div>
               <div class="coplayer-card">
                 <div class="chart-head">
-                  <h3>Top Mitspieler</h3>
+                  <h3>Top-Mitspieler</h3>
                   <span class="chart-note">Gemeinsame Voice-Sessions</span>
                 </div>
                 <ol class="coplayer-list" id="coplayer-list">
@@ -340,13 +379,5 @@
       </div>
     </main>
 
-    <footer class="footer">
-      <div class="container">
-        © <span id="year"></span> Deutsche Deadlock Community ·
-        <a href="/">Start</a> ·
-        <a href="/tierlist/">Tier-Liste</a> ·
-        <a href="/patch/">Patchnotes</a>
-      </div>
-    </footer>
   </body>
 </html>
