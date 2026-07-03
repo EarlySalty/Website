@@ -3,6 +3,7 @@ mod auth;
 mod config;
 mod db;
 mod discord_broker;
+mod discord_role_connection;
 mod error;
 mod http;
 mod ids;

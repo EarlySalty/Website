@@ -20,6 +20,17 @@ pub struct Config {
     pub master_broker_token: Option<String>,
     pub scrim_guild_id: u64,
     pub auth_session_secret: Option<String>,
+    pub discord_api_base: String,
+    pub discord_oauth_authorize_base: String,
+    pub discord_oauth_client_id: Option<String>,
+    pub discord_oauth_client_secret: Option<String>,
+    pub discord_application_id: Option<String>,
+    pub discord_bot_token: Option<String>,
+    pub discord_role_connection_callback_url: Option<String>,
+    pub discord_role_connection_cookie_name: String,
+    pub discord_role_connection_sync_worker_enabled: bool,
+    pub discord_role_connection_sync_interval_seconds: u64,
+    pub db_master_key_v1: Option<String>,
 }
 
 impl Config {
@@ -76,6 +87,51 @@ impl Config {
                 "JWT_SECRET",
                 "SESSIONS_ENCRYPTION_KEY",
             ]),
+            discord_api_base: env_or("DISCORD_API_BASE", "https://discord.com/api/v10"),
+            discord_oauth_authorize_base: first_env(&[
+                "DISCORD_OAUTH_AUTHORIZE_BASE",
+                "DISCORD_AUTHORIZE_BASE",
+            ])
+            .unwrap_or_else(|| "https://discord.com/oauth2/authorize".to_string()),
+            discord_oauth_client_id: first_env(&["DISCORD_OAUTH_CLIENT_ID", "DISCORD_CLIENT_ID"]),
+            discord_oauth_client_secret: first_env(&[
+                "DISCORD_OAUTH_CLIENT_SECRET",
+                "DISCORD_CLIENT_SECRET",
+            ]),
+            discord_application_id: first_env(&[
+                "DISCORD_APPLICATION_ID",
+                "DISCORD_OAUTH_CLIENT_ID",
+                "DISCORD_CLIENT_ID",
+            ]),
+            discord_bot_token: first_env(&[
+                "DISCORD_ROLE_CONNECTION_BOT_TOKEN",
+                "DISCORD_BOT_TOKEN",
+                "DISCORD_TOKEN",
+                "BOT_TOKEN",
+            ]),
+            discord_role_connection_callback_url: env::var("DISCORD_ROLE_CONNECTION_CALLBACK_URL")
+                .ok()
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty()),
+            discord_role_connection_cookie_name: env_or(
+                "DISCORD_ROLE_CONNECTION_STATE_COOKIE_NAME",
+                "ddc_role_connection_state",
+            ),
+            discord_role_connection_sync_worker_enabled: env::var(
+                "DISCORD_ROLE_CONNECTION_SYNC_WORKER_ENABLED",
+            )
+            .ok()
+            .as_deref()
+            .map(|v| is_truthy(v, true))
+            .unwrap_or(true),
+            discord_role_connection_sync_interval_seconds: env::var(
+                "DISCORD_ROLE_CONNECTION_SYNC_INTERVAL_SECONDS",
+            )
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(30),
+            db_master_key_v1: first_env(&["DB_MASTER_KEY_V1"]),
         }
     }
 }
@@ -102,4 +158,12 @@ fn env_or(name: &str, fallback: &str) -> String {
 
 fn normalized_domain(value: String) -> String {
     value.trim().trim_start_matches('.').to_ascii_lowercase()
+}
+
+fn is_truthy(value: &str, default: bool) -> bool {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" => true,
+        "0" | "false" | "no" | "off" => false,
+        _ => default,
+    }
 }

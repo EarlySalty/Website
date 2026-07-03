@@ -61,6 +61,7 @@ export PYTHONUNBUFFERED=1
 # und der Broker landet auf einem 404. Die bei Discord registrierte URI bleibt
 # unveraendert (/callback/discord); das hier ist nur die Rueckleitung an diesen Dienst.
 export AUTH_PUBLIC_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/callback"
+export DISCORD_ROLE_CONNECTION_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/linked-role/callback"
 
 cd "$BACKEND_DIR"
 
