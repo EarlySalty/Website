@@ -213,7 +213,7 @@ function renderAuthSlot(me) {
   if (me) {
     const chip = document.createElement('span')
     chip.className = 'auth-placeholder'
-    chip.innerHTML = `<strong style="color:var(--text)">${escapeHtml(me.name || 'User')}</strong>`
+    chip.innerHTML = `<strong style="color:var(--text)">${escapeHtml(me.name || 'Spieler')}</strong>`
     slot.appendChild(chip)
   } else {
     const btn = document.createElement('button')
@@ -387,7 +387,7 @@ function renderBoardInto(body, kind, entries) {
   const meId = state.me?.user_id
   const headerHtml = kind === 'voice'
     ? `<thead><tr><th>#</th><th>Spieler</th><th class="num hide-mobile">Zeit</th><th class="num">Punkte</th></tr></thead>`
-    : `<thead><tr><th>#</th><th>Spieler</th><th class="num hide-mobile">Messages</th><th class="num">Punkte</th></tr></thead>`
+    : `<thead><tr><th>#</th><th>Spieler</th><th class="num hide-mobile">Nachrichten</th><th class="num">Punkte</th></tr></thead>`
   const rowsHtml = entries.map((e) => rowHtml(e, kind, meId)).join('')
   body.innerHTML = `<table class="lb-table">${headerHtml}<tbody>${rowsHtml}</tbody></table>`
 }
@@ -474,7 +474,7 @@ function renderRankLeaderboard(entries) {
 
   const showDelta = state.rankLeaderboardSort === 'climb'
   const headerHtml = showDelta
-    ? '<thead><tr><th>Platz</th><th>Spieler</th><th>Rang</th><th class="num">Delta</th></tr></thead>'
+    ? '<thead><tr><th>Platz</th><th>Spieler</th><th>Rang</th><th class="num">Veränderung</th></tr></thead>'
     : '<thead><tr><th>Platz</th><th>Spieler</th><th>Rang</th></tr></thead>'
   const rowsHtml = entries.map((entry, idx) => rankLeaderboardRowHtml(entry, idx, showDelta)).join('')
   body.innerHTML = `<table class="lb-table rank-lb-table">${headerHtml}<tbody>${rowsHtml}</tbody></table>`
@@ -1040,10 +1040,10 @@ function renderStats(stats) {
   if (!stats) return
   const v = stats.voice || {}
   const t = stats.text || {}
-  setStat('stat-voice-rank', v.rank ? `#${v.rank}` : '–', `${formatNum(v.lifetime_points || 0)} Pkt lifetime`)
-  setStat('stat-text-rank', t.rank ? `#${t.rank}` : '–', `${formatNum(t.lifetime_points || 0)} Pkt lifetime`)
+  setStat('stat-voice-rank', v.rank ? `#${v.rank}` : '–', `${formatNum(v.lifetime_points || 0)} Pkt gesamt`)
+  setStat('stat-text-rank', t.rank ? `#${t.rank}` : '–', `${formatNum(t.lifetime_points || 0)} Pkt gesamt`)
   setStat('stat-voice-30', formatHours(v.range_seconds ?? 0), `${formatNum(v.range_points || 0)} Punkte · ${v.range_sessions || 0} Sessions`)
-  setStat('stat-text-30', formatNum(t.range_points || 0), `${formatNum(t.range_messages || 0)} Messages · ${t.range_sessions || 0} Sessions`)
+  setStat('stat-text-30', formatNum(t.range_points || 0), `${formatNum(t.range_messages || 0)} Nachrichten · ${t.range_sessions || 0} Sessions`)
 }
 
 function setStat(id, value, meta) {
