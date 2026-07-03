@@ -60,6 +60,18 @@ const RANK_COLORS = {
   ascendant: '#ee9922',
   eternus:   '#f5cc11',
 }
+const BRAND_CHART = {
+  tooltipBg: 'rgba(11, 9, 7, 0.95)',
+  border: 'rgba(201, 168, 106, 0.24)',
+  grid: 'rgba(201, 168, 106, 0.08)',
+  gridSoft: 'rgba(201, 168, 106, 0.06)',
+  tick: '#b7aa91',
+  donutBorder: '#130f0b',
+  gold: 'rgba(201, 168, 106, 1)',
+  goldFill: 'rgba(201, 168, 106, 0.16)',
+  rust: 'rgba(221, 106, 77, 1)',
+  rustFill: 'rgba(221, 106, 77, 0.14)',
+}
 
 const state = {
   tab: 'voice',
@@ -82,8 +94,6 @@ const state = {
   distributionInitialized: false,
   peaksInitialized: false,
 }
-
-document.getElementById('year').textContent = new Date().getFullYear()
 
 init()
 
@@ -457,7 +467,7 @@ function renderDistribution(data) {
       datasets: [{
         data: rankOrder.map((rank) => distribution[rank] || 0),
         backgroundColor: rankOrder.map(rankColor),
-        borderColor: '#10243a',
+        borderColor: BRAND_CHART.donutBorder,
         borderWidth: 2,
         hoverOffset: 6,
       }],
@@ -469,8 +479,8 @@ function renderDistribution(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
           callbacks: {
@@ -510,8 +520,8 @@ function renderWeeklyChart(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
         },
@@ -520,13 +530,13 @@ function renderWeeklyChart(data) {
         x: {
           stacked: true,
           grid: { display: false },
-          ticks: { color: '#9bb3c5', font: { size: 11 } },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 } },
         },
         y: {
           stacked: true,
           beginAtZero: true,
-          grid: { color: 'rgba(194, 221, 240, 0.08)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, precision: 0 },
+          grid: { color: BRAND_CHART.grid },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, precision: 0 },
         },
       },
     },
@@ -564,8 +574,8 @@ function renderTimeline(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
           callbacks: {
@@ -575,13 +585,13 @@ function renderTimeline(data) {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(194, 221, 240, 0.06)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+          grid: { color: BRAND_CHART.gridSoft },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
         },
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(194, 221, 240, 0.08)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 } },
+          grid: { color: BRAND_CHART.grid },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 } },
         },
       },
     },
@@ -630,8 +640,8 @@ function renderOverallTimeline(data) {
         {
           label: `Gesamt ${unit}`,
           data: totals,
-          backgroundColor: isBar ? 'rgba(30, 204, 192, 0.5)' : 'rgba(30, 204, 192, 0.15)',
-          borderColor: 'rgba(30, 204, 192, 0.9)',
+          backgroundColor: BRAND_CHART.goldFill,
+          borderColor: BRAND_CHART.gold,
           borderWidth: isBar ? 1 : 2,
           borderRadius: isBar ? 4 : 0,
           borderSkipped: false,
@@ -649,8 +659,8 @@ function renderOverallTimeline(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
           callbacks: {
@@ -660,13 +670,13 @@ function renderOverallTimeline(data) {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(194, 221, 240, 0.06)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
+          grid: { color: BRAND_CHART.gridSoft },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 },
         },
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(194, 221, 240, 0.08)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 } },
+          grid: { color: BRAND_CHART.grid },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 } },
         },
       },
     },
@@ -757,7 +767,7 @@ function renderVoiceChart(data) {
   const labels = daily.map((d) => formatDayShort(d.day))
   const hours = daily.map((d) => +((d.total_seconds || 0) / 3600).toFixed(2))
   state.voiceChart?.destroy()
-  state.voiceChart = new Chart(ctx, lineChartConfig(labels, hours, 'Stunden', 'rgba(6,182,212,1)', 'rgba(6,182,212,0.15)'))
+  state.voiceChart = new Chart(ctx, lineChartConfig(labels, hours, 'Stunden', BRAND_CHART.gold, BRAND_CHART.goldFill))
 }
 
 function renderTextChart(data) {
@@ -767,7 +777,7 @@ function renderTextChart(data) {
   const labels = daily.map((d) => formatDayShort(d.day))
   const values = daily.map((d) => d.total_points || 0)
   state.textChart?.destroy()
-  state.textChart = new Chart(ctx, lineChartConfig(labels, values, 'Punkte', 'rgba(168,85,247,1)', 'rgba(168,85,247,0.15)'))
+  state.textChart = new Chart(ctx, lineChartConfig(labels, values, 'Punkte', BRAND_CHART.rust, BRAND_CHART.rustFill))
 }
 
 function lineChartConfig(labels, data, label, stroke, fill) {
@@ -794,8 +804,8 @@ function lineChartConfig(labels, data, label, stroke, fill) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(5, 11, 22, 0.95)',
-          borderColor: 'rgba(194, 221, 240, 0.28)',
+          backgroundColor: BRAND_CHART.tooltipBg,
+          borderColor: BRAND_CHART.border,
           borderWidth: 1,
           padding: 10,
           titleFont: { family: 'Sora' },
@@ -805,12 +815,12 @@ function lineChartConfig(labels, data, label, stroke, fill) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
         },
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(194, 221, 240, 0.08)' },
-          ticks: { color: '#9bb3c5', font: { size: 11 }, precision: 0 },
+          grid: { color: BRAND_CHART.grid },
+          ticks: { color: BRAND_CHART.tick, font: { size: 11 }, precision: 0 },
         },
       },
     },
@@ -861,11 +871,10 @@ function renderHeatmap(data) {
 }
 
 function heatmapColor(t) {
-  if (t <= 0) return 'rgba(6, 182, 212, 0.05)'
-  // cyan → purple
-  const r = Math.round(6 + (168 - 6) * t)
-  const g = Math.round(182 + (85 - 182) * t)
-  const b = Math.round(212 + (247 - 212) * t)
+  if (t <= 0) return 'rgba(201, 168, 106, 0.05)'
+  const r = Math.round(201 + (221 - 201) * t)
+  const g = Math.round(168 + (106 - 168) * t)
+  const b = Math.round(106 + (77 - 106) * t)
   const a = 0.25 + t * 0.75
   return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`
 }
@@ -964,7 +973,7 @@ function prettyRank(rank) {
 }
 
 function rankColor(rank) {
-  return RANK_COLORS[String(rank || '').toLowerCase()] || '#06b6d4'
+  return RANK_COLORS[String(rank || '').toLowerCase()] || '#c8a86b'
 }
 
 function formatTimelineValue(value) {

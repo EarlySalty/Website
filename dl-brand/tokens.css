@@ -1,0 +1,155 @@
+@font-face {
+  font-family: "Sora";
+  src: url("/brand/fonts/sora-latin-ext.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Sora";
+  src: url("/brand/fonts/sora-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Manrope";
+  src: url("/brand/fonts/manrope-latin-ext.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Manrope";
+  src: url("/brand/fonts/manrope-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --ink: #0b0907;
+  --ink-soft: #130f0b;
+  --ink-raised: #1c160e;
+  --panel: rgba(28, 22, 14, 0.72);
+  --panel-solid: #211c16;
+
+  --bone: #ece0c8;
+  --bone-dim: #b7aa91;
+  --bone-faint: #746a57;
+
+  --gold: #c8a86b;
+  --gold-bright: #efd49d;
+  --gold-dark: #806534;
+  --gold-glow: rgba(201, 168, 106, 0.14);
+  --gold-border: rgba(201, 168, 106, 0.42);
+
+  --rust: #ad4932;
+  --rust-bright: #dd6a4d;
+  --teal: #55978f;
+  --green: #66b39b;
+
+  --line: rgba(201, 168, 106, 0.24);
+  --line-soft: rgba(201, 168, 106, 0.14);
+  --line-strong: rgba(201, 168, 106, 0.52);
+
+  --font-display: "Sora", Georgia, serif;
+  --font-body: "Manrope", "Segoe UI", Arial, sans-serif;
+  --font-mono: "Manrope", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --display: var(--font-display);
+  --body: var(--font-body);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --max: 1180px;
+  --wide: 1380px;
+  --gutter: clamp(1.2rem, 4vw, 4rem);
+
+  --shadow-card: 0 26px 70px rgba(0, 0, 0, 0.56), 0 1px 0 rgba(255, 255, 255, 0.025) inset;
+  --shadow-card-soft: 0 16px 45px rgba(0, 0, 0, 0.38), 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+  --shadow-glow-amber: 0 0 38px rgba(201, 168, 106, 0.22), 0 18px 50px rgba(0, 0, 0, 0.5);
+
+  --brand-body-background:
+    radial-gradient(100% 60% at 50% -5%, rgba(201, 168, 106, 0.1), transparent 60%),
+    radial-gradient(80% 50% at 85% 35%, rgba(85, 151, 143, 0.06), transparent 70%),
+    linear-gradient(180deg, #0b0907, #100c08 55%, #080604);
+
+  --bg-base: var(--ink);
+  --bg-surface: var(--ink-soft);
+  --bg-card: rgba(28, 22, 14, 0.86);
+  --bg-raised: var(--panel-solid);
+
+  --border-dim: var(--line-soft);
+  --border-soft: var(--line);
+  --border-medium: rgba(201, 168, 106, 0.4);
+
+  --text-primary: var(--bone);
+  --text-secondary: var(--bone-dim);
+  --text-muted: var(--bone-faint);
+
+  --amber: var(--gold);
+  --amber-light: var(--gold-bright);
+  --amber-deep: var(--gold-dark);
+  --amber-glow: var(--gold-glow);
+  --amber-border: var(--gold-border);
+
+  --violet: #8e6fc5;
+  --violet-glow: rgba(142, 111, 197, 0.12);
+  --sky: var(--teal);
+  --red: var(--rust-bright);
+}
+
+.brand-body {
+  color: var(--bone);
+  background: var(--brand-body-background);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.brand-grain,
+.brand-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.brand-grain {
+  z-index: 100;
+  opacity: 0.045;
+  mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: brand-grain 0.5s steps(3) infinite;
+}
+
+.brand-vignette {
+  z-index: 101;
+  background: radial-gradient(120% 95% at 50% 45%, transparent 58%, rgba(0, 0, 0, 0.48));
+  mix-blend-mode: multiply;
+}
+
+@keyframes brand-grain {
+  0% { transform: translate(0); }
+  33% { transform: translate(-2%, 2%); }
+  66% { transform: translate(2%, -2%); }
+  100% { transform: translate(-1%, -1%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-grain {
+    animation: none;
+  }
+}

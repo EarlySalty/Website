@@ -11,7 +11,7 @@
     <link rel="canonical" href="https://deutsche-deadlock-community.de/aktivitaet/" />
     <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/aktivitaet/" />
     <link rel="alternate" hreflang="x-default" href="https://deutsche-deadlock-community.de/aktivitaet/" />
-    <meta name="theme-color" content="#07151d" />
+    <meta name="theme-color" content="#0b0907" />
     <meta
       name="keywords"
       content="Deadlock Aktivität, Deadlock Voice Leaderboard, Deadlock Discord aktiv, Deadlock Community Stats, Deadlock Spielzeit deutsch, Deadlock Heatmap"
@@ -34,7 +34,7 @@
       content="Voice- und Text-Leaderboards plus persönliches Dashboard für den DE-Deadlock-Discord."
     />
     <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
-    <link rel="icon" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/brand/logo/deadlock-d-logo.png" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -60,19 +60,17 @@
         ]
       }
     </script>
+    <link rel="stylesheet" href="/brand/tokens.css" />
+    <link rel="stylesheet" href="/brand/nav.css" />
+    <script src="/brand/nav.js" defer></script>
     <script type="module" src="/src/activity.js"></script>
   </head>
-  <body>
+  <body class="brand-body">
     <header class="site-header">
       <div class="container">
         <a class="brand" href="/">
-          <img src="/ddc-logo.svg" alt="Deutsche Deadlock Community" class="brand-logo" height="38" />
+          <img src="/brand/logo/deadlock-d-logo.png" alt="Deutsche Deadlock Community" class="brand-logo" height="38" />
         </a>
-        <nav class="site-nav" aria-label="Hauptnavigation">
-          <a href="/">Start</a>
-          <a href="/tierlist/">Tier-Liste</a>
-          <a href="/aktivitaet/" class="is-active" aria-current="page">Aktivität</a>
-        </nav>
         <div class="auth-slot" id="auth-slot" aria-live="polite">
           <span class="auth-placeholder">…</span>
         </div>
@@ -340,13 +338,5 @@
       </div>
     </main>
 
-    <footer class="footer">
-      <div class="container">
-        © <span id="year"></span> Deutsche Deadlock Community ·
-        <a href="/">Start</a> ·
-        <a href="/tierlist/">Tier-Liste</a> ·
-        <a href="/patch/">Patchnotes</a>
-      </div>
-    </footer>
   </body>
 </html>

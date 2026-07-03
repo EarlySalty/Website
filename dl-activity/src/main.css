@@ -1,69 +1,27 @@
-@font-face {
-  font-family: 'Manrope';
-  font-style: normal;
-  font-weight: 400 800;
-  font-display: swap;
-  src: url('/fonts/manrope-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
-    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
-    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Manrope';
-  font-style: normal;
-  font-weight: 400 800;
-  font-display: swap;
-  src: url('/fonts/manrope-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
-    U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Sora';
-  font-style: normal;
-  font-weight: 400 800;
-  font-display: swap;
-  src: url('/fonts/sora-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
-    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
-    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Sora';
-  font-style: normal;
-  font-weight: 400 800;
-  font-display: swap;
-  src: url('/fonts/sora-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
-    U+2215, U+FEFF, U+FFFD;
-}
-
 :root {
-  --bg: #0c1a30;
-  --bg-elevated: rgba(5, 11, 22, 0.88);
-  --card: rgba(13, 26, 52, 0.9);
-  --card-strong: rgba(16, 32, 60, 0.95);
-  --border: rgba(194, 221, 240, 0.14);
-  --border-strong: rgba(194, 221, 240, 0.28);
-  --text: #e9f1f7;
-  --muted: #9bb3c5;
-  --primary: #06b6d4;
-  --primary-soft: rgba(6, 182, 212, 0.22);
-  --accent: #a855f7;
-  --accent-soft: rgba(168, 85, 247, 0.2);
-  --success: #22c55e;
-  --warning: #facc15;
-  --danger: #fb7185;
-  --gold: #ffd700;
-  --silver: #d4dde3;
+  --bg: var(--bg-base, #0b0907);
+  --bg-elevated: rgba(11, 9, 7, 0.88);
+  --card: var(--bg-card, rgba(28, 22, 14, 0.86));
+  --card-strong: rgba(33, 28, 22, 0.95);
+  --border: var(--border-dim, rgba(201, 168, 106, 0.14));
+  --border-strong: var(--border-soft, rgba(201, 168, 106, 0.24));
+  --text: var(--text-primary, #ece0c8);
+  --muted: var(--text-secondary, #b7aa91);
+  --primary: var(--gold, #c8a86b);
+  --primary-soft: var(--gold-glow, rgba(201, 168, 106, 0.14));
+  --accent: var(--rust, #ad4932);
+  --accent-soft: rgba(173, 73, 50, 0.18);
+  --success: var(--green, #66b39b);
+  --warning: var(--gold-bright, #efd49d);
+  --danger: var(--rust-bright, #dd6a4d);
+  --silver: #d7d0c2;
   --bronze: #cd7f32;
-  --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  --shadow: var(--shadow-card-soft, 0 16px 45px rgba(0, 0, 0, 0.38));
   --max-width: 1400px;
-  --radius-xl: 28px;
-  --radius-lg: 22px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
+  --radius-xl: 8px;
+  --radius-lg: 8px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
   --header-height: 78px;
 }
 
@@ -76,9 +34,9 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-family: var(--font-body, 'Manrope', 'Segoe UI', sans-serif);
   color: var(--text);
-  background: linear-gradient(160deg, #0c1a30 0%, #091525 55%, #0b1a2e 100%);
+  background: var(--brand-body-background, linear-gradient(180deg, #0b0907, #100c08 55%, #080604));
   line-height: 1.6;
   overflow-x: hidden;
 }
@@ -89,9 +47,9 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
-  background-size: 36px 36px;
+    linear-gradient(rgba(201, 168, 106, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 168, 106, 0.03) 1px, transparent 1px);
+  background-size: 64px 64px;
   mask-image: radial-gradient(ellipse at top, black 50%, transparent 90%);
   opacity: 0.5;
   z-index: 0;
@@ -100,7 +58,7 @@ body::before {
 main, footer, header { position: relative; z-index: 1; }
 
 h1, h2, h3 {
-  font-family: 'Sora', 'Manrope', sans-serif;
+  font-family: var(--font-display, 'Sora', 'Manrope', sans-serif);
   line-height: 1.1;
   margin: 0;
 }
@@ -140,7 +98,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   width: auto;
 }
 .brand-mark {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: 0.02em;
@@ -151,27 +109,11 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.site-nav {
-  display: flex;
-  gap: 1.25rem;
-  margin-left: auto;
-  font-size: 0.95rem;
-}
-.site-nav a {
-  color: var(--muted);
-  padding: 0.35rem 0.1rem;
-  border-bottom: 2px solid transparent;
-  transition: color 0.2s, border-color 0.2s;
-}
-.site-nav a:hover { color: var(--text); }
-.site-nav a.is-active {
-  color: var(--text);
-  border-bottom-color: var(--primary);
-}
 .auth-slot {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-left: auto;
 }
 .auth-placeholder {
   color: var(--muted);
@@ -197,9 +139,9 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .button:active { transform: translateY(1px); }
 .button-primary {
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: #06131f;
-  box-shadow: 0 10px 28px rgba(6, 182, 212, 0.25);
+  background: linear-gradient(135deg, var(--gold, #c8a86b), var(--gold-bright, #efd49d));
+  color: var(--ink, #0b0907);
+  box-shadow: 0 10px 28px rgba(201, 168, 106, 0.24);
 }
 .button-primary:hover { filter: brightness(1.08); }
 .button-secondary {
@@ -207,7 +149,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   border-color: var(--border-strong);
   color: var(--text);
 }
-.button-secondary:hover { border-color: var(--primary); background: rgba(6, 182, 212, 0.08); }
+.button-secondary:hover { border-color: var(--primary); background: var(--primary-soft); }
 .button-discord {
   background: #5865f2;
   color: #fff;
@@ -217,7 +159,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 /* ── Hero ── */
 .hero { padding: 4rem 0 2.5rem; }
 .hero-eyebrow {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   color: var(--primary);
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -226,8 +168,8 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .hero-title {
   font-size: clamp(2.2rem, 5vw, 3.4rem);
-  letter-spacing: -0.02em;
-  background: linear-gradient(120deg, #fff 0%, #a5d8ff 50%, #e2b7ff 100%);
+  letter-spacing: 0;
+  background: linear-gradient(120deg, var(--bone, #ece0c8) 0%, var(--gold-bright, #efd49d) 52%, var(--bone-dim, #b7aa91) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -243,8 +185,8 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 .section { padding: 2.5rem 0; }
 .section--alt {
   background:
-    radial-gradient(ellipse at top, rgba(168, 85, 247, 0.08), transparent 60%),
-    radial-gradient(ellipse at bottom, rgba(6, 182, 212, 0.07), transparent 60%);
+    radial-gradient(ellipse at top, rgba(201, 168, 106, 0.1), transparent 60%),
+    radial-gradient(ellipse at bottom, rgba(173, 73, 50, 0.08), transparent 60%);
 }
 .section-head {
   display: flex;
@@ -255,7 +197,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .section-kicker {
   margin: 0 0 0.4rem;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   color: var(--primary);
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -385,8 +327,8 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   background: rgba(255, 255, 255, 0.02);
 }
 .legend-chip.legend-gold {
-  color: #2b1d00;
-  background: linear-gradient(135deg, var(--gold), #f5a623);
+  color: var(--ink, #0b0907);
+  background: linear-gradient(135deg, var(--gold, #c8a86b), var(--gold-bright, #efd49d));
   border-color: transparent;
   font-weight: 600;
 }
@@ -472,7 +414,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .donut-value {
   display: block;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   font-size: 2rem;
   line-height: 1;
   color: var(--text);
@@ -505,8 +447,8 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   min-height: 48px;
   padding: 0.8rem 0.95rem;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  background: rgba(10, 20, 38, 0.45);
+  border-radius: var(--radius-md);
+  background: rgba(11, 9, 7, 0.42);
 }
 .rank-chip-button {
   cursor: pointer;
@@ -516,7 +458,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .rank-chip-button:hover {
   border-color: var(--border-strong);
-  background: rgba(10, 20, 38, 0.72);
+  background: rgba(33, 28, 22, 0.72);
 }
 .rank-chip-button.is-muted {
   opacity: 0.45;
@@ -544,7 +486,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   padding: 0.3rem;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(10, 20, 38, 0.65);
+  background: rgba(11, 9, 7, 0.65);
 }
 .metric-btn {
   border: 0;
@@ -559,7 +501,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   transition: background 0.2s, color 0.2s;
 }
 .metric-btn.is-active {
-  background: linear-gradient(135deg, var(--primary-soft), rgba(168, 85, 247, 0.25));
+  background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft));
   color: var(--text);
 }
 .metric-toggle-sm {
@@ -576,7 +518,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   vertical-align: middle;
 }
 .lb-table thead th {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -587,19 +529,19 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .lb-table th.num, .lb-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .lb-table tbody tr {
-  border-bottom: 1px solid rgba(194, 221, 240, 0.06);
+  border-bottom: 1px solid var(--line-soft, rgba(201, 168, 106, 0.14));
   transition: background 0.15s;
 }
 .lb-table tbody tr:last-child { border-bottom: none; }
-.lb-table tbody tr:hover { background: rgba(6, 182, 212, 0.04); }
+.lb-table tbody tr:hover { background: rgba(201, 168, 106, 0.06); }
 .lb-table tbody tr.is-me {
-  background: linear-gradient(90deg, rgba(6, 182, 212, 0.10), rgba(168, 85, 247, 0.08));
+  background: linear-gradient(90deg, rgba(201, 168, 106, 0.12), rgba(173, 73, 50, 0.08));
   box-shadow: inset 4px 0 0 var(--primary);
 }
 .lb-table tbody tr.is-me td:first-child { position: relative; }
 
 .rank-cell {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   font-weight: 700;
   width: 3.5rem;
   text-align: center;
@@ -620,7 +562,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   font-weight: 700;
   font-size: 0.85rem;
   color: var(--text);
@@ -645,7 +587,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
   background: var(--primary);
-  color: #06131f;
+  color: var(--ink, #0b0907);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -736,14 +678,14 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   font-weight: 600;
 }
 .stat-value {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   font-size: 1.9rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 .stat-meta { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
@@ -773,14 +715,14 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .chart-head h3 {
   font-size: 1.05rem;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 .chart-note {
   font-size: 0.78rem;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
 }
 .chart-wrapper {
   position: relative;
@@ -808,7 +750,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .heatmap .hm-head,
 .heatmap .hm-row-label {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   padding: 2px 4px;
   text-align: center;
 }
@@ -816,7 +758,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 .heatmap .hm-cell {
   aspect-ratio: 1 / 1;
   border-radius: 3px;
-  background: rgba(6, 182, 212, 0.06);
+  background: rgba(201, 168, 106, 0.06);
   transition: background 0.15s;
 }
 .heatmap .hm-cell:hover { outline: 1px solid var(--primary); outline-offset: -1px; }
@@ -832,10 +774,10 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   height: 8px;
   border-radius: 999px;
   background: linear-gradient(90deg,
-    rgba(6, 182, 212, 0.1),
-    rgba(6, 182, 212, 0.4),
-    rgba(168, 85, 247, 0.7),
-    rgba(168, 85, 247, 1));
+    rgba(201, 168, 106, 0.1),
+    rgba(201, 168, 106, 0.42),
+    rgba(221, 106, 77, 0.72),
+    rgba(221, 106, 77, 1));
 }
 
 /* Co-Players */
@@ -861,10 +803,10 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .coplayer-list li:hover {
   border-color: var(--border);
-  background: rgba(6, 182, 212, 0.04);
+  background: rgba(201, 168, 106, 0.06);
 }
 .coplayer-list .cp-rank {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-display, 'Sora', sans-serif);
   font-weight: 700;
   color: var(--muted);
   width: 1.5rem;
@@ -873,17 +815,6 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .coplayer-list .cp-name { flex: 1; font-weight: 600; font-size: 0.9rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .coplayer-list .cp-meta { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
-
-/* Footer */
-.footer {
-  margin-top: 4rem;
-  padding: 2rem 0;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-.footer a { color: var(--muted); transition: color 0.15s; }
-.footer a:hover { color: var(--text); }
 
 /* Responsive tweaks */
 @media (max-width: 960px) {
@@ -914,7 +845,6 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 
 @media (max-width: 640px) {
   .site-header .container { flex-wrap: wrap; row-gap: 0.5rem; }
-  .site-nav { order: 3; width: 100%; justify-content: space-between; font-size: 0.85rem; }
   .auth-slot { margin-left: auto; }
   .lb-table th, .lb-table td { padding: 0.55rem 0.7rem; }
   .lb-table th.hide-mobile, .lb-table td.hide-mobile { display: none; }
