@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Deutsche Deadlock Community">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0d79f"/>
+      <stop offset=".5" stop-color="#b99455"/>
+      <stop offset="1" stop-color="#6e542a"/>
+    </linearGradient>
+  </defs>
+  <path d="M50 4 96 50 50 96 4 50Z" fill="#100c08" stroke="url(#b)" stroke-width="3"/>
+  <path d="M50 20 80 50 50 80 20 50Z" fill="none" stroke="#806534" stroke-width="1.5"/>
+  <circle cx="50" cy="50" r="7" fill="#66ae91"/>
+  <path d="M50 27v16M42 35l8 8 8-8M36 50h28M41 60l9-10 9 10" fill="none" stroke="#e8cf98" stroke-width="2"/>
+</svg>
