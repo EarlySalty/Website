@@ -1,3 +1,11 @@
+## #48 — Aktivität: Ranglisten laden wieder + wärmerer Look
+
+**Ausgangslage:** Auf der Aktivitätsseite kam nichts an — Voice- und Rang-Leaderboard, Rangverteilung und der Discord-Login liefen alle in einen „Nicht gefunden"-Fehler. Die Seite blieb leer und wirkte dadurch leblos.
+
+**Geändert:** Die Seite spricht ihre Datenschnittstelle wieder über den richtigen Pfad an, dadurch funktionieren Leaderboards, Rangverteilung und Login. Dazu ein optischer Feinschliff: größeres Logo, ein warmer Farbschimmer im Kopfbereich, ein lebendigerer Titel und feine Gold-Akzente auf den Panels.
+
+**Wie's jetzt läuft:** Ranglisten und Rangverteilung füllen sich wieder mit echten Daten samt der farbigen Rang-Stufen, und der Discord-Login leitet wieder sauber weiter.
+
 ## #47 — Aktivitäts-Dashboard im neuen Look + Rangverlauf mit Rang-Leaderboard
 
 **Ausgangslage:** Die Aktivitätsseite sah noch nach dem alten Design aus und hatte mit dem Rest der Website wenig gemein. Und obwohl wir Rangdaten längst speichern, konnte niemand seinen eigenen Verlauf sehen.

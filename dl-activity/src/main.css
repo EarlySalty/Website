@@ -1039,3 +1039,47 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ── Vibrancy-Pass: größeres Logo, mehr Wärme/Leben (seitenlokal) ── */
+
+/* Größeres Logo im Header (CSS schlägt das inline height=38) */
+.site-header .brand-logo { height: 54px; width: auto; }
+
+/* Warmer Ambient-Glow, damit der obere Bereich nicht flach-schwarz wirkt */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(58% 40% at 50% -6%, rgba(201, 168, 106, 0.16), transparent 62%),
+    radial-gradient(34% 30% at 86% 2%, rgba(173, 73, 50, 0.13), transparent 60%);
+}
+
+/* Hero-Titel wärmer/lebendiger: Creme → helles Gold → Amber → Rost */
+.hero-title {
+  background: linear-gradient(118deg, #f3e8cf 0%, #efd49d 40%, #e0a24e 80%, #ad4932 118%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hero-eyebrow {
+  color: var(--gold-bright, #efd49d);
+  text-shadow: 0 0 20px rgba(201, 168, 106, 0.28);
+}
+
+/* Panels: feine Gold→Rost-Oberkante + dezentes Hover-Leben */
+.leaderboard-card { position: relative; transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.leaderboard-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), var(--accent) 72%, transparent);
+  opacity: 0.75;
+}
+.leaderboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.45), inset 0 0 0 1px var(--border-strong);
+}
