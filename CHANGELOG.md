@@ -1,3 +1,11 @@
+## #47 — Aktivitäts-Dashboard im neuen Look + Rangverlauf mit Rang-Leaderboard
+
+**Ausgangslage:** Die Aktivitätsseite sah noch nach dem alten Design aus und hatte mit dem Rest der Website wenig gemein. Und obwohl wir Rangdaten längst speichern, konnte niemand seinen eigenen Verlauf sehen.
+
+**Geändert:** Die Seite trägt jetzt das neue Art-Déco-Design der Community — dunkles Ink, Gold, dieselbe Schrift wie überall, dazu der Aufzug-Knopf, über den du von jeder Seite zu jeder anderen kommst. Neu dazu: ein Rang-Leaderboard mit Top-Aufsteigern und Top-Rängen sowie dein persönlicher Rangverlauf als Kurve (30/90 Tage oder alles) nach Discord-Login.
+
+**Wie's jetzt läuft:** Dein Rangverlauf ist standardmäßig privat. In deinem Bereich gibt es einen Schalter: privat, nur für Server-Mitglieder oder öffentlich — erst dann tauchst du im Rang-Leaderboard auf. Wer absteigt, sieht dezent den Weg zur Coaching-Etage.
+
 ## #46 — Scrim-Teams: Discord-Rollen automatisch
 
 **Ausgangslage:** Wer ins Scrim-Team kam, musste die passende Discord-Rolle — und damit die Team-Channels — noch von Hand bekommen. Team-Wechsel oder Rauswürfe hießen: dran denken, alte Rolle abziehen, neue geben.
