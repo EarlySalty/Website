@@ -30,8 +30,13 @@ Chart.register(
   BarElement,
 )
 
-const API_BASE = normalizeBase(import.meta.env.VITE_API_BASE)
-const AUTH_BASE = normalizeBase(import.meta.env.VITE_AUTH_BASE ?? import.meta.env.VITE_API_BASE)
+// API/Auth teilen sich die Deploy-Base (Vite `base`, via import.meta.env.BASE_URL =
+// '/aktivitaet/'), damit die aufgerufenen Pfade nie von der Auslieferungs-Base wegdriften.
+// Explizite VITE_API_BASE/VITE_AUTH_BASE übersteuern weiterhin (z. B. für getrennte Hosts).
+const API_BASE = normalizeBase(import.meta.env.VITE_API_BASE ?? import.meta.env.BASE_URL)
+const AUTH_BASE = normalizeBase(
+  import.meta.env.VITE_AUTH_BASE ?? import.meta.env.VITE_API_BASE ?? import.meta.env.BASE_URL,
+)
 const REDIRECT_AFTER_LOGIN = '/aktivitaet/'
 const FALLBACK_RANK_ORDER = [
   'initiate',
