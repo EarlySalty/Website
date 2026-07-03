@@ -1040,12 +1040,12 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
-/* ── Vibrancy-Pass: größeres Logo, mehr Wärme/Leben (seitenlokal) ── */
+/* ── Vibrancy-Pass v2: Leben & Farbe (seitenlokal, screenshot-verifiziert) ── */
 
-/* Größeres Logo im Header (CSS schlägt das inline height=38) */
-.site-header .brand-logo { height: 54px; width: auto; }
+/* Größeres Logo */
+.site-header .brand-logo { height: 60px; width: auto; }
 
-/* Warmer Ambient-Glow, damit der obere Bereich nicht flach-schwarz wirkt */
+/* Kräftigerer Ambient-Glow: füllt die dunkle Fläche mit einem Hauch der Tier-Palette */
 body::after {
   content: '';
   position: fixed;
@@ -1053,33 +1053,98 @@ body::after {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(58% 40% at 50% -6%, rgba(201, 168, 106, 0.16), transparent 62%),
-    radial-gradient(34% 30% at 86% 2%, rgba(173, 73, 50, 0.13), transparent 60%);
+    radial-gradient(52% 46% at 50% -8%, rgba(201, 168, 106, 0.22), transparent 60%),
+    radial-gradient(40% 40% at 93% 0%, rgba(173, 73, 50, 0.18), transparent 58%),
+    radial-gradient(46% 52% at 3% 60%, rgba(34, 136, 238, 0.10), transparent 60%),
+    radial-gradient(42% 46% at 99% 82%, rgba(124, 92, 255, 0.10), transparent 60%);
 }
 
-/* Hero-Titel wärmer/lebendiger: Creme → helles Gold → Amber → Rost */
+/* Hero: Eyebrow als Pill, Titel mit Glow */
+.hero-eyebrow {
+  display: inline-block;
+  color: var(--gold-bright, #efd49d);
+  background: linear-gradient(120deg, rgba(201, 168, 106, 0.18), rgba(173, 73, 50, 0.14));
+  border: 1px solid rgba(201, 168, 106, 0.32);
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  text-shadow: 0 0 18px rgba(201, 168, 106, 0.3);
+}
 .hero-title {
-  background: linear-gradient(118deg, #f3e8cf 0%, #efd49d 40%, #e0a24e 80%, #ad4932 118%);
+  background: linear-gradient(118deg, #f6ecd6 0%, #f3cf86 38%, #e8a24e 74%, #d6603f 116%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-}
-.hero-eyebrow {
-  color: var(--gold-bright, #efd49d);
-  text-shadow: 0 0 20px rgba(201, 168, 106, 0.28);
+  filter: drop-shadow(0 4px 30px rgba(201, 168, 106, 0.18));
 }
 
-/* Panels: feine Gold→Rost-Oberkante + dezentes Hover-Leben */
-.leaderboard-card { position: relative; transition: transform 0.18s ease, box-shadow 0.18s ease; }
+/* Panels: kräftigere mehrfarbige Oberkante + Hover-Leben */
+.leaderboard-card,
+.insight-card,
+.insight-card-wide {
+  position: relative;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
 .leaderboard-card::before {
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--primary), var(--accent) 72%, transparent);
-  opacity: 0.75;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold, #c8a86b), var(--rust, #ad4932) 55%, #7c5cff 100%);
 }
 .leaderboard-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.45), inset 0 0 0 1px var(--border-strong);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 0 0 1px var(--border-strong);
+}
+
+/* ── Leaderboard lebendig: farbige Avatare (Tier-Palette pro Zeile) ── */
+.lb-table tbody tr .avatar {
+  --av: #c8a86b;
+  background-image: linear-gradient(150deg,
+    color-mix(in srgb, var(--av) 92%, #fff 8%),
+    color-mix(in srgb, var(--av) 60%, #000 26%));
+  color: #0b0907;
+  font-weight: 800;
+  border: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--av) 45%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+.lb-table tbody tr:nth-child(10n + 1) .avatar { --av: #18bba8; }
+.lb-table tbody tr:nth-child(10n + 2) .avatar { --av: #2288ee; }
+.lb-table tbody tr:nth-child(10n + 3) .avatar { --av: #7c5cff; }
+.lb-table tbody tr:nth-child(10n + 4) .avatar { --av: #e0409a; }
+.lb-table tbody tr:nth-child(10n + 5) .avatar { --av: #ee5544; }
+.lb-table tbody tr:nth-child(10n + 6) .avatar { --av: #ee9922; }
+.lb-table tbody tr:nth-child(10n + 7) .avatar { --av: #f5cc11; }
+.lb-table tbody tr:nth-child(10n + 8) .avatar { --av: #5fbf5f; }
+.lb-table tbody tr:nth-child(10n + 9) .avatar { --av: #22b8c8; }
+.lb-table tbody tr:nth-child(10n + 10) .avatar { --av: #b06cff; }
+
+/* Zeilen-Hover wärmer + linker Akzent */
+.lb-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(201, 168, 106, 0.10), rgba(201, 168, 106, 0.03));
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+/* Top-3 als echtes Podest (Gold/Silber/Bronze) */
+.lb-table tbody tr.rank-top-1 {
+  background: linear-gradient(90deg, rgba(245, 204, 17, 0.16), rgba(245, 204, 17, 0.02) 62%);
+  box-shadow: inset 4px 0 0 #f5cc11;
+}
+.lb-table tbody tr.rank-top-2 {
+  background: linear-gradient(90deg, rgba(215, 208, 194, 0.14), rgba(215, 208, 194, 0.02) 62%);
+  box-shadow: inset 4px 0 0 #d7d0c2;
+}
+.lb-table tbody tr.rank-top-3 {
+  background: linear-gradient(90deg, rgba(205, 127, 50, 0.16), rgba(205, 127, 50, 0.02) 62%);
+  box-shadow: inset 4px 0 0 #cd7f32;
+}
+.lb-table tbody tr.rank-top-1 .avatar { --av: #f5cc11; }
+.lb-table tbody tr.rank-top-2 .avatar { --av: #d7d0c2; }
+.lb-table tbody tr.rank-top-3 .avatar { --av: #cd7f32; }
+.rank-cell .medal { filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.55)); }
+
+/* Punkte-Spalte hervorheben */
+.lb-table tbody td.num:last-child {
+  color: var(--gold-bright, #efd49d);
+  font-weight: 800;
 }

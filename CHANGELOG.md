@@ -2,7 +2,7 @@
 
 **Ausgangslage:** Auf der Aktivitätsseite kam nichts an — Voice- und Rang-Leaderboard, Rangverteilung und der Discord-Login liefen alle in einen „Nicht gefunden"-Fehler. Die Seite blieb leer und wirkte dadurch leblos.
 
-**Geändert:** Die Seite spricht ihre Datenschnittstelle wieder über den richtigen Pfad an, dadurch funktionieren Leaderboards, Rangverteilung und Login. Dazu ein optischer Feinschliff: größeres Logo, ein warmer Farbschimmer im Kopfbereich, ein lebendigerer Titel und feine Gold-Akzente auf den Panels.
+**Geändert:** Die Seite spricht ihre Datenschnittstelle wieder über den richtigen Pfad an, dadurch funktionieren Leaderboards, Rangverteilung und Login. Dazu ein kräftiger Optik-Schub: ein farbiges Leaderboard (Spieler-Avatare in den Rang-Farben, Gold/Silber/Bronze-Podest für die Top 3), größeres Logo, ein wärmerer Kopfbereich und ein lebendigerer Titel.
 
 **Wie's jetzt läuft:** Ranglisten und Rangverteilung füllen sich wieder mit echten Daten samt der farbigen Rang-Stufen, und der Discord-Login leitet wieder sauber weiter.
 
