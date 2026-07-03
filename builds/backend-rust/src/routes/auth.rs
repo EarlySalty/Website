@@ -184,6 +184,7 @@ pub async fn logout(State(state): State<AppState>, headers: HeaderMap) -> AppRes
     for name in [
         state.auth.session_cookie_name(),
         state.auth.pre_auth_cookie_name(),
+        &state.cfg.discord_role_connection_cookie_name,
         "auth_token",
     ] {
         for cookie in auth::clear_cookie_variants(&state, &headers, name) {

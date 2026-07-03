@@ -13,6 +13,7 @@ use crate::{
     config::Config,
     db,
     discord_broker::{DynDiscordRoleBroker, ReqwestDiscordRoleBroker},
+    discord_role_connection::{DynDiscordRoleConnectionClient, ReqwestDiscordRoleConnectionClient},
     routes,
 };
 
@@ -26,6 +27,7 @@ pub struct AppInner {
     pub pool: PgPool,
     pub http: Client,
     pub discord_role_broker: DynDiscordRoleBroker,
+    pub discord_role_connections: DynDiscordRoleConnectionClient,
     pub auth: Auth,
 }
 
@@ -37,16 +39,21 @@ impl AppState {
             .timeout(std::time::Duration::from_secs(20))
             .build()?;
         let discord_role_broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg)?);
+        let discord_role_connections =
+            Arc::new(ReqwestDiscordRoleConnectionClient::from_config(&cfg)?);
         let auth = Auth::new(cfg.clone());
-        Ok(Self {
+        let state = Self {
             inner: Arc::new(AppInner {
                 cfg,
                 pool,
                 http,
                 discord_role_broker,
+                discord_role_connections,
                 auth,
             }),
-        })
+        };
+        crate::discord_role_connection::spawn_sync_worker(state.clone());
+        Ok(state)
     }
 
     #[cfg(test)]
@@ -60,12 +67,39 @@ impl AppState {
             .build()
             .expect("test http client");
         let auth = Auth::new(cfg.clone());
+        let discord_role_connections =
+            Arc::new(ReqwestDiscordRoleConnectionClient::from_config(&cfg).expect("role client"));
         Self {
             inner: Arc::new(AppInner {
                 cfg,
                 pool,
                 http,
                 discord_role_broker,
+                discord_role_connections,
+                auth,
+            }),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test_pool_with_clients(
+        pool: PgPool,
+        cfg: Config,
+        discord_role_broker: DynDiscordRoleBroker,
+        discord_role_connections: DynDiscordRoleConnectionClient,
+    ) -> Self {
+        let http = Client::builder()
+            .timeout(std::time::Duration::from_secs(20))
+            .build()
+            .expect("test http client");
+        let auth = Auth::new(cfg.clone());
+        Self {
+            inner: Arc::new(AppInner {
+                cfg,
+                pool,
+                http,
+                discord_role_broker,
+                discord_role_connections,
                 auth,
             }),
         }
@@ -92,6 +126,14 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/auth/discord/callback",
             get(routes::auth::discord_callback),
+        )
+        .route(
+            "/api/auth/discord/linked-role/login",
+            get(routes::linked_role::linked_role_login),
+        )
+        .route(
+            "/api/auth/discord/linked-role/callback",
+            get(routes::linked_role::linked_role_callback),
         )
         .route("/api/auth/me", get(routes::auth::me))
         .route("/api/auth/logout", post(routes::auth::logout))
@@ -171,6 +213,14 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/admin/users/{user_id}/role",
             put(routes::meta::update_user_role),
+        )
+        .route(
+            "/api/admin/discord-role-connections/metadata",
+            post(routes::linked_role::register_metadata),
+        )
+        .route(
+            "/api/internal/discord-role-connections/sync",
+            post(routes::linked_role::sync_user),
         )
         .route("/api/coaching/coaches", get(routes::coaching::list_coaches))
         .route(
@@ -1502,6 +1552,8 @@ mod tests {
             .expect("http client");
         let discord_role_broker =
             Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg).expect("broker client"));
+        let discord_role_connections =
+            Arc::new(ReqwestDiscordRoleConnectionClient::from_config(&cfg).expect("role client"));
         let auth = Auth::new(cfg.clone());
         let state = AppState {
             inner: Arc::new(AppInner {
@@ -1509,6 +1561,7 @@ mod tests {
                 pool: db.pool().clone(),
                 http,
                 discord_role_broker,
+                discord_role_connections,
                 auth,
             }),
         };

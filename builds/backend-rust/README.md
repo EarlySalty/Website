@@ -12,6 +12,12 @@ to the central Postgres/TimescaleDB database:
 - database: `DEADLOCK_CENTRAL_DSN` is required
 - auth cookie/session envs: `AUTH_*`
 - internal bot auth: `TWITCH_INTERNAL_API_TOKEN`, `MASTER_BROKER_TOKEN`, or `COACHING_BOT_TOKEN`
+- Discord Linked Role: `DISCORD_OAUTH_CLIENT_ID`, `DISCORD_OAUTH_CLIENT_SECRET`,
+  a bot token via `DISCORD_ROLE_CONNECTION_BOT_TOKEN`/`DISCORD_TOKEN`, and
+  `DB_MASTER_KEY_V1` for encrypted OAuth token storage. The public callback can
+  be overridden with `DISCORD_ROLE_CONNECTION_CALLBACK_URL`; the OAuth authorize
+  endpoint defaults to `https://discord.com/oauth2/authorize` and can be
+  overridden with `DISCORD_OAUTH_AUTHORIZE_BASE`.
 
 `scripts/run_builds_backend.sh` loads Infisical secrets first, then starts
 `builds/backend-rust/target/release/ddc-website-backend` by default. For the
