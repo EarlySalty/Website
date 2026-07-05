@@ -17,10 +17,10 @@
 }
 
 :root {
-  --bg-base:    #0b0b0b;
-  --bg-surface: #161616;
-  --bg-card:    rgba(22, 22, 22, 0.86);
-  --bg-raised:  #211c16;
+  --bg-base:    #241c11;
+  --bg-surface: #2c2318;
+  --bg-card:    rgba(59, 47, 30, 0.86);
+  --bg-raised:  #3b2f1e;
 
   --border-dim:    rgba(201, 168, 106, 0.14);
   --border-soft:   rgba(201, 168, 106, 0.24);
@@ -75,7 +75,7 @@ body {
     radial-gradient(72% 46% at 86% 86%, rgba(142, 111, 197, 0.055), transparent 74%),
     radial-gradient(62% 42% at 8% 78%, rgba(85, 151, 143, 0.045), transparent 72%),
     radial-gradient(72% 38% at 52% 98%, rgba(201, 168, 106, 0.046), transparent 76%),
-    linear-gradient(180deg, #0b0b0b, #10100f 55%, #080807),
+    linear-gradient(180deg, #271f12, #241c11 45%, #1c150d),
     var(--bg-base);
   -webkit-font-smoothing: antialiased;
 }

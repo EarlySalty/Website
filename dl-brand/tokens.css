@@ -43,11 +43,11 @@
 }
 
 :root {
-  --ink: #0b0907;
-  --ink-soft: #130f0b;
-  --ink-raised: #1c160e;
-  --panel: rgba(28, 22, 14, 0.72);
-  --panel-solid: #211c16;
+  --ink: #241c11;
+  --ink-soft: #2c2318;
+  --ink-raised: #352a1b;
+  --panel: rgba(59, 47, 30, 0.72);
+  --panel-solid: #3b2f1e;
 
   --bone: #ece0c8;
   --bone-dim: #b7aa91;
@@ -86,11 +86,11 @@
   --brand-body-background:
     radial-gradient(100% 60% at 50% -5%, rgba(201, 168, 106, 0.1), transparent 60%),
     radial-gradient(80% 50% at 85% 35%, rgba(85, 151, 143, 0.06), transparent 70%),
-    linear-gradient(180deg, #0b0907, #100c08 55%, #080604);
+    linear-gradient(180deg, #271f12, #241c11 45%, #1c150d);
 
   --bg-base: var(--ink);
   --bg-surface: var(--ink-soft);
-  --bg-card: rgba(28, 22, 14, 0.86);
+  --bg-card: rgba(59, 47, 30, 0.86);
   --bg-raised: var(--panel-solid);
 
   --border-dim: var(--line-soft);

@@ -13,9 +13,9 @@
 }
 
 :root {
-  --ink: #0b0907;
-  --ink-soft: #130f0b;
-  --panel: rgba(28, 22, 14, .72);
+  --ink: #241c11;
+  --ink-soft: #2c2318;
+  --panel: rgba(59, 47, 30, .72);
   --bone: #ece0c8;
   --bone-dim: #b7aa91;
   --bone-faint: #746a57;
@@ -43,7 +43,7 @@ body {
   background:
     radial-gradient(100% 60% at 50% -5%, rgba(201, 168, 106, .1), transparent 60%),
     radial-gradient(80% 50% at 85% 35%, rgba(63, 115, 106, .06), transparent 70%),
-    linear-gradient(180deg, #0b0907, #100c08 55%, #080604);
+    linear-gradient(180deg, #271f12, #241c11 45%, #1c150d);
   font: 500 clamp(.98rem, .93rem + .22vw, 1.1rem)/1.65 var(--body);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
