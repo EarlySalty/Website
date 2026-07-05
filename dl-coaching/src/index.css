@@ -36,8 +36,8 @@
   --amber-glow:   rgba(201, 168, 106, 0.14);
   --amber-border: rgba(201, 168, 106, 0.42);
 
-  --violet:      #8e6fc5;
-  --violet-glow: rgba(142, 111, 197, 0.12);
+  --violet:      #55978f;
+  --violet-glow: rgba(85, 151, 143, 0.12);
 
   --green: #66b39b;
   --red:   #dd6a4d;
@@ -70,9 +70,9 @@ body {
   min-height: 100vh;
   background:
     radial-gradient(100% 60% at 50% -5%, rgba(201, 168, 106, 0.13), transparent 60%),
-    radial-gradient(70% 52% at 86% 32%, rgba(142, 111, 197, 0.095), transparent 72%),
+    radial-gradient(70% 52% at 86% 32%, rgba(85, 151, 143, 0.095), transparent 72%),
     radial-gradient(66% 44% at 12% 28%, rgba(85, 151, 143, 0.068), transparent 70%),
-    radial-gradient(72% 46% at 86% 86%, rgba(142, 111, 197, 0.055), transparent 74%),
+    radial-gradient(72% 46% at 86% 86%, rgba(85, 151, 143, 0.055), transparent 74%),
     radial-gradient(62% 42% at 8% 78%, rgba(85, 151, 143, 0.045), transparent 72%),
     radial-gradient(72% 38% at 52% 98%, rgba(201, 168, 106, 0.046), transparent 76%),
     linear-gradient(180deg, #271f12, #241c11 45%, #1c150d),
@@ -127,11 +127,11 @@ img { display: block; max-width: 100%; }
     pointer-events: none;
     opacity: 1;
     background:
-      radial-gradient(ellipse 46% 34% at 20% 16%, rgba(142, 111, 197, 0.15), transparent 68%),
+      radial-gradient(ellipse 46% 34% at 20% 16%, rgba(85, 151, 143, 0.15), transparent 68%),
       radial-gradient(ellipse 42% 31% at 82% 18%, rgba(201, 168, 106, 0.155), transparent 70%),
       radial-gradient(ellipse 36% 38% at 84% 46%, rgba(85, 151, 143, 0.09), transparent 72%),
       radial-gradient(ellipse 44% 32% at 10% 72%, rgba(85, 151, 143, 0.055), transparent 74%),
-      radial-gradient(ellipse 42% 34% at 90% 74%, rgba(142, 111, 197, 0.065), transparent 76%),
+      radial-gradient(ellipse 42% 34% at 90% 74%, rgba(85, 151, 143, 0.065), transparent 76%),
       radial-gradient(ellipse 54% 24% at 48% 96%, rgba(201, 168, 106, 0.05), transparent 76%),
       linear-gradient(rgba(201, 168, 106, 0.035) 1px, transparent 1px),
       linear-gradient(90deg, rgba(201, 168, 106, 0.03) 1px, transparent 1px),
@@ -159,7 +159,7 @@ img { display: block; max-width: 100%; }
     border-bottom: 1px solid rgba(201, 168, 106, 0.13);
     background:
       radial-gradient(ellipse 32% 120% at 34% 0%, rgba(201, 168, 106, 0.12), transparent 68%),
-      radial-gradient(ellipse 28% 100% at 68% 0%, rgba(142, 111, 197, 0.055), transparent 72%),
+      radial-gradient(ellipse 28% 100% at 68% 0%, rgba(85, 151, 143, 0.055), transparent 72%),
       rgba(11, 11, 11, 0.86);
     backdrop-filter: blur(16px) saturate(1.08);
     box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
@@ -263,7 +263,7 @@ img { display: block; max-width: 100%; }
     padding: 0.25rem 0.6rem 0.25rem 0.3rem;
     color: var(--text-secondary);
     background:
-      linear-gradient(135deg, rgba(201, 168, 106, 0.105), rgba(201, 168, 106, 0.025) 58%, rgba(142, 111, 197, 0.035)),
+      linear-gradient(135deg, rgba(201, 168, 106, 0.105), rgba(201, 168, 106, 0.025) 58%, rgba(85, 151, 143, 0.035)),
       rgba(255, 255, 255, 0.015);
     border: 1px solid rgba(201, 168, 106, 0.13);
     clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
@@ -467,7 +467,7 @@ img { display: block; max-width: 100%; }
   .card {
     background:
       linear-gradient(180deg, rgba(239, 212, 157, 0.045), transparent 42%),
-      radial-gradient(100% 90% at 100% 0%, rgba(142, 111, 197, 0.035), transparent 54%),
+      radial-gradient(100% 90% at 100% 0%, rgba(85, 151, 143, 0.035), transparent 54%),
       var(--bg-card);
     border: 1px solid var(--border-dim);
     border-radius: 6px;
@@ -542,7 +542,7 @@ img { display: block; max-width: 100%; }
   }
   .badge-open      { background: rgba(33, 91, 64, 0.34);   color: #8bd8b3; border: 1px solid rgba(102, 179, 155, 0.28); }
   .badge-reserved  { background: rgba(42, 111, 123, 0.24); color: #75c8c0; border: 1px solid rgba(85, 151, 143, 0.28); }
-  .badge-completed { background: rgba(86, 70, 150, 0.24);  color: #bba9ea; border: 1px solid rgba(142, 111, 197, 0.28); }
+  .badge-completed { background: rgba(53, 95, 89, 0.24);  color: #a9d6cf; border: 1px solid rgba(85, 151, 143, 0.28); }
   .badge-amber     { background: var(--amber-glow);          color: var(--amber);  border: 1px solid var(--amber-border); }
 
   .chip {
@@ -795,10 +795,10 @@ img { display: block; max-width: 100%; }
     pointer-events: none;
     z-index: 0;
     background:
-      radial-gradient(ellipse 44% 32% at 18% 18%, rgba(142, 111, 197, 0.145), transparent 70%),
+      radial-gradient(ellipse 44% 32% at 18% 18%, rgba(85, 151, 143, 0.145), transparent 70%),
       radial-gradient(ellipse 42% 35% at 74% 24%, rgba(201, 168, 106, 0.135), transparent 72%),
       radial-gradient(ellipse 40% 34% at 8% 70%, rgba(85, 151, 143, 0.05), transparent 76%),
-      radial-gradient(ellipse 42% 36% at 88% 72%, rgba(142, 111, 197, 0.06), transparent 78%),
+      radial-gradient(ellipse 42% 36% at 88% 72%, rgba(85, 151, 143, 0.06), transparent 78%),
       radial-gradient(ellipse 50% 22% at 52% 94%, rgba(201, 168, 106, 0.04), transparent 78%),
       linear-gradient(rgba(201, 168, 106, 0.055) 1px, transparent 1px),
       linear-gradient(90deg, rgba(201, 168, 106, 0.045) 1px, transparent 1px);
@@ -1002,7 +1002,7 @@ img { display: block; max-width: 100%; }
     border-radius: 6px;
     background:
       linear-gradient(180deg, rgba(239, 212, 157, 0.035), transparent 42%),
-      radial-gradient(90% 120% at 100% 0%, rgba(142, 111, 197, 0.04), transparent 56%),
+      radial-gradient(90% 120% at 100% 0%, rgba(85, 151, 143, 0.04), transparent 56%),
       var(--bg-card);
     box-shadow: var(--shadow-card-soft);
     transition: border-color 0.25s, background 0.25s, box-shadow 0.25s, transform 0.25s;
