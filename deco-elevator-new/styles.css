@@ -1,13 +1,13 @@
 @font-face {
   font-family: "Sora";
-  src: url("fonts/sora-latin.woff2") format("woff2");
+  src: url("/new/fonts/sora-latin.woff2") format("woff2");
   font-weight: 600 800;
   font-display: swap;
 }
 
 @font-face {
   font-family: "Manrope";
-  src: url("fonts/manrope-latin.woff2") format("woff2");
+  src: url("/new/fonts/manrope-latin.woff2") format("woff2");
   font-weight: 400 800;
   font-display: swap;
 }
@@ -437,7 +437,7 @@ button { font: inherit; }
   background:
     linear-gradient(180deg, rgba(11, 9, 7, .2), rgba(11, 9, 7, .45) 45%, var(--ink) 100%),
     linear-gradient(90deg, rgba(11, 9, 7, .7), transparent 35%, transparent 65%, rgba(11, 9, 7, .7)),
-    url("assets/deco/cityscape-portal.png") center 40% / cover no-repeat;
+    url("/new/assets/deco/cityscape-portal.png") center 40% / cover no-repeat;
   filter: sepia(.2) saturate(.75) contrast(1.08);
 }
 .hero-art::after {
@@ -688,7 +688,7 @@ h2 {
   background:
     linear-gradient(90deg, var(--ink), transparent 35%, transparent 65%, var(--ink)),
     linear-gradient(180deg, var(--ink), rgba(11, 9, 7, .58), var(--ink)),
-    url("assets/deco/hotel-hall-blue.png") center / cover no-repeat;
+    url("/new/assets/deco/hotel-hall-blue.png") center / cover no-repeat;
   opacity: .24;
   filter: sepia(.7) saturate(.55);
 }
@@ -775,7 +775,7 @@ h2 {
   background:
     radial-gradient(circle at center, transparent, rgba(11, 9, 7, .58) 72%),
     linear-gradient(180deg, var(--ink), rgba(11, 9, 7, .42) 30%, rgba(11, 9, 7, .64), var(--ink)),
-    url("assets/deco/green-windows.png") center 55% / cover no-repeat;
+    url("/new/assets/deco/green-windows.png") center 55% / cover no-repeat;
   filter: sepia(.25) saturate(.65);
   opacity: .78;
 }
