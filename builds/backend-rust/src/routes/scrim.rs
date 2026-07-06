@@ -166,6 +166,13 @@ pub struct WeeklyOverlap {
     pub sun: DayOverlap,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ScrimWindow {
+    pub day: Weekday,
+    pub from: u16,
+    pub to: u16,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ScrimTeam {
     pub id: i32,
@@ -242,11 +249,48 @@ pub struct ScrimSignupRequest {
     pub rank: Option<String>,
     pub roles: Option<String>,
     pub availability: Option<String>,
+    pub availability_slots: Option<WeeklyAvailability>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ScrimPoolQuery {
     pub status: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ScrimCreateTeamRequest {
+    pub name: String,
+    pub coach: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ScrimSuggestRosterRequest {
+    pub window: Option<ScrimWindow>,
+    pub size: Option<u32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ScrimRosterSuggestResponse {
+    pub team: ScrimTeam,
+    pub requested_size: u32,
+    pub fit_count: u32,
+    pub best_window: Option<ScrimWindow>,
+    pub candidates: Vec<ScrimRosterSuggestionCandidate>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ScrimRosterSuggestionCandidate {
+    pub participant_id: i32,
+    pub display_name: String,
+    pub rank: Option<String>,
+    pub roles: Option<String>,
+    pub availability: Option<String>,
+    pub availability_slots: WeeklyAvailability,
+    pub availability_confirmed: bool,
+    pub status: String,
+    pub source: String,
+    pub fit_minutes: u32,
+    pub fit_ratio: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -372,6 +416,8 @@ pub async fn signup(
 ) -> AppResult<Json<ScrimParticipant>> {
     let user = auth::require_authenticated_user(&state, &headers, Some(peer)).await?;
     let discord_id = parse_required_discord_id(&user)?;
+    let (signup_availability_slots, signup_availability_text) =
+        signup_availability_payload(body.availability_slots, body.availability)?;
     let mut tx = state.pool.begin().await?;
 
     // Gleicher Advisory-Key wie der Live-Reaktions-Hook (dl-community/reaction_roles.rs:475) — serialisiert Web-Signup gegen Discord-Reaktion. store.rs nutzt abweichend 42060004001 (Reconcile = separater Bot-Task).
@@ -394,14 +440,17 @@ pub async fn signup(
     let participant_id = if let Some(participant_id) = participant_id {
         sqlx::query(
             "UPDATE scrim.participants \
-             SET display_name=$2, rank=$3, roles=$4, availability=$5, updated_at=now() \
+             SET display_name=$2, rank=$3, roles=$4, availability=$5, \
+                 availability_slots=COALESCE($6::jsonb, availability_slots), \
+                 updated_at=now() \
              WHERE id=$1",
         )
         .bind(participant_id)
         .bind(&user.display_name)
         .bind(body.rank.as_deref())
         .bind(body.roles.as_deref())
-        .bind(body.availability.as_deref())
+        .bind(signup_availability_text.as_deref())
+        .bind(signup_availability_slots.clone())
         .execute(&mut *tx)
         .await?;
         participant_id
@@ -418,26 +467,29 @@ pub async fn signup(
     {
         sqlx::query(
             "UPDATE scrim.participants \
-             SET discord_id=$2, rank=$3, roles=$4, availability=$5, updated_at=now() \
+             SET discord_id=$2, rank=$3, roles=$4, availability=$5, \
+                 availability_slots=COALESCE($6::jsonb, availability_slots), \
+                 updated_at=now() \
              WHERE id=$1",
         )
         .bind(participant_id)
         .bind(discord_id)
         .bind(body.rank.as_deref())
         .bind(body.roles.as_deref())
-        .bind(body.availability.as_deref())
+        .bind(signup_availability_text.as_deref())
+        .bind(signup_availability_slots.clone())
         .execute(&mut *tx)
         .await?;
         participant_id
     } else {
         sqlx::query_scalar(
             "INSERT INTO scrim.participants( \
-                 id, discord_id, display_name, rank, rank_source, rank_verified, roles, availability, \
+                 id, discord_id, display_name, rank, rank_source, rank_verified, roles, availability, availability_slots, \
                  status, source, created_at, updated_at \
              ) \
              VALUES( \
                  (SELECT COALESCE(MAX(id), 0) + 1 FROM scrim.participants), \
-                 $1, $2, $3, 'self', false, $4, $5, 'new', 'web_form', now(), now() \
+                 $1, $2, $3, 'self', false, $4, $5, $6::jsonb, 'new', 'web_form', now(), now() \
              ) \
              RETURNING id",
         )
@@ -445,7 +497,8 @@ pub async fn signup(
         .bind(&user.display_name)
         .bind(body.rank.as_deref())
         .bind(body.roles.as_deref())
-        .bind(body.availability.as_deref())
+        .bind(signup_availability_text.as_deref())
+        .bind(signup_availability_slots.clone())
         .fetch_one(&mut *tx)
         .await?
     };
@@ -545,6 +598,43 @@ pub async fn teams(
     Ok(Json(rows.iter().map(team_from_row).collect()))
 }
 
+pub async fn create_team(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Json(body): Json<ScrimCreateTeamRequest>,
+) -> AppResult<Json<ScrimTeam>> {
+    require_scrim_coach(&state, &headers, Some(peer)).await?;
+
+    let name = body.name.trim().to_string();
+    if name.is_empty() {
+        return Err(AppError::bad_request("Team-Name darf nicht leer sein."));
+    }
+    let coach = body.coach.and_then(|value| {
+        let value = value.trim().to_string();
+        (!value.is_empty()).then_some(value)
+    });
+    let mut tx = state.pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(0x4451_0008_0004_0001i64)
+        .execute(&mut *tx)
+        .await?;
+
+    let row = sqlx::query(
+        "INSERT INTO scrim.teams(id, name, coach, created_at) \
+         VALUES((SELECT COALESCE(MAX(id), 0) + 1 FROM scrim.teams), $1, $2, now()) \
+         RETURNING id, name, coach, discord_channel_id",
+    )
+    .bind(name)
+    .bind(coach)
+    .fetch_one(&mut *tx)
+    .await?;
+    let team = team_from_row(&row);
+    tx.commit().await?;
+
+    Ok(Json(team))
+}
+
 pub async fn team_board(
     State(state): State<AppState>,
     Path(team_id): Path<i32>,
@@ -588,6 +678,46 @@ pub async fn team_board(
         team,
         members,
         overlap,
+    }))
+}
+
+pub async fn suggest_roster(
+    State(state): State<AppState>,
+    Path(team_id): Path<i32>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Json(body): Json<ScrimSuggestRosterRequest>,
+) -> AppResult<Json<ScrimRosterSuggestResponse>> {
+    require_scrim_coach(&state, &headers, Some(peer)).await?;
+
+    let team_row = sqlx::query(
+        "SELECT id, name, coach, discord_channel_id \
+         FROM scrim.teams \
+         WHERE id=$1",
+    )
+    .bind(team_id)
+    .fetch_optional(&state.pool)
+    .await?;
+    let Some(team_row) = team_row else {
+        return Err(AppError::not_found("Team nicht gefunden."));
+    };
+    let team = team_from_row(&team_row);
+    let window = body.window.map(canonicalize_scrim_window).transpose()?;
+    let requested_size = body.size.unwrap_or(6);
+
+    let rows = sqlx::query(FREE_POOL_SELECT).fetch_all(&state.pool).await?;
+    let pool = rows
+        .iter()
+        .map(roster_pool_candidate_from_row)
+        .collect::<Vec<_>>();
+    let suggestion = build_roster_suggestion(&pool, window, requested_size as usize);
+
+    Ok(Json(ScrimRosterSuggestResponse {
+        team,
+        requested_size,
+        fit_count: suggestion.fit_count,
+        best_window: suggestion.best_window,
+        candidates: suggestion.candidates,
     }))
 }
 
@@ -963,6 +1093,14 @@ const POOL_SELECT_BY_ID: &str = "\
     LEFT JOIN scrim.teams t ON t.id = tm.team_id \
     WHERE p.id=$1";
 
+const FREE_POOL_SELECT: &str = "\
+    SELECT p.id, p.display_name, p.rank, p.roles, p.availability, p.availability_slots, \
+           p.status, p.source \
+    FROM scrim.participants p \
+    WHERE p.status <> 'inactive' \
+      AND NOT EXISTS (SELECT 1 FROM scrim.team_members tm WHERE tm.participant_id=p.id) \
+    ORDER BY p.created_at ASC, p.id ASC";
+
 const TEAM_BOARD_MEMBERS_SELECT: &str = "\
     SELECT tm.participant_id, p.display_name, p.rank, p.roles, \
            tm.is_captain, tm.is_bench, \
@@ -1102,6 +1240,236 @@ fn team_board_member_from_row(row: &PgRow) -> ScrimTeamBoardMember {
         availability,
         notes: row.get("notes"),
     }
+}
+
+#[derive(Debug, Clone)]
+struct RosterPoolCandidate {
+    participant_id: i32,
+    display_name: String,
+    rank: Option<String>,
+    roles: Option<String>,
+    availability: Option<String>,
+    availability_slots: WeeklyAvailability,
+    availability_confirmed: bool,
+    status: String,
+    source: String,
+}
+
+#[derive(Debug)]
+struct RosterSuggestion {
+    fit_count: u32,
+    best_window: Option<ScrimWindow>,
+    candidates: Vec<ScrimRosterSuggestionCandidate>,
+}
+
+fn roster_pool_candidate_from_row(row: &PgRow) -> RosterPoolCandidate {
+    let availability: Option<String> = row.get("availability");
+    let availability_slots_value: Option<Value> = row.get("availability_slots");
+    let availability_confirmed = availability_slots_value.is_some();
+    let availability_slots = effective(availability_slots_value, availability.as_deref());
+    RosterPoolCandidate {
+        participant_id: row.get("id"),
+        display_name: row.get("display_name"),
+        rank: row.get("rank"),
+        roles: row.get("roles"),
+        availability,
+        availability_slots,
+        availability_confirmed,
+        status: row.get("status"),
+        source: row.get("source"),
+    }
+}
+
+fn build_roster_suggestion(
+    pool: &[RosterPoolCandidate],
+    requested_window: Option<ScrimWindow>,
+    size: usize,
+) -> RosterSuggestion {
+    let window = requested_window.or_else(|| best_pool_window(pool));
+    let mut candidates = pool
+        .iter()
+        .map(|candidate| roster_suggestion_candidate(candidate, window))
+        .collect::<Vec<_>>();
+    candidates.sort_by(|left, right| {
+        right
+            .fit_minutes
+            .cmp(&left.fit_minutes)
+            .then_with(|| {
+                right
+                    .availability_confirmed
+                    .cmp(&left.availability_confirmed)
+            })
+            .then_with(|| left.display_name.cmp(&right.display_name))
+            .then_with(|| left.participant_id.cmp(&right.participant_id))
+    });
+    candidates.truncate(size);
+    let fit_count = candidates
+        .iter()
+        .filter(|candidate| candidate.fit_minutes > 0)
+        .count() as u32;
+    let best_window = window.and_then(|window| common_suggestion_window(window, &candidates));
+
+    RosterSuggestion {
+        fit_count,
+        best_window,
+        candidates,
+    }
+}
+
+fn roster_suggestion_candidate(
+    candidate: &RosterPoolCandidate,
+    window: Option<ScrimWindow>,
+) -> ScrimRosterSuggestionCandidate {
+    let fit_minutes = window
+        .map(|window| fit_minutes_for_window(&candidate.availability_slots, window))
+        .unwrap_or(0);
+    let fit_ratio = window
+        .map(window_minutes)
+        .filter(|minutes| *minutes > 0)
+        .map(|minutes| f64::from(fit_minutes) / f64::from(minutes))
+        .unwrap_or(0.0);
+    ScrimRosterSuggestionCandidate {
+        participant_id: candidate.participant_id,
+        display_name: candidate.display_name.clone(),
+        rank: candidate.rank.clone(),
+        roles: candidate.roles.clone(),
+        availability: candidate.availability.clone(),
+        availability_slots: candidate.availability_slots.clone(),
+        availability_confirmed: candidate.availability_confirmed,
+        status: candidate.status.clone(),
+        source: candidate.source.clone(),
+        fit_minutes,
+        fit_ratio,
+    }
+}
+
+fn best_pool_window(pool: &[RosterPoolCandidate]) -> Option<ScrimWindow> {
+    let mut best = None;
+    let mut best_count = 0_u32;
+    let mut best_total = 0_u32;
+
+    for candidate in pool {
+        for day in Weekday::ALL {
+            let Some(window) = window_from_slot(day, candidate.availability_slots.day(day)) else {
+                continue;
+            };
+            let mut count = 0_u32;
+            let mut total = 0_u32;
+            for other in pool {
+                let fit = fit_minutes_for_window(&other.availability_slots, window);
+                if fit > 0 {
+                    count += 1;
+                    total += fit;
+                }
+            }
+            if count > best_count || (count == best_count && total > best_total) {
+                best = Some(window);
+                best_count = count;
+                best_total = total;
+            }
+        }
+    }
+
+    best
+}
+
+fn common_suggestion_window(
+    window: ScrimWindow,
+    candidates: &[ScrimRosterSuggestionCandidate],
+) -> Option<ScrimWindow> {
+    let mut members = candidates
+        .iter()
+        .filter(|candidate| candidate.fit_minutes > 0)
+        .map(|candidate| OverlapMember {
+            participant_id: candidate.participant_id,
+            is_bench: false,
+            availability: candidate.availability_slots.clone(),
+        })
+        .collect::<Vec<_>>();
+    if members.is_empty() {
+        return None;
+    }
+    members.push(window_overlap_member(window));
+    let overlap = overlap_day(&members, window.day);
+    match (overlap.window_from, overlap.window_to) {
+        (Some(from), Some(to)) => Some(ScrimWindow {
+            day: window.day,
+            from,
+            to,
+        }),
+        _ => None,
+    }
+}
+
+fn fit_minutes_for_window(availability: &WeeklyAvailability, window: ScrimWindow) -> u32 {
+    if availability.day(window.day).status != DayStatus::Available {
+        return 0;
+    }
+    let overlap = overlap_day(
+        &[
+            OverlapMember {
+                participant_id: 0,
+                is_bench: false,
+                availability: availability.clone(),
+            },
+            window_overlap_member(window),
+        ],
+        window.day,
+    );
+    match (overlap.window_from, overlap.window_to) {
+        (Some(from), Some(to)) => u32::from(to.saturating_sub(from)),
+        _ => 0,
+    }
+}
+
+fn window_overlap_member(window: ScrimWindow) -> OverlapMember {
+    let mut availability = WeeklyAvailability::unknown();
+    *availability.day_mut(window.day) = DaySlot::available(Some(window.from), Some(window.to));
+    OverlapMember {
+        participant_id: i32::MIN,
+        is_bench: false,
+        availability,
+    }
+}
+
+fn window_from_slot(day: Weekday, slot: &DaySlot) -> Option<ScrimWindow> {
+    if slot.status != DayStatus::Available {
+        return None;
+    }
+    let window = ScrimWindow {
+        day,
+        from: slot.from.unwrap_or(0),
+        to: slot.to.unwrap_or(1440),
+    };
+    valid_scrim_window(window).then_some(window)
+}
+
+fn window_minutes(window: ScrimWindow) -> u32 {
+    u32::from(window.to - window.from)
+}
+
+fn signup_availability_payload(
+    slots: Option<WeeklyAvailability>,
+    legacy: Option<String>,
+) -> AppResult<(Option<Value>, Option<String>)> {
+    let Some(slots) = slots else {
+        return Ok((None, legacy));
+    };
+    let slots = canonicalize_weekly_availability(slots)?;
+    let legacy = render_legacy_availability(&slots)?;
+    Ok((Some(serde_json::to_value(slots)?), Some(legacy)))
+}
+
+fn canonicalize_scrim_window(window: ScrimWindow) -> AppResult<ScrimWindow> {
+    if valid_scrim_window(window) {
+        Ok(window)
+    } else {
+        Err(AppError::bad_request("Ungültiges Zeitfenster."))
+    }
+}
+
+fn valid_scrim_window(window: ScrimWindow) -> bool {
+    window.from < window.to && window.to <= 1440
 }
 
 fn parse_legacy(text: &str) -> WeeklyAvailability {
@@ -1326,8 +1694,9 @@ struct OverlapMember {
     availability: WeeklyAvailability,
 }
 
-#[derive(Clone, Copy)]
-enum Weekday {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Weekday {
     Mon,
     Tue,
     Wed,
@@ -1624,6 +1993,65 @@ mod tests {
         assert_eq!(bench_ignored.mon.available, 1);
         assert_eq!(bench_ignored.mon.unavailable, 0);
         assert!(bench_ignored.mon.full_squad);
+    }
+
+    #[test]
+    fn roster_suggestion_ranks_empty_pool_and_auto_window() {
+        let window = ScrimWindow {
+            day: Weekday::Mon,
+            from: 18 * 60,
+            to: 22 * 60,
+        };
+        let pool = vec![
+            roster_pool_candidate(
+                1,
+                "Alpha",
+                weekly_with_mon(DaySlot::available(Some(18 * 60), Some(22 * 60))),
+            ),
+            roster_pool_candidate(
+                2,
+                "Beta",
+                weekly_with_mon(DaySlot::available(Some(19 * 60), Some(21 * 60))),
+            ),
+            roster_pool_candidate(3, "Gamma", weekly_with_mon(DaySlot::unavailable())),
+        ];
+
+        let ranked = build_roster_suggestion(&pool, Some(window), 2);
+        assert_eq!(
+            ranked
+                .candidates
+                .iter()
+                .map(|candidate| candidate.participant_id)
+                .collect::<Vec<_>>(),
+            vec![1, 2]
+        );
+        assert_eq!(ranked.candidates[0].fit_minutes, 240);
+        assert_eq!(ranked.candidates[1].fit_minutes, 120);
+        assert_eq!(ranked.fit_count, 2);
+        assert_eq!(
+            ranked.best_window,
+            Some(ScrimWindow {
+                day: Weekday::Mon,
+                from: 19 * 60,
+                to: 21 * 60,
+            })
+        );
+
+        let empty = build_roster_suggestion(&[], Some(window), 6);
+        assert!(empty.candidates.is_empty());
+        assert_eq!(empty.fit_count, 0);
+        assert_eq!(empty.best_window, None);
+
+        let auto = build_roster_suggestion(&pool, None, 2);
+        assert_eq!(auto.fit_count, 2);
+        assert_eq!(
+            auto.best_window,
+            Some(ScrimWindow {
+                day: Weekday::Mon,
+                from: 19 * 60,
+                to: 21 * 60,
+            })
+        );
     }
 
     #[test]
@@ -2150,28 +2578,48 @@ mod tests {
             .auth
             .create_session_jwt("3333", "signup_user", "user", Some("Signup User"), None)
             .expect("signup token");
-        for rank in ["Oracle", "Phantom"] {
-            let response = app
-                .clone()
-                .oneshot(authenticated_request(
-                    Method::POST,
-                    "/api/scrim/signup",
-                    &signup_token,
-                    Some(json!({
-                        "rank": rank,
-                        "roles": "Flex",
-                        "availability": "Abends"
-                    })),
-                ))
-                .await
-                .expect("signup response");
-            assert_eq!(response.status(), StatusCode::OK);
-            let body = to_json(response).await;
-            assert_eq!(body["display_name"], "Signup User");
-            assert_eq!(body["rank"], rank);
-            assert_eq!(body["availability_confirmed"], false);
-            assert_eq!(body["availability_slots"]["mon"]["from"], 1080);
-        }
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/signup",
+                &signup_token,
+                Some(json!({
+                    "rank": "Oracle",
+                    "roles": "Flex",
+                    "availability": "Abends"
+                })),
+            ))
+            .await
+            .expect("legacy signup response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["display_name"], "Signup User");
+        assert_eq!(body["rank"], "Oracle");
+        assert_eq!(body["availability_confirmed"], false);
+        assert_eq!(body["availability_slots"]["mon"]["from"], 1080);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/signup",
+                &signup_token,
+                Some(json!({
+                    "rank": "Phantom",
+                    "roles": "Flex",
+                    "availability": "ignored when slots exist",
+                    "availability_slots": availability_payload.clone()
+                })),
+            ))
+            .await
+            .expect("structured signup response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["display_name"], "Signup User");
+        assert_eq!(body["rank"], "Phantom");
+        assert_eq!(body["availability_confirmed"], true);
+        assert_eq!(body["availability_slots"], availability_payload);
         let signup_count: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM scrim.participants WHERE discord_id=$1")
                 .bind(3333_i64)
@@ -2238,6 +2686,47 @@ mod tests {
         assert_eq!(teams[0]["name"], "Alpha");
         assert_eq!(teams[1]["name"], "Beta");
         assert_eq!(teams[2]["name"], "Gamma");
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams",
+                &coach_token,
+                Some(json!({
+                    "name": "Delta",
+                    "coach": "Coach D"
+                })),
+            ))
+            .await
+            .expect("create team response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["name"], "Delta");
+        assert_eq!(body["coach"], "Coach D");
+        let created_team_id = body["id"].as_i64().expect("created team id");
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                &format!("/api/scrim/teams/{created_team_id}/suggest"),
+                &coach_token,
+                Some(json!({
+                    "window": { "day": "mon", "from": 19 * 60, "to": 22 * 60 },
+                    "size": 6
+                })),
+            ))
+            .await
+            .expect("suggest roster response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["fit_count"], 1);
+        assert_eq!(body["best_window"]["day"], "mon");
+        assert_eq!(body["best_window"]["from"], 19 * 60);
+        assert_eq!(body["best_window"]["to"], 22 * 60);
+        assert_eq!(body["candidates"][0]["display_name"], "Signup User");
+        assert_eq!(body["candidates"][0]["fit_minutes"], 180);
 
         let response = app
             .clone()
@@ -2609,6 +3098,24 @@ mod tests {
             participant_id,
             is_bench,
             availability,
+        }
+    }
+
+    fn roster_pool_candidate(
+        participant_id: i32,
+        display_name: &str,
+        availability_slots: WeeklyAvailability,
+    ) -> RosterPoolCandidate {
+        RosterPoolCandidate {
+            participant_id,
+            display_name: display_name.to_string(),
+            rank: None,
+            roles: Some("Flex".to_string()),
+            availability: None,
+            availability_slots,
+            availability_confirmed: true,
+            status: "new".to_string(),
+            source: "test".to_string(),
         }
     }
 
