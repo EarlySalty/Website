@@ -209,8 +209,12 @@ ol {
 
 .brand-logo {
   display: block;
-  height: 40px;
-  width: auto;
+  height: 42px;
+  width: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(201, 168, 106, 0.3);
+  object-fit: cover;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
 .brand-mark {
@@ -1894,4 +1898,119 @@ ol {
 .platform-card:hover .platform-arrow {
   color: var(--primary);
   transform: translateX(3px);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Marken-Signaturen — portiert aus deco-elevator-new,
+   damit Landing + Aufzug-Startseite wie EIN System wirken.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Film-Grain + Vignette: globale Atmosphäre, reine CSS-Overlays.
+   An html::before/::after gehängt → greift auf allen Seiten ohne Markup/JS. */
+html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 0.5s steps(3) infinite;
+}
+
+html::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: radial-gradient(120% 95% at 50% 42%, transparent 60%, rgba(0, 0, 0, 0.42));
+  mix-blend-mode: multiply;
+}
+
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(-2%, 2%); }
+  66% { transform: translate(2%, -2%); }
+  100% { transform: translate(-1%, -1%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html::before { animation: none; }
+}
+
+/* Deko-Eck-Klammern: L-förmige Gold-Ecken oben-links / unten-rechts. */
+.framed {
+  position: relative;
+}
+
+.framed::before,
+.framed::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--primary);
+  pointer-events: none;
+}
+
+.framed::before {
+  top: 8px;
+  left: 8px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.framed::after {
+  right: 8px;
+  bottom: 8px;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* hero-stats als gerahmtes Messing-Instrumenten-Panel */
+.hero-stats.framed {
+  padding: 1.6rem 1.6rem 1.4rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: linear-gradient(160deg, rgba(44, 35, 24, 0.5), rgba(28, 21, 13, 0.42));
+}
+
+/* Gold-Hairline-Divider mit Rauten-Marke — Sektions-Trenner */
+.deco-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  margin: clamp(2.5rem, 6vw, 4.5rem) auto;
+  max-width: 620px;
+}
+
+.deco-divider::before,
+.deco-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 106, 0.5));
+}
+
+.deco-divider::after {
+  transform: scaleX(-1);
+}
+
+.deco-divider i {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--primary);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+/* Auf schmalen Screens nur das Badge zeigen, Wortmarke ausblenden,
+   damit Hamburger + Logo + Beitreten nicht kollidieren. */
+@media (max-width: 640px) {
+  .brand-mark {
+    display: none;
+  }
 }
