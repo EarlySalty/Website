@@ -1,3 +1,11 @@
+## #49 — Scrims: Anmeldung und Team-Bau laufen über die Website
+
+**Ausgangslage:** Anmelden ging nur über Discord, im Pool lagen freie und schon zugewiesene Spieler durcheinander, und einen passenden Kader zusammenzustellen hieß weiter, die Wochenzeiten von Hand zu vergleichen.
+
+**Geändert:** Spieler melden sich jetzt komplett über die Website an — Rang, Rolle und Wochen-Verfügbarkeit in einem Formular. Im Coach-Cockpit sind Pool und Teams getrennt, der Pool zeigt standardmäßig nur freie Spieler in kompakten Zeilen, und neue Teams legt man direkt an — mit eigener Discord-Rolle. Für ein Team schlägt das System auf Knopfdruck einen Kader aus dem Pool vor, nach bester zeitlicher Überschneidung und optional um ein Wunsch-Fenster herum.
+
+**Wie's jetzt läuft:** Der Coach entscheidet nur noch — bestätigen, tauschen, ansetzen; das Sammeln, Rechnen und Rollenvergeben macht das System. Vorgeschlagene Spieler landen mit einem Klick im Team oder wieder im Pool.
+
 ## #48 — Aktivität: Ranglisten laden wieder + wärmerer Look
 
 **Ausgangslage:** Auf der Aktivitätsseite kam nichts an — Voice- und Rang-Leaderboard, Rangverteilung und der Discord-Login liefen alle in einen „Nicht gefunden"-Fehler. Die Seite blieb leer und wirkte dadurch leblos.
