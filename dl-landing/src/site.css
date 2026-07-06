@@ -2014,3 +2014,10 @@ html::after {
     display: none;
   }
 }
+
+/* Alte Hamburger-Nav + Drawer ausblenden — ersetzt durch die
+   schwebende Aufzug-Nav aus dl-brand (/brand/nav.js). */
+.menu-button,
+.nav-drawer {
+  display: none !important;
+}
