@@ -182,6 +182,7 @@ export interface ScrimTeam {
   id: number
   name: string
   coach: string | null
+  discord_role_id: number | null
   discord_channel_id: number | null
 }
 

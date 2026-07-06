@@ -19,6 +19,7 @@ pub struct Config {
     pub master_broker_base: String,
     pub master_broker_token: Option<String>,
     pub scrim_guild_id: u64,
+    pub scrim_reserve_role_id: Option<i64>,
     pub auth_session_secret: Option<String>,
     pub discord_api_base: String,
     pub discord_oauth_authorize_base: String,
@@ -82,6 +83,10 @@ impl Config {
                 .ok()
                 .and_then(|v| v.trim().parse().ok())
                 .unwrap_or(1_289_721_245_281_292_288),
+            scrim_reserve_role_id: env::var("SCRIM_RESERVE_ROLE_ID")
+                .ok()
+                .and_then(|v| v.trim().parse().ok())
+                .filter(|v| *v > 0),
             auth_session_secret: first_env(&[
                 "AUTH_SESSION_SECRET",
                 "JWT_SECRET",
