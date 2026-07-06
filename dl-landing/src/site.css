@@ -2062,3 +2062,62 @@ html::after {
 .filter-pill[data-filter-role='Tank'] {
   --role-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 L20.5 7 V17 L12 22 L3.5 17 V7 Z'/%3E%3C/svg%3E");
 }
+
+/* ── Erzählerische Overline (wiederverwendbar) ── */
+.hero-eyebrow {
+  display: inline-block;
+  margin-bottom: 0.9rem;
+  color: var(--primary);
+  font-family: 'Sora', 'Manrope', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* ── /beitreten/: 3er-Karten-Grid, verlinkte USP-Karten, Regel-Box ── */
+.usp-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.usp-card--link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.usp-card--link:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+}
+
+.usp-card-cta {
+  display: inline-block;
+  margin-top: 1rem;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.join-note {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(1.6rem, 3vw, 2.4rem);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  background: linear-gradient(160deg, var(--card), rgba(59, 47, 30, 0.94));
+  text-align: center;
+}
+
+.join-note p {
+  color: var(--muted);
+  max-width: 52ch;
+  margin: 0.6rem auto 0;
+}
+
+@media (max-width: 860px) {
+  .usp-grid--3 {
+    grid-template-columns: 1fr;
+  }
+}

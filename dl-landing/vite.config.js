@@ -18,6 +18,7 @@ export default defineConfig({
         streamer: 'streamer/index.html',
         helden: 'helden/index.html',
         guideAnfaenger: 'guides/anfaenger/index.html',
+        beitreten: 'beitreten/index.html',
       },
     },
   },
