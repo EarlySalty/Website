@@ -85,6 +85,7 @@ export default function ScrimPoolPage() {
   const [freeOnly, setFreeOnly] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [teamForm, setTeamForm] = useState<TeamForm>(DEFAULT_TEAM_FORM)
+  const [poolOpen, setPoolOpen] = useState(false)
 
   const teamsQuery = useQuery({ queryKey: ['scrim-teams'], queryFn: () => scrims.teams(), enabled: isCoach })
   const poolQuery = useQuery({
@@ -153,39 +154,52 @@ export default function ScrimPoolPage() {
       </div>
 
       <div>
-        <SectionHead
-          label="Spieler-Pool"
-          count={visiblePool.length}
-          action={
-            <div className="flex rounded-sm border p-0.5" style={{ borderColor: 'var(--border-dim)' }}>
-              <button
-                type="button"
-                aria-pressed={freeOnly}
-                onClick={() => setFreeOnly(true)}
-                className={`rounded-sm px-3 py-1 text-xs font-semibold ${freeOnly ? 'btn-amber' : 'btn-ghost'}`}
-              >
-                {COPY.freeOnly}
-              </button>
-              <button
-                type="button"
-                aria-pressed={!freeOnly}
-                onClick={() => setFreeOnly(false)}
-                className={`rounded-sm px-3 py-1 text-xs font-semibold ${freeOnly ? 'btn-ghost' : 'btn-amber'}`}
-              >
-                {COPY.allPlayers}
-              </button>
+        <button
+          type="button"
+          onClick={() => setPoolOpen(o => !o)}
+          aria-expanded={poolOpen}
+          className="card card-hover flex w-full items-center justify-between gap-3 p-4 text-left"
+        >
+          <span className="flex items-center gap-2">
+            <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Spieler-Pool</span>
+            <span className="badge badge-amber">{visiblePool.length}</span>
+          </span>
+          <span className="eyebrow">{poolOpen ? 'schließen ▾' : 'öffnen ▸'}</span>
+        </button>
+
+        {poolOpen && (
+          <div className="mt-4 space-y-3">
+            <div className="flex justify-end">
+              <div className="flex rounded-sm border p-0.5" style={{ borderColor: 'var(--border-dim)' }}>
+                <button
+                  type="button"
+                  aria-pressed={freeOnly}
+                  onClick={() => setFreeOnly(true)}
+                  className={`rounded-sm px-3 py-1 text-xs font-semibold ${freeOnly ? 'btn-amber' : 'btn-ghost'}`}
+                >
+                  {COPY.freeOnly}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={!freeOnly}
+                  onClick={() => setFreeOnly(false)}
+                  className={`rounded-sm px-3 py-1 text-xs font-semibold ${freeOnly ? 'btn-ghost' : 'btn-amber'}`}
+                >
+                  {COPY.allPlayers}
+                </button>
+              </div>
             </div>
-          }
-        />
-        {poolQuery.isLoading ? (
-          <PageSpinner />
-        ) : visiblePool.length === 0 ? (
-          <EmptyState title="Keine Spieler" copy="Für diesen Filter gibt es aktuell keine Einträge." />
-        ) : (
-          <div className="space-y-2">
-            {visiblePool.map(p => (
-              <PoolRow key={p.id} participant={p} teams={teams} />
-            ))}
+            {poolQuery.isLoading ? (
+              <PageSpinner />
+            ) : visiblePool.length === 0 ? (
+              <EmptyState title="Keine Spieler" copy="Für diesen Filter gibt es aktuell keine Einträge." />
+            ) : (
+              <div className="space-y-2">
+                {visiblePool.map(p => (
+                  <PoolRow key={p.id} participant={p} teams={teams} />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
