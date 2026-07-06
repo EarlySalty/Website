@@ -1,4 +1,4 @@
-import type { DayOverlap, DaySlot, Weekday, WeeklyAvailability } from '@/api/client'
+import type { DayOverlap, DaySlot, ScrimWindow, Weekday, WeeklyAvailability } from '@/api/client'
 
 /** Wochentage in Anzeige-Reihenfolge (Mo→So), mit Kurz-/Langform. */
 export const WEEKDAYS: { key: Weekday; short: string; long: string }[] = [
@@ -39,6 +39,12 @@ export function slotText(slot: DaySlot): string {
 export function overlapWindowText(day: DayOverlap): string {
   if (day.window_from == null || day.window_to == null) return '—'
   return `${formatMinutes(day.window_from)}–${formatMinutes(day.window_to)}`
+}
+
+/** ScrimWindow als kurzer Anzeige-Text. */
+export function scrimWindowText(window: ScrimWindow): string {
+  const day = WEEKDAYS.find(d => d.key === window.day)
+  return `${day?.short ?? window.day} ${formatMinutes(window.from)}–${formatMinutes(window.to)}`
 }
 
 /** Zeit-Optionen für die Editor-Dropdowns (30-Minuten-Schritte, 00:00 bis 24:00). */

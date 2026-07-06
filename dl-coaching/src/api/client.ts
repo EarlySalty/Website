@@ -129,6 +129,12 @@ export interface DaySlot {
 
 export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 
+export interface ScrimWindow {
+  day: Weekday
+  from: number
+  to: number
+}
+
 export interface WeeklyAvailability {
   mon: DaySlot
   tue: DaySlot
@@ -176,6 +182,7 @@ export interface ScrimTeam {
   id: number
   name: string
   coach: string | null
+  discord_role_id: number | null
   discord_channel_id: number | null
 }
 
@@ -206,6 +213,39 @@ export interface ScrimSignupRequest {
   rank?: string
   roles?: string
   availability?: string
+  availability_slots?: WeeklyAvailability
+}
+
+export interface ScrimCreateTeamRequest {
+  name: string
+  coach?: string | null
+}
+
+export interface ScrimSuggestRosterRequest {
+  window?: ScrimWindow | null
+  size?: number
+}
+
+export interface ScrimRosterSuggestionCandidate {
+  participant_id: number
+  display_name: string
+  rank: string | null
+  roles: string | null
+  availability: string | null
+  availability_slots: WeeklyAvailability
+  availability_confirmed: boolean
+  status: string
+  source: string
+  fit_minutes: number
+  fit_ratio: number
+}
+
+export interface ScrimRosterSuggestResponse {
+  team: ScrimTeam
+  requested_size: number
+  fit_count: number
+  best_window: ScrimWindow | null
+  candidates: ScrimRosterSuggestionCandidate[]
 }
 
 export interface ScrimPoolParticipant extends ScrimParticipant {
@@ -267,7 +307,11 @@ export const scrims = {
   setAvailability: (data: WeeklyAvailability) =>
     request<ScrimParticipant>('/scrim/me/availability', { method: 'PUT', body: JSON.stringify(data) }),
   teams: () => request<ScrimTeam[]>('/scrim/teams'),
+  createTeam: (data: ScrimCreateTeamRequest) =>
+    request<ScrimTeam>('/scrim/teams', { method: 'POST', body: JSON.stringify(data) }),
   teamBoard: (id: number) => request<ScrimTeamBoardResponse>(`/scrim/teams/${id}/board`),
+  suggestRoster: (id: number, data: ScrimSuggestRosterRequest) =>
+    request<ScrimRosterSuggestResponse>(`/scrim/teams/${id}/suggest`, { method: 'POST', body: JSON.stringify(data) }),
   pool: (status?: string) => {
     const query = status ? `?${new URLSearchParams({ status }).toString()}` : ''
     return request<ScrimPoolParticipant[]>(`/scrim/pool${query}`)

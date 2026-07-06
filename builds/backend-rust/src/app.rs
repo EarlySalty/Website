@@ -344,10 +344,17 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/scrim/signup", post(routes::scrim::signup))
         .route("/api/scrim/pool", get(routes::scrim::pool))
-        .route("/api/scrim/teams", get(routes::scrim::teams))
+        .route(
+            "/api/scrim/teams",
+            get(routes::scrim::teams).post(routes::scrim::create_team),
+        )
         .route(
             "/api/scrim/teams/{id}/board",
             get(routes::scrim::team_board),
+        )
+        .route(
+            "/api/scrim/teams/{id}/suggest",
+            post(routes::scrim::suggest_roster),
         )
         .route(
             "/api/scrim/participants/{id}/resync-discord",

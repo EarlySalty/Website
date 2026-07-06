@@ -1,16 +1,24 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { scrims, type ScrimParticipant, type ScrimSignupRequest } from '@/api/client'
+import { scrims, type ScrimParticipant, type ScrimSignupRequest, type WeeklyAvailability } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
+import AvailabilityEditor from '@/components/AvailabilityEditor'
 import { Avatar, EmptyState, PageSpinner } from '@/components/ui'
+import { emptyWeekly } from '@/lib/availability'
 import type { User } from '@/types'
 
 interface SignupForm {
   rank: string
   roles: string
-  availability: string
+  availability_slots: WeeklyAvailability
 }
+
+const COPY = {
+  availabilityLink: 'Meine Verfügbarkeit',
+  rolesLabel: 'Rolle / Lane',
+  weeklyLabel: 'Wochen-Verfügbarkeit',
+} as const
 
 function optionalValue(value: string): string | undefined {
   const trimmed = value.trim()
@@ -21,7 +29,7 @@ function formFromParticipant(participant: ScrimParticipant | null | undefined): 
   return {
     rank: participant?.rank ?? '',
     roles: participant?.roles ?? '',
-    availability: participant?.availability ?? '',
+    availability_slots: participant?.availability_slots ?? emptyWeekly(),
   }
 }
 
@@ -34,7 +42,7 @@ function ScrimSignupForm({ user, initialForm }: { user: User; initialForm: Signu
       const payload: ScrimSignupRequest = {
         rank: optionalValue(form.rank),
         roles: optionalValue(form.roles),
-        availability: optionalValue(form.availability),
+        availability_slots: form.availability_slots,
       }
       return scrims.signup(payload)
     },
@@ -44,7 +52,7 @@ function ScrimSignupForm({ user, initialForm }: { user: User; initialForm: Signu
     },
   })
 
-  const update = (key: keyof SignupForm, value: string) => {
+  const update = (key: 'rank' | 'roles', value: string) => {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
@@ -56,7 +64,7 @@ function ScrimSignupForm({ user, initialForm }: { user: User; initialForm: Signu
           copy="Dein Scrim-Profil wurde gespeichert und ist für Coaches sichtbar."
         >
           <div className="flex flex-wrap justify-center gap-2">
-            <Link to="/me/scrims" className="btn-amber">Mein Team</Link>
+            <Link to="/me/scrims" className="btn-amber">{COPY.availabilityLink}</Link>
             <button type="button" onClick={() => submit.reset()} className="btn-ghost">
               Erneut bearbeiten
             </button>
@@ -109,7 +117,7 @@ function ScrimSignupForm({ user, initialForm }: { user: User; initialForm: Signu
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="stat-label">Rollen</span>
+            <span className="stat-label">{COPY.rolesLabel}</span>
             <input
               value={form.roles}
               onChange={(event) => update('roles', event.target.value)}
@@ -118,16 +126,14 @@ function ScrimSignupForm({ user, initialForm }: { user: User; initialForm: Signu
             />
           </label>
 
-          <label className="flex flex-col gap-1.5 md:col-span-2">
-            <span className="stat-label">Verfügbarkeit</span>
-            <textarea
-              value={form.availability}
-              onChange={(event) => update('availability', event.target.value)}
-              placeholder="z. B. abends ab 20 Uhr"
-              rows={4}
-              className="input-field resize-y"
+          <div className="space-y-2 md:col-span-2">
+            <span className="stat-label">{COPY.weeklyLabel}</span>
+            <AvailabilityEditor
+              value={form.availability_slots}
+              onChange={(next) => setForm((current) => ({ ...current, availability_slots: next }))}
+              disabled={submit.isPending}
             />
-          </label>
+          </div>
         </div>
 
         {submit.isError && (
