@@ -2,7 +2,7 @@ import type { DaySlot, WeeklyAvailability } from '@/api/client'
 import { formatMinutes, slotText, WEEKDAYS } from '@/lib/availability'
 
 /** Kompakte, read-only Wochen-Ansicht: 7 farbcodierte Zellen (Mo→So). */
-export default function AvailabilityGrid({ weekly }: { weekly: WeeklyAvailability }) {
+export default function AvailabilityGrid({ weekly, compact = false }: { weekly: WeeklyAvailability; compact?: boolean }) {
   return (
     <div className="flex flex-wrap gap-1">
       {WEEKDAYS.map(({ key, short, long }) => {
@@ -12,11 +12,11 @@ export default function AvailabilityGrid({ weekly }: { weekly: WeeklyAvailabilit
           <div
             key={key}
             title={`${long}: ${slotText(slot)}`}
-            className="flex min-w-[3rem] flex-1 flex-col items-center rounded-sm px-1 py-1 text-center"
+            className={`flex flex-1 flex-col items-center rounded-sm px-1 py-1 text-center ${compact ? 'min-w-[2.35rem]' : 'min-w-[3rem]'}`}
             style={style}
           >
             <span className="font-mono-data text-[10px] font-bold uppercase tracking-wider">{short}</span>
-            <span className="font-mono-data text-[10px] leading-tight">{cellLabel(slot)}</span>
+            <span className="font-mono-data text-[10px] leading-tight">{cellLabel(slot, compact)}</span>
           </div>
         )
       })}
@@ -24,14 +24,21 @@ export default function AvailabilityGrid({ weekly }: { weekly: WeeklyAvailabilit
   )
 }
 
-function cellLabel(slot: DaySlot): string {
+function cellLabel(slot: DaySlot, compact: boolean): string {
   if (slot.status === 'unavailable') return '—'
   if (slot.status === 'unknown') return '?'
   if (slot.from == null && slot.to == null) return 'ganz'
-  if (slot.from != null && slot.to != null) return `${formatMinutes(slot.from)}\n${formatMinutes(slot.to)}`
-  if (slot.from != null) return `ab ${formatMinutes(slot.from)}`
-  if (slot.to != null) return `bis ${formatMinutes(slot.to)}`
+  if (slot.from != null && slot.to != null) return `${timeLabel(slot.from, compact)}\n${timeLabel(slot.to, compact)}`
+  if (slot.from != null) return `ab ${timeLabel(slot.from, compact)}`
+  if (slot.to != null) return `bis ${timeLabel(slot.to, compact)}`
   return 'ganz'
+}
+
+function timeLabel(minutes: number, compact: boolean): string {
+  if (!compact) return formatMinutes(minutes)
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return mins === 0 ? String(hours) : `${hours}:${String(mins).padStart(2, '0')}`
 }
 
 function cellStyle(slot: DaySlot): React.CSSProperties {
