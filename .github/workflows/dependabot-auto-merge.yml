@@ -69,41 +69,6 @@ jobs:
             core.setOutput("reason", reason);
             core.notice(`Auto-merge decision: ${shouldMerge} (${reason})`);
 
-      - name: Auto-approve PR
-        if: steps.gate.outputs.should_merge == 'true' && github.event.pull_request.draft == false
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const pull_number = context.payload.pull_request.number;
-
-            const reviews = await github.paginate(github.rest.pulls.listReviews, {
-              owner,
-              repo,
-              pull_number,
-              per_page: 100,
-            });
-
-            const alreadyApproved = reviews.some(
-              (review) =>
-                review.user?.login === "github-actions[bot]" &&
-                review.state === "APPROVED",
-            );
-
-            if (alreadyApproved) {
-              core.notice(`PR #${pull_number} is already approved by github-actions[bot].`);
-              return;
-            }
-
-            await github.rest.pulls.createReview({
-              owner,
-              repo,
-              pull_number,
-              event: "APPROVE",
-              body: "Auto-approved trusted Dependabot update after policy checks.",
-            });
-
       - name: Merge PR
         if: steps.gate.outputs.should_merge == 'true' && github.event.pull_request.draft == false
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -151,13 +116,12 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Approve and enable auto-merge for open Dependabot PRs
+      - name: Merge open Dependabot PRs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
             const pulls = await github.paginate(github.rest.pulls.list, {
               owner,
@@ -171,29 +135,6 @@ jobs:
             );
 
             for (const pull of dependabotPulls) {
-              const reviews = await github.paginate(github.rest.pulls.listReviews, {
-                owner,
-                repo,
-                pull_number: pull.number,
-                per_page: 100,
-              });
-
-              const alreadyApproved = reviews.some(
-                (review) =>
-                  review.user?.login === "github-actions[bot]" &&
-                  review.state === "APPROVED",
-              );
-
-              if (!alreadyApproved) {
-                await github.rest.pulls.createReview({
-                  owner,
-                  repo,
-                  pull_number: pull.number,
-                  event: "APPROVE",
-                  body: "Auto-approved trusted Dependabot update after policy checks.",
-                });
-              }
-
               // Skip PRs that touch workflow files — GITHUB_TOKEN cannot merge those
               const files = await github.paginate(github.rest.pulls.listFiles, {
                 owner,
