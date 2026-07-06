@@ -13,7 +13,10 @@ use sqlx::{postgres::PgRow, Row};
 use crate::{
     app::AppState,
     auth::{self, User},
-    discord_broker::{DiscordRoleBroker, DiscordRoleBrokerRequest, DiscordRoleOperation},
+    discord_broker::{
+        DiscordCreateRoleBrokerRequest, DiscordRoleBroker, DiscordRoleBrokerRequest,
+        DiscordRoleOperation,
+    },
     error::{AppError, AppResult},
 };
 
@@ -178,6 +181,7 @@ pub struct ScrimTeam {
     pub id: i32,
     pub name: String,
     pub coach: Option<String>,
+    pub discord_role_id: Option<i64>,
     pub discord_channel_id: Option<i64>,
 }
 
@@ -350,7 +354,7 @@ pub async fn get_me(
 
     let participant = participant_from_row(&participant_row);
     let team_row = sqlx::query(
-        "SELECT t.id, t.name, t.coach, t.discord_channel_id \
+        "SELECT t.id, t.name, t.coach, t.discord_role_id, t.discord_channel_id \
          FROM scrim.team_members tm \
          JOIN scrim.teams t ON t.id = tm.team_id \
          WHERE tm.participant_id=$1 \
@@ -508,7 +512,22 @@ pub async fn signup(
         .fetch_one(&mut *tx)
         .await?;
     let participant = participant_from_row(&row);
+    let discord_sync_plan =
+        fetch_discord_role_snapshot(&mut *tx, participant_id, scrim_reserve_role_id(&state))
+            .await?
+            .map(|snapshot| DiscordRoleSyncPlan::resync(&snapshot));
     tx.commit().await?;
+
+    if let Some(plan) = discord_sync_plan {
+        let discord_sync = execute_discord_sync(&state, plan).await;
+        if !discord_sync.ok {
+            tracing::warn!(
+                participant_id,
+                detail = %discord_sync.detail,
+                "Scrim-Signup-Discord-Sync fail-open"
+            );
+        }
+    }
 
     Ok(Json(participant))
 }
@@ -589,7 +608,7 @@ pub async fn teams(
     require_scrim_coach(&state, &headers, Some(peer)).await?;
 
     let rows = sqlx::query(
-        "SELECT id, name, coach, discord_channel_id \
+        "SELECT id, name, coach, discord_role_id, discord_channel_id \
          FROM scrim.teams \
          ORDER BY name ASC",
     )
@@ -623,16 +642,58 @@ pub async fn create_team(
     let row = sqlx::query(
         "INSERT INTO scrim.teams(id, name, coach, created_at) \
          VALUES((SELECT COALESCE(MAX(id), 0) + 1 FROM scrim.teams), $1, $2, now()) \
-         RETURNING id, name, coach, discord_channel_id",
+         RETURNING id, name, coach, discord_role_id, discord_channel_id",
     )
     .bind(name)
     .bind(coach)
     .fetch_one(&mut *tx)
     .await?;
-    let team = team_from_row(&row);
+    let mut team = team_from_row(&row);
     tx.commit().await?;
+    create_discord_team_role(&state, &mut team).await?;
 
     Ok(Json(team))
+}
+
+async fn create_discord_team_role(
+    state: &AppState,
+    team: &mut ScrimTeam,
+) -> Result<(), sqlx::Error> {
+    let request = DiscordCreateRoleBrokerRequest {
+        guild_id: state.cfg.scrim_guild_id,
+        name: team.name.clone(),
+        mentionable: false,
+        reason: Some(format!("Scrim-Team {}", team.name)),
+        idempotency_key: Some(format!("scrim-team-{}-role-create", team.id)),
+    };
+    let role_id = match state.discord_role_broker.create_role(request).await {
+        Ok(role_id) => role_id,
+        Err(err) => {
+            tracing::warn!(
+                ?err,
+                team_id = team.id,
+                team_name = %team.name,
+                "Scrim-Team-Rolle konnte nicht angelegt werden; Team bleibt ohne Discord-Rolle"
+            );
+            return Ok(());
+        }
+    };
+    let Ok(role_id) = i64::try_from(role_id) else {
+        tracing::warn!(
+            role_id,
+            team_id = team.id,
+            "Scrim-Team-Rollen-ID passt nicht in BIGINT; Team bleibt ohne Discord-Rolle"
+        );
+        return Ok(());
+    };
+
+    sqlx::query("UPDATE scrim.teams SET discord_role_id=$2 WHERE id=$1")
+        .bind(team.id)
+        .bind(role_id)
+        .execute(&state.pool)
+        .await?;
+    team.discord_role_id = Some(role_id);
+    Ok(())
 }
 
 pub async fn team_board(
@@ -644,7 +705,7 @@ pub async fn team_board(
     require_scrim_coach(&state, &headers, Some(peer)).await?;
 
     let team_row = sqlx::query(
-        "SELECT id, name, coach, discord_channel_id \
+        "SELECT id, name, coach, discord_role_id, discord_channel_id \
          FROM scrim.teams \
          WHERE id=$1",
     )
@@ -691,7 +752,7 @@ pub async fn suggest_roster(
     require_scrim_coach(&state, &headers, Some(peer)).await?;
 
     let team_row = sqlx::query(
-        "SELECT id, name, coach, discord_channel_id \
+        "SELECT id, name, coach, discord_role_id, discord_channel_id \
          FROM scrim.teams \
          WHERE id=$1",
     )
@@ -736,7 +797,9 @@ pub async fn patch_participant(
         .execute(&mut *tx)
         .await?;
 
-    let Some(before_discord_roles) = fetch_discord_role_snapshot(&mut *tx, participant_id).await?
+    let reserve_role_id = scrim_reserve_role_id(&state);
+    let Some(before_discord_roles) =
+        fetch_discord_role_snapshot(&mut *tx, participant_id, reserve_role_id).await?
     else {
         return Err(AppError::not_found("Teilnehmer nicht gefunden."));
     };
@@ -822,9 +885,10 @@ pub async fn patch_participant(
         .fetch_one(&mut *tx)
         .await?;
     let participant = pool_participant_from_row(&row);
-    let after_discord_roles = fetch_discord_role_snapshot(&mut *tx, participant_id)
-        .await?
-        .ok_or_else(|| AppError::not_found("Teilnehmer nicht gefunden."))?;
+    let after_discord_roles =
+        fetch_discord_role_snapshot(&mut *tx, participant_id, reserve_role_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Teilnehmer nicht gefunden."))?;
     let sync_plan = DiscordRoleSyncPlan::diff(&before_discord_roles, &after_discord_roles);
     tx.commit().await?;
 
@@ -844,7 +908,10 @@ pub async fn resync_participant_discord(
 ) -> AppResult<Json<ScrimDiscordResyncResponse>> {
     require_scrim_coach(&state, &headers, Some(peer)).await?;
 
-    let Some(snapshot) = fetch_discord_role_snapshot(&state.pool, participant_id).await? else {
+    let Some(snapshot) =
+        fetch_discord_role_snapshot(&state.pool, participant_id, scrim_reserve_role_id(&state))
+            .await?
+    else {
         return Err(AppError::not_found("Teilnehmer nicht gefunden."));
     };
     let discord_sync = execute_discord_sync(&state, DiscordRoleSyncPlan::resync(&snapshot)).await;
@@ -991,12 +1058,13 @@ async fn execute_discord_sync_with_broker(
 async fn fetch_discord_role_snapshot<'e, E>(
     executor: E,
     participant_id: i32,
+    reserve_role_id: Option<u64>,
 ) -> Result<Option<DiscordRoleSnapshot>, sqlx::Error>
 where
     E: sqlx::Executor<'e, Database = sqlx::Postgres>,
 {
     let rows = sqlx::query(
-        "SELECT p.discord_id, p.status, t.discord_role_id \
+        "SELECT p.discord_id, p.status, tm.team_id, t.discord_role_id \
          FROM scrim.participants p \
          LEFT JOIN scrim.team_members tm ON tm.participant_id=p.id \
          LEFT JOIN scrim.teams t ON t.id=tm.team_id \
@@ -1006,11 +1074,16 @@ where
     .bind(participant_id)
     .fetch_all(executor)
     .await?;
-    Ok(discord_role_snapshot_from_rows(participant_id, &rows))
+    Ok(discord_role_snapshot_from_rows(
+        participant_id,
+        reserve_role_id,
+        &rows,
+    ))
 }
 
 fn discord_role_snapshot_from_rows(
     participant_id: i32,
+    reserve_role_id: Option<u64>,
     rows: &[PgRow],
 ) -> Option<DiscordRoleSnapshot> {
     let first = rows.first()?;
@@ -1018,6 +1091,14 @@ fn discord_role_snapshot_from_rows(
     let status: String = first.get("status");
     let mut role_ids = BTreeSet::new();
     if !status.trim().eq_ignore_ascii_case("inactive") {
+        let has_team = rows
+            .iter()
+            .any(|row| row.get::<Option<i32>, _>("team_id").is_some());
+        if !has_team {
+            if let Some(role_id) = reserve_role_id {
+                role_ids.insert(role_id);
+            }
+        }
         for row in rows {
             if let Some(role_id) = positive_i64_as_u64(row.get("discord_role_id")) {
                 role_ids.insert(role_id);
@@ -1029,6 +1110,16 @@ fn discord_role_snapshot_from_rows(
         discord_user_id,
         role_ids,
     })
+}
+
+fn scrim_reserve_role_id(state: &AppState) -> Option<u64> {
+    let role_id = positive_i64_as_u64(state.cfg.scrim_reserve_role_id);
+    if role_id.is_none() {
+        tracing::warn!(
+            "SCRIM_RESERVE_ROLE_ID nicht gesetzt; Scrim-Reserve-Rollen-Sync deaktiviert"
+        );
+    }
+    role_id
 }
 
 fn positive_i64_as_u64(value: Option<i64>) -> Option<u64> {
@@ -1058,6 +1149,7 @@ const POOL_SELECT: &str = "\
     SELECT p.id, p.display_name, p.rank, p.roles, p.availability, p.availability_slots, \
            (p.discord_id IS NOT NULL) AS discord_linked, p.notes, p.status, p.source, \
            t.id AS team_id, t.name AS team_name, t.coach AS team_coach, \
+           t.discord_role_id AS team_discord_role_id, \
            t.discord_channel_id AS team_discord_channel_id, \
            tm.role AS team_member_role, \
            COALESCE(tm.is_captain, false) AS is_captain, \
@@ -1078,6 +1170,7 @@ const POOL_SELECT_BY_ID: &str = "\
     SELECT p.id, p.display_name, p.rank, p.roles, p.availability, p.availability_slots, \
            (p.discord_id IS NOT NULL) AS discord_linked, p.notes, p.status, p.source, \
            t.id AS team_id, t.name AS team_name, t.coach AS team_coach, \
+           t.discord_role_id AS team_discord_role_id, \
            t.discord_channel_id AS team_discord_channel_id, \
            tm.role AS team_member_role, \
            COALESCE(tm.is_captain, false) AS is_captain, \
@@ -1179,6 +1272,7 @@ fn team_from_row(row: &PgRow) -> ScrimTeam {
         id: row.get("id"),
         name: row.get("name"),
         coach: row.get("coach"),
+        discord_role_id: row.get("discord_role_id"),
         discord_channel_id: row.get("discord_channel_id"),
     }
 }
@@ -1215,6 +1309,7 @@ fn pool_participant_from_row(row: &PgRow) -> ScrimPoolParticipant {
             id,
             name: row.get("team_name"),
             coach: row.get("team_coach"),
+            discord_role_id: row.get("team_discord_role_id"),
             discord_channel_id: row.get("team_discord_channel_id"),
         }),
         role: row.get("team_member_role"),
@@ -2103,6 +2198,60 @@ mod tests {
             &role_snapshot(7, Some(42), &[]),
         );
         assert!(plan.actions.is_empty());
+
+        let plan = DiscordRoleSyncPlan::diff(
+            &role_snapshot(7, Some(42), &[9001]),
+            &role_snapshot(7, Some(42), &[101]),
+        );
+        assert_eq!(
+            plan.actions,
+            vec![
+                DiscordRoleAction {
+                    operation: DiscordRoleOperation::Remove,
+                    role_id: 9001,
+                },
+                DiscordRoleAction {
+                    operation: DiscordRoleOperation::Add,
+                    role_id: 101,
+                },
+            ]
+        );
+
+        let plan = DiscordRoleSyncPlan::diff(
+            &role_snapshot(7, Some(42), &[101]),
+            &role_snapshot(7, Some(42), &[9001]),
+        );
+        assert_eq!(
+            plan.actions,
+            vec![
+                DiscordRoleAction {
+                    operation: DiscordRoleOperation::Remove,
+                    role_id: 101,
+                },
+                DiscordRoleAction {
+                    operation: DiscordRoleOperation::Add,
+                    role_id: 9001,
+                },
+            ]
+        );
+
+        let plan = DiscordRoleSyncPlan::diff(
+            &role_snapshot(7, Some(42), &[101, 9001]),
+            &role_snapshot(7, Some(42), &[]),
+        );
+        assert_eq!(
+            plan.actions,
+            vec![
+                DiscordRoleAction {
+                    operation: DiscordRoleOperation::Remove,
+                    role_id: 101,
+                },
+                DiscordRoleAction {
+                    operation: DiscordRoleOperation::Remove,
+                    role_id: 9001,
+                },
+            ]
+        );
     }
 
     #[tokio::test]
@@ -2242,6 +2391,7 @@ mod tests {
                 id: 10,
                 name: "Team One".to_string(),
                 coach: Some("Coach".to_string()),
+                discord_role_id: Some(456),
                 discord_channel_id: Some(123),
             }),
             members: vec![ScrimTeamMember {
@@ -2278,7 +2428,13 @@ mod tests {
         );
         assert_exact_keys(
             &value["team"],
-            &["id", "name", "coach", "discord_channel_id"],
+            &[
+                "id",
+                "name",
+                "coach",
+                "discord_role_id",
+                "discord_channel_id",
+            ],
         );
         assert_exact_keys(
             &value["members"][0],
@@ -2404,6 +2560,7 @@ mod tests {
                 id: 1,
                 name: "Alpha".to_string(),
                 coach: Some("Coach A".to_string()),
+                discord_role_id: Some(101),
                 discord_channel_id: Some(201),
             },
             members: vec![ScrimTeamBoardMember {
@@ -2684,8 +2841,11 @@ mod tests {
         let teams = body.as_array().expect("teams array");
         assert_eq!(teams.len(), 3);
         assert_eq!(teams[0]["name"], "Alpha");
+        assert_eq!(teams[0]["discord_role_id"], 101);
         assert_eq!(teams[1]["name"], "Beta");
+        assert_eq!(teams[1]["discord_role_id"], 102);
         assert_eq!(teams[2]["name"], "Gamma");
+        assert!(teams[2]["discord_role_id"].is_null());
 
         let response = app
             .clone()
@@ -2704,6 +2864,7 @@ mod tests {
         let body = to_json(response).await;
         assert_eq!(body["name"], "Delta");
         assert_eq!(body["coach"], "Coach D");
+        assert!(body["discord_role_id"].is_null());
         let created_team_id = body["id"].as_i64().expect("created team id");
 
         let response = app
@@ -2754,6 +2915,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = to_json(response).await;
         assert_eq!(body["team"]["name"], "Alpha");
+        assert_eq!(body["team"]["discord_role_id"], 101);
         assert_eq!(body["members"].as_array().expect("board members").len(), 2);
         assert_eq!(body["members"][0]["participant_id"], 1);
         assert_eq!(body["members"][0]["availability_confirmed"], true);
@@ -2831,6 +2993,89 @@ mod tests {
             .await
             .expect("drift response");
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn scrim_create_team_persists_created_discord_role() {
+        let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
+        let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
+        let Some(state) = test_state_with_broker(broker_for_state).await else {
+            return;
+        };
+        let app = router(state.clone());
+        let coach_token = state
+            .auth
+            .create_session_jwt("9000", "coach_user", "user", Some("Coach User"), None)
+            .expect("coach token");
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams",
+                &coach_token,
+                Some(json!({ "name": "Echo", "coach": "Coach E" })),
+            ))
+            .await
+            .expect("create team response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        let team_id = body["id"].as_i64().expect("team id");
+        assert_eq!(body["discord_role_id"], 901);
+
+        let persisted: Option<i64> =
+            sqlx::query_scalar("SELECT discord_role_id FROM scrim.teams WHERE id=$1")
+                .bind(team_id as i32)
+                .fetch_one(&state.pool)
+                .await
+                .expect("persisted role id");
+        assert_eq!(persisted, Some(901));
+
+        let create_calls = broker.create_calls();
+        assert_eq!(create_calls.len(), 1);
+        assert_eq!(create_calls[0].guild_id, state.cfg.scrim_guild_id);
+        assert_eq!(create_calls[0].name, "Echo");
+        assert!(!create_calls[0].mentionable);
+        assert_eq!(create_calls[0].reason.as_deref(), Some("Scrim-Team Echo"));
+        let expected_idempotency_key = format!("scrim-team-{team_id}-role-create");
+        assert_eq!(
+            create_calls[0].idempotency_key.as_deref(),
+            Some(expected_idempotency_key.as_str())
+        );
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn scrim_signup_adds_reserve_role_when_configured() {
+        let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
+        let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
+        let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
+        else {
+            return;
+        };
+        let app = router(state.clone());
+        let signup_token = state
+            .auth
+            .create_session_jwt("3333", "signup_user", "user", Some("Signup User"), None)
+            .expect("signup token");
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/signup",
+                &signup_token,
+                Some(json!({ "rank": "Oracle", "roles": "Flex" })),
+            ))
+            .await
+            .expect("signup response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let calls = broker.calls();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].0, DiscordRoleOperation::Add);
+        assert_eq!(calls[0].1.user_id, 3333);
+        assert_eq!(calls[0].1.role_id, 9001);
     }
 
     #[tokio::test]
@@ -3041,6 +3286,115 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    async fn scrim_patch_pool_to_team_removes_reserve_and_adds_team_role() {
+        let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
+        let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
+        let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
+        else {
+            return;
+        };
+        let app = router(state.clone());
+        let coach_token = state
+            .auth
+            .create_session_jwt("9000", "coach_user", "user", Some("Coach User"), None)
+            .expect("coach token");
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::PATCH,
+                "/api/scrim/participants/3",
+                &coach_token,
+                Some(json!({ "team_id": 1 })),
+            ))
+            .await
+            .expect("patch response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["team"]["id"], 1);
+
+        let calls = broker.calls();
+        assert_eq!(calls.len(), 2);
+        assert_eq!(calls[0].0, DiscordRoleOperation::Remove);
+        assert_eq!(calls[0].1.role_id, 9001);
+        assert_eq!(calls[1].0, DiscordRoleOperation::Add);
+        assert_eq!(calls[1].1.role_id, 101);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn scrim_patch_team_to_pool_removes_team_role_and_adds_reserve() {
+        let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
+        let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
+        let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
+        else {
+            return;
+        };
+        let app = router(state.clone());
+        let coach_token = state
+            .auth
+            .create_session_jwt("9000", "coach_user", "user", Some("Coach User"), None)
+            .expect("coach token");
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::PATCH,
+                "/api/scrim/participants/1",
+                &coach_token,
+                Some(json!({ "team_id": null })),
+            ))
+            .await
+            .expect("patch response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert!(body["team"].is_null());
+
+        let calls = broker.calls();
+        assert_eq!(calls.len(), 2);
+        assert_eq!(calls[0].0, DiscordRoleOperation::Remove);
+        assert_eq!(calls[0].1.role_id, 101);
+        assert_eq!(calls[1].0, DiscordRoleOperation::Add);
+        assert_eq!(calls[1].1.role_id, 9001);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn scrim_patch_pool_inactive_removes_reserve_role() {
+        let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
+        let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
+        let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
+        else {
+            return;
+        };
+        let app = router(state.clone());
+        let coach_token = state
+            .auth
+            .create_session_jwt("9000", "coach_user", "user", Some("Coach User"), None)
+            .expect("coach token");
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::PATCH,
+                "/api/scrim/participants/3",
+                &coach_token,
+                Some(json!({ "status": "inactive" })),
+            ))
+            .await
+            .expect("patch response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["status"], "inactive");
+
+        let calls = broker.calls();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].0, DiscordRoleOperation::Remove);
+        assert_eq!(calls[0].1.role_id, 9001);
+    }
+
+    #[tokio::test]
+    #[serial]
     async fn scrim_patch_notes_only_is_noop_without_broker_call() {
         let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
         let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
@@ -3169,6 +3523,8 @@ mod tests {
         configured: bool,
         fail: bool,
         calls: Arc<Mutex<Vec<(DiscordRoleOperation, DiscordRoleBrokerRequest)>>>,
+        create_calls: Arc<Mutex<Vec<DiscordCreateRoleBrokerRequest>>>,
+        create_role_id: u64,
     }
 
     impl FakeDiscordRoleBroker {
@@ -3177,6 +3533,8 @@ mod tests {
                 configured: true,
                 fail,
                 calls: Arc::new(Mutex::new(Vec::new())),
+                create_calls: Arc::new(Mutex::new(Vec::new())),
+                create_role_id: 901,
             }
         }
 
@@ -3185,11 +3543,20 @@ mod tests {
                 configured: false,
                 fail: false,
                 calls: Arc::new(Mutex::new(Vec::new())),
+                create_calls: Arc::new(Mutex::new(Vec::new())),
+                create_role_id: 901,
             }
         }
 
         fn calls(&self) -> Vec<(DiscordRoleOperation, DiscordRoleBrokerRequest)> {
             self.calls.lock().expect("fake broker calls").clone()
+        }
+
+        fn create_calls(&self) -> Vec<DiscordCreateRoleBrokerRequest> {
+            self.create_calls
+                .lock()
+                .expect("fake broker create calls")
+                .clone()
         }
     }
 
@@ -3215,6 +3582,26 @@ mod tests {
                 }
             })
         }
+
+        fn create_role<'a>(
+            &'a self,
+            request: DiscordCreateRoleBrokerRequest,
+        ) -> DiscordRoleBrokerFuture<'a, u64> {
+            Box::pin(async move {
+                if !self.configured {
+                    return Err(DiscordRoleBrokerError::Unconfigured);
+                }
+                self.create_calls
+                    .lock()
+                    .expect("fake broker create calls")
+                    .push(request);
+                if self.fail {
+                    Err(DiscordRoleBrokerError::Rejected)
+                } else {
+                    Ok(self.create_role_id)
+                }
+            })
+        }
     }
 
     async fn test_state() -> Option<AppState> {
@@ -3223,6 +3610,13 @@ mod tests {
 
     async fn test_state_with_broker(
         discord_role_broker: Arc<dyn DiscordRoleBroker>,
+    ) -> Option<AppState> {
+        test_state_with_broker_and_reserve(discord_role_broker, None).await
+    }
+
+    async fn test_state_with_broker_and_reserve(
+        discord_role_broker: Arc<dyn DiscordRoleBroker>,
+        scrim_reserve_role_id: Option<i64>,
     ) -> Option<AppState> {
         let database_url = match std::env::var("DATABASE_URL_TEST") {
             Ok(value) if !value.trim().is_empty() => value,
@@ -3243,6 +3637,7 @@ mod tests {
         seed_database(&pool).await;
         let mut cfg = Config::from_env();
         cfg.master_broker_token = None;
+        cfg.scrim_reserve_role_id = scrim_reserve_role_id;
         Some(AppState::for_test_pool_with_broker(
             pool,
             cfg,
