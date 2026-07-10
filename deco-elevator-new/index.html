@@ -19,46 +19,10 @@
   <link rel="stylesheet" href="/brand/tokens.css">
   <link rel="stylesheet" href="/brand/nav.css">
   <script src="/brand/nav.js" defer></script>
-  <style>
-    /* Inline-Elevator + Hamburger weichen der einheitlichen Brand-Aufzug-Nav */
-    .elevator-nav, .site-header .menu-button { display: none !important; }
-  </style>
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
-
-  <aside class="elevator-nav" aria-label="Aufzug-Navigation">
-    <button class="elevator-call" type="button" aria-label="Etagenmenü öffnen" aria-expanded="false">
-      <span class="call-arrow">▲</span>
-      <span class="call-jewel"></span>
-      <span class="call-arrow">▼</span>
-    </button>
-    <div class="elevator-panel">
-      <span class="panel-screw screw-tl"></span><span class="panel-screw screw-tr"></span>
-      <span class="panel-screw screw-bl"></span><span class="panel-screw screw-br"></span>
-      <div class="elevator-brand">DEUTSCHE DEADLOCK<br>COMMUNITY</div>
-      <div class="floor-indicator"><span class="indicator-arrow">▲</span><b>E</b></div>
-      <div class="elevator-buttons">
-        <button type="button" class="floor-button is-active" data-target="top" data-floor="E" data-label="Empfang" data-background="/new/assets/deco/cityscape-portal.png"><i></i><span>E</span><em>Empfang</em></button>
-        <button type="button" class="floor-button" data-target="community" data-floor="1" data-label="Community" data-background="/new/assets/deco/green-windows.png"><i></i><span>1</span><em>Community</em></button>
-        <button type="button" class="floor-button" data-target="mitspieler" data-floor="2" data-label="Mitspieler" data-background="/new/assets/deco/mitspieler.png"><i></i><span>2</span><em>Mitspieler</em></button>
-        <button type="button" class="floor-button" data-target="coaching" data-floor="3" data-label="Coaching" data-background="/new/assets/deco/coaching.png"><i></i><span>3</span><em>Coaching</em></button>
-        <button type="button" class="floor-button" data-target="helden" data-floor="4" data-label="Helden" data-background="/new/assets/deco/streamer.png"><i></i><span>4</span><em>Helden</em></button>
-        <button type="button" class="floor-button" data-target="beitreten" data-floor="5" data-label="Beitreten" data-background="/new/assets/deco/newsroom.png"><i></i><span>5</span><em>Beitreten</em></button>
-      </div>
-      <div class="elevator-lever"><span>AN</span><i><b></b></i><span>STOP</span></div>
-      <small>DEUTSCHE DEADLOCK COMMUNITY · MCMXXIV</small>
-    </div>
-  </aside>
-
-  <dialog class="elevator-ride" aria-label="Aufzug fährt">
-    <img class="ride-background" src="/new/assets/deco/cityscape-portal.png" alt="">
-    <div class="ride-indicator"><span>ETAGE</span><b>E</b><small>EMPFANG</small></div>
-    <div class="ride-rank"><img src="/new/assets/deco/ranks/initiate.png" alt=""></div>
-    <div class="ride-gate ride-gate-left"></div>
-    <div class="ride-gate ride-gate-right"></div>
-  </dialog>
 
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Startseite der Deutschen Deadlock Community">

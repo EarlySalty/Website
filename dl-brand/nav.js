@@ -62,7 +62,26 @@
   })
 
   nav.addEventListener('click', (event) => {
-    if (event.target.closest('a')) setOpen(false)
+    const link = event.target.closest('.brand-floor-link')
+    if (!link) return
+
+    if (link.getAttribute('aria-current') === 'page') {
+      event.preventDefault()
+      setOpen(false)
+      return
+    }
+
+    const target = link.getAttribute('target')
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || target === '_blank') return
+
+    event.preventDefault()
+    setOpen(false)
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window.location.href = link.href
+      return
+    }
+
+    startRide(link)
   })
 
   document.body.appendChild(nav)
@@ -102,6 +121,24 @@
 
       link.setAttribute('tabindex', '-1')
     })
+  }
+
+  function startRide(link) {
+    const ride = document.createElement('div')
+    ride.className = 'brand-elevator-ride'
+    ride.setAttribute('role', 'status')
+    ride.innerHTML = `
+      <div class="brand-ride-indicator">
+        <span aria-hidden="true">▲</span>
+        <b>${link.querySelector('span').textContent}</b>
+        <small>${link.querySelector('em').textContent}</small>
+      </div>
+      <div class="brand-ride-door brand-ride-door-left" aria-hidden="true"></div>
+      <div class="brand-ride-door brand-ride-door-right" aria-hidden="true"></div>
+    `
+    document.body.appendChild(ride)
+    requestAnimationFrame(() => ride.classList.add('is-closing'))
+    window.setTimeout(() => { window.location.href = link.href }, 650)
   }
 
 function floorLink(link, currentPath) {
