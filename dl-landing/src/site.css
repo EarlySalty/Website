@@ -86,6 +86,26 @@ body {
   overflow-x: hidden;
 }
 
+/* Lebendiger Grund wie auf der Coaching-Seite: viewport-fixe Gold/Teal-
+   Lichtflecken + feines 64px-Goldgitter. Liegt hinter allem Content;
+   Sektionen mit eigenem Hintergrund decken ihn bewusst ab. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 46% 34% at 18% 14%, rgba(85, 151, 143, 0.16), transparent 68%),
+    radial-gradient(ellipse 42% 31% at 84% 16%, rgba(201, 168, 106, 0.16), transparent 70%),
+    radial-gradient(ellipse 36% 38% at 86% 48%, rgba(85, 151, 143, 0.1), transparent 72%),
+    radial-gradient(ellipse 44% 32% at 8% 74%, rgba(85, 151, 143, 0.07), transparent 74%),
+    radial-gradient(ellipse 54% 26% at 50% 98%, rgba(201, 168, 106, 0.07), transparent 76%),
+    linear-gradient(rgba(201, 168, 106, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 168, 106, 0.035) 1px, transparent 1px);
+  background-size: auto, auto, auto, auto, auto, 64px 64px, 64px 64px;
+}
+
 body::before {
   content: '';
   position: fixed;
@@ -163,11 +183,24 @@ ol {
 }
 
 .section--dark {
-  background: rgba(28, 21, 13, 0.95);
+  background:
+    radial-gradient(70% 60% at 88% 0%, rgba(85, 151, 143, 0.1), transparent 65%),
+    radial-gradient(60% 55% at 6% 100%, rgba(201, 168, 106, 0.08), transparent 65%),
+    rgba(28, 21, 13, 0.92);
 }
 
 .section--alt {
   background: linear-gradient(180deg, transparent 0%, rgba(28,21,13,0.3) 8%, rgba(28,21,13,0.3) 92%, transparent 100%);
+}
+
+/* Farbige Lichtflecken für sonst transparente Sektionen — gleiche
+   Bühnenlicht-Sprache wie die Coaching-Seite. */
+.section--glow {
+  background:
+    radial-gradient(46% 70% at 10% 18%, rgba(85, 151, 143, 0.13), transparent 68%),
+    radial-gradient(44% 65% at 90% 26%, rgba(201, 168, 106, 0.14), transparent 70%),
+    radial-gradient(52% 60% at 78% 96%, rgba(85, 151, 143, 0.08), transparent 72%),
+    radial-gradient(40% 55% at 18% 92%, rgba(201, 168, 106, 0.07), transparent 74%);
 }
 
 /* ── Header ── */
@@ -176,8 +209,24 @@ ol {
   top: 0;
   z-index: 30;
   backdrop-filter: blur(18px);
-  background: rgba(36, 28, 17, 0.74);
-  border-bottom: 1px solid rgba(201, 168, 106, 0.08);
+  background:
+    radial-gradient(60% 120% at 92% 0%, rgba(85, 151, 143, 0.1), transparent 70%),
+    radial-gradient(50% 120% at 12% 0%, rgba(201, 168, 106, 0.09), transparent 70%),
+    rgba(36, 28, 17, 0.74);
+  border-bottom: 1px solid rgba(201, 168, 106, 0.14);
+}
+
+/* Goldene Lichtkante unter dem Header, wie auf der Coaching-Seite */
+.site-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(128, 101, 52, 0.85) 24%, #efd49d 50%, rgba(128, 101, 52, 0.85) 76%, transparent);
+  opacity: 0.55;
 }
 
 .site-header .container {
@@ -2175,24 +2224,6 @@ html::after {
   height: auto;
   display: block;
 }
-.tower-legend {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.6rem;
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-.tower-legend-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  background: var(--gold-bright);
-  box-shadow: 0 0 8px rgba(239, 212, 157, 0.8);
-  flex-shrink: 0;
-}
-
 /* Fenster: dunkel als Grundzustand, data-lit steuert wie viele leuchten */
 .tw-wins rect {
   fill: rgba(236, 224, 200, 0.08);
@@ -2399,9 +2430,13 @@ html::after {
    das flache Einheitsbraun der Sektion auf. */
 .tower-section {
   background:
-    radial-gradient(75% 45% at 50% 0%, rgba(85, 151, 143, 0.09), transparent 65%),
-    radial-gradient(90% 55% at 50% 100%, rgba(201, 168, 106, 0.12), transparent 62%),
+    radial-gradient(75% 45% at 50% 0%, rgba(85, 151, 143, 0.12), transparent 65%),
+    radial-gradient(50% 40% at 90% 30%, rgba(85, 151, 143, 0.08), transparent 70%),
+    radial-gradient(90% 55% at 50% 100%, rgba(201, 168, 106, 0.13), transparent 62%),
+    linear-gradient(rgba(201, 168, 106, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 168, 106, 0.028) 1px, transparent 1px),
     linear-gradient(180deg, #16100a, #1d160d 55%, #140f08);
+  background-size: auto, auto, auto, 64px 64px, 64px 64px, auto;
 }
 
 /* Sterne: wenige zwinkern, sehr langsam — Atmosphäre, kein Geflacker */

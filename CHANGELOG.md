@@ -1,3 +1,11 @@
+## #53 — Bühnenlicht für die ganze Seite
+
+**Ausgangslage:** Zwischen dem Startbereich und dem Server-Haus lagen flache, einfarbig braune Zonen, die tot wirkten. Die Coaching-Seite zeigt, wie es besser geht: farbige Lichtflecken und ein feines Muster im Hintergrund.
+
+**Geändert:** Diese Bildsprache liegt jetzt auch über der Mitspieler-Seite. Türkise und goldene Lichtflecken wandern durch die Bereiche, dazu ein dezentes goldenes Gitter im Hintergrund. Der Kopfbereich oben hat eine goldene Lichtkante und etwas Farbe bekommen. Der Hinweistext unter dem Haus ist weg, das Bild erklärt sich selbst.
+
+**Wie's jetzt läuft:** Kein totes Braun mehr zwischen den Abschnitten, die Seite wirkt durchgehend wie aus einem Guss mit der Coaching-Etage.
+
 ## #52 — Flackern abgestellt, das Haus lebt jetzt
 
 **Ausgangslage:** Über der ganzen Website lag ein animiertes Filmkorn, das auf dunklen Flächen als Flackern zu sehen war. Derselbe Effekt war auf der Aufzug-Startseite schon einmal entschärft worden, in den Unterseiten lief er weiter. Außerdem wirkte das neue Server-Haus zu flach und leblos.
