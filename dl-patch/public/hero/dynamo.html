@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamo — Balance-Historie</title>
+<style>
+  :root{
+    --bg:#0e0f12; --panel:#16181d; --panel2:#1c1f26; --line:#2a2e37;
+    --ink:#e7e3d8; --muted:#9a9384; --gold:#c8a86b; --gold-dim:#8f7a4d;
+    --nerf:#d1685f; --buff:#6fb98a; --neutral:#7c8598; --rework:#c8a86b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:44px 22px 90px}
+  header .kick{color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:12px;font-weight:700}
+  h1{font-size:clamp(30px,6vw,46px);margin:.18em 0 .1em;line-height:1.05;
+    background:linear-gradient(90deg,#f0e6cf,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);max-width:64ch;margin:0}
+  h2{font-size:22px;margin:52px 0 14px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h2 .n{color:var(--gold-dim);font-variant-numeric:tabular-nums;margin-right:.5em;font-size:15px}
+  h3{font-size:16px;margin:26px 0 8px;color:var(--gold)}
+  p{margin:.55em 0}
+  .lede{font-size:18px;color:#d8d2c4}
+  .grid{display:grid;gap:14px}
+  @media(min-width:640px){.cols-2{grid-template-columns:1fr 1fr}.cols-4{grid-template-columns:repeat(4,1fr)}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
+  .stat b{display:block;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+  .stat span{color:var(--muted);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  .nerf{color:var(--nerf)} .buff{color:var(--buff)} .gold{color:var(--gold)} .muted{color:var(--muted)}
+  /* scaling arc */
+  .arc{display:flex;align-items:flex-end;gap:0;overflow-x:auto;padding:18px 4px 6px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+  .arc .step{flex:1 0 92px;text-align:center;position:relative;min-width:92px}
+  .arc .bar{margin:0 auto;width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold),var(--gold-dim))}
+  .arc .val{font-variant-numeric:tabular-nums;font-weight:700;margin-top:6px}
+  .arc .date{color:var(--muted);font-size:11px}
+  .arc .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+  table{width:100%;border-collapse:collapse;margin:6px 0;font-size:14.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11.5px;font-weight:700;letter-spacing:.03em}
+  .pill.nerf{background:rgba(209,104,95,.14);color:var(--nerf)}
+  .pill.buff{background:rgba(111,185,138,.14);color:var(--buff)}
+  .pill.rework{background:rgba(200,168,107,.14);color:var(--gold)}
+  /* balance bars */
+  .bal{display:grid;grid-template-columns:130px 1fr;gap:10px 14px;align-items:center;margin:4px 0}
+  .bal .name{font-size:14px}
+  .bal .track{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--panel2);border:1px solid var(--line)}
+  .bal .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0e0f12}
+  .bal .seg.nerf{background:var(--nerf)} .bal .seg.buff{background:var(--buff)} .bal .seg.other{background:var(--neutral)}
+  /* timeline */
+  .tl{position:relative;margin:10px 0 0;padding-left:18px}
+  .tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl .ev{position:relative;padding:6px 0 6px 4px}
+  .tl .ev::before{content:"";position:absolute;left:-16px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--gold-dim);border:2px solid var(--bg)}
+  .tl .ev.big::before{background:var(--gold);width:12px;height:12px;left:-17px}
+  .tl .d{font-variant-numeric:tabular-nums;color:var(--gold);font-weight:700;font-size:13.5px;margin-right:8px}
+  .tl .c{color:var(--muted);font-size:13px}
+  .foot{margin-top:60px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+  code{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kick">Deadlock · Hero-Balance-Historie</div>
+  <h1>Dynamo</h1>
+  <p class="sub">Vollständiger Balance-Bogen vom ersten erfassten Patch (03.05.2024) bis zum Patch 30.06.2026 — 184 kuratierte Änderungen über 34 Patches, gezogen aus <code>brain.patch_changes</code>. Buff/Nerf nach numerischer Richtung + Stat-Polarität (nicht nach dem unzuverlässigen Legacy-Label).</p>
+</header>
+
+<div class="grid cols-4" style="margin-top:26px">
+  <div class="stat"><b class="nerf">43</b><span>Nerfs (numerisch)</span></div>
+  <div class="stat"><b class="buff">49</b><span>Buffs (numerisch)</span></div>
+  <div class="stat"><b class="gold">14</b><span>Reworks</span></div>
+  <div class="stat"><b>34</b><span>Patches mit Änderungen</span></div>
+</div>
+
+<h2><span class="n">01</span>Kurzfassung</h2>
+<p class="lede">Dynamo ist kein Dauer-Nerf-Fall, sondern ein <b>breit nachjustierter</b> Held: numerisch fast im Gleichgewicht (<b class="buff">49&nbsp;Buffs</b> zu <b class="nerf">43&nbsp;Nerfs</b>), dazu <b class="gold">14&nbsp;Reworks</b>. Sein Kit wurde nicht einseitig abgetragen, sondern immer wieder umgebaut — der Höhepunkt war ein einziger Patch mit über 60 Einzeländerungen.</p>
+<p>Die eine Zahl, an der die aktuelle Debatte hängt, ist das <b class="gold">Spirit-Scaling von Kinetic&nbsp;Pulse</b>. Nach Jahren des Hochdrehens (1.2&nbsp;→&nbsp;1.8) und einem Rework-Peak bei 2.1 wurde genau dieser Koeffizient über drei Patches in Folge wieder heruntergefahren. Wer nur den letzten Patchnote liest, sieht einen kleinen Nerf; wer die Historie sieht, erkennt die dritte Rücknahme an derselben Stelle.</p>
+
+<h2><span class="n">02</span>Der Leit-Arc: Kinetic&nbsp;Pulse Spirit-Scaling</h2>
+<p>Eine einzige Zahl erzählt die halbe Geschichte. Das Spirit-Scaling von Kinetic&nbsp;Pulse — der Wert, mit dem der Schaden ins Late-Game skaliert — wurde über zwei Jahre hochgezogen, im großen Rework auf den Höchststand gehievt und danach wieder abgetragen:</p>
+<div class="arc" aria-label="Spirit-Scaling-Verlauf">
+  <div class="step"><div class="bar" style="height:67px"></div><div class="val">1.4</div><div class="date">Basis</div></div>
+  <div class="step"><div class="bar" style="height:86px;background:linear-gradient(180deg,#6fb98a,#4f8a66)"></div><div class="val buff">1.8</div><div class="date">27.01.25</div><div class="tag buff">Buff</div></div>
+  <div class="step"><div class="bar" style="height:100px;background:linear-gradient(180deg,#6fb98a,#4f8a66)"></div><div class="val buff">2.1</div><div class="date">06.03.26</div><div class="tag buff">Peak</div></div>
+  <div class="step"><div class="bar" style="height:86px"></div><div class="val nerf">1.8</div><div class="date">21.03.26</div><div class="tag nerf">Nerf</div></div>
+  <div class="step"><div class="bar" style="height:79px"></div><div class="val nerf">1.65</div><div class="date">30.04.26</div><div class="tag nerf">Nerf</div></div>
+  <div class="step"><div class="bar" style="height:74px"></div><div class="val nerf">1.55</div><div class="date">22.05.26</div><div class="tag nerf">Nerf</div></div>
+</div>
+<p class="muted" style="font-size:13.5px">Vom Rework-Peak (2.1) bis heute (1.55) sind das <b class="nerf">−26&nbsp;%</b> auf den Scaling-Koeffizienten — verteilt auf drei Patches in gut zwei Monaten. <span class="gold">Wichtig:</span> im selben Rework wurde der Basis-Schaden angehoben (90&nbsp;→&nbsp;115). Der Nerf trifft also vor allem das Spirit-Late-Game, nicht den Frühschaden.</p>
+
+<h2><span class="n">03</span>Kinetic&nbsp;Pulse — die volle Chronik</h2>
+<p>Nicht nur das Scaling: auch Reichweite, Cooldown und die drei Upgrade-Slots der Ability wurden über die Zeit mehrfach umgebaut.</p>
+<table>
+  <thead><tr><th>Patch</th><th>Stat</th><th class="n">Von → Auf</th><th>Wirkung</th></tr></thead>
+  <tbody>
+    <tr><td class="n">18.07.24</td><td>Spirit-Scaling</td><td class="n">1.2 → 1.4</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">01.08.24</td><td>Cooldown</td><td class="n">6s → 5s</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">15.08.24</td><td>T3 Bonus-Schaden</td><td class="n">+115 → +125</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">27.01.25</td><td>Spirit-Scaling</td><td class="n">1.4 → 1.8</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">21.11.25</td><td>Cooldown</td><td class="n">26s → 22s</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">21.11.25</td><td>Reichweite</td><td class="n">15 → 20</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">21.11.25</td><td>Reichweiten-Scaling</td><td class="n">0.256 → 0.2</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">16.12.25</td><td>Reichweiten-Scaling</td><td class="n">0.2 → 0.1</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">06.03.26</td><td>Basis-Schaden</td><td class="n">90 → 115</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">06.03.26</td><td>Reichweite</td><td class="n">20 → 16</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">06.03.26</td><td>Cooldown</td><td class="n">22s → 26s</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">06.03.26</td><td>T1 (umgebaut)</td><td class="n">"35&nbsp;% Slow" → "+1 Charge"</td><td><span class="pill rework">Rework</span></td></tr>
+    <tr><td class="n">06.03.26</td><td>T2 (umgebaut)</td><td class="n">"+30&nbsp;% Schaden" → "−18&nbsp;% Bullet-Resist"</td><td><span class="pill rework">Rework</span></td></tr>
+    <tr><td class="n">21.03.26</td><td>Spirit-Scaling</td><td class="n">2.1 → 1.8</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">30.04.26</td><td>Spirit-Scaling</td><td class="n">1.8 → 1.65</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">22.05.26</td><td>Spirit-Scaling</td><td class="n">1.65 → 1.55</td><td><span class="pill nerf">Nerf</span></td></tr>
+  </tbody>
+</table>
+<p class="muted" style="font-size:13.5px">Der Cooldown pendelte mit dem Rework: erst runter auf <b>22s</b>, dann im großen Umbau zurück auf <b>26s</b>. Die Reichweite wurde 2025 kräftig erhöht (15&nbsp;→&nbsp;20) und danach wieder eingefangen (20&nbsp;→&nbsp;16).</p>
+
+<h2><span class="n">04</span>Balance pro Ability</h2>
+<p>Wo Dynamo über die Jahre angefasst wurde (numerische Buffs/Nerfs; „Sonstiges" = Reworks, Bugfixes, funktionale Änderungen). Die Zuordnung ist heuristisch und <b>nicht gewichtet</b>:</p>
+<div class="card">
+  <div class="bal"><div class="name gold">Kinetic Pulse</div><div class="track"><div class="seg buff" style="width:35%">14 Buffs</div><div class="seg nerf" style="width:22%">9 Nerfs</div><div class="seg other" style="width:43%">Sonstiges</div></div></div>
+  <div class="bal"><div class="name">Singularity</div><div class="track"><div class="seg nerf" style="width:36%">9 Nerfs</div><div class="seg buff" style="width:36%">9 Buffs</div><div class="seg other" style="width:28%">Sonstiges</div></div></div>
+  <div class="bal"><div class="name">Quantum Entangl.</div><div class="track"><div class="seg nerf" style="width:23%">7 Nerfs</div><div class="seg buff" style="width:20%">6</div><div class="seg other" style="width:57%">Sonstiges</div></div></div>
+  <div class="bal"><div class="name">Rejuv. Aurora</div><div class="track"><div class="seg nerf" style="width:30%">7 Nerfs</div><div class="seg buff" style="width:26%">6</div><div class="seg other" style="width:44%">Sonstiges</div></div></div>
+  <div class="bal"><div class="name">Waffe / Basis</div><div class="track"><div class="seg nerf" style="width:60%">6 Nerfs</div><div class="seg buff" style="width:20%">2</div><div class="seg other" style="width:20%">Sonstiges</div></div></div>
+</div>
+<div class="grid cols-2" style="margin-top:16px">
+  <div class="card">
+    <h3>Singularity (Ult)</h3>
+    <p class="muted" style="font-size:13.5px">Der Basis-DPS des schwarzen Lochs wurde erst hochgezogen (48&nbsp;→&nbsp;60), dann klar gekappt (60&nbsp;→&nbsp;45), und der Ult-Cooldown von 191 auf 215&nbsp;s verlängert. Der Radius schrumpfte über mehrere Patches (10&nbsp;→&nbsp;9&nbsp;→&nbsp;8&nbsp;→&nbsp;7). Im Rework 2026 wurde die Ability neu geeicht (Basis-DPS 40&nbsp;→&nbsp;75, Max-HP-Anteil umgestellt).</p>
+  </div>
+  <div class="card">
+    <h3>Quantum Entangl. &amp; Rejuv. Aurora</h3>
+    <p class="muted" style="font-size:13.5px">Der Teleport-Cooldown wurde 2024 von 11 auf 16&nbsp;s hochgezogen und 2026 weiter auf 20&nbsp;s; sein +26&nbsp;%-Feuerraten-Bonus fiel im Rework ganz weg. Der Selbstheil-Wert von Rejuvenating&nbsp;Aurora (T3) wurde Stück für Stück von +5 auf +2.5 heruntergestuft — beides Utility, das über die Zeit teurer wurde.</p>
+  </div>
+</div>
+
+<h2><span class="n">05</span>Patch-Zeitstrahl</h2>
+<p>Änderungen pro Patch — der große Ausreißer im März 2026 war der komplette Kit-Rework.</p>
+<div class="tl">
+  <div class="ev"><span class="d">03.05.2024</span><span class="c">Erster erfasster Patch — Singularity-DPS 48→60</span></div>
+  <div class="ev"><span class="d">07.11.2024</span><span class="c">10 Änderungen — Singularity Base-DPS runter (60→45)</span></div>
+  <div class="ev"><span class="d">21.11.2024</span><span class="c">11 Änderungen — u.a. Teleport-Cooldown und Aurora-Regen justiert</span></div>
+  <div class="ev"><span class="d">06.12.2024</span><span class="c">15 Änderungen — Ult-Cooldown 191→215, Kit-Feinschliff</span></div>
+  <div class="ev"><span class="d">27.01.2025</span><span class="c">Kinetic-Pulse-Scaling hoch (1.4→1.8), T3 +1 Charge</span></div>
+  <div class="ev big"><span class="d">06.03.2026</span><span class="c"><b>66 Änderungen — der große Kit-Rework.</b> T1, T2 und T3 von Kinetic Pulse komplett neu belegt, Basis-Schaden 90→115, Scaling-Peak 2.1.</span></div>
+  <div class="ev"><span class="d">30.04.2026</span><span class="c">Kinetic-Pulse-Scaling 1.8→1.65, Teleport-Cooldown 19→20</span></div>
+  <div class="ev big"><span class="d">22.05.2026</span><span class="c"><b>Scaling 1.65→1.55</b> — der Nerf, um den aktuell gestritten wird</span></div>
+  <div class="ev"><span class="d">30.06.2026</span><span class="c">1 Änderung — letzter erfasster Patch</span></div>
+</div>
+
+<h2><span class="n">06</span>Fazit</h2>
+<p>Über gut zwei Jahre wurde Dynamo weniger generft als <b>umgebaut</b>. Buffs und Nerfs halten sich fast die Waage, dazu kommen 14 Reworks — der Höhepunkt war der Kit-Umbau vom 06.03.2026 mit über 60 Einzeländerungen, der T1, T2 und T3 von Kinetic&nbsp;Pulse komplett neu belegte. Der einzige klar erzählbare Dauer-Trend ist das <b>Spirit-Scaling</b> dieser Ability: hochgezogen, am Rework-Peak gekappt und seitdem Patch für Patch nachjustiert. Wer heute über den letzten Scaling-Nerf diskutiert, redet über die Feinjustierung eines Werts, der zuvor jahrelang nach oben geschraubt wurde — nicht über einen Held, der einseitig eingestampft wird.</p>
+
+<div class="foot">
+  <p><b>Quelle &amp; Methodik.</b> Zentrale Postgres, View <code>brain.patch_changes</code> (dedupliziert, kanonisch). Buff/Nerf abgeleitet aus <code>numeric_direction</code> + Stat-Polarität (Cooldown/Cost/Delay = weniger ist besser), nicht aus dem Legacy-Feld <code>change_type</code>.</p>
+  <p><b>Bekannte Datengrenze.</b> In vielen Rohzeilen fehlt der Ability-Name; die Gruppierung in Sektion&nbsp;04 erfolgt daher über Stat- und Textmuster und ist bewusst nicht gewichtet (Reworks und Bugfixes fallen unter „Sonstiges"). Einzelwerte, Daten und alle Von→Auf-Angaben stammen dagegen direkt aus den Rohzeilen. Follow-up für saubere Ability-Zuordnung in der Ingest-Pipeline notiert.</p>
+  <p class="muted">Generiert 10.07.2026 · Deadlock-Brain</p>
+</div>
+
+</div>
+</body>
+</html>

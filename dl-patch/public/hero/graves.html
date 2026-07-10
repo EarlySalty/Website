@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graves — Balance-Historie</title>
+<style>
+  :root{
+    --bg:#0e0f12; --panel:#16181d; --panel2:#1c1f26; --line:#2a2e37;
+    --ink:#e7e3d8; --muted:#9a9384; --gold:#c8a86b; --gold-dim:#8f7a4d;
+    --nerf:#d1685f; --buff:#6fb98a; --neutral:#7c8598; --rework:#c8a86b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:44px 22px 90px}
+  header .kick{color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:12px;font-weight:700}
+  h1{font-size:clamp(30px,6vw,46px);margin:.18em 0 .1em;line-height:1.05;
+    background:linear-gradient(90deg,#f0e6cf,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);max-width:64ch;margin:0}
+  h2{font-size:22px;margin:52px 0 14px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h2 .n{color:var(--gold-dim);font-variant-numeric:tabular-nums;margin-right:.5em;font-size:15px}
+  h3{font-size:16px;margin:26px 0 8px;color:var(--gold)}
+  p{margin:.55em 0}
+  .lede{font-size:18px;color:#d8d2c4}
+  .grid{display:grid;gap:14px}
+  @media(min-width:640px){.cols-2{grid-template-columns:1fr 1fr}.cols-4{grid-template-columns:repeat(4,1fr)}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
+  .stat b{display:block;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+  .stat span{color:var(--muted);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  .nerf{color:var(--nerf)} .buff{color:var(--buff)} .gold{color:var(--gold)} .muted{color:var(--muted)}
+  /* scaling arc */
+  .arc{display:flex;align-items:flex-end;gap:0;overflow-x:auto;padding:18px 4px 6px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+  .arc .step{flex:1 0 92px;text-align:center;position:relative;min-width:92px}
+  .arc .bar{margin:0 auto;width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold),var(--gold-dim))}
+  .arc .val{font-variant-numeric:tabular-nums;font-weight:700;margin-top:6px}
+  .arc .date{color:var(--muted);font-size:11px}
+  .arc .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+  table{width:100%;border-collapse:collapse;margin:6px 0;font-size:14.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11.5px;font-weight:700;letter-spacing:.03em}
+  .pill.nerf{background:rgba(209,104,95,.14);color:var(--nerf)}
+  .pill.buff{background:rgba(111,185,138,.14);color:var(--buff)}
+  .pill.rework{background:rgba(200,168,107,.14);color:var(--gold)}
+  /* balance bars */
+  .bal{display:grid;grid-template-columns:130px 1fr;gap:10px 14px;align-items:center;margin:4px 0}
+  .bal .name{font-size:14px}
+  .bal .track{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--panel2);border:1px solid var(--line)}
+  .bal .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0e0f12}
+  .bal .seg.nerf{background:var(--nerf)} .bal .seg.buff{background:var(--buff)} .bal .seg.other{background:var(--neutral)}
+  /* timeline */
+  .tl{position:relative;margin:10px 0 0;padding-left:18px}
+  .tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl .ev{position:relative;padding:6px 0 6px 4px}
+  .tl .ev::before{content:"";position:absolute;left:-16px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--gold-dim);border:2px solid var(--bg)}
+  .tl .ev.big::before{background:var(--gold);width:12px;height:12px;left:-17px}
+  .tl .d{font-variant-numeric:tabular-nums;color:var(--gold);font-weight:700;font-size:13.5px;margin-right:8px}
+  .tl .c{color:var(--muted);font-size:13px}
+  .foot{margin-top:60px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+  code{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kick">Deadlock · Hero-Balance-Historie</div>
+  <h1>Graves</h1>
+  <p class="sub">Vollständiger Balance-Bogen vom ersten erfassten Eintrag (Ankündigung, 29.01.2026) bis zum Patch 09.07.2026 — 154 kuratierte Änderungen über 13 Patches, gezogen aus <code>brain.patch_changes</code>. Buff/Nerf nach numerischer Richtung + Stat-Polarität (nicht nach dem unzuverlässigen Legacy-Label).</p>
+</header>
+
+<div class="grid cols-4" style="margin-top:26px">
+  <div class="stat"><b class="nerf">22</b><span>Nerfs (numerisch)</span></div>
+  <div class="stat"><b class="buff">23</b><span>Buffs (numerisch)</span></div>
+  <div class="stat"><b class="gold">15</b><span>Reworks</span></div>
+  <div class="stat"><b>13</b><span>Patches mit Änderungen</span></div>
+</div>
+
+<h2><span class="n">01</span>Kurzfassung</h2>
+<p class="lede">Graves ist <b>kein Dauer-Nerf-Fall</b>: numerisch fast im Gleichgewicht — <b class="buff">23</b> Buffs stehen <b class="nerf">22</b> Nerfs gegenüber. Der auffällige Wert ist ein anderer: <b class="gold">15 Reworks</b>. Weil Graves ein junger Held ist (Release 02.02.2026), fällt seine gesamte erfasste Historie in die Einschwing-Phase — und die hat Valve weniger über Zahlen als über ständiges Umbauen seiner Tier-Fähigkeiten gefahren.</p>
+<p>Der eine rote Faden im Schaden: das Spirit-Scaling seiner <b class="gold">Deadheads</b> (Jar&nbsp;of&nbsp;Dead). Erst hochgedreht, dann über drei Patches in Folge wieder heruntergetrimmt. Wer nur den letzten Patchnote liest, sieht eine winzige Zahl; wer die Historie sieht, erkennt: an Jar&nbsp;of&nbsp;Dead und Grasping&nbsp;Hands wurde fast jeden Monat geschraubt.</p>
+
+<h2><span class="n">02</span>Der Leit-Arc: Jar&nbsp;of&nbsp;Dead Spirit-Scaling</h2>
+<p>Eine einzige Zahl erzählt die halbe Geschichte. Der Schadens-Koeffizient der Deadheads wurde einmal deutlich gebufft — und danach über drei aufeinanderfolgende Patches wieder abgetragen:</p>
+<div class="arc" aria-label="Spirit-Scaling-Verlauf">
+  <div class="step"><div class="bar" style="height:66px"></div><div class="val">0.25</div><div class="date">Start</div></div>
+  <div class="step"><div class="bar" style="height:92px;background:linear-gradient(180deg,#6fb98a,#4f8a66)"></div><div class="val buff">0.35</div><div class="date">06.03.26</div><div class="tag buff">Buff</div></div>
+  <div class="step"><div class="bar" style="height:82px"></div><div class="val nerf">0.31</div><div class="date">22.05.26</div><div class="tag nerf">Nerf</div></div>
+  <div class="step"><div class="bar" style="height:71px"></div><div class="val nerf">0.27</div><div class="date">31.05.26</div><div class="tag nerf">Nerf</div></div>
+  <div class="step"><div class="bar" style="height:66px"></div><div class="val nerf">0.25</div><div class="date">12.06.26</div><div class="tag nerf">Nerf</div></div>
+</div>
+<p class="muted" style="font-size:13.5px">Von der Spitze (0.35) zurück auf den Ausgangswert (0.25) sind das <b class="nerf">−29&nbsp;%</b> auf den Koeffizienten — verteilt auf drei Patches in nur drei Wochen. <span class="gold">Wichtig:</span> parallel fiel auch der Basis-Schaden der Deadheads (<code>20 → 17 → 16</code>), im Gegenzug wurden sie schneller und aggressiver (Melee-Dash, Kopfgeld, Aufsammel-Reichweite hoch). Netto also eine Umverteilung, kein Ausweiden.</p>
+
+<h2><span class="n">03</span>Jar&nbsp;of&nbsp;Dead — die volle Chronik</h2>
+<p>Nicht nur das Scaling: die ganze Deadhead-Mechanik wurde Patch für Patch nachgezogen — mal hoch, mal runter.</p>
+<table>
+  <thead><tr><th>Patch</th><th>Stat</th><th class="n">Von → Auf</th><th>Wirkung</th></tr></thead>
+  <tbody>
+    <tr><td class="n">30.01.26</td><td>Schaden</td><td class="n">16 → 20</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">30.01.26</td><td>Start-Ladungen</td><td class="n">1 → 2</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">30.01.26</td><td>Max-Dauer</td><td class="n">15 → 10</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">30.01.26</td><td>Aufsammel-Reichweite</td><td class="n">10 → 18</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">06.03.26</td><td>Spirit-Scaling</td><td class="n">0.25 → 0.35</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">06.03.26</td><td>HP pro Boon</td><td class="n">1 → 1.3</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">25.03.26</td><td>T3 (umgebaut)</td><td class="n">"Essence-Theft" → "+4s Dauer"</td><td><span class="pill rework">Rework</span></td></tr>
+    <tr><td class="n">22.05.26</td><td>Spirit-Scaling</td><td class="n">0.35 → 0.31</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">31.05.26</td><td>Schaden (Basis + Scaling)</td><td class="n">20+0.31 → 17+0.27</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">12.06.26</td><td>Schaden (Basis + Scaling)</td><td class="n">17+0.27 → 16+0.25</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">12.06.26</td><td>Kopfgeld</td><td class="n">5+0.25 → 7+0.5</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">09.07.26</td><td>T1-Heal Spirit-Scaling</td><td class="n">0.1 → 0.16</td><td><span class="pill buff">Buff</span></td></tr>
+  </tbody>
+</table>
+<p class="muted" style="font-size:13.5px">Das Muster ist klar: der reine <b>Schaden</b> der Deadheads wurde ab Mai konsequent abgetragen (Max-Dauer 15→10, Scaling 0.35→0.25, Basis 20→16), während <b>Nutzbarkeit und Bounty</b> immer wieder gebufft wurden. Die Ability soll über Präsenz und Utility tragen, nicht über nackten Burst.</p>
+
+<h2><span class="n">04</span>Balance pro Ability</h2>
+<p>Wo Graves in seinen ersten Monaten angefasst wurde (grobe, <b>nicht gewichtete</b> Zählung — viele Zeilen tragen keinen sauberen Ability-Namen, daher per Stichwort dem Kit zugeordnet):</p>
+<div class="card">
+  <div class="bal"><div class="name gold">Jar of Dead</div><div class="track"><div class="seg buff" style="width:55%">7 Buffs</div><div class="seg nerf" style="width:32%">4 Nerfs</div><div class="seg other" style="width:13%">Rework</div></div></div>
+  <div class="bal"><div class="name">Grasping Hands</div><div class="track"><div class="seg nerf" style="width:58%">7 Nerfs</div><div class="seg buff" style="width:25%">3</div><div class="seg other" style="width:17%">Rework</div></div></div>
+  <div class="bal"><div class="name">Borrowed Decree</div><div class="track"><div class="seg nerf" style="width:57%">4 Nerfs</div><div class="seg other" style="width:43%">3 Reworks</div></div></div>
+  <div class="bal"><div class="name">Essence Theft</div><div class="track"><div class="seg buff" style="width:40%">Buff</div><div class="seg other" style="width:60%">Rework</div></div></div>
+  <div class="bal"><div class="name">Waffe / Basis</div><div class="track"><div class="seg buff" style="width:60%">3 Buffs</div><div class="seg nerf" style="width:40%">2 Nerfs</div></div></div>
+</div>
+<div class="grid cols-2" style="margin-top:16px">
+  <div class="card">
+    <h3>Grasping Hands</h3>
+    <p class="muted" style="font-size:13.5px">Die am härtesten beschnittene Ability: Breite 20→14, Dauer 7→5, Immobilize seriell 1.5→1.25→1, Spirit-Scaling 1.9→1.6. Aus der großflächigen Lockdown-Wand wurde ein engeres, präziseres Werkzeug — dafür sank ihr Cooldown (38→34).</p>
+  </div>
+  <div class="card">
+    <h3>Borrowed Decree &amp; Essence Theft</h3>
+    <p class="muted" style="font-size:13.5px">Die Rework-Zone: Ultimate-Cooldown hoch (110→120), Ghoul-Schaden runter (150→135), dafür die Tier-Talente von T1 bis T3 mehrfach umgestellt. Essence Theft wurde von "+1 Tether" auf "Beschwörungen wirken den Passiv" umgebaut. Wenige harte Zahlen, viel Umbau.</p>
+  </div>
+</div>
+
+<h2><span class="n">05</span>Patch-Zeitstrahl</h2>
+<p>Änderungen pro Patch — die dicken Punkte sind die großen Balance-Pässe.</p>
+<div class="tl">
+  <div class="ev"><span class="d">29.01.2026</span><span class="c">Ankündigung "Graves Prefers The Dead" — erster Eintrag</span></div>
+  <div class="ev big"><span class="d">30.01.2026</span><span class="c"><b>27 Änderungen</b> — der große Launch-Balance-Pass kurz vor Release</span></div>
+  <div class="ev"><span class="d">02.02.2026</span><span class="c">4 Änderungen — Release-Tag, Deadhead-Feinschliff</span></div>
+  <div class="ev big"><span class="d">06.03.2026</span><span class="c"><b>30 Änderungen</b> — großer Rework-Patch: Grasping-Hands T2/T3 umgebaut, Jar-Scaling 0.25→0.35</span></div>
+  <div class="ev"><span class="d">21.03.2026</span><span class="c">10 Änderungen — Nachzieher zum Rework-Patch</span></div>
+  <div class="ev"><span class="d">25.03.2026</span><span class="c">8 Änderungen — Grasping-Hands-Scaling 1.9→1.6, Ghoul-Schaden 150→135</span></div>
+  <div class="ev big"><span class="d">22.05.2026</span><span class="c"><b>35 Änderungen</b> — der größte Patch: Jar-Scaling-Trim beginnt (0.35→0.31), Sprint-Speed 1.6→2.2</span></div>
+  <div class="ev"><span class="d">31.05.2026</span><span class="c">6 Änderungen — Deadhead-Schaden 20+0.31 → 17+0.27</span></div>
+  <div class="ev"><span class="d">12.06.2026</span><span class="c">4 Änderungen — Deadhead-Schaden 17→16, Kopfgeld hoch</span></div>
+  <div class="ev"><span class="d">09.07.2026</span><span class="c">8 Änderungen — Borrowed-Decree T1/T2 umgebaut, Grasping-Immobilize 1.25→1</span></div>
+</div>
+
+<h2><span class="n">06</span>Fazit</h2>
+<p>Graves durchläuft, was ein <b>frischer Held</b> durchläuft: eine Einschwing-Phase, keine Nerf-Kampagne. Über gut fünf Monate hielten sich Buffs und Nerfs fast die Waage — was ihn prägt, sind die <b class="gold">15 Reworks</b>, mit denen Valve seine Tier-Talente und seine Identität immer wieder neu sortiert hat.</p>
+<p>Die einzige klare Zahlen-Erzählung ist der Deadhead-Schaden: erst angehoben, dann behutsam wieder auf Startniveau zurückgetrimmt, während Mobilität, Kopfgeld und Utility gebufft wurden. Unterm Strich steht Graves heute leistungsmäßig ungefähr da, wo er gestartet ist — nur mechanisch deutlich anders gebaut. Ein Held, der breit justiert statt einseitig generft wurde.</p>
+
+<div class="foot">
+  <p><b>Quelle &amp; Methodik.</b> Zentrale Postgres, View <code>brain.patch_changes</code> (dedupliziert, kanonisch). Buff/Nerf abgeleitet aus <code>numeric_direction</code> + Stat-Polarität (Cooldown/Cost/Delay = weniger ist besser), nicht aus dem Legacy-Feld <code>change_type</code>.</p>
+  <p><b>Bekannte Datengrenze.</b> Ein Großteil der Roh-Zeilen trägt keinen expliziten Ability-Namen (Feld <code>ability_name</code> ist oft <code>null</code>); die Zuordnung in Abschnitt&nbsp;04 erfolgt daher per Stichwort auf die Roh-Zeile und ist bewusst approximativ. Zusätzlich hat die Ingest-Pipeline denselben Forum-Patch unter mehreren Thread-Daten (30.01./02.02./02.04./02.12.) erneut erfasst; hier wurde nach Wert dedupliziert und das früheste Datum je Änderung verwendet.</p>
+  <p class="muted">Generiert 10.07.2026 · Deadlock-Brain</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -33,6 +33,25 @@ const ENTITY_LABELS = {
   general: 'Systeme',
 }
 
+// Heroes mit gepflegter Balance-Historie-Seite unter /patch/hero/<slug>.html
+const HERO_DOCS = new Set([
+  'abrams', 'apollo', 'bebop', 'billy', 'calico', 'celeste', 'drifter', 'dynamo',
+  'graves', 'grey-talon', 'haze', 'holliday', 'infernus', 'ivy', 'kelvin', 'lady-geist',
+  'lash', 'mcginnis', 'mina', 'mirage', 'mo-and-krill', 'paige', 'paradox', 'pocket',
+  'rem', 'seven', 'shiv', 'silver', 'sinclair', 'the-doorman', 'venator', 'victor',
+  'vindicta', 'viscous', 'vyper', 'warden', 'wraith', 'yamato',
+])
+
+const heroSlug = (name) =>
+  String(name).toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+
+function heroDocLink(entity) {
+  if (!entity || entity.entity_type !== 'hero') return ''
+  const slug = heroSlug(entity.entity_name)
+  if (!HERO_DOCS.has(slug)) return ''
+  return `<a class="detail-history" href="/patch/hero/${slug}.html">Balance-Historie ansehen →</a>`
+}
+
 const state = {
   loading: true,
   error: '',
@@ -513,6 +532,7 @@ function renderDetailPanel(entities, filteredEvents) {
         <span class="panel-kicker">${escapeHtml(ENTITY_LABELS[selected.entity_type] || selected.entity_type)}</span>
         <h2>${escapeHtml(selected.entity_name)}</h2>
         <p>${NUMBER.format(selected.patch_count || 0)} Patches · ${NUMBER.format(selected.event_count)} Events · ${NUMBER.format(selected.value_events || 0)} Wert-Deltas</p>
+        ${heroDocLink(selected)}
       </div>
     </div>
     <div class="detail-bars">

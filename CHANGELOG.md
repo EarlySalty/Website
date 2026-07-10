@@ -1,3 +1,11 @@
+## #57 — Balance-Historie pro Held
+
+**Ausgangslage:** Der Patch-Bereich zeigte pro Held nur die letzten Änderungen. Der lange Bogen — wie ein Held über die Jahre generft, gebufft oder umgebaut wurde, bis er heute ungefähr ausbalanciert ist — war nirgends sichtbar.
+
+**Geändert:** Jeder Held hat jetzt eine eigene Balance-Historie-Seite mit dem kompletten Verlauf seit Release: die wichtigste Nerf-/Buff-Geschichte, die volle Chronik der Kern-Fähigkeit und ein Patch-Zeitstrahl. Ein Klick auf einen Held im Patch-Bereich führt direkt dorthin.
+
+**Verhalten:** 38 Helden abgedeckt. Alle Zahlen stammen aus der zentralen Patch-Datenbank; Buff und Nerf werden nach echter Wirkungsrichtung eingeordnet, nicht nach dem alten Textlabel.
+
 ## #56 — Übergänge komplett aufgelöst
 
 **Ausgangslage:** Trotz weicher Verläufe war zwischen Startbild und den Abschnitten darunter noch eine Trennung zu erkennen.

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sinclair — Balance-Historie</title>
+<style>
+  :root{
+    --bg:#0e0f12; --panel:#16181d; --panel2:#1c1f26; --line:#2a2e37;
+    --ink:#e7e3d8; --muted:#9a9384; --gold:#c8a86b; --gold-dim:#8f7a4d;
+    --nerf:#d1685f; --buff:#6fb98a; --neutral:#7c8598; --rework:#c8a86b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:44px 22px 90px}
+  header .kick{color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:12px;font-weight:700}
+  h1{font-size:clamp(30px,6vw,46px);margin:.18em 0 .1em;line-height:1.05;
+    background:linear-gradient(90deg,#f0e6cf,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);max-width:64ch;margin:0}
+  h2{font-size:22px;margin:52px 0 14px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h2 .n{color:var(--gold-dim);font-variant-numeric:tabular-nums;margin-right:.5em;font-size:15px}
+  h3{font-size:16px;margin:26px 0 8px;color:var(--gold)}
+  p{margin:.55em 0}
+  .lede{font-size:18px;color:#d8d2c4}
+  .grid{display:grid;gap:14px}
+  @media(min-width:640px){.cols-2{grid-template-columns:1fr 1fr}.cols-4{grid-template-columns:repeat(4,1fr)}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
+  .stat b{display:block;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+  .stat span{color:var(--muted);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  .nerf{color:var(--nerf)} .buff{color:var(--buff)} .gold{color:var(--gold)} .muted{color:var(--muted)}
+  /* scaling arc */
+  .arc{display:flex;align-items:flex-end;gap:0;overflow-x:auto;padding:18px 4px 6px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+  .arc .step{flex:1 0 92px;text-align:center;position:relative;min-width:92px}
+  .arc .bar{margin:0 auto;width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold),var(--gold-dim))}
+  .arc .val{font-variant-numeric:tabular-nums;font-weight:700;margin-top:6px}
+  .arc .date{color:var(--muted);font-size:11px}
+  .arc .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+  table{width:100%;border-collapse:collapse;margin:6px 0;font-size:14.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11.5px;font-weight:700;letter-spacing:.03em}
+  .pill.nerf{background:rgba(209,104,95,.14);color:var(--nerf)}
+  .pill.buff{background:rgba(111,185,138,.14);color:var(--buff)}
+  .pill.rework{background:rgba(200,168,107,.14);color:var(--gold)}
+  /* balance bars */
+  .bal{display:grid;grid-template-columns:130px 1fr;gap:10px 14px;align-items:center;margin:4px 0}
+  .bal .name{font-size:14px}
+  .bal .track{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--panel2);border:1px solid var(--line)}
+  .bal .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0e0f12}
+  .bal .seg.nerf{background:var(--nerf)} .bal .seg.buff{background:var(--buff)} .bal .seg.other{background:var(--neutral)}
+  /* timeline */
+  .tl{position:relative;margin:10px 0 0;padding-left:18px}
+  .tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl .ev{position:relative;padding:6px 0 6px 4px}
+  .tl .ev::before{content:"";position:absolute;left:-16px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--gold-dim);border:2px solid var(--bg)}
+  .tl .ev.big::before{background:var(--gold);width:12px;height:12px;left:-17px}
+  .tl .d{font-variant-numeric:tabular-nums;color:var(--gold);font-weight:700;font-size:13.5px;margin-right:8px}
+  .tl .c{color:var(--muted);font-size:13px}
+  .foot{margin-top:60px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+  code{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kick">Deadlock · Hero-Balance-Historie</div>
+  <h1>Sinclair</h1>
+  <p class="sub">Vollständiger Balance-Bogen von Release (17.01.2025) bis zum Patch 29.12.2025 — 70 kuratierte Änderungen über 14 Patches, gezogen aus <code>brain.patch_changes</code>. Buff/Nerf nach numerischer Richtung + Stat-Polarität (nicht nach dem unzuverlässigen Legacy-Label).</p>
+</header>
+
+<div class="grid cols-4" style="margin-top:26px">
+  <div class="stat"><b class="nerf">17</b><span>Nerfs (numerisch)</span></div>
+  <div class="stat"><b class="buff">17</b><span>Buffs (numerisch)</span></div>
+  <div class="stat"><b class="gold">4</b><span>Reworks</span></div>
+  <div class="stat"><b>14</b><span>Patches mit Änderungen</span></div>
+</div>
+
+<h2><span class="n">01</span>Kurzfassung</h2>
+<p class="lede">Sinclair ist <b>kein Dauer-Nerf-Kandidat</b>, sondern ein breit justierter Hero: numerisch <b>exakt ausgeglichen</b> — <b class="nerf">17 Nerfs</b> stehen <b class="buff">17 Buffs</b> gegenüber, dazu vier Reworks. Valve hat ihn nicht einseitig heruntergedreht, sondern über zwei Jahre umverteilt: raus aus dem stumpfen Schaden, rein in Utility und Verfügbarkeit.</p>
+<p>Der rote Faden liegt bei <b class="gold">Rabbit&nbsp;Hex</b>, seiner Kontroll-Fähigkeit: der direkte Schaden wurde herausgezogen (die 80 Flat-Damage komplett gestrichen, der Damage-Amp fast halbiert), während die Fähigkeit als reines CC-Werkzeug immer verfügbarer wurde. Seine Signatur — das Klauen gegnerischer Ultimates — blieb dabei fast durchgängig verschont und wurde sogar bequemer.</p>
+
+<h2><span class="n">02</span>Der Leit-Arc: Rabbit&nbsp;Hex</h2>
+<p>Eine Fähigkeit erzählt Sinclairs ganze Justage-Philosophie. Aus Rabbit Hex wurde der Schaden gezogen, dafür wurde die Verfügbarkeit Patch für Patch verbessert — der Cooldown sank über den Jahresverlauf stetig:</p>
+<div class="arc" aria-label="Rabbit-Hex-Cooldown-Verlauf">
+  <div class="step"><div class="bar" style="height:92px"></div><div class="val">35s</div><div class="date">Start</div></div>
+  <div class="step"><div class="bar" style="height:79px;background:linear-gradient(180deg,#6fb98a,#4f8a66)"></div><div class="val buff">30s</div><div class="date">27.05.25</div><div class="tag buff">Buff</div></div>
+  <div class="step"><div class="bar" style="height:68px;background:linear-gradient(180deg,#6fb98a,#4f8a66)"></div><div class="val buff">26s</div><div class="date">29.12.25</div><div class="tag buff">Buff</div></div>
+</div>
+<p class="muted" style="font-size:13.5px">Von 35&nbsp;s auf 26&nbsp;s — <b class="buff">mehr Uptime</b> für die Kontrolle. <span class="gold">Der Gegenzug:</span> im selben Zeitraum verlor Rabbit Hex seinen direkten Schaden (die pauschalen 80&nbsp;Schaden komplett gestrichen), der Damage-Amp fiel von 25&nbsp;% auf 15&nbsp;% und die Cast-Range wurde von 30 auf 24 gekürzt. Aus einer Schadens-Fähigkeit wurde ein pures Setup-Tool.</p>
+
+<h2><span class="n">03</span>Rabbit&nbsp;Hex — die volle Chronik</h2>
+<p>Nicht nur der Cooldown: die Fähigkeit wurde in fast jeder Kennzahl umgebaut — mal hoch, mal runter.</p>
+<table>
+  <thead><tr><th>Patch</th><th>Stat</th><th class="n">Von → Auf</th><th>Wirkung</th></tr></thead>
+  <tbody>
+    <tr><td class="n">11.02.25</td><td>Ziel-Range (Umbau zu AoE)</td><td class="n">20 → 30</td><td><span class="pill rework">Rework</span></td></tr>
+    <tr><td class="n">17.04.25</td><td>Damage Amp</td><td class="n">25 → 15</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">17.04.25</td><td>Damage-Amp Spirit-Scaling</td><td class="n">0.1 → 0.06</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">17.04.25</td><td>Move Speed</td><td class="n">15 → 22</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">27.05.25</td><td>Cooldown</td><td class="n">35 → 30</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">04.07.25</td><td>Detonations-Delay</td><td class="n">0.7 → 0.9</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">04.07.25</td><td>Cast-Range</td><td class="n">30 → 24</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">04.07.25</td><td>Move Speed</td><td class="n">22 → 36</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">29.12.25</td><td>Cooldown</td><td class="n">30 → 26</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">29.12.25</td><td>Radius</td><td class="n">6 → 6.5</td><td><span class="pill buff">Buff</span></td></tr>
+  </tbody>
+</table>
+<p class="muted" style="font-size:13.5px">Zusätzlich am 17.04.25 gestrichen: die pauschalen <b>80&nbsp;Schaden</b> des Hex. Damit war die letzte reine Schadensquelle der Fähigkeit weg — ab da lebt Rabbit Hex von Kontrolle und Damage-Amp, nicht von eigenem Schaden.</p>
+
+<h2><span class="n">04</span>Balance pro Ability</h2>
+<p>Wo Sinclair über das Jahr angefasst wurde (grob nach Fähigkeit gruppiert, <b>nicht gewichtet</b> — viele Zeilen tragen keinen sauberen Ability-Namen und wurden über den Stat-Text zugeordnet):</p>
+<div class="card">
+  <div class="bal"><div class="name gold">Rabbit Hex</div><div class="track"><div class="seg buff" style="width:46%">5 Buffs</div><div class="seg nerf" style="width:40%">4 Nerfs</div><div class="seg other" style="width:14%">Rework</div></div></div>
+  <div class="bal"><div class="name">Vexing Bolt</div><div class="track"><div class="seg nerf" style="width:50%">5 Nerfs</div><div class="seg other" style="width:30%">3 Reworks</div><div class="seg buff" style="width:20%">2</div></div></div>
+  <div class="bal"><div class="name">Audience Participation</div><div class="track"><div class="seg buff" style="width:86%">6 Buffs</div><div class="seg nerf" style="width:14%">1</div></div></div>
+  <div class="bal"><div class="name">Spectral Assistant</div><div class="track"><div class="seg buff" style="width:63%">4 Buffs</div><div class="seg nerf" style="width:37%">2 Nerfs</div></div></div>
+  <div class="bal"><div class="name">Waffe / Basis</div><div class="track"><div class="seg nerf" style="width:71%">5 Nerfs</div><div class="seg buff" style="width:29%">2 Buffs</div></div></div>
+</div>
+<div class="grid cols-2" style="margin-top:16px">
+  <div class="card">
+    <h3>Audience Participation</h3>
+    <p class="muted" style="font-size:13.5px">Sinclairs Signatur — das Klauen der gegnerischen Ultimate — ist der einzige Bereich, der fast ausschließlich gebufft wurde: der Cooldown nach erfolgreichem Steal fiel 100→50→40&nbsp;s, die Reichweite stieg von 10 auf 20, die Dauer der geklauten Ult von 10 auf 20. Der einzige echte Nerf war die Dauer der Kopie (20→10).</p>
+  </div>
+  <div class="card">
+    <h3>Vexing Bolt &amp; Waffe</h3>
+    <p class="muted" style="font-size:13.5px">Vexing Bolt wurde gleich dreimal umgebaut (Schadensmechanik, T1, T2) und danach getrimmt: Cooldown 15→24&nbsp;s, Maximalschaden 150→130. Parallel wurde die Waffe entschärft — Basisschaden 23→20→17, dazu Health 700→650 und Regen 3→2.</p>
+  </div>
+</div>
+
+<h2><span class="n">05</span>Patch-Zeitstrahl</h2>
+<p>Änderungen pro Patch — die dicken Brocken lagen im Januar und April 2025.</p>
+<div class="tl">
+  <div class="ev"><span class="d">17.01.2025</span><span class="c">Release — „The Magnificent Sinclair" kommt ins Spiel</span></div>
+  <div class="ev big"><span class="d">27.01.2025</span><span class="c"><b>12 Änderungen</b> — Vexing-Bolt-Schaden komplett umgebaut, −35&nbsp;% Headshot-Malus entfernt, AP-Cooldown 100→50</span></div>
+  <div class="ev"><span class="d">11.02.2025</span><span class="c">8 Änderungen — Rabbit Hex zu einer AoE-Fähigkeit umgebaut, Bullet-Velocity 86→340</span></div>
+  <div class="ev"><span class="d">04.04.2025</span><span class="c">3 Änderungen — Vexing Bolt T1/T2 getauscht, Cooldown 15→24</span></div>
+  <div class="ev big"><span class="d">17.04.2025</span><span class="c"><b>10 Änderungen</b> — Schaden aus Rabbit Hex gezogen (Damage Amp 25→15, 80 Flat-Damage raus), Bullet 23→20</span></div>
+  <div class="ev"><span class="d">27.05.2025</span><span class="c">4 Änderungen — Rabbit Hex Cooldown 35→30, Vexing-Bolt-Radius hoch</span></div>
+  <div class="ev"><span class="d">04.07.2025</span><span class="c">6 Änderungen — Rabbit Hex Cast-Range runter, Move Speed 22→36, Bullet 20→17</span></div>
+  <div class="ev"><span class="d">04.09.2025</span><span class="c">7 Änderungen — Spectral-Assistant-Scaling hoch, Vexing-Bolt-Radius 3.5→3.25</span></div>
+  <div class="ev"><span class="d">21.11.2025</span><span class="c">4 Änderungen — Health 700→650, AP-Cooldown 50→40</span></div>
+  <div class="ev"><span class="d">29.12.2025</span><span class="c">7 Änderungen — Rabbit Hex Cooldown 30→26, Vexing-Bolt-Velocity 1000→800</span></div>
+</div>
+
+<h2><span class="n">06</span>Fazit</h2>
+<p>Über das Jahr wurde Sinclair <b>um seine Identität herum</b> justiert statt niedergenerft: roher Waffen- und Zauberschaden (Bullet 23→17, Rabbit-Hex-Damage, Assistant-Basisschaden) wurde konsequent abgetragen, während seine Signatur-Ultimate und seine Kontrolle bequemer und verfügbarer wurden. Genau deshalb steht die Bilanz bei <b>17:17</b> — kein einseitiger Nerf, sondern eine Umverteilung.</p>
+<p>Wer heute Sinclair spielt, bekommt einen <b>Utility-Caster</b>: die Stärke liegt im Klauen (Audience Participation), im Umformen (Rabbit Hex) und im Zonen (Vexing Bolt), nicht mehr in aufgedrehten Schadenszahlen. Die Design-Absicht der letzten Patches ist erkennbar dieselbe wie bei anderen Deadlock-Reworks: der Hero soll über sein <em>ganzes</em> Kit funktionieren.</p>
+
+<div class="foot">
+  <p><b>Quelle &amp; Methodik.</b> Zentrale Postgres, View <code>brain.patch_changes</code> (dedupliziert, kanonisch). Buff/Nerf abgeleitet aus <code>numeric_direction</code> + Stat-Polarität (Cooldown/Cost/Delay = weniger ist besser), nicht aus dem Legacy-Feld <code>change_type</code>.</p>
+  <p><b>Bekannte Datengrenze.</b> In vielen Roh-Zeilen ist <code>ability_name</code> leer; die Zuordnung in „Balance pro Ability" (Sektion&nbsp;04) erfolgt heuristisch über den Stat-Text und ist bewusst approximativ, nicht gewichtet. Audience Participation führt zwei Cooldown-Werte (Basis vs. erfolgreicher Steal); im Zeitstrahl ist der jeweils genannte gemeint. Follow-up für die Ingest-Pipeline notiert.</p>
+  <p class="muted">Generiert 10.07.2026 · Deadlock-Brain</p>
+</div>
+
+</div>
+</body>
+</html>
