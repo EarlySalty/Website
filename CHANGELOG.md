@@ -1,3 +1,11 @@
+## #54 — Weiche Übergänge statt harter Kanten
+
+**Ausgangslage:** Die Abschnitte der Mitspieler-Seite stießen mit harten Kanten aneinander: Das Startbild endete abrupt, und die farbigen Bereiche begannen wie mit dem Lineal gezogen.
+
+**Geändert:** Alle Abschnittshintergründe laufen jetzt oben und unten weich aus und gehen ineinander über. Das Startbild blendet sanft in den Seitengrund aus, bevor der nächste Abschnitt beginnt.
+
+**Wie's jetzt läuft:** Die Seite liest sich wie eine durchgehende Szene, kein Bereich schneidet mehr sichtbar ab.
+
 ## #53 — Bühnenlicht für die ganze Seite
 
 **Ausgangslage:** Zwischen dem Startbereich und dem Server-Haus lagen flache, einfarbig braune Zonen, die tot wirkten. Die Coaching-Seite zeigt, wie es besser geht: farbige Lichtflecken und ein feines Muster im Hintergrund.

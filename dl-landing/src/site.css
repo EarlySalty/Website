@@ -182,7 +182,24 @@ ol {
   position: relative;
 }
 
-.section--dark {
+/* Sektions-Hintergründe liegen in ::before mit vertikaler Ausblend-Maske,
+   damit sie weich in den Body-Grund übergehen statt hart an der
+   Sektionsgrenze zu schneiden (gleiches Muster wie die Coaching-Seite). */
+.section--dark,
+.section--glow {
+  position: relative;
+}
+.section--dark::before,
+.section--glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  mask-image: linear-gradient(180deg, transparent, #000 140px, #000 calc(100% - 140px), transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 140px, #000 calc(100% - 140px), transparent);
+}
+.section--dark::before {
   background:
     radial-gradient(70% 60% at 88% 0%, rgba(85, 151, 143, 0.1), transparent 65%),
     radial-gradient(60% 55% at 6% 100%, rgba(201, 168, 106, 0.08), transparent 65%),
@@ -195,7 +212,7 @@ ol {
 
 /* Farbige Lichtflecken für sonst transparente Sektionen — gleiche
    Bühnenlicht-Sprache wie die Coaching-Seite. */
-.section--glow {
+.section--glow::before {
   background:
     radial-gradient(46% 70% at 10% 18%, rgba(85, 151, 143, 0.13), transparent 68%),
     radial-gradient(44% 65% at 90% 26%, rgba(201, 168, 106, 0.14), transparent 70%),
@@ -506,7 +523,7 @@ ol {
   inset: 0;
   background:
     radial-gradient(ellipse 80% 60% at 70% 35%, rgba(201, 168, 106, 0.12), transparent 60%),
-    linear-gradient(180deg, transparent 0%, transparent 30%, rgba(36,28,17,0.88) 100%);
+    linear-gradient(180deg, transparent 0%, transparent 30%, rgba(36, 28, 17, 0.75) 68%, #241c11 94%);
 }
 
 .hero-bg::before {
@@ -1478,7 +1495,7 @@ ol {
 
 .hero--mitspieler .hero-bg::after {
   background:
-    linear-gradient(180deg, rgba(11, 9, 7, 0.2), rgba(11, 9, 7, 0.45) 45%, var(--ink) 100%),
+    linear-gradient(180deg, rgba(11, 9, 7, 0.2), rgba(11, 9, 7, 0.5) 45%, #241c11 82%),
     linear-gradient(90deg, rgba(11, 9, 7, 0.7), transparent 35%, transparent 65%, rgba(11, 9, 7, 0.7));
 }
 
@@ -2428,7 +2445,7 @@ html::after {
 
 /* Atmosphäre: kühler Nachthimmel oben, warmer Stadtschein unten — bricht
    das flache Einheitsbraun der Sektion auf. */
-.tower-section {
+.tower-section::before {
   background:
     radial-gradient(75% 45% at 50% 0%, rgba(85, 151, 143, 0.12), transparent 65%),
     radial-gradient(50% 40% at 90% 30%, rgba(85, 151, 143, 0.08), transparent 70%),
