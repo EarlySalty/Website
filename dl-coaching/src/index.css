@@ -334,27 +334,13 @@ img { display: block; max-width: 100%; }
   }
 
   .brand-copy {
-    display: flex;
     min-width: 0;
-    flex-direction: column;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .brand-copy span {
     color: var(--text-muted);
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.16em;
-    white-space: nowrap;
-  }
-
-  .brand-copy strong {
-    color: var(--text-primary);
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: 0.02em;
+    line-height: 1;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
@@ -368,12 +354,8 @@ img { display: block; max-width: 100%; }
       height: 32px;
     }
 
-    .brand-copy span {
+    .brand-copy {
       display: none;
-    }
-
-    .brand-copy strong {
-      font-size: 15px;
     }
 
     .discord-login-button {

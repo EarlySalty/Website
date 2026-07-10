@@ -1,3 +1,11 @@
+## #54 — Mehr Platz in der Coaching-Kopfzeile
+
+**Ausgangslage:** „Coaching-Etage“ stand direkt unter dem Community-Schriftzug und machte die volle Navigation unnötig eng. Im Seitenkopf wiederholte außerdem ein langer Absatz Dinge, die der Ablauf darunter bereits erklärt.
+
+**Geändert:** Die Kopfzeile zeigt nur noch Logo und Community-Namen. „Coaching-Etage“ steht jetzt als kleines Seitenlabel über der Überschrift; der doppelte Erklärtext ist entfernt.
+
+**Wie's jetzt läuft:** Marke, Navigation und Nutzerbereich haben getrennt Platz, während sofort erkennbar bleibt, dass man im Coaching-Bereich ist.
+
 ## #48 — Aktivität: Ranglisten laden wieder + wärmerer Look
 
 **Ausgangslage:** Auf der Aktivitätsseite kam nichts an — Voice- und Rang-Leaderboard, Rangverteilung und der Discord-Login liefen alle in einen „Nicht gefunden"-Fehler. Die Seite blieb leer und wirkte dadurch leblos.

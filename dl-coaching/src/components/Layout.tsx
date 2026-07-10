@@ -20,12 +20,9 @@ export default function Layout() {
           <div className="flex min-h-[64px] items-center justify-between gap-4">
 
             <div className="flex items-center gap-8">
-              <Link to="/" className="brand-wordmark" aria-label="DDC Coaching-Etage">
+              <Link to="/" className="brand-wordmark" aria-label="Deutsche Deadlock Community">
                 <img src={coachingMark} alt="" aria-hidden="true" />
-                <span className="brand-copy">
-                  <span>Deutsche Deadlock Community</span>
-                  <strong>Coaching-Etage</strong>
-                </span>
+                <span className="brand-copy">Deutsche Deadlock Community</span>
               </Link>
 
               <nav className="hidden items-center gap-1 md:flex">
