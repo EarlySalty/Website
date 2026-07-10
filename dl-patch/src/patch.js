@@ -496,7 +496,16 @@ function renderEntityGrid(entities) {
 
   grid.querySelectorAll('[data-entity-key]').forEach((button) => {
     button.addEventListener('click', () => {
-      state.selectedEntityKey = button.dataset.entityKey || ''
+      const key = button.dataset.entityKey || ''
+      const entity = visible.find((item) => entityKey(item.entity_type, item.entity_name) === key)
+      if (entity && entity.entity_type === 'hero') {
+        const slug = heroSlug(entity.entity_name)
+        if (HERO_DOCS.has(slug)) {
+          window.location.href = `/patch/hero/${slug}.html`
+          return
+        }
+      }
+      state.selectedEntityKey = key
       render()
     })
   })

@@ -1,3 +1,11 @@
+## #58 — Balance-Historie im Seiten-Look + Klick-Durchstieg
+
+**Ausgangslage:** Die Balance-Historie-Seiten hingen als eigenständige Dokumente ohne Kopfzeile, Navigation und Footer neben der Seite. Außerdem flackerte der Patch-Bereich beim Scrollen leicht.
+
+**Geändert:** Jede Balance-Historie hat jetzt dieselbe Kopfzeile, Navigation, Schrift und den Hintergrund wie der Rest der Seite, plus einen Zurück-Link zur Timeline. Ein Klick auf einen Held in der Hotspots-Liste führt direkt zu seiner Historie. Das Flackern ist weg.
+
+**Verhalten:** Optisch ein durchgehender Auftritt statt loser Einzelseiten; Helden sind aus der Übersicht mit einem Klick erreichbar.
+
 ## #57 — Balance-Historie pro Held
 
 **Ausgangslage:** Der Patch-Bereich zeigte pro Held nur die letzten Änderungen. Der lange Bogen — wie ein Held über die Jahre generft, gebufft oder umgebaut wurde, bis er heute ungefähr ausbalanciert ist — war nirgends sichtbar.

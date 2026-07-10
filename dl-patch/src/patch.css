@@ -41,8 +41,10 @@ h4 {
 }
 
 .site-header {
-  background: rgba(11, 11, 11, 0.86);
+  background: rgba(11, 11, 11, 0.94);
   border-bottom-color: rgba(239, 212, 157, 0.12);
+  /* kein sticky-backdrop-filter auf der Patch-Seite: verhindert Repaint-Flackern */
+  backdrop-filter: none;
 }
 
 .menu-button,
@@ -204,8 +206,9 @@ h4 {
   gap: 0.75rem;
   align-items: center;
   padding: 0.75rem;
-  background: rgba(14, 14, 13, 0.94);
-  backdrop-filter: blur(14px);
+  /* Solider BG statt sticky-backdrop-filter: der Blur komponierte hinter sich
+     liegende Animationen (livePulse, Shimmer) jeden Frame neu -> Flackern. */
+  background: #101010;
 }
 
 .patch-search-wrap {

@@ -1,70 +1,131 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mo &amp; Krill — Balance-Historie</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mo &amp; Krill — Balance-Historie · Deutsche Deadlock Community</title>
+<link rel="icon" type="image/png" href="/brand/logo/favicon-64.png">
+<link rel="stylesheet" href="/brand/tokens.css">
+<link rel="stylesheet" href="/patch/hero-shell.css">
 <style>
-  :root{
+  /* Balance-Analyse-Style — vollständig auf .balance-doc gescopet,
+     damit er nichts an der Site-Shell verändert. Palette (Gold/Nerf/Buff)
+     unverändert; Body-Hintergrund/-Margin bewusst weggelassen, damit der
+     Site-Grund durchscheint. */
+  .balance-doc{
     --bg:#0e0f12; --panel:#16181d; --panel2:#1c1f26; --line:#2a2e37;
     --ink:#e7e3d8; --muted:#9a9384; --gold:#c8a86b; --gold-dim:#8f7a4d;
     --nerf:#d1685f; --buff:#6fb98a; --neutral:#7c8598; --rework:#c8a86b;
   }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
+  .balance-doc *{box-sizing:border-box}
+  .balance-doc{color:var(--ink);
     font:16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased}
-  .wrap{max-width:960px;margin:0 auto;padding:44px 22px 90px}
-  header .kick{color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:12px;font-weight:700}
-  h1{font-size:clamp(30px,6vw,46px);margin:.18em 0 .1em;line-height:1.05;
+  .balance-doc .wrap{max-width:960px;margin:0 auto;padding:44px 22px 90px}
+  .balance-doc header .kick{color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:12px;font-weight:700}
+  .balance-doc h1{font-size:clamp(30px,6vw,46px);margin:.18em 0 .1em;line-height:1.05;
     background:linear-gradient(90deg,#f0e6cf,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .sub{color:var(--muted);max-width:64ch;margin:0}
-  h2{font-size:22px;margin:52px 0 14px;border-bottom:1px solid var(--line);padding-bottom:8px}
-  h2 .n{color:var(--gold-dim);font-variant-numeric:tabular-nums;margin-right:.5em;font-size:15px}
-  h3{font-size:16px;margin:26px 0 8px;color:var(--gold)}
-  p{margin:.55em 0}
-  .lede{font-size:18px;color:#d8d2c4}
-  .grid{display:grid;gap:14px}
-  @media(min-width:640px){.cols-2{grid-template-columns:1fr 1fr}.cols-4{grid-template-columns:repeat(4,1fr)}}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
-  .stat b{display:block;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
-  .stat span{color:var(--muted);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
-  .nerf{color:var(--nerf)} .buff{color:var(--buff)} .gold{color:var(--gold)} .muted{color:var(--muted)}
+  .balance-doc .sub{color:var(--muted);max-width:64ch;margin:0}
+  .balance-doc h2{font-size:22px;margin:52px 0 14px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .balance-doc h2 .n{color:var(--gold-dim);font-variant-numeric:tabular-nums;margin-right:.5em;font-size:15px}
+  .balance-doc h3{font-size:16px;margin:26px 0 8px;color:var(--gold)}
+  .balance-doc p{margin:.55em 0}
+  .balance-doc .lede{font-size:18px;color:#d8d2c4}
+  .balance-doc .grid{display:grid;gap:14px}
+  @media(min-width:640px){.balance-doc .cols-2{grid-template-columns:1fr 1fr}.balance-doc .cols-4{grid-template-columns:repeat(4,1fr)}}
+  .balance-doc .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .balance-doc .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
+  .balance-doc .stat b{display:block;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+  .balance-doc .stat span{color:var(--muted);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  .balance-doc .nerf{color:var(--nerf)} .balance-doc .buff{color:var(--buff)} .balance-doc .gold{color:var(--gold)} .balance-doc .muted{color:var(--muted)}
   /* scaling arc */
-  .arc{display:flex;align-items:flex-end;gap:0;overflow-x:auto;padding:18px 4px 6px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
-  .arc .step{flex:1 0 92px;text-align:center;position:relative;min-width:92px}
-  .arc .bar{margin:0 auto;width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold),var(--gold-dim))}
-  .arc .val{font-variant-numeric:tabular-nums;font-weight:700;margin-top:6px}
-  .arc .date{color:var(--muted);font-size:11px}
-  .arc .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
-  table{width:100%;border-collapse:collapse;margin:6px 0;font-size:14.5px}
-  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
-  td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
-  .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11.5px;font-weight:700;letter-spacing:.03em}
-  .pill.nerf{background:rgba(209,104,95,.14);color:var(--nerf)}
-  .pill.buff{background:rgba(111,185,138,.14);color:var(--buff)}
-  .pill.rework{background:rgba(200,168,107,.14);color:var(--gold)}
+  .balance-doc .arc{display:flex;align-items:flex-end;gap:0;overflow-x:auto;padding:18px 4px 6px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+  .balance-doc .arc .step{flex:1 0 92px;text-align:center;position:relative;min-width:92px}
+  .balance-doc .arc .bar{margin:0 auto;width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold),var(--gold-dim))}
+  .balance-doc .arc .val{font-variant-numeric:tabular-nums;font-weight:700;margin-top:6px}
+  .balance-doc .arc .date{color:var(--muted);font-size:11px}
+  .balance-doc .arc .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+  .balance-doc table{width:100%;border-collapse:collapse;margin:6px 0;font-size:14.5px}
+  .balance-doc th,.balance-doc td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .balance-doc th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+  .balance-doc td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .balance-doc .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11.5px;font-weight:700;letter-spacing:.03em}
+  .balance-doc .pill.nerf{background:rgba(209,104,95,.14);color:var(--nerf)}
+  .balance-doc .pill.buff{background:rgba(111,185,138,.14);color:var(--buff)}
+  .balance-doc .pill.rework{background:rgba(200,168,107,.14);color:var(--gold)}
   /* balance bars */
-  .bal{display:grid;grid-template-columns:130px 1fr;gap:10px 14px;align-items:center;margin:4px 0}
-  .bal .name{font-size:14px}
-  .bal .track{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--panel2);border:1px solid var(--line)}
-  .bal .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0e0f12}
-  .bal .seg.nerf{background:var(--nerf)} .bal .seg.buff{background:var(--buff)} .bal .seg.other{background:var(--neutral)}
+  .balance-doc .bal{display:grid;grid-template-columns:130px 1fr;gap:10px 14px;align-items:center;margin:4px 0}
+  .balance-doc .bal .name{font-size:14px}
+  .balance-doc .bal .track{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--panel2);border:1px solid var(--line)}
+  .balance-doc .bal .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0e0f12}
+  .balance-doc .bal .seg.nerf{background:var(--nerf)} .balance-doc .bal .seg.buff{background:var(--buff)} .balance-doc .bal .seg.other{background:var(--neutral)}
   /* timeline */
-  .tl{position:relative;margin:10px 0 0;padding-left:18px}
-  .tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line)}
-  .tl .ev{position:relative;padding:6px 0 6px 4px}
-  .tl .ev::before{content:"";position:absolute;left:-16px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--gold-dim);border:2px solid var(--bg)}
-  .tl .ev.big::before{background:var(--gold);width:12px;height:12px;left:-17px}
-  .tl .d{font-variant-numeric:tabular-nums;color:var(--gold);font-weight:700;font-size:13.5px;margin-right:8px}
-  .tl .c{color:var(--muted);font-size:13px}
-  .foot{margin-top:60px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
-  code{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:var(--gold)}
+  .balance-doc .tl{position:relative;margin:10px 0 0;padding-left:18px}
+  .balance-doc .tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .balance-doc .tl .ev{position:relative;padding:6px 0 6px 4px}
+  .balance-doc .tl .ev::before{content:"";position:absolute;left:-16px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--gold-dim);border:2px solid var(--bg)}
+  .balance-doc .tl .ev.big::before{background:var(--gold);width:12px;height:12px;left:-17px}
+  .balance-doc .tl .d{font-variant-numeric:tabular-nums;color:var(--gold);font-weight:700;font-size:13.5px;margin-right:8px}
+  .balance-doc .tl .c{color:var(--muted);font-size:13px}
+  .balance-doc .foot{margin-top:60px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+  .balance-doc code{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:var(--gold)}
 </style>
 </head>
 <body>
+  <div class="site-shell">
+
+    <header class="site-header">
+      <div class="container">
+        <div class="header-row">
+          <div class="header-left">
+            <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="nav-drawer" aria-label="Navigation öffnen">
+              <svg class="icon-menu" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect x="2" y="5" width="18" height="2" rx="1" fill="currentColor"/><rect x="2" y="10" width="18" height="2" rx="1" fill="currentColor"/><rect x="2" y="15" width="18" height="2" rx="1" fill="currentColor"/></svg>
+              <svg class="icon-close" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 5L17 17M17 5L5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <a class="brand" href="/" aria-label="Deutsche Deadlock Community">
+              <img src="/brand/logo/logo-192.png" alt="" class="brand-logo" />
+              <img src="/brand/logo/wordmark.svg" alt="" class="brand-wordmark-img" />
+            </a>
+          </div>
+          <nav class="nav-links" aria-label="Hauptnavigation">
+            <a class="nav-link" href="/mitspieler/">Mitspieler</a>
+            <a class="nav-link" href="/coaching/">Coaching</a>
+            <a class="nav-link is-active" href="/patch/" aria-current="page">Patch</a>
+          </nav>
+          <div class="header-actions">
+            <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Beitreten</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+      <nav class="nav-drawer-panel" aria-label="Hauptnavigation">
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/">Start</a>
+          <a class="nav-drawer-link" href="/mitspieler/">Mitspieler</a>
+          <a class="nav-drawer-link" href="/coaching/">Coaching</a>
+          <a class="nav-drawer-link is-active" href="/patch/" aria-current="page">Patchnotes</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <span class="nav-drawer-label">Streamer</span>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/streamer/">Streamer-Netzwerk</a>
+          <a class="nav-drawer-link" href="/streamer/onboarding/">Onboarding</a>
+          <a class="nav-drawer-link" href="/streamer/faq/">FAQ</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Discord beitreten ↗</a>
+        </div>
+      </nav>
+      <div class="nav-drawer-backdrop" data-menu-backdrop aria-hidden="true"></div>
+    </div>
+
+    <main id="main">
+      <div class="container">
+        <a class="balance-breadcrumb" href="/patch/">← Patch-Timeline</a>
+        <div class="balance-doc">
 <div class="wrap">
 
 <header>
@@ -160,5 +221,52 @@
 </div>
 
 </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-inner">
+          <span class="footer-brand">Deutsche Deadlock Community</span>
+          <nav class="footer-links" aria-label="Footer-Navigation">
+            <a href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Discord</a>
+            <a href="/">Start</a>
+            <a href="/mitspieler/">Mitspieler</a>
+            <a href="/coaching/">Coaching</a>
+            <a href="/aktivitaet/">Aktivität &amp; Ränge</a>
+            <a href="/helden/">Helden</a>
+            <a href="/streamer/">Streamer</a>
+            <a href="/beitreten/">Beitreten</a>
+            <a href="/builds/">Builds</a>
+            <a href="/turnier/">Turnier</a>
+          </nav>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    (function () {
+      var toggle = document.querySelector('[data-menu-toggle]');
+      var drawer = document.getElementById('nav-drawer');
+      if (!toggle || !drawer) return;
+      var iconMenu = toggle.querySelector('.icon-menu');
+      var iconClose = toggle.querySelector('.icon-close');
+      function set(open) {
+        toggle.setAttribute('aria-expanded', String(open));
+        drawer.classList.toggle('is-open', open);
+        drawer.setAttribute('aria-hidden', String(!open));
+        document.body.classList.toggle('menu-open', open);
+        if (iconMenu && iconClose) { iconMenu.style.display = open ? 'none' : ''; iconClose.style.display = open ? '' : 'none'; }
+      }
+      toggle.addEventListener('click', function () { set(!drawer.classList.contains('is-open')); });
+      drawer.querySelectorAll('.nav-drawer-link').forEach(function (l) { l.addEventListener('click', function () { set(false); }); });
+      var bd = drawer.querySelector('[data-menu-backdrop]');
+      if (bd) bd.addEventListener('click', function () { set(false); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+    })();
+  </script>
 </body>
 </html>
