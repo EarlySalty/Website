@@ -62,20 +62,13 @@ button { font: inherit; }
   z-index: 100;
 }
 .grain {
-  opacity: .045;
+  opacity: .03;
   mix-blend-mode: screen;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain .5s steps(3) infinite;
 }
 .vignette {
-  background: radial-gradient(120% 95% at 50% 45%, transparent 58%, rgba(0, 0, 0, .48));
+  background: radial-gradient(120% 95% at 50% 45%, transparent 58%, rgba(0, 0, 0, .24));
   mix-blend-mode: multiply;
-}
-@keyframes grain {
-  0% { transform: translate(0); }
-  33% { transform: translate(-2%, 2%); }
-  66% { transform: translate(2%, -2%); }
-  100% { transform: translate(-1%, -1%); }
 }
 
 .site-header {
@@ -438,7 +431,7 @@ button { font: inherit; }
     linear-gradient(180deg, rgba(11, 9, 7, .2), rgba(11, 9, 7, .45) 45%, var(--ink) 100%),
     linear-gradient(90deg, rgba(11, 9, 7, .7), transparent 35%, transparent 65%, rgba(11, 9, 7, .7)),
     url("/new/assets/deco/cityscape-portal.png") center 40% / cover no-repeat;
-  filter: sepia(.2) saturate(.75) contrast(1.08);
+  filter: sepia(.08) saturate(.95) contrast(1.08);
 }
 .hero-art::after {
   content: "";
@@ -450,7 +443,7 @@ button { font: inherit; }
   position: absolute;
   width: min(45vw, 520px);
   opacity: .045;
-  filter: sepia(1) saturate(.4) brightness(1.8);
+  filter: sepia(.08) saturate(.95) brightness(1.2);
 }
 .hero-emblem img { width: 100%; }
 .hero-content { position: relative; z-index: 2; max-width: 1000px; }
@@ -638,11 +631,11 @@ h2 {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(.72) sepia(.18) brightness(.76);
+  filter: saturate(.98) sepia(.05) brightness(.92);
   transition: transform .9s var(--ease), filter .6s;
   z-index: -2;
 }
-.service-card:hover img { transform: scale(1.045); filter: saturate(.9) sepia(.1) brightness(.84); }
+.service-card:hover img { transform: scale(1.045); filter: saturate(1.05) sepia(.02) brightness(1); }
 .card-shade {
   position: absolute;
   inset: 0;
@@ -690,7 +683,7 @@ h2 {
     linear-gradient(180deg, var(--ink), rgba(11, 9, 7, .58), var(--ink)),
     url("/new/assets/deco/hotel-hall-blue.png") center / cover no-repeat;
   opacity: .24;
-  filter: sepia(.7) saturate(.55);
+  filter: sepia(.08) saturate(.98);
 }
 .ranks-section .wrap { position: relative; }
 .split-copy { display: grid; grid-template-columns: 1.4fr .6fr; align-items: end; gap: 3rem; }
@@ -713,10 +706,10 @@ h2 {
   width: 100%;
   aspect-ratio: 1;
   object-fit: contain;
-  filter: sepia(.25) saturate(.8) drop-shadow(0 8px 12px rgba(0, 0, 0, .7));
+  filter: sepia(.05) saturate(.98) drop-shadow(0 8px 12px rgba(0, 0, 0, .7));
   transition: transform .4s var(--ease), filter .4s;
 }
-.rank-track div:hover img { transform: translateY(-8px) scale(1.08); filter: saturate(1) drop-shadow(0 10px 18px rgba(201, 168, 106, .24)); }
+.rank-track div:hover img { transform: translateY(-8px) scale(1.08); filter: saturate(1.05) drop-shadow(0 10px 18px rgba(201, 168, 106, .24)); }
 .rank-track span { display: block; margin-top: .5rem; color: var(--bone-faint); text-transform: uppercase; font-size: .53rem; letter-spacing: .08em; }
 
 .heroes-section {
@@ -737,7 +730,7 @@ h2 {
   height: 100%;
   object-fit: cover;
   object-position: top;
-  filter: sepia(.35) saturate(.65) contrast(1.08);
+  filter: sepia(.06) saturate(.98) contrast(1.08);
   transition: transform .6s var(--ease), filter .4s;
 }
 .hero-roster a::after {
@@ -756,7 +749,7 @@ h2 {
   text-transform: uppercase;
   letter-spacing: .08em;
 }
-.hero-roster a:hover img { transform: scale(1.06); filter: sepia(.15) saturate(.9); }
+.hero-roster a:hover img { transform: scale(1.06); filter: sepia(.02) saturate(1.05); }
 .center { text-align: center; }
 
 .final-cta {
@@ -776,11 +769,11 @@ h2 {
     radial-gradient(circle at center, transparent, rgba(11, 9, 7, .58) 72%),
     linear-gradient(180deg, var(--ink), rgba(11, 9, 7, .42) 30%, rgba(11, 9, 7, .64), var(--ink)),
     url("/new/assets/deco/green-windows.png") center 55% / cover no-repeat;
-  filter: sepia(.25) saturate(.65);
+  filter: sepia(.08) saturate(.98);
   opacity: .78;
 }
 .final-content { position: relative; max-width: 900px; }
-.final-mark { width: 82px; margin: 0 auto 1.4rem; filter: sepia(1) saturate(.5) brightness(1.6); }
+.final-mark { width: 82px; margin: 0 auto 1.4rem; filter: sepia(.08) saturate(.98) brightness(1.15); }
 .final-content h2 span { color: var(--gold-bright); }
 .final-content > p:not(.overline) { color: var(--bone-dim); margin: 1.4rem auto 2rem; max-width: 50ch; }
 
@@ -890,7 +883,7 @@ footer { border-top: 1px solid var(--line); background: #080604; position: relat
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .grain, .scroll-cue i { animation: none; }
+  .scroll-cue i { animation: none; }
   .reveal { opacity: 1; transform: none; transition: none; }
   *, *::before, *::after { transition-duration: .01ms !important; }
 }

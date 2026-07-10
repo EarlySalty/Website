@@ -68,8 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadDashboard() {
   setStatus('Lade Brain Timeline')
 
-  const assetsPromise = loadAssetCatalog()
-
   try {
     const timeline = await fetchJson(TIMELINE_API_URL)
     applyTimelinePayload(timeline)
@@ -89,10 +87,10 @@ async function loadDashboard() {
     }
   }
 
-  await assetsPromise
   state.loading = false
   primeSelection()
   render()
+  window.setTimeout(() => loadAssetCatalog().then(render), 0)
 }
 
 async function loadAssetCatalog() {
