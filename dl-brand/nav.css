@@ -239,6 +239,95 @@
   outline-offset: 3px;
 }
 
+.brand-elevator-ride,
+.brand-elevator-ride * {
+  box-sizing: border-box;
+}
+
+.brand-elevator-ride {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--gold-bright, #efd49d);
+  background: var(--ink, #0b0907);
+  font-family: var(--font-body, "Manrope", Arial, sans-serif);
+}
+
+.brand-ride-door {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  width: calc(50% + 2px);
+  background:
+    linear-gradient(90deg, transparent 10%, rgba(200, 168, 107, 0.08) 50%, transparent 90%),
+    linear-gradient(160deg, #2f2517, #171109 55%, #241c11);
+  box-shadow: inset 0 0 0 1px rgba(200, 168, 107, 0.12), inset 0 0 80px rgba(0, 0, 0, 0.7);
+  transition: transform 350ms cubic-bezier(.65, 0, .35, 1);
+}
+
+.brand-ride-door-left {
+  left: 0;
+  border-right: 3px solid var(--gold, #c8a86b);
+  transform: translateX(-100%);
+}
+
+.brand-ride-door-right {
+  right: 0;
+  border-left: 3px solid var(--gold, #c8a86b);
+  transform: translateX(100%);
+}
+
+.brand-elevator-ride.is-closing .brand-ride-door {
+  transform: translateX(0);
+}
+
+.brand-ride-indicator {
+  position: relative;
+  z-index: 2;
+  min-width: 150px;
+  padding: 14px 20px 12px;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 10px;
+  opacity: 0;
+  border: 3px solid #9c7d40;
+  outline: 1px solid #171006;
+  background: radial-gradient(circle, #18130d, #070504);
+  box-shadow: inset 0 0 24px #000, 0 0 28px rgba(200, 168, 107, 0.24);
+  text-align: center;
+  transition: opacity 140ms 330ms ease-out;
+}
+
+.brand-elevator-ride.is-closing .brand-ride-indicator {
+  opacity: 1;
+}
+
+.brand-ride-indicator > span {
+  color: var(--gold, #c8a86b);
+  font-size: 0.72rem;
+}
+
+.brand-ride-indicator > b {
+  font: 700 2.2rem/1 Georgia, serif;
+  text-shadow: 0 0 16px rgba(239, 212, 157, 0.48);
+}
+
+.brand-ride-indicator > small {
+  grid-column: 1 / -1;
+  color: var(--gold-bright, #efd49d);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
 .brand-footer {
   position: relative;
   z-index: 5;
@@ -301,7 +390,9 @@
 
   .brand-elevator-call,
   .brand-elevator-panel,
-  .brand-floor-link > em {
+  .brand-floor-link > em,
+  .brand-ride-door,
+  .brand-ride-indicator {
     transition: none;
   }
 }
