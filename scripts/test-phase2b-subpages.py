@@ -16,9 +16,10 @@ class Phase2bSubpagesContractTest(unittest.TestCase):
 
     def test_mitspieler_uses_deco_backgrounds(self) -> None:
         html = (ROOT / "dl-landing/mitspieler/index.html").read_text()
-        self.assertIn("/new/assets/deco/hotel-hall-dark.png", html)
+        self.assertIn("/images/hero-mitspieler-deco.png", html)
         self.assertIn("/new/assets/deco/fight-posters.png", html)
         self.assertNotIn("hero-rooftops.png", html)
+        self.assertNotIn("hotel-hall-dark", html)
 
     def test_mitspieler_keeps_its_discord_invite(self) -> None:
         html = (ROOT / "dl-landing/mitspieler/index.html").read_text()
