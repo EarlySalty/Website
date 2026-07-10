@@ -1,3 +1,11 @@
+## #50 — Ein Look für alles: neues Logo, Aufzug-Navigation und echte Farben
+
+**Ausgangslage:** Jede Seite sah anders aus: drei verschiedene Logos gleichzeitig, im Browser-Tab ein veraltetes Icon, die Startseite flackerte und lag unter einem grauen Filter, der Aufzug ging nicht mehr, und die Aktivitätsseite bekam gar keine Daten.
+
+**Geändert:** Überall dasselbe Markenbild — das Deadlock-D als Tab-Icon und im Kopfbereich zusammen mit dem goldenen Schriftzug. Der Aufzug ist zurück und fährt jetzt zwischen den Seiten: links andocken, Etage wählen, Türen schließen sich, Ziel geht auf. Das Flackern und der Graufilter auf der Startseite sind weg, die Bilder zeigen wieder ihre echten Farben. Die Mitspieler-Seite hat neue Bilder im Stil der Startseite, die Aktivitätsseite echte Icons statt Standard-Emojis, und die Patchnotes-Seite lädt sofort statt erst nach mehreren Sekunden.
+
+**Wie's jetzt läuft:** Egal wo man einsteigt — gleicher Look, gleicher Aufzug links, und unten verlinkt jede Seite auf alle anderen. Die Aktivitätsseite zeigt ihre Leaderboards wieder mit echten Daten.
+
 ## #49 — Scrims: Anmeldung und Team-Bau laufen über die Website
 
 **Ausgangslage:** Anmelden ging nur über Discord, im Pool lagen freie und schon zugewiesene Spieler durcheinander, und einen passenden Kader zusammenzustellen hieß weiter, die Wochenzeiten von Hand zu vergleichen.
