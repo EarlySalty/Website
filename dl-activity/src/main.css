@@ -3,7 +3,7 @@
   --bg-elevated: rgba(11, 9, 7, 0.88);
   --card: var(--bg-card, rgba(28, 22, 14, 0.86));
   --card-strong: rgba(33, 28, 22, 0.95);
-  --border: var(--border-dim, rgba(201, 168, 106, 0.14));
+  --border: rgba(200, 168, 107, 0.14);
   --border-strong: var(--border-soft, rgba(201, 168, 106, 0.24));
   --text: var(--text-primary, #ece0c8);
   --muted: var(--text-secondary, #b7aa91);
@@ -258,33 +258,35 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .page-tabs .container {
   display: flex;
-  gap: 0;
+  gap: 0.3rem;
+  padding-block: 0.3rem;
 }
 .page-tab {
   appearance: none;
   background: transparent;
   border: none;
-  border-bottom: 3px solid transparent;
   color: var(--muted);
-  padding: 1rem 1.5rem;
-  font-weight: 600;
-  font-size: 0.95rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
   font-family: inherit;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  transition: color 0.2s, border-color 0.2s;
+  transition: background 0.2s, color 0.2s;
   white-space: nowrap;
 }
 .page-tab:hover { color: var(--text); }
 .page-tab.is-active {
   color: var(--text);
-  border-bottom-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary-soft), var(--accent-soft));
 }
+.tab-icon { flex: 0 0 auto; vertical-align: middle; }
 
 /* ── Tab Panels ── */
-.tab-panel { padding: 2.5rem 0; }
+.tab-panel { padding: 3rem 0; }
 
 /* ── Panel Grid (Voice: Leaderboard + Donut nebeneinander) ── */
 .panel-grid {
@@ -304,7 +306,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 .leaderboard-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow);
 }
@@ -328,6 +330,9 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .leaderboard-legend { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 .legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
   font-size: 0.72rem;
   color: var(--muted);
   padding: 0.3rem 0.6rem;
@@ -336,11 +341,32 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   background: rgba(255, 255, 255, 0.02);
 }
 .legend-chip.legend-gold {
-  color: var(--ink, #0b0907);
-  background: linear-gradient(135deg, var(--gold, #c8a86b), var(--gold-bright, #efd49d));
-  border-color: transparent;
+  color: var(--text);
+  background: rgba(11, 9, 7, 0.5);
+  border-color: var(--border-strong);
   font-weight: 600;
 }
+
+.place-badge {
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+}
+.place-badge svg { width: 1.25rem; height: 1.25rem; overflow: visible; }
+.place-badge circle { fill: none; stroke: currentColor; stroke-width: 1.5; }
+.place-badge text {
+  fill: currentColor;
+  stroke: none;
+  font-family: var(--font-display, 'Sora', sans-serif);
+  font-size: 10px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.place-badge-1 { color: #c8a86b; }
+.place-badge-2 { color: #d7d0c2; }
+.place-badge-3 { color: #cd7f32; }
+.legend-chip .place-badge svg { width: 1rem; height: 1rem; }
 
 .leaderboard-body { padding: 0.4rem 0; }
 
@@ -422,8 +448,8 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 .insight-grid {
   display: grid;
   grid-template-columns: 1.05fr 1.4fr;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 .insight-card {
   background: var(--card);
@@ -705,7 +731,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 .gate-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   padding: 3rem 2rem;
   text-align: center;
   box-shadow: var(--shadow);
@@ -851,7 +877,7 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
+  gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
 .chart-card,

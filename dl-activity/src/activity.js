@@ -401,7 +401,7 @@ function rowHtml(e, kind, meId) {
   const rank = e.rank
   const isMe = meId && String(e.user_id) === String(meId)
   const rankClass = rank === 1 ? 'rank-top-1' : rank === 2 ? 'rank-top-2' : rank === 3 ? 'rank-top-3' : ''
-  const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`
+  const medal = placeBadgeHtml(rank)
   const avatar = avatarHtml(e)
   const name = escapeHtml(e.name || 'Unbekannt')
   if (kind === 'voice') {
@@ -490,7 +490,7 @@ function rankLeaderboardRowHtml(entry, idx, showDelta) {
   const userId = String(entry.user_id ?? '')
   const place = idx + 1
   const rankClass = place === 1 ? 'rank-top-1' : place === 2 ? 'rank-top-2' : place === 3 ? 'rank-top-3' : ''
-  const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : `#${place}`
+  const medal = placeBadgeHtml(place)
   const name = escapeHtml(entry.display_name || 'Unbekannt')
   const disabled = !userId || state.rankLeaderboardNotFound.has(userId)
   const deltaCell = showDelta ? `<td class="num">${rankDeltaHtml(entry.delta)}</td>` : ''
@@ -500,6 +500,11 @@ function rankLeaderboardRowHtml(entry, idx, showDelta) {
     <td>${rankBadgeHtml(entry.rank_name, entry.badge_level)}</td>
     ${deltaCell}
   </tr>`
+}
+
+function placeBadgeHtml(place) {
+  if (![1, 2, 3].includes(place)) return `#${place}`
+  return `<span class="place-badge place-badge-${place}" aria-label="Platz ${place}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><text x="12" y="12">${place}</text></svg></span>`
 }
 
 function rankDeltaHtml(delta) {
