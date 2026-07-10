@@ -87,8 +87,9 @@ button { font: inherit; }
   border-color: var(--line);
   backdrop-filter: blur(16px);
 }
-.brand { width: 270px; position: relative; z-index: 2; }
-.brand img { width: 100%; }
+.brand { display: inline-flex; align-items: center; gap: .65rem; position: relative; z-index: 2; }
+.brand-logo { width: 42px; height: 42px; flex-shrink: 0; object-fit: contain; }
+.brand-wordmark-img { width: auto; height: 40px; object-fit: contain; }
 .main-nav { display: flex; align-items: center; gap: clamp(1rem, 2.3vw, 2rem); }
 .main-nav a {
   text-decoration: none;
@@ -494,6 +495,7 @@ footer { border-top: 1px solid var(--line); background: #080604; position: relat
   gap: 2rem;
   align-items: center;
 }
+.footer-brand { display: inline-flex; align-items: center; gap: .65rem; }
 .footer-main > p { color: var(--bone-dim); }
 .footer-links { display: flex; gap: 1.4rem; flex-wrap: wrap; }
 .footer-links a { color: var(--bone-dim); text-decoration: none; text-transform: uppercase; font-size: .62rem; letter-spacing: .13em; }
@@ -528,7 +530,7 @@ footer { border-top: 1px solid var(--line); background: #080604; position: relat
 
 @media (max-width: 760px) {
   .site-header { height: 68px; }
-  .brand { width: 230px; max-width: calc(100vw - 105px); }
+  .brand { max-width: calc(100vw - 105px); }
   .menu-button { display: flex; }
   .main-nav {
     position: fixed;
@@ -559,7 +561,7 @@ footer { border-top: 1px solid var(--line); background: #080604; position: relat
   .hero-roster { grid-template-columns: repeat(2, 1fr); }
   .hero-roster a { min-height: 300px; }
   .footer-main { grid-template-columns: 1fr; }
-  .footer-main > img { width: 210px; }
+  .footer-brand .brand-wordmark-img { max-width: 210px; }
   .footer-bottom { flex-direction: column; }
 }
 

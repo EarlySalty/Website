@@ -211,21 +211,15 @@ ol {
   display: block;
   height: 42px;
   width: 42px;
-  border-radius: 10px;
-  border: 1px solid rgba(201, 168, 106, 0.3);
-  object-fit: cover;
+  object-fit: contain;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-.brand-mark {
-  font-family: 'Sora', 'Manrope', sans-serif;
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.brand-wordmark-img {
+  display: block;
+  width: auto;
+  height: 40px;
+  object-fit: contain;
 }
 
 .brand-badge {
@@ -2007,10 +2001,10 @@ html::after {
   flex-shrink: 0;
 }
 
-/* Auf schmalen Screens nur das Badge zeigen, Wortmarke ausblenden,
+/* Auf schmalen Screens nur das D zeigen, Wortmarke ausblenden,
    damit Hamburger + Logo + Beitreten nicht kollidieren. */
 @media (max-width: 640px) {
-  .brand-mark {
+  .brand-wordmark-img {
     display: none;
   }
 }
