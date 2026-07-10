@@ -1,3 +1,11 @@
+## #52 — Flackern abgestellt, das Haus lebt jetzt
+
+**Ausgangslage:** Über der ganzen Website lag ein animiertes Filmkorn, das auf dunklen Flächen als Flackern zu sehen war. Derselbe Effekt war auf der Aufzug-Startseite schon einmal entschärft worden, in den Unterseiten lief er weiter. Außerdem wirkte das neue Server-Haus zu flach und leblos.
+
+**Geändert:** Das Filmkorn steht jetzt überall still und ist dezenter, die Körnung als Textur bleibt. Das Haus hat Tiefe bekommen: Licht fällt von links auf die Fassaden, rechts liegen sie im Schatten, dahinter staffeln sich Silhouetten der Nachbarschaft unter einem Sternenhimmel. Beleuchtete Fenster glimmen in zwei Warmtönen ganz langsam, vor dem Eingang liegt ein warmer Lichtschein, und beim Etagenwechsel gleitet die Beschreibung sanft ein.
+
+**Wie's jetzt läuft:** Kein Zucken mehr im Bild, dafür eine ruhige Nachtszene, in der man sieht, wo im Haus gerade Leben ist.
+
 ## #51 — Die Mitspieler-Seite zeigt den Server als Haus
 
 **Ausgangslage:** Die Mitspieler-Seite hat erzählt, dass bei uns viel los ist, aber man konnte es nicht sehen. Ein Screenshot vom Discord, etwas Text, das war's.
