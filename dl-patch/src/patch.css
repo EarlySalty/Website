@@ -66,20 +66,6 @@ h4 {
   min-width: 0;
 }
 
-.patch-brand-mark {
-  display: grid;
-  width: 40px;
-  height: 40px;
-  place-items: center;
-  border: 1px solid rgba(200, 168, 107, 0.42);
-  border-radius: 8px;
-  background: rgba(200, 168, 107, 0.1);
-  color: var(--primary);
-  font-family: 'Sora', 'Manrope', sans-serif;
-  font-size: 0.74rem;
-  font-weight: 900;
-}
-
 .patch-brand-copy {
   display: grid;
   gap: 0.06rem;

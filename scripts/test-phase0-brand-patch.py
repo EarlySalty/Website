@@ -43,6 +43,10 @@ class Phase0ContractTest(unittest.TestCase):
             with self.subTest(path=path.relative_to(ROOT)):
                 self.assertNotRegex(path.read_text(), r'(?:src=|import\s+\w+\s+from\s+)["\'{]/?[^"\']*deadlock-d-logo\.png')
 
+    def test_patch_header_uses_shared_logo(self) -> None:
+        patch_html = (ROOT / "dl-patch/index.html").read_text()
+        self.assertRegex(patch_html, r'<a class="brand[^"]*" href="/"[^>]*>\s*<img src="/brand/logo/logo-192\.png"')
+
     def test_elevator_effects_keep_images_stable_and_colored(self) -> None:
         css = (ROOT / "deco-elevator-new/styles.css").read_text()
         grain = re.search(r"\.grain\s*\{([^}]*)\}", css, re.DOTALL)
@@ -60,6 +64,15 @@ class Phase0ContractTest(unittest.TestCase):
             self.assertGreaterEqual(value, 0.95)
         for value in map(float, re.findall(r"brightness\(([\d.]+)\)", css)):
             self.assertGreaterEqual(value, 0.9)
+
+    def test_patch_renders_before_deferred_asset_catalog(self) -> None:
+        source = (ROOT / "dl-patch/src/patch.js").read_text()
+        dashboard = re.search(r"async function loadDashboard\(\)\s*\{(.*?)\n\}", source, re.DOTALL).group(1)
+        render_at = dashboard.index("render()")
+        defer_at = dashboard.index("window.setTimeout")
+        assets_at = dashboard.index("loadAssetCatalog()", defer_at)
+        self.assertLess(render_at, defer_at)
+        self.assertLess(defer_at, assets_at)
 
 if __name__ == "__main__":
     unittest.main()
