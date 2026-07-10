@@ -19,10 +19,10 @@ export default function Layout() {
           <div className="flex min-h-[64px] items-center justify-between gap-4">
 
             <div className="flex items-center gap-8">
-              <Link to="/" className="brand-wordmark" aria-label="DDC Coaching-Etage">
-                <img src="/brand/logo/logo-192.png" alt="" aria-hidden="true" />
+              <Link to="/" className="brand-wordmark" aria-label="Deutsche Deadlock Community">
+                <img src="/brand/logo/logo-192.png" className="brand-logo" alt="" />
                 <span className="brand-copy">
-                  <span>Deutsche Deadlock Community</span>
+                  <img src="/brand/logo/wordmark.svg" className="brand-wordmark-img" alt="" />
                   <strong>Coaching-Etage</strong>
                 </span>
               </Link>

@@ -96,25 +96,21 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 .brand {
   display: inline-flex;
   align-items: center;
+  gap: 0.65rem;
   text-decoration: none;
 }
 
 .brand-logo {
   display: block;
-  height: 38px;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+.brand-wordmark-img {
+  display: block;
   width: auto;
-}
-.brand-mark {
-  font-family: var(--font-display, 'Sora', sans-serif);
-  font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: 0.02em;
-}
-.brand-subtitle {
-  font-size: 0.75rem;
-  color: var(--muted);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  height: 40px;
+  object-fit: contain;
 }
 .auth-slot {
   display: flex;
@@ -1041,9 +1037,6 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 
 /* ── Vibrancy-Pass v2: Leben & Farbe (seitenlokal, screenshot-verifiziert) ── */
-
-/* Größeres Logo */
-.site-header .brand-logo { height: 60px; width: auto; }
 
 /* Kräftigerer Ambient-Glow: füllt die dunkle Fläche mit einem Hauch der Tier-Palette */
 body::after {
