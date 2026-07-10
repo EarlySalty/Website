@@ -1,3 +1,11 @@
+## #59 — Richtiges Vorschaubild für den Patch-Bereich
+
+**Ausgangslage:** Beim Teilen des Patch-Links (z.B. auf Discord) erschien als Vorschaubild ein Screenshot der Discord-Kanäle — mit der Patch-Timeline hatte das nichts zu tun.
+
+**Geändert:** Der Patch-Bereich hat jetzt ein eigenes, gebrandetes Vorschaubild („Patch Timeline · Balance-Historie für jeden Helden"). Jede Helden-Historie bekommt zusätzlich eine eigene Link-Vorschau mit Titel und Beschreibung.
+
+**Verhalten:** Geteilte Patch- und Helden-Links sehen jetzt sauber und on-brand aus statt fehlleitend.
+
 ## #58 — Balance-Historie im Seiten-Look + Klick-Durchstieg
 
 **Ausgangslage:** Die Balance-Historie-Seiten hingen als eigenständige Dokumente ohne Kopfzeile, Navigation und Footer neben der Seite. Außerdem flackerte der Patch-Bereich beim Scrollen leicht.
