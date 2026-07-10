@@ -21,10 +21,7 @@ export default function Layout() {
             <div className="flex items-center gap-8">
               <Link to="/" className="brand-wordmark" aria-label="Deutsche Deadlock Community">
                 <img src="/brand/logo/logo-192.png" className="brand-logo" alt="" />
-                <span className="brand-copy">
-                  <img src="/brand/logo/wordmark.svg" className="brand-wordmark-img" alt="" />
-                  <strong>Coaching-Etage</strong>
-                </span>
+                <img src="/brand/logo/wordmark.svg" className="brand-wordmark-img" alt="" />
               </Link>
 
               <nav className="hidden items-center gap-1 md:flex">

@@ -338,23 +338,6 @@ img { display: block; max-width: 100%; }
     height: 36px;
   }
 
-  .brand-copy {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .brand-copy strong {
-    color: var(--text-primary);
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-  }
-
   @media (max-width: 430px) {
     .brand-wordmark {
       gap: 0.5rem;
@@ -367,10 +350,6 @@ img { display: block; max-width: 100%; }
 
     .brand-wordmark .brand-wordmark-img {
       display: none;
-    }
-
-    .brand-copy strong {
-      font-size: 15px;
     }
 
     .discord-login-button {

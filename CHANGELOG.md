@@ -1,3 +1,11 @@
+## #54 — Mehr Platz in der Coaching-Kopfzeile
+
+**Ausgangslage:** „Coaching-Etage“ stand direkt unter dem Community-Schriftzug und machte die volle Navigation unnötig eng. Im Seitenkopf wiederholte außerdem ein langer Absatz Dinge, die der Ablauf darunter bereits erklärt.
+
+**Geändert:** Die Kopfzeile zeigt nur noch Logo und Community-Namen. „Coaching-Etage“ steht jetzt als kleines Seitenlabel über der Überschrift; der doppelte Erklärtext ist entfernt.
+
+**Wie's jetzt läuft:** Marke, Navigation und Nutzerbereich haben getrennt Platz, während sofort erkennbar bleibt, dass man im Coaching-Bereich ist.
+
 ## #53 — Bühnenlicht für die ganze Seite
 
 **Ausgangslage:** Zwischen dem Startbereich und dem Server-Haus lagen flache, einfarbig braune Zonen, die tot wirkten. Die Coaching-Seite zeigt, wie es besser geht: farbige Lichtflecken und ein feines Muster im Hintergrund.
