@@ -196,8 +196,8 @@ ol {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  mask-image: linear-gradient(180deg, transparent, #000 140px, #000 calc(100% - 140px), transparent);
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 140px, #000 calc(100% - 140px), transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 320px, #000 calc(100% - 240px), transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 320px, #000 calc(100% - 240px), transparent);
 }
 .section--dark::before {
   background:
@@ -1495,8 +1495,18 @@ ol {
 
 .hero--mitspieler .hero-bg::after {
   background:
-    linear-gradient(180deg, rgba(11, 9, 7, 0.2), rgba(11, 9, 7, 0.5) 45%, #241c11 82%),
+    linear-gradient(180deg, rgba(11, 9, 7, 0.2), rgba(11, 9, 7, 0.5) 45%, rgba(22, 17, 10, 0.8) 85%),
     linear-gradient(90deg, rgba(11, 9, 7, 0.7), transparent 35%, transparent 65%, rgba(11, 9, 7, 0.7));
+}
+
+/* Das Hero-Bild löst sich nach unten in den Seitengrund auf, statt an der
+   Sektionsgrenze zu enden — darunter scheint derselbe Body durch wie in der
+   nächsten Sektion, es gibt also keine Grenzfläche mehr. */
+.hero--mitspieler .hero-bg img,
+.hero--mitspieler .hero-bg::before,
+.hero--mitspieler .hero-bg::after {
+  mask-image: linear-gradient(180deg, #000 55%, transparent 97%);
+  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 97%);
 }
 
 .hero--sub .hero-content h1 {
