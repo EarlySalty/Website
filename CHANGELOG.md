@@ -1,4 +1,4 @@
-## #53 — Mehr Platz in der Coaching-Kopfzeile
+## #54 — Mehr Platz in der Coaching-Kopfzeile
 
 **Ausgangslage:** „Coaching-Etage“ stand direkt unter dem Community-Schriftzug und machte die volle Navigation unnötig eng. Im Seitenkopf wiederholte außerdem ein langer Absatz Dinge, die der Ablauf darunter bereits erklärt.
 
