@@ -1,3 +1,11 @@
+## #55 — Weiche Übergänge statt harter Kanten
+
+**Ausgangslage:** Die Abschnitte der Mitspieler-Seite stießen mit harten Kanten aneinander: Das Startbild endete abrupt, und die farbigen Bereiche begannen wie mit dem Lineal gezogen.
+
+**Geändert:** Alle Abschnittshintergründe laufen jetzt oben und unten weich aus und gehen ineinander über. Das Startbild blendet sanft in den Seitengrund aus, bevor der nächste Abschnitt beginnt.
+
+**Wie's jetzt läuft:** Die Seite liest sich wie eine durchgehende Szene, kein Bereich schneidet mehr sichtbar ab.
+
 ## #54 — Mehr Platz in der Coaching-Kopfzeile
 
 **Ausgangslage:** „Coaching-Etage“ stand direkt unter dem Community-Schriftzug und machte die volle Navigation unnötig eng. Im Seitenkopf wiederholte außerdem ein langer Absatz Dinge, die der Ablauf darunter bereits erklärt.
