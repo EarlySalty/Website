@@ -88,8 +88,8 @@ button { font: inherit; }
   backdrop-filter: blur(16px);
 }
 .brand { display: inline-flex; align-items: center; gap: .65rem; position: relative; z-index: 2; }
-.brand-logo { width: 42px; height: 42px; flex-shrink: 0; object-fit: contain; }
-.brand-wordmark-img { width: auto; height: 40px; object-fit: contain; }
+.brand-logo { width: 48px; height: 48px; flex-shrink: 0; object-fit: contain; }
+.brand-wordmark-img { width: auto; height: 54px; object-fit: contain; }
 .main-nav { display: flex; align-items: center; gap: clamp(1rem, 2.3vw, 2rem); }
 .main-nav a {
   text-decoration: none;
@@ -568,7 +568,7 @@ footer { border-top: 1px solid var(--line); background: #080604; position: relat
   .hero-roster { grid-template-columns: repeat(2, 1fr); }
   .hero-roster a { min-height: 300px; }
   .footer-main { grid-template-columns: 1fr; }
-  .footer-brand .brand-wordmark-img { max-width: 210px; }
+  .footer-brand .brand-wordmark-img { max-width: 280px; }
   .footer-bottom { flex-direction: column; }
 }
 

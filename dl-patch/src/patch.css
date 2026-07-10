@@ -64,6 +64,25 @@ h4 {
 .patch-brand {
   gap: 0.6rem;
   min-width: 0;
+  align-items: center;
+}
+
+.patch-brand .brand-logo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.patch-brand .brand-wordmark-img {
+  display: block;
+  width: auto;
+  height: 54px;
+  object-fit: contain;
+}
+
+@media (max-width: 640px) {
+  .patch-brand .brand-wordmark-img { display: none; }
 }
 
 .nav-drawer-panel,

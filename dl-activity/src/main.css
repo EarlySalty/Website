@@ -102,14 +102,14 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 
 .brand-logo {
   display: block;
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
 }
 .brand-wordmark-img {
   display: block;
   width: auto;
-  height: 40px;
+  height: 54px;
   object-fit: contain;
 }
 .auth-slot {
