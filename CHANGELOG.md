@@ -1,3 +1,11 @@
+## #51 — Die Mitspieler-Seite zeigt den Server als Haus
+
+**Ausgangslage:** Die Mitspieler-Seite hat erzählt, dass bei uns viel los ist, aber man konnte es nicht sehen. Ein Screenshot vom Discord, etwas Text, das war's.
+
+**Geändert:** Die Seite wurde neu gebaut. Ihr Herzstück ist jetzt ein goldenes Hochhaus, das unseren Server zeigt: unten die Lobby, darüber Community, Voice-Lanes, Coaching, Wettkampf und ganz oben das Streamer-Studio. Die Fenster leuchten live dort, wo gerade Leute im Voice sitzen, und je mehr los ist, desto mehr Fenster gehen an. Jede Etage lässt sich anklicken und erklärt, was es dort gibt. Darunter zeigt die Seite die aktuell offenen Voice-Lanes mit Belegung und wer gerade online ist.
+
+**Wie's jetzt läuft:** Wer wissen will, ob sich der Beitritt lohnt, sieht es jetzt auf einen Blick: brennt Licht im Haus, wird gespielt. Nebenbei zeigen die Voice-Lane-Anzeigen auf der Startseite jetzt echte Belegungszahlen statt dauerhaft "leer".
+
 ## #50 — Ein Look für alles: neues Logo, Aufzug-Navigation und echte Farben
 
 **Ausgangslage:** Jede Seite sah anders aus: drei verschiedene Logos gleichzeitig, im Browser-Tab ein veraltetes Icon, die Startseite flackerte und lag unter einem grauen Filter, der Aufzug ging nicht mehr, und die Aktivitätsseite bekam gar keine Daten.
