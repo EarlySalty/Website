@@ -1947,17 +1947,18 @@ ol {
    ══════════════════════════════════════════════════════════════ */
 
 /* Film-Grain + Vignette: globale Atmosphäre, reine CSS-Overlays.
-   An html::before/::after gehängt → greift auf allen Seiten ohne Markup/JS. */
+   An html::before/::after gehängt → greift auf allen Seiten ohne Markup/JS.
+   Grain ist bewusst STATISCH (kein animation:) — springendes Noise wirkt auf
+   dunklen Flächen als Flackern; gleicher Fix wie im Aufzug (#50). */
 html::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 100;
   pointer-events: none;
-  opacity: 0.05;
+  opacity: 0.03;
   mix-blend-mode: screen;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain 0.5s steps(3) infinite;
 }
 
 html::after {
@@ -1968,17 +1969,6 @@ html::after {
   pointer-events: none;
   background: radial-gradient(120% 95% at 50% 42%, transparent 60%, rgba(0, 0, 0, 0.42));
   mix-blend-mode: multiply;
-}
-
-@keyframes grain {
-  0% { transform: translate(0, 0); }
-  33% { transform: translate(-2%, 2%); }
-  66% { transform: translate(2%, -2%); }
-  100% { transform: translate(-1%, -1%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html::before { animation: none; }
 }
 
 /* Deko-Eck-Klammern: L-förmige Gold-Ecken oben-links / unten-rechts. */
@@ -2403,6 +2393,73 @@ html::after {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.9rem;
+}
+
+/* Atmosphäre: kühler Nachthimmel oben, warmer Stadtschein unten — bricht
+   das flache Einheitsbraun der Sektion auf. */
+.tower-section {
+  background:
+    radial-gradient(75% 45% at 50% 0%, rgba(85, 151, 143, 0.09), transparent 65%),
+    radial-gradient(90% 55% at 50% 100%, rgba(201, 168, 106, 0.12), transparent 62%),
+    linear-gradient(180deg, #16100a, #1d160d 55%, #140f08);
+}
+
+/* Sterne: wenige zwinkern, sehr langsam — Atmosphäre, kein Geflacker */
+.tw-star {
+  opacity: 0.45;
+}
+.tw-star--tw {
+  animation: tw-twinkle 7s ease-in-out infinite alternate;
+}
+.tw-star--tw:nth-of-type(2n) {
+  animation-delay: 2.6s;
+  animation-duration: 9s;
+}
+.tw-star--tw:nth-of-type(3n) {
+  animation-delay: 4.2s;
+}
+@keyframes tw-twinkle {
+  from { opacity: 0.2; }
+  to { opacity: 0.85; }
+}
+
+/* Beleuchtete Fenster: zwei Warmtöne + kaum merkliches Glimmen */
+.tw-floor[data-lit='2'] .tw-wins rect:nth-child(4n + 3),
+.tw-floor[data-lit='3'] .tw-wins rect:nth-child(3n) {
+  fill: #f8e7c0;
+}
+.tw-wins--warm rect:nth-child(2n) {
+  fill: rgba(239, 212, 157, 0.42);
+}
+.tw-floor.is-lit .tw-wins {
+  animation: tw-glimmer 6s ease-in-out infinite alternate;
+}
+@keyframes tw-glimmer {
+  from { opacity: 0.82; }
+  to { opacity: 1; }
+}
+
+/* Etagen-Wechsel: Detail gleitet sanft ein */
+.tower-detail:not([hidden]) {
+  animation: tower-detail-in 0.35s ease;
+}
+@keyframes tower-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tw-star--tw,
+  .tw-floor.is-lit .tw-wins,
+  .tower-detail:not([hidden]) {
+    animation: none;
+  }
 }
 
 @media (max-width: 980px) {

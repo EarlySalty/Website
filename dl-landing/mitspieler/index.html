@@ -207,10 +207,43 @@
                   <filter id="twBlur" x="-60%" y="-60%" width="220%" height="220%">
                     <feGaussianBlur stdDeviation="10" />
                   </filter>
+                  <linearGradient id="twShade" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0" stop-color="rgba(255, 236, 200, 0.07)" />
+                    <stop offset="0.14" stop-color="rgba(255, 236, 200, 0)" />
+                    <stop offset="0.7" stop-color="rgba(0, 0, 0, 0)" />
+                    <stop offset="1" stop-color="rgba(0, 0, 0, 0.4)" />
+                  </linearGradient>
+                  <radialGradient id="twGroundGlow" cx="0.5" cy="0.5" r="0.5">
+                    <stop offset="0" stop-color="rgba(239, 212, 157, 0.28)" />
+                    <stop offset="1" stop-color="rgba(239, 212, 157, 0)" />
+                  </radialGradient>
                 </defs>
 
                 <!-- Himmel + Nachbarhäuser -->
                 <rect x="0" y="0" width="420" height="680" fill="url(#twSky)" />
+
+                <!-- Sternenhimmel: wenige Sterne zwinkern sehr langsam -->
+                <g class="tw-stars" fill="#ece0c8">
+                  <circle class="tw-star tw-star--tw" cx="46" cy="76" r="1.4" />
+                  <circle class="tw-star" cx="88" cy="132" r="1" />
+                  <circle class="tw-star tw-star--tw" cx="132" cy="58" r="1.1" />
+                  <circle class="tw-star" cx="290" cy="72" r="1" />
+                  <circle class="tw-star tw-star--tw" cx="338" cy="118" r="1.4" />
+                  <circle class="tw-star" cx="376" cy="64" r="1.1" />
+                  <circle class="tw-star tw-star--tw" cx="392" cy="186" r="1" />
+                  <circle class="tw-star" cx="30" cy="212" r="1" />
+                  <circle class="tw-star tw-star--tw" cx="64" cy="318" r="1.2" />
+                  <circle class="tw-star" cx="368" cy="298" r="1" />
+                </g>
+
+                <!-- Ferne Skyline (hinterste Ebene) -->
+                <g fill="#1b150c">
+                  <rect x="0" y="560" width="46" height="88" />
+                  <rect x="52" y="528" width="34" height="120" />
+                  <rect x="330" y="540" width="30" height="108" />
+                  <rect x="380" y="512" width="40" height="136" />
+                </g>
+                <!-- Nachbarhäuser (vordere Ebene) -->
                 <g fill="#201910">
                   <rect x="10" y="470" width="54" height="178" />
                   <rect x="356" y="430" width="54" height="218" />
@@ -253,6 +286,7 @@
                     <rect x="192" y="200" width="40" height="30" />
                     <rect x="242" y="200" width="40" height="30" />
                   </g>
+                  <rect class="tw-shade" x="130" y="182" width="160" height="70" fill="url(#twShade)" />
                   <rect class="tw-hit" x="126" y="178" width="168" height="76" fill="transparent" />
                 </g>
                 <rect x="94" y="252" width="232" height="5" fill="url(#twGold)" />
@@ -267,6 +301,7 @@
                     <rect x="116" y="292" width="26" height="15" /><rect x="166" y="292" width="26" height="15" />
                     <rect x="216" y="292" width="26" height="15" /><rect x="266" y="292" width="26" height="15" />
                   </g>
+                  <rect class="tw-shade" x="100" y="258" width="220" height="62" fill="url(#twShade)" />
                   <rect class="tw-hit" x="96" y="254" width="228" height="68" fill="transparent" />
                 </g>
                 <rect x="94" y="320" width="232" height="5" fill="url(#twGold)" />
@@ -281,6 +316,7 @@
                     <rect x="116" y="358" width="26" height="15" /><rect x="166" y="358" width="26" height="15" />
                     <rect x="216" y="358" width="26" height="15" /><rect x="266" y="358" width="26" height="15" />
                   </g>
+                  <rect class="tw-shade" x="100" y="326" width="220" height="60" fill="url(#twShade)" />
                   <rect class="tw-hit" x="96" y="322" width="228" height="66" fill="transparent" />
                 </g>
                 <rect x="88" y="384" width="244" height="5" fill="url(#twGold)" />
@@ -302,6 +338,7 @@
                     <rect x="180" y="454" width="22" height="15" /><rect x="218" y="454" width="22" height="15" />
                     <rect x="256" y="454" width="22" height="15" /><rect x="294" y="454" width="22" height="15" />
                   </g>
+                  <rect class="tw-shade" x="80" y="390" width="260" height="92" fill="url(#twShade)" />
                   <rect class="tw-hit" x="76" y="386" width="268" height="98" fill="transparent" />
                 </g>
                 <rect x="74" y="480" width="272" height="5" fill="url(#twGold)" />
@@ -318,6 +355,7 @@
                     <rect x="200" y="518" width="24" height="14" /><rect x="246" y="518" width="24" height="14" />
                     <rect x="292" y="518" width="24" height="14" />
                   </g>
+                  <rect class="tw-shade" x="80" y="486" width="260" height="58" fill="url(#twShade)" />
                   <rect class="tw-hit" x="76" y="482" width="268" height="64" fill="transparent" />
                 </g>
                 <rect x="66" y="544" width="288" height="5" fill="url(#twGold)" />
@@ -338,10 +376,12 @@
                   <rect x="184" y="588" width="52" height="5" fill="url(#twGold)" />
                   <rect class="tw-door" x="192" y="596" width="36" height="52" fill="rgba(239, 212, 157, 0.3)" stroke="rgba(201, 168, 106, 0.6)" />
                   <line x1="210" y1="596" x2="210" y2="648" stroke="rgba(36, 28, 17, 0.8)" />
+                  <rect class="tw-shade" x="60" y="550" width="300" height="98" fill="url(#twShade)" />
                   <rect class="tw-hit" x="56" y="546" width="308" height="102" fill="transparent" />
                 </g>
 
-                <!-- Boden -->
+                <!-- Boden mit warmem Lichtschein vor dem Eingang -->
+                <ellipse cx="210" cy="650" rx="190" ry="16" fill="url(#twGroundGlow)" />
                 <line x1="0" y1="648" x2="420" y2="648" stroke="rgba(201, 168, 106, 0.4)" stroke-width="2" />
               </svg>
               <p class="tower-legend"><span class="tower-legend-dot" aria-hidden="true"></span> Beleuchtete Fenster: da läuft gerade Voice-Betrieb</p>

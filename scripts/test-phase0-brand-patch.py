@@ -65,6 +65,18 @@ class Phase0ContractTest(unittest.TestCase):
         for value in map(float, re.findall(r"brightness\(([\d.]+)\)", css)):
             self.assertGreaterEqual(value, 0.9)
 
+    def test_landing_grain_is_static_and_subtle(self) -> None:
+        # Gleicher Flacker-Fix wie im Aufzug (#50): Film-Grain darf als Textur
+        # bleiben, aber nie animiert sein — das springende Noise wirkt als
+        # Flackern auf dunklen Flächen.
+        css = (ROOT / "dl-landing/src/site.css").read_text()
+        before = re.search(r"html::before\s*\{([^}]*)\}", css, re.DOTALL)
+        self.assertIsNotNone(before)
+        body = before.group(1)
+        self.assertNotIn("animation:", body)
+        self.assertLessEqual(float(re.search(r"opacity:\s*([\d.]+)", body).group(1)), 0.03)
+        self.assertNotRegex(css, r"@keyframes\s+grain\b")
+
     def test_patch_renders_before_deferred_asset_catalog(self) -> None:
         source = (ROOT / "dl-patch/src/patch.js").read_text()
         dashboard = re.search(r"async function loadDashboard\(\)\s*\{(.*?)\n\}", source, re.DOTALL).group(1)
