@@ -144,14 +144,11 @@ export default function CoachesPage() {
     <div className="content-grid pb-16">
       <div className="salon-hero relative mb-12 md:mb-16">
         <div className="animate-in-left max-w-3xl">
-          <div className="eyebrow mb-4">DDC Coaching-Programm</div>
+          <div className="eyebrow mb-4">Coaching-Etage</div>
           <h1 className="hero-display">
             Besser werden,<br />
             <span style={{ color: 'var(--amber-light)' }}>ohne Chat-Chaos.</span>
           </h1>
-          <p className="section-copy mt-5 max-w-2xl text-[15px]">
-            Coaches, Anfragen, Termine, Ziele und Session-Notizen laufen auf der Website. Discord bleibt für Login, Voice und kurze Abstimmung.
-          </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link to="/anfrage" className="btn-amber">Coaching anfragen</Link>
             <Link to="/me" className="btn-ghost">Meine Termine</Link>
