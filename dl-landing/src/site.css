@@ -2162,3 +2162,259 @@ html::after {
     grid-template-columns: 1fr;
   }
 }
+
+/* ══ Server-Gebäude (/mitspieler/) ══════════════════════════════════════ */
+.tower-intro {
+  color: var(--muted);
+  max-width: 62ch;
+  margin: 1rem auto 0;
+}
+.tower-wrap {
+  display: grid;
+  grid-template-columns: minmax(300px, 5fr) 7fr;
+  gap: clamp(1.6rem, 4vw, 3.4rem);
+  align-items: start;
+  margin-top: 2.5rem;
+}
+.tower-visual {
+  position: sticky;
+  top: 5rem;
+}
+.tower-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.tower-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.tower-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--gold-bright);
+  box-shadow: 0 0 8px rgba(239, 212, 157, 0.8);
+  flex-shrink: 0;
+}
+
+/* Fenster: dunkel als Grundzustand, data-lit steuert wie viele leuchten */
+.tw-wins rect {
+  fill: rgba(236, 224, 200, 0.08);
+  transition: fill 0.8s ease;
+}
+.tw-wins--warm rect {
+  fill: rgba(239, 212, 157, 0.3);
+}
+.tw-floor[data-lit='1'] .tw-wins rect:nth-child(3n + 2),
+.tw-floor[data-lit='2'] .tw-wins rect:nth-child(2n + 1),
+.tw-floor[data-lit='3'] .tw-wins rect {
+  fill: var(--gold-bright);
+}
+.tw-floor .tw-floorglow {
+  transition: opacity 1s ease;
+}
+.tw-floor.is-lit .tw-floorglow {
+  opacity: 0.28;
+}
+.tw-shell {
+  stroke: rgba(201, 168, 106, 0.35);
+  transition: stroke 0.3s ease;
+}
+.tw-floor {
+  cursor: pointer;
+}
+.tw-floor:hover .tw-shell {
+  stroke: rgba(239, 212, 157, 0.7);
+}
+.tw-floor.is-selected .tw-shell {
+  stroke: #efd49d;
+  stroke-width: 2;
+}
+.tw-beacon {
+  animation: tw-pulse 2.6s ease-in-out infinite;
+}
+.tw-beacon-halo {
+  animation: tw-pulse 2.6s ease-in-out infinite;
+}
+.tw-waves {
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.tower-wrap.dach-live .tw-waves {
+  opacity: 0.7;
+}
+@keyframes tw-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tw-beacon,
+  .tw-beacon-halo {
+    animation: none;
+  }
+}
+
+/* Etagen-Panel: Aufzugstableau + Detail */
+.tower-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: linear-gradient(160deg, rgba(44, 35, 24, 0.6), rgba(28, 21, 13, 0.5));
+}
+.tower-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.tower-btn:hover {
+  background: rgba(201, 168, 106, 0.08);
+  color: #ece0c8;
+}
+.tower-btn.is-active {
+  background: rgba(201, 168, 106, 0.12);
+  border-color: rgba(201, 168, 106, 0.4);
+  color: #ece0c8;
+}
+.tower-btn-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 168, 106, 0.5);
+  background: radial-gradient(circle at 35% 30%, #4a3b26, #2c2318);
+  color: #c8a86b;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.tower-btn.is-active .tower-btn-num {
+  background: radial-gradient(circle at 35% 30%, #efd49d, #ae8442);
+  color: #241c11;
+  box-shadow: 0 0 12px rgba(239, 212, 157, 0.45);
+}
+.tower-btn-name {
+  flex: 1;
+  font-weight: 600;
+}
+.tower-btn-live {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--green, #66b39b);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tower-btn-live::before {
+  content: '●';
+  margin-right: 0.3rem;
+  font-size: 0.6rem;
+  vertical-align: 1px;
+}
+
+.tower-details {
+  margin-top: 1.2rem;
+}
+.tower-detail {
+  padding: 1.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(44, 35, 24, 0.55), rgba(36, 28, 17, 0.85));
+}
+.tower-detail-eyebrow {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #c8a86b;
+}
+.tower-detail h3 {
+  margin-top: 0.4rem;
+  font-size: 1.4rem;
+}
+.tower-detail p {
+  margin-top: 0.7rem;
+  color: var(--muted);
+}
+.tower-detail-live {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--green, #66b39b);
+}
+.tower-detail-live[hidden] {
+  display: none;
+}
+.tower-detail .feature-list-compact {
+  margin-top: 1rem;
+}
+.tower-detail-link {
+  display: inline-block;
+  margin-top: 1.1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+.tower-detail-link:hover {
+  transform: translateX(4px);
+}
+
+/* Live-Strip unter dem Turm */
+.tower-live {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+.tower-live-col {
+  padding: 1.3rem 1.5rem;
+  border: 1px solid rgba(201, 168, 106, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(44, 35, 24, 0.55), rgba(36, 28, 17, 0.85));
+}
+.tower-live-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+
+@media (max-width: 980px) {
+  .tower-wrap {
+    grid-template-columns: 1fr;
+  }
+  .tower-visual {
+    position: static;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+  .tower-live {
+    grid-template-columns: 1fr;
+  }
+}
