@@ -1,3 +1,11 @@
+## #56 — Übergänge komplett aufgelöst
+
+**Ausgangslage:** Trotz weicher Verläufe war zwischen Startbild und den Abschnitten darunter noch eine Trennung zu erkennen.
+
+**Geändert:** Das Startbild löst sich jetzt nach unten vollständig im Seitengrund auf, statt an einer Grenze zu enden, und die Abschnitte blenden über eine deutlich längere Strecke ein.
+
+**Wie's jetzt läuft:** Vom Seitenanfang bis zum Server-Haus gibt es keine erkennbare Kante mehr, alles liegt auf einer durchgehenden Fläche.
+
 ## #55 — Weiche Übergänge statt harter Kanten
 
 **Ausgangslage:** Die Abschnitte der Mitspieler-Seite stießen mit harten Kanten aneinander: Das Startbild endete abrupt, und die farbigen Bereiche begannen wie mit dem Lineal gezogen.
