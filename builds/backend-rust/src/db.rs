@@ -40,6 +40,23 @@ pub async fn init(pool: &PgPool) -> anyhow::Result<()> {
             .execute(&mut *tx)
             .await?;
     }
+    let applied: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM public.website_backend_migrations WHERE version=$1)",
+    )
+    .bind(2_026_072_000_i64)
+    .fetch_one(&mut *tx)
+    .await?;
+    if !applied {
+        sqlx::raw_sql(include_str!(
+            "../migrations/2026072000_video_action_audit.sql"
+        ))
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("INSERT INTO public.website_backend_migrations(version) VALUES($1)")
+            .bind(2_026_072_000_i64)
+            .execute(&mut *tx)
+            .await?;
+    }
     tx.commit().await?;
     Ok(())
 }

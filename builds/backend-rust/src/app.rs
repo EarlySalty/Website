@@ -119,7 +119,10 @@ pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/api/videos", get(crate::video::public_feed))
         .route("/api/videos/taxonomy", get(crate::video::list_taxonomy))
-        .route("/api/videos/channels", post(crate::video::register_channel))
+        .route(
+            "/api/videos/channels",
+            get(crate::video::own_channels).post(crate::video::register_channel),
+        )
         .route(
             "/api/videos/channels/{id}",
             delete(crate::video::detach_own_channel),
@@ -488,6 +491,31 @@ mod tests {
         }
     }
 
+    struct PlaylistFeed(&'static str);
+    impl crate::video::YoutubeClient for PlaylistFeed {
+        fn resolve_channel<'a>(
+            &'a self,
+            _: &'a str,
+        ) -> crate::video::YoutubeFuture<'a, crate::video::YoutubeChannel> {
+            Box::pin(async { unreachable!() })
+        }
+        fn channel_feed<'a>(&'a self, _: &'a str) -> crate::video::YoutubeFuture<'a, String> {
+            Box::pin(async { unreachable!() })
+        }
+        fn playlist_feed<'a>(&'a self, _: &'a str) -> crate::video::YoutubeFuture<'a, String> {
+            Box::pin(async move { Ok(self.0.to_string()) })
+        }
+        fn video_tags<'a>(&'a self, _: &'a [String]) -> crate::video::TagFuture<'a> {
+            Box::pin(async { unreachable!() })
+        }
+        fn backfill<'a>(
+            &'a self,
+            _: &'a str,
+        ) -> crate::video::YoutubeFuture<'a, Vec<crate::video::FeedVideo>> {
+            Box::pin(async { unreachable!() })
+        }
+    }
+
     #[tokio::test]
     async fn rss_fixture_decision_appears_in_public_feed() {
         let (_db, state) = test_state().await;
@@ -668,6 +696,390 @@ mod tests {
         .await
         .expect("decision count");
         assert_eq!(decisions, 1);
+    }
+
+    #[tokio::test]
+    async fn playlist_sync_links_only_existing_registered_channel_videos() {
+        let (_db, state) = test_state().await;
+        let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940010,'UCplaylistsync000000000','https://youtube.test/sync') RETURNING id")
+            .fetch_one(&state.pool).await.expect("channel");
+        let video_id: i64 = sqlx::query_scalar("INSERT INTO video_library.videos(channel_id,yt_video_id,title,published_at,thumbnail_url,status,source) VALUES($1,'video-001','Known',now(),'','live','rss') RETURNING id")
+            .bind(channel_id).fetch_one(&state.pool).await.expect("video");
+        sqlx::query("INSERT INTO video_library.playlists(id,owner_discord_id,title,source,yt_playlist_id) VALUES('sync-list',940010,'Sync','yt','PLfixture')")
+            .execute(&state.pool).await.expect("playlist");
+
+        crate::video::sync_playlist_with_client(
+            &state,
+            "sync-list",
+            "PLfixture",
+            &PlaylistFeed(include_str!("../tests/fixtures/youtube-feed.xml")),
+        )
+        .await
+        .expect("sync");
+
+        let videos: i64 = sqlx::query_scalar("SELECT count(*) FROM video_library.videos")
+            .fetch_one(&state.pool)
+            .await
+            .expect("video count");
+        let items: Vec<i64> = sqlx::query_scalar(
+            "SELECT video_id FROM video_library.playlist_items WHERE playlist_id='sync-list' ORDER BY position",
+        )
+        .fetch_all(&state.pool)
+        .await
+        .expect("playlist items");
+        assert_eq!(videos, 1);
+        assert_eq!(items, vec![video_id]);
+    }
+
+    #[tokio::test]
+    async fn failed_playlist_sync_preserves_existing_items() {
+        let (_db, state) = test_state().await;
+        let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940010,'UCsyncfailure0000000000','https://youtube.test/sync') RETURNING id")
+            .fetch_one(&state.pool).await.expect("channel");
+        let video_id: i64 = sqlx::query_scalar("INSERT INTO video_library.videos(channel_id,yt_video_id,title,published_at,thumbnail_url,status,source) VALUES($1,'existing-video','Existing',now(),'','live','rss') RETURNING id")
+            .bind(channel_id).fetch_one(&state.pool).await.expect("video");
+        sqlx::query("INSERT INTO video_library.playlists(id,owner_discord_id,title,source,yt_playlist_id) VALUES('stable-list',940010,'Stable','yt','PLfixture')")
+            .execute(&state.pool).await.expect("playlist");
+        sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES('stable-list',$1,0)")
+            .bind(video_id).execute(&state.pool).await.expect("item");
+
+        let result = crate::video::sync_playlist_with_client(
+            &state,
+            "stable-list",
+            "PLfixture",
+            &PlaylistFeed("<invalid"),
+        )
+        .await;
+
+        assert!(result.is_err());
+        let items: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM video_library.playlist_items WHERE playlist_id='stable-list' AND video_id=$1",
+        )
+        .bind(video_id)
+        .fetch_one(&state.pool)
+        .await
+        .expect("item count");
+        assert_eq!(items, 1);
+    }
+
+    #[tokio::test]
+    async fn mutating_video_handlers_write_action_audit() {
+        let (_db, state) = creator_test_state().await;
+        let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940010,'UCactionaudit0000000000','https://youtube.test/audit') RETURNING id")
+            .fetch_one(&state.pool).await.expect("channel");
+        let video_id: i64 = sqlx::query_scalar("INSERT INTO video_library.videos(channel_id,yt_video_id,title,published_at,thumbnail_url,status,source) VALUES($1,'audit-video','Audit',now(),'','pending','rss') RETURNING id")
+            .bind(channel_id).fetch_one(&state.pool).await.expect("video");
+        let taxonomy_id: i64 = sqlx::query_scalar(
+            "SELECT id FROM video_library.taxonomy WHERE dimension='type' ORDER BY id LIMIT 1",
+        )
+        .fetch_one(&state.pool)
+        .await
+        .expect("taxonomy");
+        let token = state
+            .auth
+            .create_session_jwt("940010", "creator-a", "user", Some("Creator A"), None)
+            .expect("session");
+        let app = router(state.clone());
+
+        for action in ["approve", "hide"] {
+            let response = app
+                .clone()
+                .oneshot(authenticated_request(
+                    Method::POST,
+                    &format!("/api/videos/{video_id}/{action}"),
+                    &token,
+                    None,
+                ))
+                .await
+                .expect("video mutation");
+            assert_eq!(response.status(), StatusCode::OK);
+        }
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::PUT,
+                &format!("/api/videos/{video_id}/tags"),
+                &token,
+                Some(json!({"taxonomy_ids":[taxonomy_id],"free_tags":["audit"]})),
+            ))
+            .await
+            .expect("tag response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/videos/playlists",
+                &token,
+                Some(json!({"title":"Audit","source":"manual","video_ids":[video_id]})),
+            ))
+            .await
+            .expect("playlist create");
+        assert_eq!(response.status(), StatusCode::OK);
+        let playlist_id = to_json(response).await["id"]
+            .as_str()
+            .expect("playlist id")
+            .to_string();
+        let response = app
+            .clone()
+            .oneshot(admin_request(
+                Method::PUT,
+                &format!("/api/videos/playlists/{playlist_id}"),
+                Some(json!({"title":"Audit","source":"manual","video_ids":[video_id],"featured":true})),
+            ))
+            .await
+            .expect("playlist update");
+        assert_eq!(response.status(), StatusCode::OK);
+        let response = app
+            .clone()
+            .oneshot(admin_request(
+                Method::DELETE,
+                &format!("/api/videos/playlists/{playlist_id}"),
+                None,
+            ))
+            .await
+            .expect("playlist delete");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .clone()
+            .oneshot(admin_request(
+                Method::POST,
+                "/api/admin/videos/taxonomy",
+                Some(json!({"dimension":"type","name":"Audit","slug":"audit"})),
+            ))
+            .await
+            .expect("taxonomy create");
+        assert_eq!(response.status(), StatusCode::OK);
+        let created_taxonomy_id = to_json(response).await["id"].as_i64().expect("taxonomy id");
+        for method in [Method::PUT, Method::DELETE] {
+            let body = (method == Method::PUT)
+                .then(|| json!({"dimension":"type","name":"Audit 2","slug":"audit-2"}));
+            let response = app
+                .clone()
+                .oneshot(admin_request(
+                    method,
+                    &format!("/api/admin/videos/taxonomy/{created_taxonomy_id}"),
+                    body,
+                ))
+                .await
+                .expect("taxonomy mutation");
+            assert_eq!(response.status(), StatusCode::OK);
+        }
+
+        let actions: Vec<String> =
+            sqlx::query_scalar("SELECT action FROM video_library.action_audit_log ORDER BY id")
+                .fetch_all(&state.pool)
+                .await
+                .expect("audit actions");
+        assert_eq!(
+            actions,
+            vec![
+                "video_approved",
+                "video_hidden",
+                "video_tagged",
+                "playlist_created",
+                "playlist_updated",
+                "playlist_featured",
+                "playlist_deleted",
+                "taxonomy_created",
+                "taxonomy_updated",
+                "taxonomy_deactivated",
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn creator_cannot_mutate_another_creators_video_or_playlist() {
+        let (_db, state) = creator_test_state().await;
+        let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940011,'UCidorowner000000000000','https://youtube.test/idor') RETURNING id")
+            .fetch_one(&state.pool).await.expect("channel");
+        let video_id: i64 = sqlx::query_scalar("INSERT INTO video_library.videos(channel_id,yt_video_id,title,published_at,thumbnail_url,status,source) VALUES($1,'idor-video','IDOR',now(),'','pending','rss') RETURNING id")
+            .bind(channel_id).fetch_one(&state.pool).await.expect("video");
+        sqlx::query("INSERT INTO video_library.playlists(id,owner_discord_id,title,source) VALUES('idor-list',940011,'IDOR','manual')")
+            .execute(&state.pool).await.expect("playlist");
+        let token = state
+            .auth
+            .create_session_jwt("940010", "creator-a", "user", Some("Creator A"), None)
+            .expect("session");
+        let app = router(state);
+        let cases = [
+            (
+                Method::POST,
+                format!("/api/videos/{video_id}/approve"),
+                None,
+            ),
+            (Method::POST, format!("/api/videos/{video_id}/hide"), None),
+            (
+                Method::PUT,
+                format!("/api/videos/{video_id}/tags"),
+                Some(json!({"taxonomy_ids":[],"free_tags":[]})),
+            ),
+            (
+                Method::PUT,
+                "/api/videos/playlists/idor-list".into(),
+                Some(json!({"title":"IDOR","source":"manual","video_ids":[]})),
+            ),
+            (
+                Method::DELETE,
+                "/api/videos/playlists/idor-list".into(),
+                None,
+            ),
+        ];
+        for (method, uri, body) in cases {
+            let response = app
+                .clone()
+                .oneshot(authenticated_request(method, &uri, &token, body))
+                .await
+                .expect("IDOR response");
+            assert_eq!(response.status(), StatusCode::FORBIDDEN, "{uri}");
+        }
+    }
+
+    #[tokio::test]
+    async fn non_live_videos_never_leak_from_public_views() {
+        let (_db, state) = test_state().await;
+        sqlx::query("INSERT INTO core.meta_users(id,username,display_name,role) VALUES(940010,'creator','Creator','user')")
+            .execute(&state.pool).await.expect("creator");
+        let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940010,'UCstatusleak0000000000','https://youtube.test/status') RETURNING id")
+            .fetch_one(&state.pool).await.expect("channel");
+        let mut ids = Vec::new();
+        for status in ["live", "pending", "hidden"] {
+            let id: i64 = sqlx::query_scalar("INSERT INTO video_library.videos(channel_id,yt_video_id,title,description,published_at,thumbnail_url,status,source) VALUES($1,$2,$3,'Secret',now(),'',$4,'rss') RETURNING id")
+                .bind(channel_id)
+                .bind(format!("status-{status}"))
+                .bind(format!("Secret {status}"))
+                .bind(status)
+                .fetch_one(&state.pool)
+                .await
+                .expect("video");
+            ids.push(id);
+        }
+        let taxonomy_id: i64 = sqlx::query_scalar(
+            "SELECT id FROM video_library.taxonomy WHERE dimension='type' AND slug='guide'",
+        )
+        .fetch_one(&state.pool)
+        .await
+        .expect("taxonomy");
+        for id in &ids {
+            sqlx::query(
+                "INSERT INTO video_library.video_taxonomy(video_id,taxonomy_id) VALUES($1,$2)",
+            )
+            .bind(id)
+            .bind(taxonomy_id)
+            .execute(&state.pool)
+            .await
+            .expect("video taxonomy");
+        }
+        sqlx::query("INSERT INTO video_library.playlists(id,owner_discord_id,title,source) VALUES('status-list',940010,'Status','manual')")
+            .execute(&state.pool).await.expect("playlist");
+        for (position, id) in ids.iter().enumerate() {
+            sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES('status-list',$1,$2)")
+                .bind(id).bind(position as i32).execute(&state.pool).await.expect("playlist item");
+        }
+        let app = router(state);
+        for uri in [
+            "/api/videos?q=Secret&type=guide",
+            "/api/videos/playlists/status-list",
+            "/api/videos/creators/940010",
+        ] {
+            let response = app
+                .clone()
+                .oneshot(request(Method::GET, uri, None))
+                .await
+                .expect("public response");
+            assert_eq!(response.status(), StatusCode::OK, "{uri}");
+            let body = to_json(response).await;
+            let videos = body
+                .as_array()
+                .or_else(|| body["videos"].as_array())
+                .expect("videos");
+            assert_eq!(videos.len(), 1, "{uri}");
+            assert_eq!(videos[0]["yt_video_id"], "status-live", "{uri}");
+        }
+    }
+
+    #[tokio::test]
+    async fn playlist_reorder_handler_persists_requested_order() {
+        let (_db, state) = creator_test_state().await;
+        let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940010,'UCreorder00000000000000','https://youtube.test/reorder') RETURNING id")
+            .fetch_one(&state.pool).await.expect("channel");
+        let mut ids = Vec::new();
+        for name in ["a", "b", "c"] {
+            let id: i64 = sqlx::query_scalar("INSERT INTO video_library.videos(channel_id,yt_video_id,title,published_at,thumbnail_url,status,source) VALUES($1,$2,$2,now(),'','live','rss') RETURNING id")
+                .bind(channel_id).bind(name).fetch_one(&state.pool).await.expect("video");
+            ids.push(id);
+        }
+        sqlx::query("INSERT INTO video_library.playlists(id,owner_discord_id,title,source) VALUES('reorder-list',940010,'Reorder','manual')")
+            .execute(&state.pool).await.expect("playlist");
+        let token = state
+            .auth
+            .create_session_jwt("940010", "creator-a", "user", Some("Creator A"), None)
+            .expect("session");
+        let app = router(state);
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::PUT,
+                "/api/videos/playlists/reorder-list",
+                &token,
+                Some(
+                    json!({"title":"Reorder","source":"manual","video_ids":[ids[2],ids[0],ids[1]]}),
+                ),
+            ))
+            .await
+            .expect("reorder response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .oneshot(request(
+                Method::GET,
+                "/api/videos/playlists/reorder-list",
+                None,
+            ))
+            .await
+            .expect("playlist response");
+        let body = to_json(response).await;
+        let order = body["videos"]
+            .as_array()
+            .expect("videos")
+            .iter()
+            .map(|video| video["yt_video_id"].as_str().expect("video id"))
+            .collect::<Vec<_>>();
+        assert_eq!(order, vec!["c", "a", "b"]);
+    }
+
+    #[tokio::test]
+    async fn creator_lists_only_own_channels() {
+        let (_db, state) = creator_test_state().await;
+        for (owner, channel) in [
+            (940_010_i64, "UCownchannel00000000000"),
+            (940_011_i64, "UCforeignchannel0000000"),
+        ] {
+            sqlx::query("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES($1,$2,$3)")
+                .bind(owner).bind(channel).bind(format!("https://youtube.test/{channel}"))
+                .execute(&state.pool).await.expect("channel");
+        }
+        let token = state
+            .auth
+            .create_session_jwt("940010", "creator-a", "user", Some("Creator A"), None)
+            .expect("session");
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/videos/channels",
+                &token,
+                None,
+            ))
+            .await
+            .expect("channels response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body.as_array().map(Vec::len), Some(1));
+        assert_eq!(body[0]["youtube_channel_id"], "UCownchannel00000000000");
     }
 
     #[tokio::test]

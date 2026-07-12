@@ -10,7 +10,7 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use sqlx::{postgres::PgRow, QueryBuilder, Row};
+use sqlx::{postgres::PgRow, Postgres, QueryBuilder, Row, Transaction};
 
 use crate::{
     app::AppState,
@@ -415,6 +415,32 @@ pub struct ChannelBody {
     channel: String,
 }
 
+pub async fn own_channels(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+) -> AppResult<Json<Value>> {
+    let user = require_creator(&state, &headers, peer).await?;
+    let owner = auth::parse_discord_user_id(&user.sub)?;
+    let rows = sqlx::query("SELECT id,youtube_channel_id,youtube_url,title,active FROM video_library.channels WHERE owner_discord_id=$1 ORDER BY created_at DESC")
+        .bind(owner)
+        .fetch_all(&state.pool)
+        .await?;
+    Ok(Json(Value::Array(
+        rows.iter()
+            .map(|row| {
+                json!({
+                    "id": row.try_get::<i64, _>("id").unwrap_or_default(),
+                    "youtube_channel_id": row.try_get::<String, _>("youtube_channel_id").unwrap_or_default(),
+                    "youtube_url": row.try_get::<String, _>("youtube_url").unwrap_or_default(),
+                    "title": row.try_get::<String, _>("title").unwrap_or_default(),
+                    "active": row.try_get::<bool, _>("active").unwrap_or(false),
+                })
+            })
+            .collect(),
+    )))
+}
+
 pub async fn register_channel(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -605,6 +631,25 @@ async fn acting_user(
     }
 }
 
+async fn write_action_audit(
+    tx: &mut Transaction<'_, Postgres>,
+    user: &auth::User,
+    action: &str,
+    object_type: &str,
+    object_id: impl ToString,
+    detail: Option<Value>,
+) -> AppResult<()> {
+    sqlx::query("INSERT INTO video_library.action_audit_log(actor_discord_id,action,object_type,object_id,detail) VALUES($1,$2,$3,$4,$5)")
+        .bind(&user.sub)
+        .bind(action)
+        .bind(object_type)
+        .bind(object_id.to_string())
+        .bind(detail)
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
+}
+
 async fn owns_video(state: &AppState, video_id: i64, user: &auth::User) -> AppResult<()> {
     if user.role == "admin" {
         return Ok(());
@@ -627,7 +672,12 @@ pub async fn approve_video(
 ) -> AppResult<Json<Value>> {
     let user = acting_user(&state, &headers, peer).await?;
     owns_video(&state, id, &user).await?;
-    sqlx::query("UPDATE video_library.videos SET status='live',updated_at=now() WHERE id=$1 AND status='pending'").bind(id).execute(&state.pool).await?;
+    let mut tx = state.pool.begin().await?;
+    let result = sqlx::query("UPDATE video_library.videos SET status='live',updated_at=now() WHERE id=$1 AND status='pending'").bind(id).execute(&mut *tx).await?;
+    if result.rows_affected() > 0 {
+        write_action_audit(&mut tx, &user, "video_approved", "video", id, None).await?;
+    }
+    tx.commit().await?;
     Ok(Json(json!({"ok": true})))
 }
 
@@ -639,10 +689,15 @@ pub async fn hide_video(
 ) -> AppResult<Json<Value>> {
     let user = acting_user(&state, &headers, peer).await?;
     owns_video(&state, id, &user).await?;
-    sqlx::query("UPDATE video_library.videos SET status='hidden',updated_at=now() WHERE id=$1")
+    let mut tx = state.pool.begin().await?;
+    let result = sqlx::query("UPDATE video_library.videos SET status='hidden',updated_at=now() WHERE id=$1 AND status<>'hidden'")
         .bind(id)
-        .execute(&state.pool)
+        .execute(&mut *tx)
         .await?;
+    if result.rows_affected() > 0 {
+        write_action_audit(&mut tx, &user, "video_hidden", "video", id, None).await?;
+    }
+    tx.commit().await?;
     Ok(Json(json!({"ok": true})))
 }
 
@@ -662,6 +717,13 @@ pub async fn tag_video(
 ) -> AppResult<Json<Value>> {
     let user = acting_user(&state, &headers, peer).await?;
     owns_video(&state, id, &user).await?;
+    let taxonomy_count = body.taxonomy_ids.len();
+    let free_tags = body
+        .free_tags
+        .into_iter()
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+        .collect::<Vec<_>>();
     let mut tx = state.pool.begin().await?;
     sqlx::query("DELETE FROM video_library.video_taxonomy WHERE video_id=$1")
         .bind(id)
@@ -678,14 +740,18 @@ pub async fn tag_video(
         .bind(id)
         .execute(&mut *tx)
         .await?;
-    for tag in body
-        .free_tags
-        .into_iter()
-        .map(|v| v.trim().to_string())
-        .filter(|v| !v.is_empty())
-    {
+    for tag in &free_tags {
         sqlx::query("INSERT INTO video_library.free_tags(video_id,tag) VALUES($1,$2) ON CONFLICT DO NOTHING").bind(id).bind(tag).execute(&mut *tx).await?;
     }
+    write_action_audit(
+        &mut tx,
+        &user,
+        "video_tagged",
+        "video",
+        id,
+        Some(json!({"taxonomy_count": taxonomy_count, "free_tag_count": free_tags.len()})),
+    )
+    .await?;
     tx.commit().await?;
     Ok(Json(json!({"ok": true})))
 }
@@ -708,15 +774,18 @@ pub async fn create_taxonomy(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
     Json(body): Json<TaxonomyBody>,
 ) -> AppResult<Json<Value>> {
-    auth::require_admin_user(&state, &headers, Some(peer)).await?;
+    let user = auth::require_admin_user(&state, &headers, Some(peer)).await?;
+    let mut tx = state.pool.begin().await?;
     let id: i64 = sqlx::query_scalar(
         "INSERT INTO video_library.taxonomy(dimension,name,slug) VALUES($1,$2,$3) RETURNING id",
     )
     .bind(body.dimension)
     .bind(body.name)
     .bind(body.slug)
-    .fetch_one(&state.pool)
+    .fetch_one(&mut *tx)
     .await?;
+    write_action_audit(&mut tx, &user, "taxonomy_created", "taxonomy", id, None).await?;
+    tx.commit().await?;
     Ok(Json(json!({"id":id})))
 }
 
@@ -727,16 +796,21 @@ pub async fn update_taxonomy(
     Path(id): Path<i64>,
     Json(body): Json<TaxonomyBody>,
 ) -> AppResult<Json<Value>> {
-    auth::require_admin_user(&state, &headers, Some(peer)).await?;
-    sqlx::query(
+    let user = auth::require_admin_user(&state, &headers, Some(peer)).await?;
+    let mut tx = state.pool.begin().await?;
+    let result = sqlx::query(
         "UPDATE video_library.taxonomy SET dimension=$1,name=$2,slug=$3,active=TRUE WHERE id=$4",
     )
     .bind(body.dimension)
     .bind(body.name)
     .bind(body.slug)
     .bind(id)
-    .execute(&state.pool)
+    .execute(&mut *tx)
     .await?;
+    if result.rows_affected() > 0 {
+        write_action_audit(&mut tx, &user, "taxonomy_updated", "taxonomy", id, None).await?;
+    }
+    tx.commit().await?;
     Ok(Json(json!({"ok":true})))
 }
 
@@ -746,11 +820,17 @@ pub async fn delete_taxonomy(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
-    auth::require_admin_user(&state, &headers, Some(peer)).await?;
-    sqlx::query("UPDATE video_library.taxonomy SET active=FALSE WHERE id=$1")
-        .bind(id)
-        .execute(&state.pool)
-        .await?;
+    let user = auth::require_admin_user(&state, &headers, Some(peer)).await?;
+    let mut tx = state.pool.begin().await?;
+    let result =
+        sqlx::query("UPDATE video_library.taxonomy SET active=FALSE WHERE id=$1 AND active=TRUE")
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+    if result.rows_affected() > 0 {
+        write_action_audit(&mut tx, &user, "taxonomy_deactivated", "taxonomy", id, None).await?;
+    }
+    tx.commit().await?;
     Ok(Json(json!({"ok":true})))
 }
 
@@ -788,10 +868,22 @@ pub async fn create_playlist(
     for (video_id, position) in positioned_items(&body.video_ids) {
         sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES($1,$2,$3)").bind(&id).bind(video_id).bind(position).execute(&mut *tx).await?;
     }
+    write_action_audit(
+        &mut tx,
+        &user,
+        "playlist_created",
+        "playlist",
+        &id,
+        Some(json!({"source": &body.source, "featured": body.featured})),
+    )
+    .await?;
     tx.commit().await?;
     if body.source == "yt" {
         if let Some(playlist) = body.yt_playlist_id {
-            sync_playlist(&state, &id, &playlist).await;
+            if let Err(error) = sync_playlist(&state, &id, &playlist).await {
+                tracing::warn!(?error, playlist_id=%id, "video playlist sync failed");
+                return Err(error);
+            }
         }
     }
     Ok(Json(json!({"id":id})))
@@ -805,12 +897,15 @@ pub async fn update_playlist(
     Json(body): Json<PlaylistBody>,
 ) -> AppResult<Json<Value>> {
     let user = acting_user(&state, &headers, peer).await?;
-    let owner: Option<i64> =
-        sqlx::query_scalar("SELECT owner_discord_id FROM video_library.playlists WHERE id=$1")
+    let playlist =
+        sqlx::query("SELECT owner_discord_id,featured FROM video_library.playlists WHERE id=$1")
             .bind(&id)
             .fetch_optional(&state.pool)
-            .await?;
-    if user.role != "admin" && owner.map(|v| v.to_string()).as_deref() != Some(&user.sub) {
+            .await?
+            .ok_or_else(|| AppError::not_found("PLATZHALTER: Playlist nicht gefunden"))?;
+    let owner: i64 = playlist.try_get("owner_discord_id")?;
+    let was_featured: bool = playlist.try_get("featured")?;
+    if user.role != "admin" && owner.to_string() != user.sub {
         return Err(AppError::forbidden(
             "PLATZHALTER: Playlist gehört einem anderen Creator",
         ));
@@ -828,10 +923,33 @@ pub async fn update_playlist(
     for (video_id, position) in positioned_items(&body.video_ids) {
         sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES($1,$2,$3)").bind(&id).bind(video_id).bind(position).execute(&mut *tx).await?;
     }
+    write_action_audit(
+        &mut tx,
+        &user,
+        "playlist_updated",
+        "playlist",
+        &id,
+        Some(json!({"source": &body.source, "featured": body.featured})),
+    )
+    .await?;
+    if was_featured != body.featured {
+        write_action_audit(
+            &mut tx,
+            &user,
+            "playlist_featured",
+            "playlist",
+            &id,
+            Some(json!({"from": was_featured, "to": body.featured})),
+        )
+        .await?;
+    }
     tx.commit().await?;
     if body.source == "yt" {
         if let Some(playlist) = body.yt_playlist_id {
-            sync_playlist(&state, &id, &playlist).await;
+            if let Err(error) = sync_playlist(&state, &id, &playlist).await {
+                tracing::warn!(?error, playlist_id=%id, "video playlist sync failed");
+                return Err(error);
+            }
         }
     }
     Ok(Json(json!({"ok":true})))
@@ -849,37 +967,54 @@ pub async fn delete_playlist(
             .bind(&id)
             .fetch_optional(&state.pool)
             .await?;
-    if user.role != "admin" && owner.map(|v| v.to_string()).as_deref() != Some(&user.sub) {
+    let owner = owner.ok_or_else(|| AppError::not_found("PLATZHALTER: Playlist nicht gefunden"))?;
+    if user.role != "admin" && owner.to_string() != user.sub {
         return Err(AppError::forbidden(
             "PLATZHALTER: Playlist gehört einem anderen Creator",
         ));
     }
+    let mut tx = state.pool.begin().await?;
     sqlx::query("DELETE FROM video_library.playlists WHERE id=$1")
-        .bind(id)
-        .execute(&state.pool)
+        .bind(&id)
+        .execute(&mut *tx)
         .await?;
+    write_action_audit(&mut tx, &user, "playlist_deleted", "playlist", &id, None).await?;
+    tx.commit().await?;
     Ok(Json(json!({"ok":true})))
 }
 
-async fn sync_playlist(state: &AppState, id: &str, playlist_id: &str) {
+async fn sync_playlist(state: &AppState, id: &str, playlist_id: &str) -> AppResult<()> {
     let client = youtube_client(state);
-    let Ok(xml) = client.playlist_feed(playlist_id).await else {
-        return;
-    };
-    let Ok(videos) = parse_feed(&xml) else { return };
-    let _ = ingest_videos(state, None, videos.clone(), "rss", client.as_ref()).await;
-    let mut tx = match state.pool.begin().await {
-        Ok(tx) => tx,
-        Err(_) => return,
-    };
-    let _ = sqlx::query("DELETE FROM video_library.playlist_items WHERE playlist_id=$1")
+    sync_playlist_with_client(state, id, playlist_id, client.as_ref()).await
+}
+
+pub(crate) async fn sync_playlist_with_client(
+    state: &AppState,
+    id: &str,
+    playlist_id: &str,
+    client: &dyn YoutubeClient,
+) -> AppResult<()> {
+    let xml = client.playlist_feed(playlist_id).await.map_err(|_| {
+        AppError::service_unavailable("PLATZHALTER: YouTube-Playlist konnte nicht geladen werden")
+    })?;
+    let videos = parse_feed(&xml).map_err(|_| {
+        AppError::service_unavailable("PLATZHALTER: YouTube-Playlist konnte nicht gelesen werden")
+    })?;
+    let mut tx = state.pool.begin().await?;
+    sqlx::query("DELETE FROM video_library.playlist_items WHERE playlist_id=$1")
         .bind(id)
         .execute(&mut *tx)
-        .await;
+        .await?;
     for (position, video) in videos.iter().enumerate() {
-        let _=sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) SELECT $1,id,$2 FROM video_library.videos WHERE yt_video_id=$3 ON CONFLICT DO NOTHING").bind(id).bind(position as i32).bind(&video.yt_video_id).execute(&mut *tx).await;
+        sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) SELECT $1,v.id,$2 FROM video_library.videos v JOIN video_library.channels c ON c.id=v.channel_id WHERE v.yt_video_id=$3 ON CONFLICT DO NOTHING")
+            .bind(id)
+            .bind(position as i32)
+            .bind(&video.yt_video_id)
+            .execute(&mut *tx)
+            .await?;
     }
-    let _ = tx.commit().await;
+    tx.commit().await?;
+    Ok(())
 }
 
 pub async fn list_playlists(State(state): State<AppState>) -> AppResult<Json<Value>> {
@@ -957,7 +1092,9 @@ pub fn spawn_ingest_worker(state: AppState) {
                         playlist.try_get::<String, _>("id"),
                         playlist.try_get::<Option<String>, _>("yt_playlist_id"),
                     ) {
-                        sync_playlist(&state, &id, &yt_id).await;
+                        if let Err(error) = sync_playlist(&state, &id, &yt_id).await {
+                            tracing::warn!(?error, playlist_id=%id, "video playlist sync failed");
+                        }
                     }
                 }
             }
