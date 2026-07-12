@@ -1083,6 +1083,37 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn admin_featured_toggle_without_video_ids_preserves_playlist_items() {
+        let (_db, state) = test_state().await;
+        let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940010,'UCfeatured0000000000000','https://youtube.test/featured') RETURNING id")
+            .fetch_one(&state.pool).await.expect("channel");
+        let video_id: i64 = sqlx::query_scalar("INSERT INTO video_library.videos(channel_id,yt_video_id,title,published_at,thumbnail_url,status,source) VALUES($1,'featured-video','Featured',now(),'','live','rss') RETURNING id")
+            .bind(channel_id).fetch_one(&state.pool).await.expect("video");
+        sqlx::query("INSERT INTO video_library.playlists(id,owner_discord_id,title,source) VALUES('featured-list',940010,'Featured','manual')")
+            .execute(&state.pool).await.expect("playlist");
+        sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES('featured-list',$1,0)")
+            .bind(video_id).execute(&state.pool).await.expect("item");
+
+        let response = router(state.clone())
+            .oneshot(admin_request(
+                Method::PUT,
+                "/api/videos/playlists/featured-list",
+                Some(json!({"title":"Featured","source":"manual","featured":true})),
+            ))
+            .await
+            .expect("featured response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let item_count: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM video_library.playlist_items WHERE playlist_id='featured-list'",
+        )
+        .fetch_one(&state.pool)
+        .await
+        .expect("item count");
+        assert_eq!(item_count, 1);
+    }
+
+    #[tokio::test]
     async fn auth_upsert_erhaelt_existing_role() {
         let (_db, state) = test_state().await;
         let user_id = 940001_i64;

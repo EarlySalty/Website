@@ -1,17 +1,45 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { apiBase } from '@/api/base'
 import { useAuth } from '@/context/AuthContext'
 
-const api = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/videos`
+const api = `${apiBase}/videos`
+const panel = 'rounded-[1.4rem] border border-[#c9a86a]/25 bg-[#211a11] p-6'
+const field = 'rounded-xl border border-white/10 bg-[#18120c] px-4 py-3 text-[#f5ecd9] outline-none focus:border-[#c9a86a]'
+const primary = 'rounded-xl bg-[#c9a86a] px-4 py-3 font-extrabold text-[#241c11]'
+const secondary = 'rounded-xl border border-[#c9a86a]/40 px-4 py-3 font-bold text-[#f5ecd9]'
 
-type Video = { id: number; yt_video_id: string; title: string; description: string; thumbnail_url: string; published_at: string }
+type Video = { id: number; yt_video_id: string; title: string; description: string; thumbnail_url: string; published_at: string; status?: string }
 type Taxonomy = { id: number; dimension: 'type' | 'hero' | 'level'; name: string; slug: string }
-type Playlist = { id: string; title: string; description: string; featured: boolean; videos?: Video[] }
+type Playlist = { id: string; owner_discord_id: number; title: string; description: string; featured: boolean; source: 'manual' | 'yt'; yt_playlist_id?: string; videos?: Video[] }
+type Channel = { id: number; youtube_channel_id: string; youtube_url: string; title: string; active: boolean }
+type PlaylistDraft = { id?: string; title: string; description: string; source: 'manual' | 'yt'; ytPlaylist: string; videoIds: number[]; featured: boolean }
+
+const emptyPlaylist: PlaylistDraft = { title: '', description: '', source: 'manual', ytPlaylist: '', videoIds: [], featured: false }
 
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: 'include' })
   if (!response.ok) throw new Error(String(response.status))
   return response.json()
+}
+
+async function sendJson<T = unknown>(url: string, method: string, body?: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method,
+    credentials: 'include',
+    headers: body === undefined ? undefined : { 'content-type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (!response.ok) throw new Error(String(response.status))
+  return response.json()
+}
+
+function playlistId(value: string) {
+  try {
+    return new URL(value).searchParams.get('list') || value.trim()
+  } catch {
+    return value.trim()
+  }
 }
 
 function VideoCard({ video }: { video: Video }) {
@@ -37,6 +65,136 @@ function VideoCard({ video }: { video: Video }) {
   )
 }
 
+function VideoTagEditor({ videoId, taxonomy, onNotice }: { videoId: number; taxonomy: Taxonomy[]; onNotice: (message: string) => void }) {
+  const [selected, setSelected] = useState<number[]>([])
+  const [freeTags, setFreeTags] = useState('')
+  const toggle = (id: number) => setSelected(ids => ids.includes(id) ? ids.filter(value => value !== id) : [...ids, id])
+  const save = async () => {
+    try {
+      await sendJson(`${api}/${videoId}/tags`, 'PUT', { taxonomy_ids: selected, free_tags: freeTags.split(',').map(tag => tag.trim()).filter(Boolean) })
+      onNotice('PLATZHALTER: Video-Tags wurden gespeichert')
+    } catch {
+      onNotice('PLATZHALTER: Video-Tags konnten nicht gespeichert werden')
+    }
+  }
+  return (
+    <div className="mt-4 space-y-3 border-t border-[#c9a86a]/15 pt-4">
+      {(['type', 'hero', 'level'] as const).map(dimension => (
+        <fieldset key={dimension} className="space-y-2">
+          <legend className="text-xs font-bold uppercase tracking-[.18em] text-[#c9a86a]">PLATZHALTER: {dimension}-Tags</legend>
+          <div className="flex flex-wrap gap-2">
+            {taxonomy.filter(tag => tag.dimension === dimension).map(tag => (
+              <button type="button" key={tag.id} aria-pressed={selected.includes(tag.id)} onClick={() => toggle(tag.id)} className={`rounded-full border px-3 py-1 text-xs font-bold ${selected.includes(tag.id) ? 'border-[#f2dfb8] bg-[#c9a86a] text-[#241c11]' : 'border-[#c9a86a]/30 text-[#cfc1a5]'}`}>{tag.name}</button>
+            ))}
+          </div>
+        </fieldset>
+      ))}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input value={freeTags} onChange={event => setFreeTags(event.target.value)} className={`${field} min-w-0 flex-1`} placeholder="PLATZHALTER: Freie Tags, mit Komma getrennt" />
+        <button type="button" onClick={save} className={primary}>PLATZHALTER: Tags speichern</button>
+      </div>
+    </div>
+  )
+}
+
+function PlaylistManager({ playlists, ownVideos, onChanged, onNotice }: { playlists: Playlist[]; ownVideos: Video[]; onChanged: () => Promise<void>; onNotice: (message: string) => void }) {
+  const [draft, setDraft] = useState<PlaylistDraft>(emptyPlaylist)
+  const toggleVideo = (id: number) => setDraft(value => ({ ...value, videoIds: value.videoIds.includes(id) ? value.videoIds.filter(videoId => videoId !== id) : [...value.videoIds, id] }))
+  const move = (index: number, offset: number) => setDraft(value => {
+    const next = [...value.videoIds]
+    const target = index + offset
+    if (target < 0 || target >= next.length) return value
+    ;[next[index], next[target]] = [next[target], next[index]]
+    return { ...value, videoIds: next }
+  })
+  const edit = async (playlist: Playlist) => {
+    try {
+      const detail = await getJson<Playlist>(`${api}/playlists/${playlist.id}`)
+      setDraft({ id: playlist.id, title: playlist.title, description: playlist.description, source: playlist.source, ytPlaylist: playlist.yt_playlist_id || '', videoIds: detail.videos?.map(video => video.id) || [], featured: playlist.featured })
+    } catch {
+      onNotice('PLATZHALTER: Playlist konnte nicht geladen werden')
+    }
+  }
+  const save = async (event: FormEvent) => {
+    event.preventDefault()
+    const payload = {
+      title: draft.title,
+      description: draft.description,
+      source: draft.source,
+      yt_playlist_id: draft.source === 'yt' ? playlistId(draft.ytPlaylist) : null,
+      video_ids: draft.source === 'manual' ? draft.videoIds : [],
+      featured: draft.featured,
+    }
+    try {
+      await sendJson(draft.id ? `${api}/playlists/${draft.id}` : `${api}/playlists`, draft.id ? 'PUT' : 'POST', payload)
+      setDraft(emptyPlaylist)
+      await onChanged()
+      onNotice('PLATZHALTER: Playlist wurde gespeichert')
+    } catch {
+      onNotice('PLATZHALTER: Playlist konnte nicht gespeichert werden')
+    }
+  }
+  const remove = async (id: string) => {
+    try {
+      await sendJson(`${api}/playlists/${id}`, 'DELETE')
+      if (draft.id === id) setDraft(emptyPlaylist)
+      await onChanged()
+      onNotice('PLATZHALTER: Playlist wurde gelöscht')
+    } catch {
+      onNotice('PLATZHALTER: Playlist konnte nicht gelöscht werden')
+    }
+  }
+  return (
+    <div className="mt-8 grid gap-6 border-t border-[#c9a86a]/20 pt-8 lg:grid-cols-[.8fr_1.2fr]">
+      <div>
+        <p className="text-xs uppercase tracking-[.25em] text-[#c9a86a]">PLATZHALTER: Eigene Playlists</p>
+        <div className="mt-4 space-y-3">
+          {playlists.map(playlist => (
+            <div key={playlist.id} className="rounded-xl border border-white/10 bg-black/20 p-4">
+              <p className="font-bold text-[#f5ecd9]">{playlist.title}</p>
+              <p className="mt-1 text-xs uppercase tracking-wider text-[#c9a86a]">PLATZHALTER: Quelle {playlist.source}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => edit(playlist)} className={secondary}>PLATZHALTER: Bearbeiten</button>
+                <button type="button" onClick={() => remove(playlist.id)} className={secondary}>PLATZHALTER: Löschen</button>
+              </div>
+            </div>
+          ))}
+          {playlists.length === 0 && <p className="text-sm text-[#cfc1a5]">PLATZHALTER: Noch keine eigene Playlist</p>}
+        </div>
+      </div>
+      <form onSubmit={save} className="space-y-4">
+        <h3 className="text-xl font-black text-[#f5ecd9]">{draft.id ? 'PLATZHALTER: Playlist bearbeiten' : 'PLATZHALTER: Playlist erstellen'}</h3>
+        <input required value={draft.title} onChange={event => setDraft({ ...draft, title: event.target.value })} className={`${field} w-full`} placeholder="PLATZHALTER: Playlist-Titel" />
+        <textarea value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} className={`${field} min-h-24 w-full`} placeholder="PLATZHALTER: Playlist-Beschreibung" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button type="button" onClick={() => setDraft({ ...draft, source: 'manual' })} className={draft.source === 'manual' ? primary : secondary}>PLATZHALTER: Manuelle Auswahl</button>
+          <button type="button" onClick={() => setDraft({ ...draft, source: 'yt' })} className={draft.source === 'yt' ? primary : secondary}>PLATZHALTER: YouTube-Playlist</button>
+        </div>
+        {draft.source === 'yt' ? (
+          <input required value={draft.ytPlaylist} onChange={event => setDraft({ ...draft, ytPlaylist: event.target.value })} className={`${field} w-full`} placeholder="PLATZHALTER: YouTube-Playlist-ID oder URL" />
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm font-bold text-[#cfc1a5]">PLATZHALTER: Videos auswählen</p>
+            <div className="grid max-h-52 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+              {ownVideos.map(video => <label key={video.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 p-3 text-sm text-[#f5ecd9]"><input type="checkbox" checked={draft.videoIds.includes(video.id)} onChange={() => toggleVideo(video.id)} />{video.title}</label>)}
+            </div>
+            <ol className="space-y-2">
+              {draft.videoIds.map((id, index) => {
+                const video = ownVideos.find(item => item.id === id)
+                return <li key={id} className="flex items-center gap-2 rounded-lg bg-black/20 p-2"><span className="min-w-0 flex-1 truncate text-sm text-[#f5ecd9]">{video?.title}</span><button type="button" onClick={() => move(index, -1)} className={secondary}>PLATZHALTER: Hoch</button><button type="button" onClick={() => move(index, 1)} className={secondary}>PLATZHALTER: Runter</button></li>
+              })}
+            </ol>
+          </div>
+        )}
+        <div className="flex flex-wrap gap-3">
+          <button className={primary}>PLATZHALTER: Playlist speichern</button>
+          {draft.id && <button type="button" onClick={() => setDraft(emptyPlaylist)} className={secondary}>PLATZHALTER: Bearbeitung abbrechen</button>}
+        </div>
+      </form>
+    </div>
+  )
+}
+
 function PlaylistDetail() {
   const { id } = useParams()
   const [playlist, setPlaylist] = useState<Playlist>()
@@ -54,6 +212,47 @@ function CreatorProfile() {
   return <section className="space-y-8"><Link to="/videos" className="text-sm font-bold text-[#c9a86a]">PLATZHALTER: Zur Video-Bibliothek</Link><div className="flex items-center gap-5 border-l-4 border-[#c9a86a] pl-5">{profile.avatar_url && <img src={profile.avatar_url} alt="" className="h-20 w-20 rounded-full object-cover" />}<div><h1 className="text-4xl font-black text-[#f5ecd9]">{profile.name}</h1><a className="mt-2 inline-block font-bold text-[#c9a86a]" href={profile.youtube_url} target="_blank" rel="noreferrer">PLATZHALTER: YouTube-Kanal öffnen</a></div></div><div className="grid gap-6 md:grid-cols-2">{profile.videos.map(video => <VideoCard key={video.id} video={video} />)}</div></section>
 }
 
+function AdminPanel({ taxonomy, playlists, refresh, onNotice }: { taxonomy: Taxonomy[]; playlists: Playlist[]; refresh: () => Promise<void>; onNotice: (message: string) => void }) {
+  const [draft, setDraft] = useState<{ id?: number; dimension: Taxonomy['dimension']; name: string; slug: string }>({ dimension: 'hero', name: '', slug: '' })
+  const save = async (event: FormEvent) => {
+    event.preventDefault()
+    try {
+      await sendJson(draft.id ? `${apiBase}/admin/videos/taxonomy/${draft.id}` : `${apiBase}/admin/videos/taxonomy`, draft.id ? 'PUT' : 'POST', draft)
+      setDraft({ dimension: 'hero', name: '', slug: '' })
+      await refresh()
+      onNotice('PLATZHALTER: Taxonomie-Eintrag wurde gespeichert')
+    } catch {
+      onNotice('PLATZHALTER: Taxonomie-Eintrag konnte nicht gespeichert werden')
+    }
+  }
+  const deactivate = async (id: number) => {
+    try {
+      await sendJson(`${apiBase}/admin/videos/taxonomy/${id}`, 'DELETE')
+      await refresh()
+      onNotice('PLATZHALTER: Taxonomie-Eintrag wurde deaktiviert')
+    } catch {
+      onNotice('PLATZHALTER: Taxonomie-Eintrag konnte nicht deaktiviert werden')
+    }
+  }
+  const toggleFeatured = async (playlist: Playlist) => {
+    try {
+      await sendJson(`${api}/playlists/${playlist.id}`, 'PUT', { title: playlist.title, description: playlist.description, source: playlist.source, yt_playlist_id: playlist.yt_playlist_id || null, featured: !playlist.featured })
+      await refresh()
+      onNotice('PLATZHALTER: Featured-Status wurde geändert')
+    } catch {
+      onNotice('PLATZHALTER: Featured-Status konnte nicht geändert werden')
+    }
+  }
+  return (
+    <section className={`${panel} space-y-8`}>
+      <div><p className="text-xs uppercase tracking-[.25em] text-[#c9a86a]">PLATZHALTER: Admin-Bereich</p><h2 className="mt-2 text-2xl font-black text-[#f5ecd9]">PLATZHALTER: Taxonomie und Lernpfade verwalten</h2></div>
+      <form onSubmit={save} className="grid gap-3 md:grid-cols-4"><select value={draft.dimension} onChange={event => setDraft({ ...draft, dimension: event.target.value as Taxonomy['dimension'] })} className={field}><option value="type">PLATZHALTER: Typ</option><option value="hero">PLATZHALTER: Held</option><option value="level">PLATZHALTER: Level</option></select><input required value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} placeholder="PLATZHALTER: Anzeigename" className={field} /><input required value={draft.slug} onChange={event => setDraft({ ...draft, slug: event.target.value })} placeholder="PLATZHALTER: Kennung" className={field} /><button className={primary}>PLATZHALTER: Taxonomie speichern</button></form>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{taxonomy.map(tag => <div key={tag.id} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-3"><span className="min-w-0 flex-1 truncate text-sm text-[#f5ecd9]">{tag.name}</span><button type="button" onClick={() => setDraft(tag)} className={secondary}>PLATZHALTER: Bearbeiten</button><button type="button" onClick={() => deactivate(tag.id)} className={secondary}>PLATZHALTER: Deaktivieren</button></div>)}</div>
+      <div><h3 className="text-xl font-black text-[#f5ecd9]">PLATZHALTER: Featured-Playlists</h3><div className="mt-4 grid gap-3 md:grid-cols-2">{playlists.map(playlist => <div key={playlist.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 p-4"><span className="min-w-0 flex-1 truncate font-bold text-[#f5ecd9]">{playlist.title}</span><button type="button" onClick={() => toggleFeatured(playlist)} className={playlist.featured ? primary : secondary}>{playlist.featured ? 'PLATZHALTER: Featured entfernen' : 'PLATZHALTER: Featured setzen'}</button></div>)}</div></div>
+    </section>
+  )
+}
+
 export default function VideosPage({ view = 'feed' }: { view?: 'feed' | 'playlist' | 'creator' }) {
   const { user, isAdmin } = useAuth()
   const [videos, setVideos] = useState<Video[]>([])
@@ -61,55 +260,75 @@ export default function VideosPage({ view = 'feed' }: { view?: 'feed' | 'playlis
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [filters, setFilters] = useState({ type: '', hero: '', level: '', q: '' })
   const [channel, setChannel] = useState('')
+  const [channels, setChannels] = useState<Channel[]>([])
   const [notice, setNotice] = useState('')
-  const [ownVideos, setOwnVideos] = useState<(Video & { status: string })[]>([])
-  const [newTag, setNewTag] = useState({ dimension: 'hero', name: '', slug: '' })
-
+  const [ownVideos, setOwnVideos] = useState<Video[]>([])
   const query = useMemo(() => new URLSearchParams(Object.entries(filters).filter(([, value]) => value)).toString(), [filters])
+
+  async function refreshLibrary() {
+    const [tags, paths] = await Promise.all([getJson<Taxonomy[]>(`${api}/taxonomy`), getJson<Playlist[]>(`${api}/playlists`)])
+    setTaxonomy(tags)
+    setPlaylists(paths)
+  }
+  async function refreshCreator() {
+    if (!user) return
+    const [mine, ownChannels] = await Promise.all([getJson<Video[]>(`${api}/mine`), getJson<Channel[]>(`${api}/channels`)])
+    setOwnVideos(mine)
+    setChannels(ownChannels)
+  }
+
   useEffect(() => { getJson<Video[]>(`${api}?${query}`).then(setVideos).catch(() => setVideos([])) }, [query])
-  useEffect(() => { Promise.all([getJson<Taxonomy[]>(`${api}/taxonomy`), getJson<Playlist[]>(`${api}/playlists`)]).then(([tags, paths]) => { setTaxonomy(tags); setPlaylists(paths) }).catch(() => undefined) }, [])
-  useEffect(() => { if (user) getJson<(Video & { status: string })[]>(`${api}/mine`).then(setOwnVideos).catch(() => setOwnVideos([])) }, [user])
+  useEffect(() => { refreshLibrary().catch(() => undefined) }, [])
+  useEffect(() => { refreshCreator().catch(() => { setOwnVideos([]); setChannels([]) }) }, [user])
 
   if (view === 'playlist') return <PlaylistDetail />
   if (view === 'creator') return <CreatorProfile />
 
   const register = async (event: FormEvent) => {
-    event.preventDefault(); setNotice('')
-    const response = await fetch(`${api}/channels`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ channel }) })
-    setNotice(response.ok ? 'PLATZHALTER: Kanal wurde registriert' : 'PLATZHALTER: Kanal konnte nicht registriert werden')
+    event.preventDefault()
+    try {
+      await sendJson(`${api}/channels`, 'POST', { channel })
+      setChannel('')
+      await refreshCreator()
+      setNotice('PLATZHALTER: Kanal wurde registriert')
+    } catch {
+      setNotice('PLATZHALTER: Kanal konnte nicht registriert werden')
+    }
+  }
+  const disconnect = async (id: number) => {
+    try {
+      await sendJson(`${api}/channels/${id}`, 'DELETE')
+      await refreshCreator()
+      setNotice('PLATZHALTER: Kanal wurde getrennt')
+    } catch {
+      setNotice('PLATZHALTER: Kanal konnte nicht getrennt werden')
+    }
+  }
+  const moderate = async (id: number, action: 'approve' | 'hide') => {
+    try {
+      await sendJson(`${api}/${id}/${action}`, 'POST')
+      await refreshCreator()
+      setNotice(action === 'approve' ? 'PLATZHALTER: Video wurde freigegeben' : 'PLATZHALTER: Video wurde versteckt')
+    } catch {
+      setNotice('PLATZHALTER: Video-Status konnte nicht geändert werden')
+    }
   }
   const options = (dimension: Taxonomy['dimension']) => taxonomy.filter(tag => tag.dimension === dimension)
-  const moderate = async (id: number, action: 'approve' | 'hide') => {
-    const response = await fetch(`${api}/${id}/${action}`, { method: 'POST', credentials: 'include' })
-    if (response.ok) setOwnVideos(items => items.map(item => item.id === id ? { ...item, status: action === 'approve' ? 'live' : 'hidden' } : item))
-  }
-  const addTaxonomy = async (event: FormEvent) => {
-    event.preventDefault()
-    const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/admin/videos/taxonomy`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify(newTag) })
-    if (response.ok) setNotice('PLATZHALTER: Taxonomie-Eintrag wurde gespeichert')
-  }
+  const creatorPlaylists = playlists.filter(playlist => String(playlist.owner_discord_id) === user?.id)
 
   return (
     <div className="space-y-12">
-      <header className="relative overflow-hidden rounded-[2rem] border border-[#c9a86a]/30 bg-[#211a11] px-6 py-10 md:px-10">
-        <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-[#f2dfb8] via-[#c9a86a] to-[#806536]" />
-        <p className="text-xs font-extrabold uppercase tracking-[.3em] text-[#c9a86a]">PLATZHALTER: Deutsche Deadlock Video-Bibliothek</p>
-        <h1 className="mt-4 max-w-3xl text-4xl font-black leading-tight text-[#f5ecd9] md:text-6xl">PLATZHALTER: Wissen, Spielzüge und Analysen an einem Ort</h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-[#cfc1a5]">PLATZHALTER: Beschreibung der Video-Bibliothek und ihrer kuratierten Lernpfade</p>
-      </header>
+      <header className="relative overflow-hidden rounded-[2rem] border border-[#c9a86a]/30 bg-[#211a11] px-6 py-10 md:px-10"><div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-[#f2dfb8] via-[#c9a86a] to-[#806536]" /><p className="text-xs font-extrabold uppercase tracking-[.3em] text-[#c9a86a]">PLATZHALTER: Deutsche Deadlock Video-Bibliothek</p><h1 className="mt-4 max-w-3xl text-4xl font-black leading-tight text-[#f5ecd9] md:text-6xl">PLATZHALTER: Wissen, Spielzüge und Analysen an einem Ort</h1><p className="mt-5 max-w-2xl text-base leading-7 text-[#cfc1a5]">PLATZHALTER: Beschreibung der Video-Bibliothek und ihrer kuratierten Lernpfade</p></header>
 
-      <section className="grid gap-3 rounded-[1.4rem] border border-[#c9a86a]/20 bg-black/20 p-4 md:grid-cols-4" aria-label="PLATZHALTER: Videofilter">
-        <input className="rounded-xl border border-white/10 bg-[#18120c] px-4 py-3 text-[#f5ecd9] outline-none focus:border-[#c9a86a]" value={filters.q} onChange={e => setFilters({ ...filters, q: e.target.value })} placeholder="PLATZHALTER: Videos durchsuchen" />
-        {(['type', 'hero', 'level'] as const).map(dimension => <select key={dimension} className="rounded-xl border border-white/10 bg-[#18120c] px-4 py-3 text-[#f5ecd9] outline-none focus:border-[#c9a86a]" value={filters[dimension]} onChange={e => setFilters({ ...filters, [dimension]: e.target.value })}><option value="">PLATZHALTER: {dimension}-Filter</option>{options(dimension).map(tag => <option key={tag.id} value={tag.slug}>{tag.name}</option>)}</select>)}
-      </section>
+      <section className="grid gap-3 rounded-[1.4rem] border border-[#c9a86a]/20 bg-black/20 p-4 md:grid-cols-4" aria-label="PLATZHALTER: Videofilter"><input className={field} value={filters.q} onChange={event => setFilters({ ...filters, q: event.target.value })} placeholder="PLATZHALTER: Videos durchsuchen" />{(['type', 'hero', 'level'] as const).map(dimension => <select key={dimension} className={field} value={filters[dimension]} onChange={event => setFilters({ ...filters, [dimension]: event.target.value })}><option value="">PLATZHALTER: {dimension}-Filter</option>{options(dimension).map(tag => <option key={tag.id} value={tag.slug}>{tag.name}</option>)}</select>)}</section>
 
-      {playlists.length > 0 && <section><div className="mb-5 flex items-end justify-between"><div><p className="text-xs uppercase tracking-[.25em] text-[#c9a86a]">PLATZHALTER: Kuratiert</p><h2 className="mt-2 text-3xl font-black text-[#f5ecd9]">PLATZHALTER: Lernpfade und Playlists</h2></div></div><div className="grid gap-4 md:grid-cols-3">{playlists.map(playlist => <Link key={playlist.id} to={`/videos/playlists/${playlist.id}`} className="rounded-[1.25rem] border border-[#c9a86a]/20 bg-[#211a11] p-5 transition hover:-translate-y-1 hover:border-[#c9a86a]/60"><span className="text-xs font-bold uppercase tracking-[.2em] text-[#c9a86a]">{playlist.featured ? 'PLATZHALTER: Lernpfad' : 'PLATZHALTER: Playlist'}</span><h3 className="mt-3 text-xl font-bold text-[#f5ecd9]">{playlist.title}</h3><p className="mt-2 text-sm text-[#cfc1a5]">{playlist.description}</p></Link>)}</div></section>}
+      {playlists.length > 0 && <section><div className="mb-5"><p className="text-xs uppercase tracking-[.25em] text-[#c9a86a]">PLATZHALTER: Kuratiert</p><h2 className="mt-2 text-3xl font-black text-[#f5ecd9]">PLATZHALTER: Lernpfade und Playlists</h2></div><div className="grid gap-4 md:grid-cols-3">{playlists.map(playlist => <Link key={playlist.id} to={`/videos/playlists/${playlist.id}`} className="rounded-[1.25rem] border border-[#c9a86a]/20 bg-[#211a11] p-5 transition hover:-translate-y-1 hover:border-[#c9a86a]/60"><span className="text-xs font-bold uppercase tracking-[.2em] text-[#c9a86a]">{playlist.featured ? 'PLATZHALTER: Lernpfad' : 'PLATZHALTER: Playlist'}</span><h3 className="mt-3 text-xl font-bold text-[#f5ecd9]">{playlist.title}</h3><p className="mt-2 text-sm text-[#cfc1a5]">{playlist.description}</p></Link>)}</div></section>}
 
       <section><h2 className="mb-5 text-3xl font-black text-[#f5ecd9]">PLATZHALTER: Neueste Videos</h2><div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{videos.map(video => <VideoCard key={video.id} video={video} />)}</div>{videos.length === 0 && <p className="rounded-2xl border border-dashed border-[#c9a86a]/30 p-8 text-center text-[#cfc1a5]">PLATZHALTER: Keine passenden Videos gefunden</p>}</section>
 
-      {user && <section className="rounded-[1.4rem] border border-[#c9a86a]/25 bg-[#211a11] p-6"><p className="text-xs uppercase tracking-[.25em] text-[#c9a86a]">PLATZHALTER: Creator-Bereich</p><h2 className="mt-2 text-2xl font-black text-[#f5ecd9]">PLATZHALTER: YouTube-Kanal verbinden</h2><form onSubmit={register} className="mt-5 flex flex-col gap-3 sm:flex-row"><input required value={channel} onChange={e => setChannel(e.target.value)} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#18120c] px-4 py-3 text-[#f5ecd9] focus:border-[#c9a86a] focus:outline-none" placeholder="PLATZHALTER: Kanal-URL oder Channel-ID" /><button className="rounded-xl bg-[#c9a86a] px-5 py-3 font-extrabold text-[#241c11]">PLATZHALTER: Kanal registrieren</button></form>{notice && <p className="mt-3 text-sm text-[#cfc1a5]">{notice}</p>}{ownVideos.length > 0 && <div className="mt-6 space-y-3">{ownVideos.map(video => <div key={video.id} className="flex flex-col gap-3 rounded-xl border border-white/10 bg-black/20 p-4 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="truncate font-bold text-[#f5ecd9]">{video.title}</p><p className="text-xs uppercase tracking-wider text-[#c9a86a]">{video.status}</p></div>{video.status === 'pending' && <button onClick={() => moderate(video.id, 'approve')} className="rounded-lg bg-[#c9a86a] px-3 py-2 text-sm font-bold text-[#241c11]">PLATZHALTER: Freigeben</button>}<button onClick={() => moderate(video.id, 'hide')} className="rounded-lg border border-[#c9a86a]/40 px-3 py-2 text-sm font-bold text-[#f5ecd9]">PLATZHALTER: Verstecken</button></div>)}</div>}</section>}
+      {user && <section className={panel}><p className="text-xs uppercase tracking-[.25em] text-[#c9a86a]">PLATZHALTER: Creator-Bereich</p><h2 className="mt-2 text-2xl font-black text-[#f5ecd9]">PLATZHALTER: Kanäle, Videos und Playlists verwalten</h2><form onSubmit={register} className="mt-5 flex flex-col gap-3 sm:flex-row"><input required value={channel} onChange={event => setChannel(event.target.value)} className={`${field} min-w-0 flex-1`} placeholder="PLATZHALTER: Kanal-URL oder Channel-ID" /><button className={primary}>PLATZHALTER: Kanal registrieren</button></form><div className="mt-4 grid gap-3 sm:grid-cols-2">{channels.map(item => <div key={item.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 p-4"><div className="min-w-0 flex-1"><p className="truncate font-bold text-[#f5ecd9]">{item.title || item.youtube_channel_id}</p><p className="text-xs uppercase tracking-wider text-[#c9a86a]">{item.active ? 'PLATZHALTER: Verbunden' : 'PLATZHALTER: Getrennt'}</p></div>{item.active && <button type="button" onClick={() => disconnect(item.id)} className={secondary}>PLATZHALTER: Kanal trennen</button>}</div>)}</div>{notice && <p className="mt-4 text-sm text-[#cfc1a5]">{notice}</p>}<div className="mt-8 space-y-4">{ownVideos.map(video => <article key={video.id} className="rounded-xl border border-white/10 bg-black/20 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="truncate font-bold text-[#f5ecd9]">{video.title}</p><p className="text-xs uppercase tracking-wider text-[#c9a86a]">PLATZHALTER: Status {video.status}</p></div>{video.status === 'pending' && <button type="button" onClick={() => moderate(video.id, 'approve')} className={primary}>PLATZHALTER: Freigeben</button>}<button type="button" onClick={() => moderate(video.id, 'hide')} className={secondary}>PLATZHALTER: Verstecken</button></div><VideoTagEditor videoId={video.id} taxonomy={taxonomy} onNotice={setNotice} /></article>)}</div><PlaylistManager playlists={creatorPlaylists} ownVideos={ownVideos} onChanged={refreshLibrary} onNotice={setNotice} /></section>}
 
-      {isAdmin && <section className="rounded-[1.4rem] border border-[#c9a86a]/25 bg-[#211a11] p-6"><p className="text-xs uppercase tracking-[.25em] text-[#c9a86a]">PLATZHALTER: Admin-Bereich</p><h2 className="mt-2 text-2xl font-black text-[#f5ecd9]">PLATZHALTER: Filter-Vokabular ergänzen</h2><form onSubmit={addTaxonomy} className="mt-5 grid gap-3 md:grid-cols-4"><select value={newTag.dimension} onChange={e => setNewTag({ ...newTag, dimension: e.target.value })} className="rounded-xl bg-[#18120c] px-4 py-3 text-[#f5ecd9]"><option value="type">PLATZHALTER: Typ</option><option value="hero">PLATZHALTER: Held</option><option value="level">PLATZHALTER: Level</option></select><input required value={newTag.name} onChange={e => setNewTag({ ...newTag, name: e.target.value })} placeholder="PLATZHALTER: Anzeigename" className="rounded-xl bg-[#18120c] px-4 py-3 text-[#f5ecd9]" /><input required value={newTag.slug} onChange={e => setNewTag({ ...newTag, slug: e.target.value })} placeholder="PLATZHALTER: Kennung" className="rounded-xl bg-[#18120c] px-4 py-3 text-[#f5ecd9]" /><button className="rounded-xl bg-[#c9a86a] px-4 py-3 font-bold text-[#241c11]">PLATZHALTER: Speichern</button></form></section>}
+      {isAdmin && <AdminPanel taxonomy={taxonomy} playlists={playlists} refresh={refreshLibrary} onNotice={setNotice} />}
     </div>
   )
 }

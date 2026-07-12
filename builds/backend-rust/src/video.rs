@@ -843,7 +843,7 @@ pub struct PlaylistBody {
     source: String,
     yt_playlist_id: Option<String>,
     #[serde(default)]
-    video_ids: Vec<i64>,
+    video_ids: Option<Vec<i64>>,
     #[serde(default)]
     featured: bool,
 }
@@ -865,7 +865,7 @@ pub async fn create_playlist(
     let id = ids::id16();
     let mut tx = state.pool.begin().await?;
     sqlx::query("INSERT INTO video_library.playlists(id,owner_discord_id,title,description,featured,source,yt_playlist_id) VALUES($1,$2,$3,$4,$5,$6,$7)").bind(&id).bind(owner).bind(body.title).bind(body.description).bind(body.featured).bind(&body.source).bind(&body.yt_playlist_id).execute(&mut *tx).await?;
-    for (video_id, position) in positioned_items(&body.video_ids) {
+    for (video_id, position) in positioned_items(body.video_ids.as_deref().unwrap_or_default()) {
         sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES($1,$2,$3)").bind(&id).bind(video_id).bind(position).execute(&mut *tx).await?;
     }
     write_action_audit(
@@ -916,12 +916,14 @@ pub async fn update_playlist(
     let mut tx = state.pool.begin().await?;
     sqlx::query("UPDATE video_library.playlists SET title=$1,description=$2,featured=$3,source=$4,yt_playlist_id=$5,updated_at=now() WHERE id=$6")
         .bind(body.title).bind(body.description).bind(body.featured).bind(&body.source).bind(&body.yt_playlist_id).bind(&id).execute(&mut *tx).await?;
-    sqlx::query("DELETE FROM video_library.playlist_items WHERE playlist_id=$1")
-        .bind(&id)
-        .execute(&mut *tx)
-        .await?;
-    for (video_id, position) in positioned_items(&body.video_ids) {
-        sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES($1,$2,$3)").bind(&id).bind(video_id).bind(position).execute(&mut *tx).await?;
+    if let Some(video_ids) = body.video_ids.as_deref() {
+        sqlx::query("DELETE FROM video_library.playlist_items WHERE playlist_id=$1")
+            .bind(&id)
+            .execute(&mut *tx)
+            .await?;
+        for (video_id, position) in positioned_items(video_ids) {
+            sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES($1,$2,$3)").bind(&id).bind(video_id).bind(position).execute(&mut *tx).await?;
+        }
     }
     write_action_audit(
         &mut tx,
