@@ -53,6 +53,7 @@ impl AppState {
             }),
         };
         crate::discord_role_connection::spawn_sync_worker(state.clone());
+        crate::video::spawn_ingest_worker(state.clone());
         Ok(state)
     }
 
@@ -116,6 +117,39 @@ impl std::ops::Deref for AppState {
 
 pub fn router(state: AppState) -> Router {
     Router::new()
+        .route("/api/videos", get(crate::video::public_feed))
+        .route("/api/videos/taxonomy", get(crate::video::list_taxonomy))
+        .route("/api/videos/channels", post(crate::video::register_channel))
+        .route(
+            "/api/videos/{id}/approve",
+            post(crate::video::approve_video),
+        )
+        .route("/api/videos/{id}/hide", post(crate::video::hide_video))
+        .route("/api/videos/{id}/tags", put(crate::video::tag_video))
+        .route(
+            "/api/videos/playlists",
+            get(crate::video::list_playlists).post(crate::video::create_playlist),
+        )
+        .route(
+            "/api/videos/playlists/{id}",
+            get(crate::video::playlist_detail),
+        )
+        .route(
+            "/api/videos/creators/{id}",
+            get(crate::video::creator_profile),
+        )
+        .route(
+            "/api/admin/videos/channels/{id}",
+            delete(crate::video::detach_channel),
+        )
+        .route(
+            "/api/admin/videos/taxonomy",
+            post(crate::video::create_taxonomy),
+        )
+        .route(
+            "/api/admin/videos/taxonomy/{id}",
+            put(crate::video::update_taxonomy).delete(crate::video::delete_taxonomy),
+        )
         .route("/api/health", get(routes::health))
         .route(
             "/api/public/patch-timeline",
@@ -391,6 +425,105 @@ mod tests {
 
     use super::*;
     use crate::{auth, rows};
+
+    struct DeadlockTags;
+    impl crate::video::YoutubeClient for DeadlockTags {
+        fn resolve_channel<'a>(
+            &'a self,
+            _: &'a str,
+        ) -> crate::video::YoutubeFuture<'a, crate::video::YoutubeChannel> {
+            Box::pin(async { unreachable!() })
+        }
+        fn channel_feed<'a>(&'a self, _: &'a str) -> crate::video::YoutubeFuture<'a, String> {
+            Box::pin(async { unreachable!() })
+        }
+        fn playlist_feed<'a>(&'a self, _: &'a str) -> crate::video::YoutubeFuture<'a, String> {
+            Box::pin(async { unreachable!() })
+        }
+        fn video_tags<'a>(&'a self, ids: &'a [String]) -> crate::video::TagFuture<'a> {
+            Box::pin(async move {
+                Ok(ids
+                    .iter()
+                    .map(|id| (id.clone(), vec!["Deadlock".into()]))
+                    .collect())
+            })
+        }
+        fn backfill<'a>(
+            &'a self,
+            _: &'a str,
+        ) -> crate::video::YoutubeFuture<'a, Vec<crate::video::FeedVideo>> {
+            Box::pin(async { unreachable!() })
+        }
+    }
+
+    #[tokio::test]
+    async fn rss_fixture_decision_appears_in_public_feed() {
+        let (_db, state) = test_state().await;
+        let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940010,'UCfixture','https://youtube.test/fixture') RETURNING id")
+            .fetch_one(&state.pool).await.expect("channel");
+        let videos = crate::video::parse_feed(include_str!("../tests/fixtures/youtube-feed.xml"))
+            .expect("fixture");
+        crate::video::ingest_videos(&state, Some(channel_id), videos, "rss", &DeadlockTags)
+            .await
+            .expect("ingest");
+
+        let response = router(state.clone())
+            .oneshot(request(Method::GET, "/api/videos", None))
+            .await
+            .expect("feed");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body.as_array().map(Vec::len), Some(2));
+        assert_eq!(body[0]["status"], "live");
+        let decisions: i64 = sqlx::query_scalar("SELECT count(*) FROM video_library.decision_log")
+            .fetch_one(&state.pool)
+            .await
+            .expect("decisions");
+        assert_eq!(decisions, 2);
+    }
+
+    #[tokio::test]
+    async fn video_creator_and_admin_routes_enforce_401_and_403() {
+        let (_db, state) = test_state().await;
+        let app = router(state.clone());
+
+        let response = app
+            .clone()
+            .oneshot(request(
+                Method::POST,
+                "/api/videos/channels",
+                Some(json!({ "channel": "UC123" })),
+            ))
+            .await
+            .expect("anonymous creator response");
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+        let token = state
+            .auth
+            .create_session_jwt("940009", "viewer", "user", Some("Viewer"), None)
+            .expect("session");
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/videos/channels",
+                &token,
+                Some(json!({ "channel": "UC123" })),
+            ))
+            .await
+            .expect("non-creator response");
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+        let response = app
+            .oneshot(request(
+                Method::DELETE,
+                "/api/admin/videos/channels/1",
+                None,
+            ))
+            .await
+            .expect("anonymous admin response");
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
 
     #[tokio::test]
     async fn auth_upsert_erhaelt_existing_role() {
@@ -1552,6 +1685,7 @@ mod tests {
         let db = dl_central_db::testing::test_pool()
             .await
             .expect("central test pool");
+        db::init(db.pool()).await.expect("website migrations");
         let cfg = Config::from_env();
         let http = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(20))

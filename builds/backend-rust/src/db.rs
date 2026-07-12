@@ -14,5 +14,8 @@ pub async fn init(pool: &PgPool) -> anyhow::Result<()> {
         .fetch_one(pool)
         .await
         .context("zentrale Website-Datenbank Smoke-Check")?;
+    let mut migrations = sqlx::migrate!();
+    migrations.set_ignore_missing(true);
+    migrations.run(pool).await?;
     Ok(())
 }

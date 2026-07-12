@@ -1465,6 +1465,8 @@ mod tests {
             master_broker_token: None,
             scrim_guild_id: 1,
             scrim_reserve_role_id: None,
+            ddl_creator_role_id: None,
+            youtube_api_key: None,
             auth_session_secret: Some("test-session-secret".into()),
             discord_api_base: "https://discord.com/api/v10".into(),
             discord_oauth_client_id: Some("123".into()),

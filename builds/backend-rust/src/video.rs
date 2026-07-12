@@ -1,4 +1,23 @@
+use std::{
+    collections::HashMap, future::Future, net::SocketAddr, pin::Pin, sync::Arc, time::Duration,
+};
+
+use axum::{
+    extract::{ConnectInfo, Path, Query, State},
+    http::HeaderMap,
+    Json,
+};
 use chrono::{DateTime, Utc};
+use serde::Deserialize;
+use serde_json::{json, Value};
+use sqlx::{postgres::PgRow, QueryBuilder, Row};
+
+use crate::{
+    app::AppState,
+    auth,
+    error::{AppError, AppResult},
+    ids,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VideoStatus {
@@ -113,6 +132,697 @@ pub fn parse_feed(xml: &str) -> anyhow::Result<Vec<FeedVideo>> {
         .collect()
 }
 
+pub fn positioned_items<T: Clone>(items: &[T]) -> Vec<(T, i32)> {
+    items
+        .iter()
+        .enumerate()
+        .map(|(position, id)| (id.clone(), position as i32))
+        .collect()
+}
+
+pub(crate) type YoutubeFuture<'a, T> = Pin<Box<dyn Future<Output = anyhow::Result<T>> + Send + 'a>>;
+pub(crate) type TagFuture<'a> = Pin<
+    Box<dyn Future<Output = Result<HashMap<String, Vec<String>>, TagLookupFailure>> + Send + 'a>,
+>;
+
+pub trait YoutubeClient: Send + Sync {
+    fn resolve_channel<'a>(&'a self, input: &'a str) -> YoutubeFuture<'a, YoutubeChannel>;
+    fn channel_feed<'a>(&'a self, channel_id: &'a str) -> YoutubeFuture<'a, String>;
+    fn playlist_feed<'a>(&'a self, playlist_id: &'a str) -> YoutubeFuture<'a, String>;
+    fn video_tags<'a>(&'a self, video_ids: &'a [String]) -> TagFuture<'a>;
+    fn backfill<'a>(&'a self, channel_id: &'a str) -> YoutubeFuture<'a, Vec<FeedVideo>>;
+}
+
+#[derive(Debug, Clone)]
+pub struct YoutubeChannel {
+    pub id: String,
+    pub title: String,
+}
+
+pub struct ReqwestYoutubeClient {
+    client: reqwest::Client,
+    api_key: Option<String>,
+}
+
+impl ReqwestYoutubeClient {
+    pub fn new(client: reqwest::Client, api_key: Option<String>) -> Self {
+        Self { client, api_key }
+    }
+
+    async fn api_json(&self, endpoint: &str, params: &[(&str, String)]) -> anyhow::Result<Value> {
+        let key = self
+            .api_key
+            .as_deref()
+            .ok_or_else(|| anyhow::anyhow!("YouTube API key missing"))?;
+        let response = self
+            .client
+            .get(format!("https://www.googleapis.com/youtube/v3/{endpoint}"))
+            .query(params)
+            .query(&[("key", key)])
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(response.json().await?)
+    }
+}
+
+impl YoutubeClient for ReqwestYoutubeClient {
+    fn resolve_channel<'a>(&'a self, input: &'a str) -> YoutubeFuture<'a, YoutubeChannel> {
+        Box::pin(async move {
+            let trimmed = input.trim().trim_end_matches('/');
+            let direct = trimmed
+                .rsplit_once("/channel/")
+                .map(|(_, id)| id)
+                .filter(|id| id.starts_with("UC"))
+                .or_else(|| trimmed.starts_with("UC").then_some(trimmed));
+            if let Some(id) = direct {
+                return Ok(YoutubeChannel {
+                    id: id.to_string(),
+                    title: String::new(),
+                });
+            }
+            let handle = trimmed
+                .rsplit('/')
+                .next()
+                .unwrap_or(trimmed)
+                .trim_start_matches('@');
+            let body = self
+                .api_json(
+                    "channels",
+                    &[("part", "snippet".into()), ("forHandle", handle.into())],
+                )
+                .await?;
+            let item = body["items"]
+                .as_array()
+                .and_then(|v| v.first())
+                .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
+            Ok(YoutubeChannel {
+                id: item["id"].as_str().unwrap_or_default().to_string(),
+                title: item["snippet"]["title"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_string(),
+            })
+        })
+    }
+
+    fn channel_feed<'a>(&'a self, channel_id: &'a str) -> YoutubeFuture<'a, String> {
+        Box::pin(async move {
+            Ok(self
+                .client
+                .get("https://www.youtube.com/feeds/videos.xml")
+                .query(&[("channel_id", channel_id)])
+                .send()
+                .await?
+                .error_for_status()?
+                .text()
+                .await?)
+        })
+    }
+
+    fn playlist_feed<'a>(&'a self, playlist_id: &'a str) -> YoutubeFuture<'a, String> {
+        Box::pin(async move {
+            Ok(self
+                .client
+                .get("https://www.youtube.com/feeds/videos.xml")
+                .query(&[("playlist_id", playlist_id)])
+                .send()
+                .await?
+                .error_for_status()?
+                .text()
+                .await?)
+        })
+    }
+
+    fn video_tags<'a>(&'a self, video_ids: &'a [String]) -> TagFuture<'a> {
+        Box::pin(async move {
+            if self.api_key.is_none() {
+                return Err(TagLookupFailure::NoApiKey);
+            }
+            let body = self
+                .api_json(
+                    "videos",
+                    &[("part", "snippet".into()), ("id", video_ids.join(","))],
+                )
+                .await
+                .map_err(|_| TagLookupFailure::ApiError)?;
+            Ok(body["items"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|item| {
+                    let id = item["id"].as_str()?.to_string();
+                    let tags = item["snippet"]["tags"]
+                        .as_array()
+                        .map(|v| {
+                            v.iter()
+                                .filter_map(|v| v.as_str().map(str::to_string))
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    Some((id, tags))
+                })
+                .collect())
+        })
+    }
+
+    fn backfill<'a>(&'a self, channel_id: &'a str) -> YoutubeFuture<'a, Vec<FeedVideo>> {
+        Box::pin(async move {
+            if self.api_key.is_none() {
+                return Ok(Vec::new());
+            }
+            let channel = self
+                .api_json(
+                    "channels",
+                    &[("part", "contentDetails".into()), ("id", channel_id.into())],
+                )
+                .await?;
+            let uploads = channel["items"]
+                .as_array()
+                .and_then(|v| v.first())
+                .and_then(|v| v["contentDetails"]["relatedPlaylists"]["uploads"].as_str())
+                .ok_or_else(|| anyhow::anyhow!("uploads playlist missing"))?;
+            let mut page = None::<String>;
+            let mut videos = Vec::new();
+            loop {
+                let mut params = vec![
+                    ("part", "snippet".into()),
+                    ("playlistId", uploads.into()),
+                    ("maxResults", "50".into()),
+                ];
+                if let Some(token) = page.as_ref() {
+                    params.push(("pageToken", token.clone()));
+                }
+                let body = self.api_json("playlistItems", &params).await?;
+                for item in body["items"].as_array().into_iter().flatten() {
+                    let snippet = &item["snippet"];
+                    let id = snippet["resourceId"]["videoId"]
+                        .as_str()
+                        .unwrap_or_default();
+                    let published = snippet["publishedAt"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .parse::<DateTime<Utc>>();
+                    if !id.is_empty() {
+                        videos.push(FeedVideo {
+                            yt_video_id: id.into(),
+                            title: snippet["title"].as_str().unwrap_or_default().into(),
+                            description: snippet["description"].as_str().unwrap_or_default().into(),
+                            published_at: published?,
+                            thumbnail_url: snippet["thumbnails"]["high"]["url"]
+                                .as_str()
+                                .unwrap_or_default()
+                                .into(),
+                        });
+                    }
+                }
+                page = body["nextPageToken"].as_str().map(str::to_string);
+                if page.is_none() {
+                    break;
+                }
+            }
+            Ok(videos)
+        })
+    }
+}
+
+fn youtube_client(state: &AppState) -> Arc<dyn YoutubeClient> {
+    Arc::new(ReqwestYoutubeClient::new(
+        state.http.clone(),
+        state.cfg.youtube_api_key.clone(),
+    ))
+}
+
+async fn require_creator(
+    state: &AppState,
+    headers: &HeaderMap,
+    peer: SocketAddr,
+) -> AppResult<auth::User> {
+    let user = auth::require_authenticated_user(state, headers, Some(peer)).await?;
+    let role_id = state
+        .cfg
+        .ddl_creator_role_id
+        .ok_or_else(|| AppError::forbidden("PLATZHALTER: Creator-Rolle fehlt"))?;
+    let token = state
+        .cfg
+        .discord_bot_token
+        .as_deref()
+        .ok_or_else(|| AppError::forbidden("PLATZHALTER: Creator-Rolle nicht prüfbar"))?;
+    let response = state
+        .http
+        .get(format!(
+            "{}/guilds/{}/members/{}",
+            state.cfg.discord_api_base.trim_end_matches('/'),
+            state.cfg.scrim_guild_id,
+            user.sub
+        ))
+        .header("Authorization", format!("Bot {token}"))
+        .send()
+        .await
+        .map_err(|_| AppError::forbidden("PLATZHALTER: Creator-Rolle nicht prüfbar"))?;
+    if !response.status().is_success() {
+        return Err(AppError::forbidden(
+            "PLATZHALTER: Creator-Rolle erforderlich",
+        ));
+    }
+    let member: Value = response
+        .json()
+        .await
+        .map_err(|_| AppError::forbidden("PLATZHALTER: Creator-Rolle nicht prüfbar"))?;
+    let has_role = member["roles"].as_array().is_some_and(|roles| {
+        roles
+            .iter()
+            .any(|role| role.as_str() == Some(&role_id.to_string()))
+    });
+    if !has_role {
+        return Err(AppError::forbidden(
+            "PLATZHALTER: Creator-Rolle erforderlich",
+        ));
+    }
+    Ok(user)
+}
+
+#[derive(Deserialize)]
+pub struct ChannelBody {
+    channel: String,
+}
+
+pub async fn register_channel(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Json(body): Json<ChannelBody>,
+) -> AppResult<Json<Value>> {
+    let user = require_creator(&state, &headers, peer).await?;
+    let discord_id = auth::parse_discord_user_id(&user.sub)?;
+    let client = youtube_client(&state);
+    let channel = client
+        .resolve_channel(&body.channel)
+        .await
+        .map_err(|_| AppError::bad_request("PLATZHALTER: YouTube-Kanal ungültig"))?;
+    let mut tx = state.pool.begin().await?;
+    let row = sqlx::query("INSERT INTO video_library.channels (owner_discord_id,youtube_channel_id,youtube_url,title,active,detached_at) VALUES ($1,$2,$3,$4,TRUE,NULL) ON CONFLICT (youtube_channel_id) DO UPDATE SET owner_discord_id=EXCLUDED.owner_discord_id, active=TRUE, detached_at=NULL RETURNING id")
+        .bind(discord_id).bind(&channel.id).bind(format!("https://www.youtube.com/channel/{}", channel.id)).bind(&channel.title).fetch_one(&mut *tx).await?;
+    let id: i64 = row.try_get("id")?;
+    sqlx::query("INSERT INTO video_library.channel_audit_log (channel_id,actor_discord_id,action) VALUES ($1,$2,'registered')").bind(id).bind(&user.sub).execute(&mut *tx).await?;
+    tx.commit().await?;
+    if let Ok(xml) = client.channel_feed(&channel.id).await {
+        if let Ok(videos) = parse_feed(&xml) {
+            let _ = ingest_videos(&state, Some(id), videos, "rss", client.as_ref()).await;
+        }
+    }
+    if let Ok(videos) = client.backfill(&channel.id).await {
+        let _ = ingest_videos(&state, Some(id), videos, "backfill", client.as_ref()).await;
+    }
+    Ok(Json(json!({"id": id, "youtube_channel_id": channel.id})))
+}
+
+pub async fn detach_channel(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let user = auth::require_admin_user(&state, &headers, Some(peer)).await?;
+    sqlx::query("UPDATE video_library.channels SET active=FALSE, detached_at=now() WHERE id=$1")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
+    sqlx::query("INSERT INTO video_library.channel_audit_log (channel_id,actor_discord_id,action) VALUES ($1,$2,'detached')").bind(id).bind(user.sub).execute(&state.pool).await?;
+    Ok(Json(json!({"ok": true})))
+}
+
+pub async fn ingest_videos(
+    state: &AppState,
+    channel_id: Option<i64>,
+    videos: Vec<FeedVideo>,
+    source: &str,
+    client: &dyn YoutubeClient,
+) -> AppResult<()> {
+    for batch in videos.chunks(50) {
+        let ids: Vec<String> = batch.iter().map(|v| v.yt_video_id.clone()).collect();
+        let tags = client.video_tags(&ids).await;
+        for video in batch {
+            let (video_tags, failure) = match &tags {
+                Ok(map) => (
+                    Some(
+                        map.get(&video.yt_video_id)
+                            .map(Vec::as_slice)
+                            .unwrap_or_default(),
+                    ),
+                    None,
+                ),
+                Err(failure) => (None, Some(*failure)),
+            };
+            let decision = decide(video_tags, failure);
+            let status = match decision.status {
+                VideoStatus::Live => "live",
+                VideoStatus::Pending => "pending",
+            };
+            let row = sqlx::query("INSERT INTO video_library.videos (channel_id,yt_video_id,title,description,published_at,thumbnail_url,status,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (yt_video_id) DO UPDATE SET channel_id=COALESCE(video_library.videos.channel_id,EXCLUDED.channel_id),title=EXCLUDED.title,description=EXCLUDED.description,published_at=EXCLUDED.published_at,thumbnail_url=EXCLUDED.thumbnail_url,status=CASE WHEN video_library.videos.status='hidden' THEN 'hidden' ELSE EXCLUDED.status END,updated_at=now() RETURNING id")
+                .bind(channel_id).bind(&video.yt_video_id).bind(&video.title).bind(&video.description).bind(video.published_at).bind(&video.thumbnail_url).bind(status).bind(source).fetch_one(&state.pool).await?;
+            let video_id: i64 = row.try_get("id")?;
+            sqlx::query("INSERT INTO video_library.decision_log (video_id,yt_video_id,title,verdict,reason) VALUES ($1,$2,$3,$4,$5)")
+                .bind(video_id).bind(&video.yt_video_id).bind(video.title.chars().take(120).collect::<String>()).bind(status).bind(decision.reason.as_str()).execute(&state.pool).await?;
+            tracing::info!(yt_video_id=%video.yt_video_id, title=%video.title.chars().take(120).collect::<String>(), verdict=status, reason=decision.reason.as_str(), "video approval decision");
+        }
+    }
+    Ok(())
+}
+
+#[derive(Default, Deserialize)]
+pub struct FeedQuery {
+    #[serde(rename = "type")]
+    kind: Option<String>,
+    hero: Option<String>,
+    level: Option<String>,
+    q: Option<String>,
+}
+
+pub async fn public_feed(
+    State(state): State<AppState>,
+    Query(query): Query<FeedQuery>,
+) -> AppResult<Json<Value>> {
+    let mut sql = QueryBuilder::new("SELECT DISTINCT v.* FROM video_library.videos v ");
+    if query.kind.is_some() || query.hero.is_some() || query.level.is_some() {
+        sql.push("JOIN video_library.video_taxonomy vt ON vt.video_id=v.id JOIN video_library.taxonomy t ON t.id=vt.taxonomy_id ");
+    }
+    sql.push("WHERE v.status='live' ");
+    for (dimension, value) in [
+        ("type", query.kind.as_ref()),
+        ("hero", query.hero.as_ref()),
+        ("level", query.level.as_ref()),
+    ] {
+        if let Some(value) = value {
+            sql.push("AND EXISTS (SELECT 1 FROM video_library.video_taxonomy vx JOIN video_library.taxonomy tx ON tx.id=vx.taxonomy_id WHERE vx.video_id=v.id AND tx.dimension=").push_bind(dimension).push(" AND tx.slug=").push_bind(value).push(") ");
+        }
+    }
+    if let Some(q) = query.q.filter(|q| !q.trim().is_empty()) {
+        sql.push("AND (to_tsvector('german',v.title||' '||v.description) @@ websearch_to_tsquery('german',").push_bind(q.clone()).push(") OR EXISTS (SELECT 1 FROM video_library.free_tags f WHERE f.video_id=v.id AND f.tag ILIKE '%'||").push_bind(q).push("||'%')) ");
+    }
+    sql.push("ORDER BY v.published_at DESC");
+    let rows = sql.build().fetch_all(&state.pool).await?;
+    Ok(Json(Value::Array(rows.iter().map(video_json).collect())))
+}
+
+fn video_json(row: &PgRow) -> Value {
+    json!({"id": row.try_get::<i64,_>("id").unwrap_or_default(), "yt_video_id": row.try_get::<String,_>("yt_video_id").unwrap_or_default(), "title": row.try_get::<String,_>("title").unwrap_or_default(), "description": row.try_get::<String,_>("description").unwrap_or_default(), "published_at": row.try_get::<DateTime<Utc>,_>("published_at").ok(), "thumbnail_url": row.try_get::<String,_>("thumbnail_url").unwrap_or_default(), "status": row.try_get::<String,_>("status").unwrap_or_default()})
+}
+
+async fn acting_user(
+    state: &AppState,
+    headers: &HeaderMap,
+    peer: SocketAddr,
+) -> AppResult<auth::User> {
+    let user = auth::require_authenticated_user(state, headers, Some(peer)).await?;
+    if user.role == "admin" {
+        Ok(user)
+    } else {
+        require_creator(state, headers, peer).await
+    }
+}
+
+async fn owns_video(state: &AppState, video_id: i64, user: &auth::User) -> AppResult<()> {
+    if user.role == "admin" {
+        return Ok(());
+    }
+    let owner: Option<i64> = sqlx::query_scalar("SELECT c.owner_discord_id FROM video_library.videos v JOIN video_library.channels c ON c.id=v.channel_id WHERE v.id=$1")
+        .bind(video_id).fetch_optional(&state.pool).await?;
+    if owner.map(|id| id.to_string()).as_deref() != Some(&user.sub) {
+        return Err(AppError::forbidden(
+            "PLATZHALTER: Video gehört einem anderen Creator",
+        ));
+    }
+    Ok(())
+}
+
+pub async fn approve_video(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let user = acting_user(&state, &headers, peer).await?;
+    owns_video(&state, id, &user).await?;
+    sqlx::query("UPDATE video_library.videos SET status='live',updated_at=now() WHERE id=$1 AND status='pending'").bind(id).execute(&state.pool).await?;
+    Ok(Json(json!({"ok": true})))
+}
+
+pub async fn hide_video(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let user = acting_user(&state, &headers, peer).await?;
+    owns_video(&state, id, &user).await?;
+    sqlx::query("UPDATE video_library.videos SET status='hidden',updated_at=now() WHERE id=$1")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
+    Ok(Json(json!({"ok": true})))
+}
+
+#[derive(Deserialize)]
+pub struct VideoTagsBody {
+    taxonomy_ids: Vec<i64>,
+    #[serde(default)]
+    free_tags: Vec<String>,
+}
+
+pub async fn tag_video(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(id): Path<i64>,
+    Json(body): Json<VideoTagsBody>,
+) -> AppResult<Json<Value>> {
+    let user = acting_user(&state, &headers, peer).await?;
+    owns_video(&state, id, &user).await?;
+    let mut tx = state.pool.begin().await?;
+    sqlx::query("DELETE FROM video_library.video_taxonomy WHERE video_id=$1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    for taxonomy_id in body.taxonomy_ids {
+        sqlx::query("INSERT INTO video_library.video_taxonomy(video_id,taxonomy_id) VALUES($1,$2)")
+            .bind(id)
+            .bind(taxonomy_id)
+            .execute(&mut *tx)
+            .await?;
+    }
+    sqlx::query("DELETE FROM video_library.free_tags WHERE video_id=$1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    for tag in body
+        .free_tags
+        .into_iter()
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+    {
+        sqlx::query("INSERT INTO video_library.free_tags(video_id,tag) VALUES($1,$2) ON CONFLICT DO NOTHING").bind(id).bind(tag).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(Json(json!({"ok": true})))
+}
+
+pub async fn list_taxonomy(State(state): State<AppState>) -> AppResult<Json<Value>> {
+    let rows = sqlx::query("SELECT id,dimension,name,slug FROM video_library.taxonomy WHERE active=TRUE ORDER BY dimension,name").fetch_all(&state.pool).await?;
+    Ok(Json(Value::Array(rows.iter().map(|r| json!({"id":r.try_get::<i64,_>("id").unwrap_or_default(),"dimension":r.try_get::<String,_>("dimension").unwrap_or_default(),"name":r.try_get::<String,_>("name").unwrap_or_default(),"slug":r.try_get::<String,_>("slug").unwrap_or_default()})).collect())))
+}
+
+#[derive(Deserialize)]
+pub struct TaxonomyBody {
+    dimension: String,
+    name: String,
+    slug: String,
+}
+
+pub async fn create_taxonomy(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Json(body): Json<TaxonomyBody>,
+) -> AppResult<Json<Value>> {
+    auth::require_admin_user(&state, &headers, Some(peer)).await?;
+    let id: i64 = sqlx::query_scalar(
+        "INSERT INTO video_library.taxonomy(dimension,name,slug) VALUES($1,$2,$3) RETURNING id",
+    )
+    .bind(body.dimension)
+    .bind(body.name)
+    .bind(body.slug)
+    .fetch_one(&state.pool)
+    .await?;
+    Ok(Json(json!({"id":id})))
+}
+
+pub async fn update_taxonomy(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(id): Path<i64>,
+    Json(body): Json<TaxonomyBody>,
+) -> AppResult<Json<Value>> {
+    auth::require_admin_user(&state, &headers, Some(peer)).await?;
+    sqlx::query(
+        "UPDATE video_library.taxonomy SET dimension=$1,name=$2,slug=$3,active=TRUE WHERE id=$4",
+    )
+    .bind(body.dimension)
+    .bind(body.name)
+    .bind(body.slug)
+    .bind(id)
+    .execute(&state.pool)
+    .await?;
+    Ok(Json(json!({"ok":true})))
+}
+
+pub async fn delete_taxonomy(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    auth::require_admin_user(&state, &headers, Some(peer)).await?;
+    sqlx::query("UPDATE video_library.taxonomy SET active=FALSE WHERE id=$1")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
+    Ok(Json(json!({"ok":true})))
+}
+
+#[derive(Deserialize)]
+pub struct PlaylistBody {
+    title: String,
+    #[serde(default)]
+    description: String,
+    #[serde(default = "manual_source")]
+    source: String,
+    yt_playlist_id: Option<String>,
+    #[serde(default)]
+    video_ids: Vec<i64>,
+    #[serde(default)]
+    featured: bool,
+}
+fn manual_source() -> String {
+    "manual".into()
+}
+
+pub async fn create_playlist(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Json(body): Json<PlaylistBody>,
+) -> AppResult<Json<Value>> {
+    let user = acting_user(&state, &headers, peer).await?;
+    if body.featured && user.role != "admin" {
+        return Err(AppError::forbidden("PLATZHALTER: Lernpfade nur für Admins"));
+    }
+    let owner = auth::parse_discord_user_id(&user.sub)?;
+    let id = ids::id16();
+    let mut tx = state.pool.begin().await?;
+    sqlx::query("INSERT INTO video_library.playlists(id,owner_discord_id,title,description,featured,source,yt_playlist_id) VALUES($1,$2,$3,$4,$5,$6,$7)").bind(&id).bind(owner).bind(body.title).bind(body.description).bind(body.featured).bind(&body.source).bind(&body.yt_playlist_id).execute(&mut *tx).await?;
+    for (video_id, position) in positioned_items(&body.video_ids) {
+        sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES($1,$2,$3)").bind(&id).bind(video_id).bind(position).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    if body.source == "yt" {
+        if let Some(playlist) = body.yt_playlist_id {
+            sync_playlist(&state, &id, &playlist).await;
+        }
+    }
+    Ok(Json(json!({"id":id})))
+}
+
+async fn sync_playlist(state: &AppState, id: &str, playlist_id: &str) {
+    let client = youtube_client(state);
+    let Ok(xml) = client.playlist_feed(playlist_id).await else {
+        return;
+    };
+    let Ok(videos) = parse_feed(&xml) else { return };
+    let _ = ingest_videos(state, None, videos.clone(), "rss", client.as_ref()).await;
+    let mut tx = match state.pool.begin().await {
+        Ok(tx) => tx,
+        Err(_) => return,
+    };
+    let _ = sqlx::query("DELETE FROM video_library.playlist_items WHERE playlist_id=$1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await;
+    for (position, video) in videos.iter().enumerate() {
+        let _=sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) SELECT $1,id,$2 FROM video_library.videos WHERE yt_video_id=$3 ON CONFLICT DO NOTHING").bind(id).bind(position as i32).bind(&video.yt_video_id).execute(&mut *tx).await;
+    }
+    let _ = tx.commit().await;
+}
+
+pub async fn list_playlists(State(state): State<AppState>) -> AppResult<Json<Value>> {
+    let rows=sqlx::query("SELECT id,owner_discord_id,title,description,featured,source,yt_playlist_id FROM video_library.playlists ORDER BY featured DESC,created_at DESC").fetch_all(&state.pool).await?;
+    Ok(Json(Value::Array(rows.iter().map(playlist_json).collect())))
+}
+fn playlist_json(r: &PgRow) -> Value {
+    json!({"id":r.try_get::<String,_>("id").unwrap_or_default(),"owner_discord_id":r.try_get::<i64,_>("owner_discord_id").unwrap_or_default(),"title":r.try_get::<String,_>("title").unwrap_or_default(),"description":r.try_get::<String,_>("description").unwrap_or_default(),"featured":r.try_get::<bool,_>("featured").unwrap_or(false),"source":r.try_get::<String,_>("source").unwrap_or_default(),"yt_playlist_id":r.try_get::<Option<String>,_>("yt_playlist_id").ok().flatten()})
+}
+
+pub async fn playlist_detail(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> AppResult<Json<Value>> {
+    let playlist=sqlx::query("SELECT id,owner_discord_id,title,description,featured,source,yt_playlist_id FROM video_library.playlists WHERE id=$1").bind(&id).fetch_optional(&state.pool).await?.ok_or_else(||AppError::not_found("PLATZHALTER: Playlist nicht gefunden"))?;
+    let rows=sqlx::query("SELECT v.* FROM video_library.playlist_items i JOIN video_library.videos v ON v.id=i.video_id WHERE i.playlist_id=$1 AND v.status='live' ORDER BY i.position").bind(&id).fetch_all(&state.pool).await?;
+    let mut value = playlist_json(&playlist);
+    value["videos"] = Value::Array(rows.iter().map(video_json).collect());
+    Ok(Json(value))
+}
+
+pub async fn creator_profile(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let creator=sqlx::query("SELECT u.id,u.display_name,u.avatar_url,c.youtube_url FROM core.meta_users u JOIN video_library.channels c ON c.owner_discord_id=u.id AND c.active=TRUE WHERE u.id=$1 LIMIT 1").bind(id).fetch_optional(&state.pool).await?.ok_or_else(||AppError::not_found("PLATZHALTER: Creator nicht gefunden"))?;
+    let videos=sqlx::query("SELECT v.* FROM video_library.videos v JOIN video_library.channels c ON c.id=v.channel_id WHERE c.owner_discord_id=$1 AND v.status='live' ORDER BY v.published_at DESC").bind(id).fetch_all(&state.pool).await?;
+    let playlists=sqlx::query("SELECT id,owner_discord_id,title,description,featured,source,yt_playlist_id FROM video_library.playlists WHERE owner_discord_id=$1 ORDER BY featured DESC,created_at DESC").bind(id).fetch_all(&state.pool).await?;
+    Ok(Json(
+        json!({"id":id,"name":creator.try_get::<Option<String>,_>("display_name").ok().flatten(),"avatar_url":creator.try_get::<Option<String>,_>("avatar_url").ok().flatten(),"youtube_url":creator.try_get::<String,_>("youtube_url").unwrap_or_default(),"videos":videos.iter().map(video_json).collect::<Vec<_>>(),"playlists":playlists.iter().map(playlist_json).collect::<Vec<_>>() }),
+    ))
+}
+
+pub fn spawn_ingest_worker(state: AppState) {
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(15 * 60));
+        loop {
+            interval.tick().await;
+            let rows = match sqlx::query(
+                "SELECT id,youtube_channel_id FROM video_library.channels WHERE active=TRUE",
+            )
+            .fetch_all(&state.pool)
+            .await
+            {
+                Ok(rows) => rows,
+                Err(error) => {
+                    tracing::warn!(?error, "video channel load failed");
+                    continue;
+                }
+            };
+            let client = youtube_client(&state);
+            for row in rows {
+                let id = row.try_get::<i64, _>("id").unwrap_or_default();
+                let channel = row
+                    .try_get::<String, _>("youtube_channel_id")
+                    .unwrap_or_default();
+                if let Ok(xml) = client.channel_feed(&channel).await {
+                    if let Ok(videos) = parse_feed(&xml) {
+                        if let Err(error) =
+                            ingest_videos(&state, Some(id), videos, "rss", client.as_ref()).await
+                        {
+                            tracing::warn!(?error, channel_id=%channel, "video ingest failed");
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,6 +866,18 @@ mod tests {
         assert_eq!(
             videos[0].published_at.to_rfc3339(),
             "2026-07-10T17:30:00+00:00"
+        );
+    }
+
+    #[test]
+    fn playlist_positions_follow_input_order() {
+        assert_eq!(
+            positioned_items(&["video-c".into(), "video-a".into(), "video-b".into()]),
+            vec![
+                ("video-c".to_string(), 0),
+                ("video-a".to_string(), 1),
+                ("video-b".to_string(), 2),
+            ]
         );
     }
 }
