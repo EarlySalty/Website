@@ -12,7 +12,7 @@ export default function Layout() {
     { to: '/tierlists', label: 'Tier Lists' },
     { to: '/patchnotes', label: 'Patch Notes' },
     { to: '/coaching', label: 'Coaching' },
-    { to: '/videos', label: 'PLATZHALTER: Videos' },
+    { to: '/videos', label: 'Videos' },
   ]
 
   return (

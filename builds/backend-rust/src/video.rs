@@ -370,12 +370,12 @@ async fn require_creator(
     let role_id = state
         .cfg
         .ddl_creator_role_id
-        .ok_or_else(|| AppError::forbidden("PLATZHALTER: Creator-Rolle fehlt"))?;
+        .ok_or_else(|| AppError::forbidden("Der Creator-Bereich ist noch nicht freigeschaltet"))?;
     let token = state
         .cfg
         .discord_bot_token
         .as_deref()
-        .ok_or_else(|| AppError::forbidden("PLATZHALTER: Creator-Rolle nicht prüfbar"))?;
+        .ok_or_else(|| AppError::forbidden("Deine Creator-Rolle kann gerade nicht geprüft werden, versuch es gleich nochmal"))?;
     let response = state
         .http
         .get(format!(
@@ -387,16 +387,16 @@ async fn require_creator(
         .header("Authorization", format!("Bot {token}"))
         .send()
         .await
-        .map_err(|_| AppError::forbidden("PLATZHALTER: Creator-Rolle nicht prüfbar"))?;
+        .map_err(|_| AppError::forbidden("Deine Creator-Rolle kann gerade nicht geprüft werden, versuch es gleich nochmal"))?;
     if !response.status().is_success() {
         return Err(AppError::forbidden(
-            "PLATZHALTER: Creator-Rolle erforderlich",
+            "Dafür brauchst du die Creator-Rolle auf unserem Discord-Server",
         ));
     }
     let member: Value = response
         .json()
         .await
-        .map_err(|_| AppError::forbidden("PLATZHALTER: Creator-Rolle nicht prüfbar"))?;
+        .map_err(|_| AppError::forbidden("Deine Creator-Rolle kann gerade nicht geprüft werden, versuch es gleich nochmal"))?;
     let has_role = member["roles"].as_array().is_some_and(|roles| {
         roles
             .iter()
@@ -404,7 +404,7 @@ async fn require_creator(
     });
     if !has_role {
         return Err(AppError::forbidden(
-            "PLATZHALTER: Creator-Rolle erforderlich",
+            "Dafür brauchst du die Creator-Rolle auf unserem Discord-Server",
         ));
     }
     Ok(user)
@@ -453,11 +453,11 @@ pub async fn register_channel(
     let channel = client
         .resolve_channel(&body.channel)
         .await
-        .map_err(|_| AppError::bad_request("PLATZHALTER: YouTube-Kanal ungültig"))?;
+        .map_err(|_| AppError::bad_request("Das sieht nicht nach einem gültigen YouTube-Kanal aus"))?;
     let mut tx = state.pool.begin().await?;
     let row = sqlx::query("INSERT INTO video_library.channels (owner_discord_id,youtube_channel_id,youtube_url,title,active,detached_at) VALUES ($1,$2,$3,$4,TRUE,NULL) ON CONFLICT (youtube_channel_id) DO UPDATE SET active=TRUE, detached_at=NULL WHERE video_library.channels.owner_discord_id=EXCLUDED.owner_discord_id RETURNING id")
         .bind(discord_id).bind(&channel.id).bind(format!("https://www.youtube.com/channel/{}", channel.id)).bind(&channel.title).fetch_optional(&mut *tx).await?
-        .ok_or_else(|| AppError::http(StatusCode::CONFLICT, "PLATZHALTER: YouTube-Kanal ist bereits registriert"))?;
+        .ok_or_else(|| AppError::http(StatusCode::CONFLICT, "Dieser YouTube-Kanal ist bereits von jemand anderem registriert"))?;
     let id: i64 = row.try_get("id")?;
     sqlx::query("INSERT INTO video_library.channel_audit_log (channel_id,actor_discord_id,action) VALUES ($1,$2,'registered')").bind(id).bind(&user.sub).execute(&mut *tx).await?;
     tx.commit().await?;
@@ -498,7 +498,7 @@ pub async fn detach_own_channel(
     let result = sqlx::query("UPDATE video_library.channels SET active=FALSE,detached_at=now() WHERE id=$1 AND owner_discord_id=$2 AND active=TRUE")
         .bind(id).bind(owner).execute(&state.pool).await?;
     if result.rows_affected() == 0 {
-        return Err(AppError::not_found("PLATZHALTER: Kanal nicht gefunden"));
+        return Err(AppError::not_found("Kanal nicht gefunden"));
     }
     sqlx::query("INSERT INTO video_library.channel_audit_log(channel_id,actor_discord_id,action) VALUES($1,$2,'detached')")
         .bind(id).bind(user.sub).execute(&state.pool).await?;
@@ -658,7 +658,7 @@ async fn owns_video(state: &AppState, video_id: i64, user: &auth::User) -> AppRe
         .bind(video_id).fetch_optional(&state.pool).await?;
     if owner.map(|id| id.to_string()).as_deref() != Some(&user.sub) {
         return Err(AppError::forbidden(
-            "PLATZHALTER: Video gehört einem anderen Creator",
+            "Dieses Video gehört einem anderen Creator",
         ));
     }
     Ok(())
@@ -859,7 +859,7 @@ pub async fn create_playlist(
 ) -> AppResult<Json<Value>> {
     let user = acting_user(&state, &headers, peer).await?;
     if body.featured && user.role != "admin" {
-        return Err(AppError::forbidden("PLATZHALTER: Lernpfade nur für Admins"));
+        return Err(AppError::forbidden("Lernpfade können nur Admins anlegen"));
     }
     let owner = auth::parse_discord_user_id(&user.sub)?;
     let id = ids::id16();
@@ -902,16 +902,16 @@ pub async fn update_playlist(
             .bind(&id)
             .fetch_optional(&state.pool)
             .await?
-            .ok_or_else(|| AppError::not_found("PLATZHALTER: Playlist nicht gefunden"))?;
+            .ok_or_else(|| AppError::not_found("Playlist nicht gefunden"))?;
     let owner: i64 = playlist.try_get("owner_discord_id")?;
     let was_featured: bool = playlist.try_get("featured")?;
     if user.role != "admin" && owner.to_string() != user.sub {
         return Err(AppError::forbidden(
-            "PLATZHALTER: Playlist gehört einem anderen Creator",
+            "Diese Playlist gehört einem anderen Creator",
         ));
     }
     if body.featured && user.role != "admin" {
-        return Err(AppError::forbidden("PLATZHALTER: Lernpfade nur für Admins"));
+        return Err(AppError::forbidden("Lernpfade können nur Admins anlegen"));
     }
     let mut tx = state.pool.begin().await?;
     sqlx::query("UPDATE video_library.playlists SET title=$1,description=$2,featured=$3,source=$4,yt_playlist_id=$5,updated_at=now() WHERE id=$6")
@@ -969,10 +969,10 @@ pub async fn delete_playlist(
             .bind(&id)
             .fetch_optional(&state.pool)
             .await?;
-    let owner = owner.ok_or_else(|| AppError::not_found("PLATZHALTER: Playlist nicht gefunden"))?;
+    let owner = owner.ok_or_else(|| AppError::not_found("Playlist nicht gefunden"))?;
     if user.role != "admin" && owner.to_string() != user.sub {
         return Err(AppError::forbidden(
-            "PLATZHALTER: Playlist gehört einem anderen Creator",
+            "Diese Playlist gehört einem anderen Creator",
         ));
     }
     let mut tx = state.pool.begin().await?;
@@ -997,10 +997,10 @@ pub(crate) async fn sync_playlist_with_client(
     client: &dyn YoutubeClient,
 ) -> AppResult<()> {
     let xml = client.playlist_feed(playlist_id).await.map_err(|_| {
-        AppError::service_unavailable("PLATZHALTER: YouTube-Playlist konnte nicht geladen werden")
+        AppError::service_unavailable("Die YouTube-Playlist konnte nicht geladen werden")
     })?;
     let videos = parse_feed(&xml).map_err(|_| {
-        AppError::service_unavailable("PLATZHALTER: YouTube-Playlist konnte nicht gelesen werden")
+        AppError::service_unavailable("Die YouTube-Playlist konnte nicht gelesen werden")
     })?;
     let mut tx = state.pool.begin().await?;
     sqlx::query("DELETE FROM video_library.playlist_items WHERE playlist_id=$1")
@@ -1031,7 +1031,7 @@ pub async fn playlist_detail(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> AppResult<Json<Value>> {
-    let playlist=sqlx::query("SELECT id,owner_discord_id,title,description,featured,source,yt_playlist_id FROM video_library.playlists WHERE id=$1").bind(&id).fetch_optional(&state.pool).await?.ok_or_else(||AppError::not_found("PLATZHALTER: Playlist nicht gefunden"))?;
+    let playlist=sqlx::query("SELECT id,owner_discord_id,title,description,featured,source,yt_playlist_id FROM video_library.playlists WHERE id=$1").bind(&id).fetch_optional(&state.pool).await?.ok_or_else(||AppError::not_found("Playlist nicht gefunden"))?;
     let rows=sqlx::query("SELECT v.* FROM video_library.playlist_items i JOIN video_library.videos v ON v.id=i.video_id WHERE i.playlist_id=$1 AND v.status='live' ORDER BY i.position").bind(&id).fetch_all(&state.pool).await?;
     let mut value = playlist_json(&playlist);
     value["videos"] = Value::Array(rows.iter().map(video_json).collect());
@@ -1042,7 +1042,7 @@ pub async fn creator_profile(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<Value>> {
-    let creator=sqlx::query("SELECT u.id,u.display_name,u.avatar_url,c.youtube_url FROM core.meta_users u JOIN video_library.channels c ON c.owner_discord_id=u.id AND c.active=TRUE WHERE u.id=$1 LIMIT 1").bind(id).fetch_optional(&state.pool).await?.ok_or_else(||AppError::not_found("PLATZHALTER: Creator nicht gefunden"))?;
+    let creator=sqlx::query("SELECT u.id,u.display_name,u.avatar_url,c.youtube_url FROM core.meta_users u JOIN video_library.channels c ON c.owner_discord_id=u.id AND c.active=TRUE WHERE u.id=$1 LIMIT 1").bind(id).fetch_optional(&state.pool).await?.ok_or_else(||AppError::not_found("Creator nicht gefunden"))?;
     let videos=sqlx::query("SELECT v.* FROM video_library.videos v JOIN video_library.channels c ON c.id=v.channel_id WHERE c.owner_discord_id=$1 AND v.status='live' ORDER BY v.published_at DESC").bind(id).fetch_all(&state.pool).await?;
     let playlists=sqlx::query("SELECT id,owner_discord_id,title,description,featured,source,yt_playlist_id FROM video_library.playlists WHERE owner_discord_id=$1 ORDER BY featured DESC,created_at DESC").bind(id).fetch_all(&state.pool).await?;
     Ok(Json(
