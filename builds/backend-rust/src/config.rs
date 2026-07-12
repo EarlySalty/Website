@@ -20,6 +20,8 @@ pub struct Config {
     pub master_broker_token: Option<String>,
     pub scrim_guild_id: u64,
     pub scrim_reserve_role_id: Option<i64>,
+    pub ddl_creator_role_id: Option<u64>,
+    pub youtube_api_key: Option<String>,
     pub auth_session_secret: Option<String>,
     pub discord_api_base: String,
     pub discord_oauth_authorize_base: String,
@@ -87,6 +89,14 @@ impl Config {
                 .ok()
                 .and_then(|v| v.trim().parse().ok())
                 .filter(|v| *v > 0),
+            ddl_creator_role_id: env::var("DDL_CREATOR_ROLE_ID")
+                .ok()
+                .and_then(|v| v.trim().parse().ok())
+                .filter(|v| *v > 0),
+            youtube_api_key: env::var("YOUTUBE_API_KEY")
+                .ok()
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty()),
             auth_session_secret: first_env(&[
                 "AUTH_SESSION_SECRET",
                 "JWT_SECRET",

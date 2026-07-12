@@ -15,7 +15,7 @@ const queryClient = new QueryClient({
   },
 })
 
-const routerBase = import.meta.env.BASE_URL.replace(/\/$/, '')
+const routerBase = import.meta.env.VITE_ROUTER_BASE || import.meta.env.BASE_URL
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -9,6 +9,7 @@ mod http;
 mod ids;
 mod routes;
 mod rows;
+mod video;
 
 use anyhow::Context;
 use config::Config;

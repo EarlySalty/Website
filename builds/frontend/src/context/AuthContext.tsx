@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import type { User } from '@/types'
+import { apiBase } from '@/api/base'
 
 interface AuthContextType {
   user: User | null
@@ -11,7 +12,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
-const authBase = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/auth`
+const authBase = `${apiBase}/auth`
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)

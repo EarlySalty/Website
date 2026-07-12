@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run build:builds",
+    "build:builds": "tsc && VITE_PUBLIC_BASE=/builds/ VITE_ROUTER_BASE=/builds/ VITE_API_BASE=/builds/api vite build",
+    "build:ddl": "tsc && VITE_PUBLIC_BASE=/videos/ VITE_ROUTER_BASE=/ VITE_API_BASE=/api vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx"
   },

@@ -16,6 +16,7 @@ import CoachDashboardPage from './pages/CoachDashboardPage'
 import CoachOverviewPage from './pages/CoachOverviewPage'
 import CoacheeDetailPage from './pages/CoacheeDetailPage'
 import MyCoachingPage from './pages/MyCoachingPage'
+import VideosPage from './pages/VideosPage'
 
 export default function App() {
   return (
@@ -44,6 +45,9 @@ export default function App() {
         <Route path="coaching/overview" element={<CoachOverviewPage />} />
         <Route path="coaching/coachees/:id" element={<CoacheeDetailPage />} />
         <Route path="coaching/me" element={<MyCoachingPage />} />
+        <Route path="videos" element={<VideosPage />} />
+        <Route path="videos/playlists/:id" element={<VideosPage view="playlist" />} />
+        <Route path="videos/creators/:id" element={<VideosPage view="creator" />} />
       </Route>
     </Routes>
   )

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"
+      xmlns:media="http://search.yahoo.com/mrss/"
+      xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <yt:videoId>video-001</yt:videoId>
+    <title>Deadlock Grundlagen</title>
+    <published>2026-07-10T17:30:00+00:00</published>
+    <media:group>
+      <media:description>Laning und Souls</media:description>
+      <media:thumbnail url="https://i.ytimg.com/vi/video-001/hqdefault.jpg" />
+    </media:group>
+  </entry>
+  <entry>
+    <yt:videoId>video-002</yt:videoId>
+    <title>Patch Analyse</title>
+    <published>2026-07-11T18:00:00Z</published>
+    <media:group>
+      <media:description>Änderungen im Überblick</media:description>
+      <media:thumbnail url="https://i.ytimg.com/vi/video-002/hqdefault.jpg" />
+    </media:group>
+  </entry>
+</feed>
