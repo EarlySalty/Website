@@ -1,3 +1,11 @@
+## #61 — Video-Bibliothek im Community-Look
+
+**Ausgangslage:** Die neue Video-Bibliothek sah aus wie eine fremde Seite. Falsches Logo, falsche Navigation, falscher Stil.
+
+**Geändert:** Die Seite trägt jetzt unser echtes Branding. Gold auf dunklem Grund, unsere Schriften, das Community-Logo im Kopf, die Fahrstuhl-Navigation und der bekannte Look der Startseite.
+
+**Verhalten:** /videos fühlt sich jetzt wie ein Teil unserer Website an, nicht wie ein Fremdkörper.
+
 ## #60 — Neue Video-Bibliothek für Community-Creator
 
 **Ausgangslage:** Videos unserer YouTuber gingen im Discord unter und waren später kaum wiederzufinden. Neue Spieler mussten sich Anfänger-Guides mühsam zusammensuchen.
