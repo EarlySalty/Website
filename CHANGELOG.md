@@ -1,3 +1,11 @@
+## #60 — Neue Video-Bibliothek für Community-Creator
+
+**Ausgangslage:** Videos unserer YouTuber gingen im Discord unter und waren später kaum wiederzufinden. Neue Spieler mussten sich Anfänger-Guides mühsam zusammensuchen.
+
+**Geändert:** Unter /videos gibt es jetzt eine eigene Video-Bibliothek. Creator mit der Content-Creator-Rolle verbinden einmal ihren YouTube-Kanal, neue Videos landen automatisch auf der Seite, sobald sie auf YouTube den Tag Deadlock tragen. Alles ist nach Typ, Held und Level filterbar, dazu gibt es eine Suche, Creator-Profile und kuratierte Lernpfade für den Einstieg.
+
+**Verhalten:** Wer Deadlock lernen will, findet die Videos der Community jetzt gesammelt, sortiert und dauerhaft an einem Ort. Creator bekommen dafür sichtbare Profile mit Link zu ihrem Kanal.
+
 ## #59 — Richtiges Vorschaubild für den Patch-Bereich
 
 **Ausgangslage:** Beim Teilen des Patch-Links (z.B. auf Discord) erschien als Vorschaubild ein Screenshot der Discord-Kanäle — mit der Patch-Timeline hatte das nichts zu tun.
