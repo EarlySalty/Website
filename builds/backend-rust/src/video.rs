@@ -452,6 +452,24 @@ pub async fn detach_channel(
     Ok(Json(json!({"ok": true})))
 }
 
+pub async fn detach_own_channel(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(id): Path<i64>,
+) -> AppResult<Json<Value>> {
+    let user = require_creator(&state, &headers, peer).await?;
+    let owner = auth::parse_discord_user_id(&user.sub)?;
+    let result = sqlx::query("UPDATE video_library.channels SET active=FALSE,detached_at=now() WHERE id=$1 AND owner_discord_id=$2 AND active=TRUE")
+        .bind(id).bind(owner).execute(&state.pool).await?;
+    if result.rows_affected() == 0 {
+        return Err(AppError::not_found("PLATZHALTER: Kanal nicht gefunden"));
+    }
+    sqlx::query("INSERT INTO video_library.channel_audit_log(channel_id,actor_discord_id,action) VALUES($1,$2,'detached')")
+        .bind(id).bind(user.sub).execute(&state.pool).await?;
+    Ok(Json(json!({"ok":true})))
+}
+
 pub async fn ingest_videos(
     state: &AppState,
     channel_id: Option<i64>,
@@ -522,6 +540,18 @@ pub async fn public_feed(
     }
     sql.push("ORDER BY v.published_at DESC");
     let rows = sql.build().fetch_all(&state.pool).await?;
+    Ok(Json(Value::Array(rows.iter().map(video_json).collect())))
+}
+
+pub async fn own_videos(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+) -> AppResult<Json<Value>> {
+    let user = require_creator(&state, &headers, peer).await?;
+    let owner = auth::parse_discord_user_id(&user.sub)?;
+    let rows = sqlx::query("SELECT v.* FROM video_library.videos v JOIN video_library.channels c ON c.id=v.channel_id WHERE c.owner_discord_id=$1 ORDER BY v.published_at DESC")
+        .bind(owner).fetch_all(&state.pool).await?;
     Ok(Json(Value::Array(rows.iter().map(video_json).collect())))
 }
 
@@ -816,6 +846,21 @@ pub fn spawn_ingest_worker(state: AppState) {
                         {
                             tracing::warn!(?error, channel_id=%channel, "video ingest failed");
                         }
+                    }
+                }
+            }
+            if let Ok(playlists) = sqlx::query(
+                "SELECT id,yt_playlist_id FROM video_library.playlists WHERE source='yt'",
+            )
+            .fetch_all(&state.pool)
+            .await
+            {
+                for playlist in playlists {
+                    if let (Ok(id), Ok(Some(yt_id))) = (
+                        playlist.try_get::<String, _>("id"),
+                        playlist.try_get::<Option<String>, _>("yt_playlist_id"),
+                    ) {
+                        sync_playlist(&state, &id, &yt_id).await;
                     }
                 }
             }

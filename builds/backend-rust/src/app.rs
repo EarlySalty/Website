@@ -121,6 +121,11 @@ pub fn router(state: AppState) -> Router {
         .route("/api/videos/taxonomy", get(crate::video::list_taxonomy))
         .route("/api/videos/channels", post(crate::video::register_channel))
         .route(
+            "/api/videos/channels/{id}",
+            delete(crate::video::detach_own_channel),
+        )
+        .route("/api/videos/mine", get(crate::video::own_videos))
+        .route(
             "/api/videos/{id}/approve",
             post(crate::video::approve_video),
         )
