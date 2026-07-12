@@ -137,7 +137,9 @@ pub fn router(state: AppState) -> Router {
         )
         .route(
             "/api/videos/playlists/{id}",
-            get(crate::video::playlist_detail),
+            get(crate::video::playlist_detail)
+                .put(crate::video::update_playlist)
+                .delete(crate::video::delete_playlist),
         )
         .route(
             "/api/videos/creators/{id}",

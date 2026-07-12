@@ -764,6 +764,70 @@ pub async fn create_playlist(
     Ok(Json(json!({"id":id})))
 }
 
+pub async fn update_playlist(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(id): Path<String>,
+    Json(body): Json<PlaylistBody>,
+) -> AppResult<Json<Value>> {
+    let user = acting_user(&state, &headers, peer).await?;
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_discord_id FROM video_library.playlists WHERE id=$1")
+            .bind(&id)
+            .fetch_optional(&state.pool)
+            .await?;
+    if user.role != "admin" && owner.map(|v| v.to_string()).as_deref() != Some(&user.sub) {
+        return Err(AppError::forbidden(
+            "PLATZHALTER: Playlist gehört einem anderen Creator",
+        ));
+    }
+    if body.featured && user.role != "admin" {
+        return Err(AppError::forbidden("PLATZHALTER: Lernpfade nur für Admins"));
+    }
+    let mut tx = state.pool.begin().await?;
+    sqlx::query("UPDATE video_library.playlists SET title=$1,description=$2,featured=$3,source=$4,yt_playlist_id=$5,updated_at=now() WHERE id=$6")
+        .bind(body.title).bind(body.description).bind(body.featured).bind(&body.source).bind(&body.yt_playlist_id).bind(&id).execute(&mut *tx).await?;
+    sqlx::query("DELETE FROM video_library.playlist_items WHERE playlist_id=$1")
+        .bind(&id)
+        .execute(&mut *tx)
+        .await?;
+    for (video_id, position) in positioned_items(&body.video_ids) {
+        sqlx::query("INSERT INTO video_library.playlist_items(playlist_id,video_id,position) VALUES($1,$2,$3)").bind(&id).bind(video_id).bind(position).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    if body.source == "yt" {
+        if let Some(playlist) = body.yt_playlist_id {
+            sync_playlist(&state, &id, &playlist).await;
+        }
+    }
+    Ok(Json(json!({"ok":true})))
+}
+
+pub async fn delete_playlist(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(id): Path<String>,
+) -> AppResult<Json<Value>> {
+    let user = acting_user(&state, &headers, peer).await?;
+    let owner: Option<i64> =
+        sqlx::query_scalar("SELECT owner_discord_id FROM video_library.playlists WHERE id=$1")
+            .bind(&id)
+            .fetch_optional(&state.pool)
+            .await?;
+    if user.role != "admin" && owner.map(|v| v.to_string()).as_deref() != Some(&user.sub) {
+        return Err(AppError::forbidden(
+            "PLATZHALTER: Playlist gehört einem anderen Creator",
+        ));
+    }
+    sqlx::query("DELETE FROM video_library.playlists WHERE id=$1")
+        .bind(id)
+        .execute(&state.pool)
+        .await?;
+    Ok(Json(json!({"ok":true})))
+}
+
 async fn sync_playlist(state: &AppState, id: &str, playlist_id: &str) {
     let client = youtube_client(state);
     let Ok(xml) = client.playlist_feed(playlist_id).await else {
