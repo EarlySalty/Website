@@ -463,6 +463,31 @@ mod tests {
         }
     }
 
+    struct NoDeadlockTags;
+    impl crate::video::YoutubeClient for NoDeadlockTags {
+        fn resolve_channel<'a>(
+            &'a self,
+            _: &'a str,
+        ) -> crate::video::YoutubeFuture<'a, crate::video::YoutubeChannel> {
+            Box::pin(async { unreachable!() })
+        }
+        fn channel_feed<'a>(&'a self, _: &'a str) -> crate::video::YoutubeFuture<'a, String> {
+            Box::pin(async { unreachable!() })
+        }
+        fn playlist_feed<'a>(&'a self, _: &'a str) -> crate::video::YoutubeFuture<'a, String> {
+            Box::pin(async { unreachable!() })
+        }
+        fn video_tags<'a>(&'a self, ids: &'a [String]) -> crate::video::TagFuture<'a> {
+            Box::pin(async move { Ok(ids.iter().map(|id| (id.clone(), Vec::new())).collect()) })
+        }
+        fn backfill<'a>(
+            &'a self,
+            _: &'a str,
+        ) -> crate::video::YoutubeFuture<'a, Vec<crate::video::FeedVideo>> {
+            Box::pin(async { unreachable!() })
+        }
+    }
+
     #[tokio::test]
     async fn rss_fixture_decision_appears_in_public_feed() {
         let (_db, state) = test_state().await;
@@ -530,6 +555,119 @@ mod tests {
             .await
             .expect("anonymous admin response");
         assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn creator_cannot_take_over_another_creators_active_channel() {
+        let (_db, state) = creator_test_state().await;
+        let channel_id = "UCabcdefghijklmnopqrstuv";
+        sqlx::query("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES($1,$2,$3)")
+            .bind(940_010_i64)
+            .bind(channel_id)
+            .bind(format!("https://youtube.test/{channel_id}"))
+            .execute(&state.pool)
+            .await
+            .expect("existing channel");
+        let token = state
+            .auth
+            .create_session_jwt("940011", "creator-b", "user", Some("Creator B"), None)
+            .expect("session");
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/videos/channels",
+                &token,
+                Some(json!({ "channel": channel_id })),
+            ))
+            .await
+            .expect("register response");
+
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+    }
+
+    #[tokio::test]
+    async fn poller_preserves_manual_video_approval() {
+        let (_db, state) = creator_test_state().await;
+        let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940010,'UCmanualapproval0000000','https://youtube.test/manual') RETURNING id")
+            .fetch_one(&state.pool).await.expect("channel");
+        let video = crate::video::parse_feed(include_str!("../tests/fixtures/youtube-feed.xml"))
+            .expect("fixture")
+            .into_iter()
+            .next()
+            .expect("video");
+        crate::video::ingest_videos(
+            &state,
+            Some(channel_id),
+            vec![video.clone()],
+            "rss",
+            &NoDeadlockTags,
+        )
+        .await
+        .expect("first ingest");
+        let id: i64 =
+            sqlx::query_scalar("SELECT id FROM video_library.videos WHERE yt_video_id=$1")
+                .bind(&video.yt_video_id)
+                .fetch_one(&state.pool)
+                .await
+                .expect("video id");
+        let token = state
+            .auth
+            .create_session_jwt("940010", "creator-a", "user", Some("Creator A"), None)
+            .expect("session");
+        let response = router(state.clone())
+            .oneshot(authenticated_request(
+                Method::POST,
+                &format!("/api/videos/{id}/approve"),
+                &token,
+                None,
+            ))
+            .await
+            .expect("approve response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        crate::video::ingest_videos(
+            &state,
+            Some(channel_id),
+            vec![video],
+            "rss",
+            &NoDeadlockTags,
+        )
+        .await
+        .expect("second ingest");
+
+        let status: String =
+            sqlx::query_scalar("SELECT status FROM video_library.videos WHERE id=$1")
+                .bind(id)
+                .fetch_one(&state.pool)
+                .await
+                .expect("video status");
+        assert_eq!(status, "live");
+    }
+
+    #[tokio::test]
+    async fn identical_ingest_logs_only_the_initial_decision() {
+        let (_db, state) = test_state().await;
+        let video = crate::video::parse_feed(include_str!("../tests/fixtures/youtube-feed.xml"))
+            .expect("fixture")
+            .into_iter()
+            .next()
+            .expect("video");
+
+        for _ in 0..2 {
+            crate::video::ingest_videos(&state, None, vec![video.clone()], "rss", &NoDeadlockTags)
+                .await
+                .expect("ingest");
+        }
+
+        let decisions: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM video_library.decision_log WHERE yt_video_id=$1",
+        )
+        .bind(video.yt_video_id)
+        .fetch_one(&state.pool)
+        .await
+        .expect("decision count");
+        assert_eq!(decisions, 1);
     }
 
     #[tokio::test]
@@ -1686,6 +1824,26 @@ mod tests {
     }
 
     async fn test_state() -> (dl_central_db::TestDb, AppState) {
+        test_state_with(|_| {}, std::time::Duration::from_secs(20)).await
+    }
+
+    async fn creator_test_state() -> (dl_central_db::TestDb, AppState) {
+        let discord_api_base = spawn_creator_role_api().await;
+        test_state_with(
+            move |cfg| {
+                cfg.ddl_creator_role_id = Some(777);
+                cfg.discord_bot_token = Some("test-bot-token".into());
+                cfg.discord_api_base = discord_api_base;
+            },
+            std::time::Duration::from_millis(100),
+        )
+        .await
+    }
+
+    async fn test_state_with(
+        configure: impl FnOnce(&mut Config),
+        timeout: std::time::Duration,
+    ) -> (dl_central_db::TestDb, AppState) {
         std::env::set_var("TWITCH_INTERNAL_API_TOKEN", "test-secret-xyz");
         std::env::set_var("AUTH_SESSION_SECRET", "test-session-secret");
 
@@ -1693,9 +1851,10 @@ mod tests {
             .await
             .expect("central test pool");
         db::init(db.pool()).await.expect("website migrations");
-        let cfg = Config::from_env();
+        let mut cfg = Config::from_env();
+        configure(&mut cfg);
         let http = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(20))
+            .timeout(timeout)
             .build()
             .expect("http client");
         let discord_role_broker =
@@ -1714,6 +1873,23 @@ mod tests {
             }),
         };
         (db, state)
+    }
+
+    async fn spawn_creator_role_api() -> String {
+        let listener = tokio::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+            .await
+            .expect("creator role api listener");
+        let addr = listener.local_addr().expect("creator role api addr");
+        let app = axum::Router::new().route(
+            "/guilds/{guild_id}/members/{user_id}",
+            axum::routing::get(|| async { axum::Json(json!({ "roles": ["777"] })) }),
+        );
+        tokio::spawn(async move {
+            axum::serve(listener, app)
+                .await
+                .expect("creator role api server");
+        });
+        format!("http://{addr}")
     }
 
     fn request(method: Method, uri: &str, body: Option<Value>) -> Request<Body> {

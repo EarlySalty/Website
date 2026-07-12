@@ -4,7 +4,7 @@ use std::{
 
 use axum::{
     extract::{ConnectInfo, Path, Query, State},
-    http::HeaderMap,
+    http::{HeaderMap, StatusCode},
     Json,
 };
 use chrono::{DateTime, Utc};
@@ -164,6 +164,14 @@ pub struct ReqwestYoutubeClient {
     api_key: Option<String>,
 }
 
+fn is_valid_channel_id(value: &str) -> bool {
+    value.len() == 24
+        && value.starts_with("UC")
+        && value[2..]
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
+}
+
 impl ReqwestYoutubeClient {
     pub fn new(client: reqwest::Client, api_key: Option<String>) -> Self {
         Self { client, api_key }
@@ -193,8 +201,8 @@ impl YoutubeClient for ReqwestYoutubeClient {
             let direct = trimmed
                 .rsplit_once("/channel/")
                 .map(|(_, id)| id)
-                .filter(|id| id.starts_with("UC"))
-                .or_else(|| trimmed.starts_with("UC").then_some(trimmed));
+                .filter(|id| is_valid_channel_id(id))
+                .or_else(|| is_valid_channel_id(trimmed).then_some(trimmed));
             if let Some(id) = direct {
                 return Ok(YoutubeChannel {
                     id: id.to_string(),
@@ -421,8 +429,9 @@ pub async fn register_channel(
         .await
         .map_err(|_| AppError::bad_request("PLATZHALTER: YouTube-Kanal ungültig"))?;
     let mut tx = state.pool.begin().await?;
-    let row = sqlx::query("INSERT INTO video_library.channels (owner_discord_id,youtube_channel_id,youtube_url,title,active,detached_at) VALUES ($1,$2,$3,$4,TRUE,NULL) ON CONFLICT (youtube_channel_id) DO UPDATE SET owner_discord_id=EXCLUDED.owner_discord_id, active=TRUE, detached_at=NULL RETURNING id")
-        .bind(discord_id).bind(&channel.id).bind(format!("https://www.youtube.com/channel/{}", channel.id)).bind(&channel.title).fetch_one(&mut *tx).await?;
+    let row = sqlx::query("INSERT INTO video_library.channels (owner_discord_id,youtube_channel_id,youtube_url,title,active,detached_at) VALUES ($1,$2,$3,$4,TRUE,NULL) ON CONFLICT (youtube_channel_id) DO UPDATE SET active=TRUE, detached_at=NULL WHERE video_library.channels.owner_discord_id=EXCLUDED.owner_discord_id RETURNING id")
+        .bind(discord_id).bind(&channel.id).bind(format!("https://www.youtube.com/channel/{}", channel.id)).bind(&channel.title).fetch_optional(&mut *tx).await?
+        .ok_or_else(|| AppError::http(StatusCode::CONFLICT, "PLATZHALTER: YouTube-Kanal ist bereits registriert"))?;
     let id: i64 = row.try_get("id")?;
     sqlx::query("INSERT INTO video_library.channel_audit_log (channel_id,actor_discord_id,action) VALUES ($1,$2,'registered')").bind(id).bind(&user.sub).execute(&mut *tx).await?;
     tx.commit().await?;
@@ -497,12 +506,36 @@ pub async fn ingest_videos(
                 VideoStatus::Live => "live",
                 VideoStatus::Pending => "pending",
             };
-            let row = sqlx::query("INSERT INTO video_library.videos (channel_id,yt_video_id,title,description,published_at,thumbnail_url,status,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (yt_video_id) DO UPDATE SET channel_id=COALESCE(video_library.videos.channel_id,EXCLUDED.channel_id),title=EXCLUDED.title,description=EXCLUDED.description,published_at=EXCLUDED.published_at,thumbnail_url=EXCLUDED.thumbnail_url,status=CASE WHEN video_library.videos.status='hidden' THEN 'hidden' ELSE EXCLUDED.status END,updated_at=now() RETURNING id")
-                .bind(channel_id).bind(&video.yt_video_id).bind(&video.title).bind(&video.description).bind(video.published_at).bind(&video.thumbnail_url).bind(status).bind(source).fetch_one(&state.pool).await?;
-            let video_id: i64 = row.try_get("id")?;
-            sqlx::query("INSERT INTO video_library.decision_log (video_id,yt_video_id,title,verdict,reason) VALUES ($1,$2,$3,$4,$5)")
-                .bind(video_id).bind(&video.yt_video_id).bind(video.title.chars().take(120).collect::<String>()).bind(status).bind(decision.reason.as_str()).execute(&state.pool).await?;
-            tracing::info!(yt_video_id=%video.yt_video_id, title=%video.title.chars().take(120).collect::<String>(), verdict=status, reason=decision.reason.as_str(), "video approval decision");
+            let mut tx = state.pool.begin().await?;
+            let existing = sqlx::query(
+                "SELECT id,status FROM video_library.videos WHERE yt_video_id=$1 FOR UPDATE",
+            )
+            .bind(&video.yt_video_id)
+            .fetch_optional(&mut *tx)
+            .await?;
+            let (video_id, changed) = if let Some(existing) = existing {
+                let video_id: i64 = existing.try_get("id")?;
+                let old_status: String = existing.try_get("status")?;
+                let next_status = if matches!(old_status.as_str(), "hidden" | "live") {
+                    old_status.as_str()
+                } else {
+                    status
+                };
+                sqlx::query("UPDATE video_library.videos SET channel_id=COALESCE(channel_id,$1),title=$2,description=$3,published_at=$4,thumbnail_url=$5,status=$6,updated_at=now() WHERE id=$7")
+                    .bind(channel_id).bind(&video.title).bind(&video.description).bind(video.published_at).bind(&video.thumbnail_url).bind(next_status).bind(video_id).execute(&mut *tx).await?;
+                (video_id, old_status != next_status)
+            } else {
+                let video_id: i64 = sqlx::query_scalar("INSERT INTO video_library.videos (channel_id,yt_video_id,title,description,published_at,thumbnail_url,status,source) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id")
+                    .bind(channel_id).bind(&video.yt_video_id).bind(&video.title).bind(&video.description).bind(video.published_at).bind(&video.thumbnail_url).bind(status).bind(source).fetch_one(&mut *tx).await?;
+                (video_id, true)
+            };
+            if changed {
+                let title = video.title.chars().take(120).collect::<String>();
+                sqlx::query("INSERT INTO video_library.decision_log (video_id,yt_video_id,title,verdict,reason) VALUES ($1,$2,$3,$4,$5)")
+                    .bind(video_id).bind(&video.yt_video_id).bind(&title).bind(status).bind(decision.reason.as_str()).execute(&mut *tx).await?;
+                tracing::info!(yt_video_id=%video.yt_video_id, title=%title, verdict=status, reason=decision.reason.as_str(), "video approval decision");
+            }
+            tx.commit().await?;
         }
     }
     Ok(())
@@ -988,5 +1021,14 @@ mod tests {
                 ("video-b".to_string(), 2),
             ]
         );
+    }
+
+    #[test]
+    fn youtube_channel_id_format_is_strict() {
+        assert!(is_valid_channel_id("UCabcdefghijklmnopqrstuv"));
+        assert!(is_valid_channel_id("UCabc_DEF-ghiJKLmnoPQRST"));
+        assert!(!is_valid_channel_id("UC123"));
+        assert!(!is_valid_channel_id("UCabcdefghijklmnopqrstu!"));
+        assert!(!is_valid_channel_id("XXabcdefghijklmnopqrstuv"));
     }
 }
