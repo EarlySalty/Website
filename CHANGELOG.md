@@ -1,3 +1,11 @@
+## #63 — Aktivitätsseite: Gold statt Regenbogen
+
+**Ausgangslage:** Die Seite sollte nach Holz und Gold aussehen, hatte aber ein flaches Senfgelb, einen sterilen Hintergrund und einen knallblauen Discord-Button. Vor allem die Diagramme und die Avatare leuchteten in Neonfarben, die gegen den dunklen Look gearbeitet haben.
+
+**Geändert:** Das Gold hat jetzt echte Lichtreflexe, der Hintergrund eine feine Maserung, und die Karten sitzen mit heller Oberkante und Schatten wie eingelegte Holzplatten. Die Rangfarben behalten ihren Farbton, werden aber gedämpft und warm untertönt, damit aus elf Einzelfarben eine Palette wird. Zeilen im Leaderboard leuchten beim Überfahren sanft auf, die Trennlinien laufen zu den Rändern hin aus.
+
+**Verhalten:** Ränge bleiben an ihrer Farbe erkennbar, knallen aber nicht mehr. Der Discord-Button fügt sich ins Farbkonzept ein, das Logo bleibt.
+
 ## #62 — Playlists: keine Doppel-Anlage mehr
 
 **Ausgangslage:** Wer eine YouTube-Playlist verknüpft hat, bekam eine Fehlermeldung, obwohl die Playlist längst gespeichert war. Wer daraufhin nochmal auf Speichern klickte, legte sie ein zweites Mal an.

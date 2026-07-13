@@ -17,6 +17,15 @@
   --silver: #d7d0c2;
   --bronze: #cd7f32;
   --shadow: var(--shadow-card-soft, 0 16px 45px rgba(0, 0, 0, 0.38));
+
+  /* Echtes Gold lebt von Lichtreflexen: der Verlauf laeuft von dunkler Kante ueber ein
+     Glanzlicht zurueck ins Dunkle. Als background-clip:text fuer Ueberschriften, als
+     border-image fuer Rahmen. */
+  --gold-sheen: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+  --gold-glow-soft: 0 0 24px rgba(201, 168, 106, 0.22);
+  /* Geschliffene Holzplatte: helle Oberkante (Licht faellt von oben), Schatten nach unten. */
+  --edge-lit: inset 0 1px 0 rgba(252, 246, 186, 0.14);
+
   --max-width: 1380px;
   --radius-xl: 8px;
   --radius-lg: 8px;
@@ -153,11 +162,19 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   color: var(--text);
 }
 .button-secondary:hover { border-color: var(--primary); background: var(--primary-soft); }
+/* Das Discord-Blau brach das Farbkonzept. Das Logo im Button traegt die Erkennung genauso gut. */
 .button-discord {
-  background: #5865f2;
-  color: #fff;
+  background: linear-gradient(180deg, rgba(33, 28, 22, 0.95), rgba(11, 9, 7, 0.95));
+  border-color: rgba(201, 168, 106, 0.42);
+  color: var(--gold-bright, #efd49d);
+  box-shadow: var(--edge-lit), 0 6px 18px rgba(0, 0, 0, 0.4);
 }
-.button-discord:hover { background: #4752c4; }
+.button-discord:hover {
+  border-color: var(--primary);
+  color: #fcf6ba;
+  box-shadow: var(--edge-lit), 0 6px 18px rgba(0, 0, 0, 0.4), var(--gold-glow-soft);
+}
+.button-discord .btn-icon { flex: 0 0 auto; }
 
 /* ── Hero ── */
 .hero { padding: 4rem 0 2.5rem; }
@@ -373,9 +390,8 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 .rank-lb-table .rank-board-row {
   cursor: pointer;
 }
-.rank-lb-table .rank-board-row[aria-expanded="true"] {
-  background: rgba(201, 168, 106, 0.08);
-}
+/* Der aufgeklappte Zustand wird unten im Gold-&-Holz-Block ueber --row-tint gesetzt —
+   eine `background`-Kurzform hier wuerde die ausfiedelnde Trennlinie wieder ausknipsen. */
 .rank-lb-table .rank-board-row.is-not-expandable {
   cursor: default;
 }
@@ -640,16 +656,9 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   background: rgba(255, 255, 255, 0.02);
 }
 .lb-table th.num, .lb-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-.lb-table tbody tr {
-  border-bottom: 1px solid var(--line-soft, rgba(201, 168, 106, 0.14));
-  transition: background 0.15s;
-}
-.lb-table tbody tr:last-child { border-bottom: none; }
-.lb-table tbody tr:hover { background: rgba(201, 168, 106, 0.06); }
-.lb-table tbody tr.is-me {
-  background: linear-gradient(90deg, rgba(201, 168, 106, 0.12), rgba(173, 73, 50, 0.08));
-  box-shadow: inset 4px 0 0 var(--primary);
-}
+/* Zeilen-Hintergrund, Trennlinie, Hover und Podest sitzen komplett im Gold-&-Holz-Block
+   unten — sie teilen sich einen Layer-Aufbau, den eine `background`-Kurzform hier
+   zerstoeren wuerde. */
 .lb-table tbody tr.is-me td:first-child { position: relative; }
 
 .rank-cell {
@@ -1062,9 +1071,17 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
-/* ── Vibrancy-Pass v2: Leben & Farbe (seitenlokal, screenshot-verifiziert) ── */
+/* ══ Gold & Holz ══════════════════════════════════════════════════════════════
+   Loest den alten "Vibrancy-Pass" ab. Der hatte Leben ueber eine Regenbogen-Palette
+   erzeugt (Avatare, Ambient-Glow in Blau/Lila) und damit gegen das Holz-Gold-Konzept
+   gearbeitet. Leben kommt hier stattdessen aus Lichtfuehrung: Glanzkanten, Verlaeufe,
+   Glow und Bewegung — die Farbe bleibt warm.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Kräftigerer Ambient-Glow: füllt die dunkle Fläche mit einem Hauch der Tier-Palette */
+/* Warmer Ambient-Glow, nur noch Gold/Rost. Traegt zusaetzlich die Holzmaserung: drei
+   Streifenraster mit teilerfremden Perioden (7/19/31 px) ueberlagern sich zu einer
+   quasi-zufaelligen Struktur — das Auge liest Maserung, kein Muster. Deshalb kein
+   PNG-Overlay: kein Asset, kein Request, gleiche Wirkung. */
 body::after {
   content: '';
   position: fixed;
@@ -1072,13 +1089,17 @@ body::after {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(52% 46% at 50% -8%, rgba(201, 168, 106, 0.22), transparent 60%),
-    radial-gradient(40% 40% at 93% 0%, rgba(173, 73, 50, 0.18), transparent 58%),
-    radial-gradient(46% 52% at 3% 60%, rgba(34, 136, 238, 0.10), transparent 60%),
-    radial-gradient(42% 46% at 99% 82%, rgba(124, 92, 255, 0.10), transparent 60%);
+    repeating-linear-gradient(91deg, rgba(0, 0, 0, 0.055) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(90deg, rgba(233, 209, 160, 0.012) 0 1px, transparent 1px 19px),
+    repeating-linear-gradient(89deg, rgba(0, 0, 0, 0.04) 0 2px, transparent 2px 31px),
+    repeating-linear-gradient(90deg, rgba(255, 238, 205, 0.008) 0 44px, rgba(0, 0, 0, 0.02) 44px 96px, transparent 96px 170px),
+    radial-gradient(52% 46% at 50% -8%, rgba(201, 168, 106, 0.20), transparent 60%),
+    radial-gradient(40% 40% at 93% 0%, rgba(173, 73, 50, 0.14), transparent 58%),
+    radial-gradient(46% 52% at 3% 60%, rgba(201, 168, 106, 0.07), transparent 60%),
+    radial-gradient(42% 46% at 99% 82%, rgba(173, 73, 50, 0.08), transparent 60%);
 }
 
-/* Hero: Eyebrow als Pill, Titel mit Glow */
+/* Hero: Eyebrow als Pill, Titel mit Glanzlicht */
 .hero-eyebrow {
   display: inline-block;
   color: var(--gold-bright, #efd49d);
@@ -1089,81 +1110,180 @@ body::after {
   text-shadow: 0 0 18px rgba(201, 168, 106, 0.3);
 }
 .hero-title {
-  background: linear-gradient(118deg, #f6ecd6 0%, #f3cf86 38%, #e8a24e 74%, #d6603f 116%);
+  background: var(--gold-sheen);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 4px 30px rgba(201, 168, 106, 0.18));
+  filter: drop-shadow(0 4px 30px rgba(201, 168, 106, 0.22));
 }
 
-/* Panels: kräftigere mehrfarbige Oberkante + Hover-Leben */
+/* ── Ueberschriften aus poliertem Gold ──
+   Nur Panel-Titel. Der Nutzername in .personal-identity bleibt bewusst normaler Text:
+   ein Name ist kein Ornament. */
+.leaderboard-head h2,
+.chart-head h3,
+.gate-card h2 {
+  background: var(--gold-sheen);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Cards als eingelegte Holzplatte ──
+   Helle Oberkante (Licht von oben), Schatten nach unten, eigene feine Maserung. */
 .leaderboard-card,
 .insight-card,
-.insight-card-wide {
+.insight-card-wide,
+.stat-card,
+.chart-card,
+.heatmap-card,
+.coplayer-card,
+.gate-card {
   position: relative;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.055) 0 1px, transparent 1px 9px),
+    repeating-linear-gradient(91deg, rgba(233, 209, 160, 0.015) 0 1px, transparent 1px 23px);
+  box-shadow: var(--edge-lit), 0 14px 34px rgba(0, 0, 0, 0.42);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
+
+/* Echter Verlaufsrahmen trotz border-radius: Gold-Sheen auf einer 1px-Randflaeche,
+   die Mitte per mask ausgestanzt. border-image kann das nicht, es ignoriert den Radius. */
+.leaderboard-card::after,
+.insight-card-wide::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--gold-sheen);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Oberkante des Leaderboards: die eine "wichtige Linie" der Seite, in vollem Gold. */
 .leaderboard-card::before {
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--gold, #c8a86b), var(--rust, #ad4932) 55%, #7c5cff 100%);
+  z-index: 1;
+  background: var(--gold-sheen);
+  box-shadow: 0 0 18px rgba(201, 168, 106, 0.35);
 }
-.leaderboard-card:hover {
+.leaderboard-card:hover,
+.insight-card-wide:hover {
   transform: translateY(-2px);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 0 0 1px var(--border-strong);
+  box-shadow: var(--edge-lit), 0 24px 55px rgba(0, 0, 0, 0.5), var(--gold-glow-soft);
 }
 
-/* ── Leaderboard lebendig: farbige Avatare (Tier-Palette pro Zeile) ── */
+/* ── Avatare: Messing statt Regenbogen ──
+   Die alte Tier-Palette faerbte Avatare nach Zeilennummer ein — eine Farbe, die nichts
+   bedeutet, aber laut schreit. Jetzt gebuerstetes Metall; nur das Podest ist farbig,
+   und dort traegt die Farbe echte Information. */
 .lb-table tbody tr .avatar {
   --av: #c8a86b;
   background-image: linear-gradient(150deg,
-    color-mix(in srgb, var(--av) 92%, #fff 8%),
-    color-mix(in srgb, var(--av) 60%, #000 26%));
-  color: #0b0907;
+    color-mix(in srgb, var(--av) 34%, #1c1610),
+    color-mix(in srgb, var(--av) 12%, #0b0907));
+  color: var(--gold-bright, #efd49d);
   font-weight: 800;
-  border: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--av) 45%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
-}
-.lb-table tbody tr:nth-child(10n + 1) .avatar { --av: #18bba8; }
-.lb-table tbody tr:nth-child(10n + 2) .avatar { --av: #2288ee; }
-.lb-table tbody tr:nth-child(10n + 3) .avatar { --av: #7c5cff; }
-.lb-table tbody tr:nth-child(10n + 4) .avatar { --av: #e0409a; }
-.lb-table tbody tr:nth-child(10n + 5) .avatar { --av: #ee5544; }
-.lb-table tbody tr:nth-child(10n + 6) .avatar { --av: #ee9922; }
-.lb-table tbody tr:nth-child(10n + 7) .avatar { --av: #f5cc11; }
-.lb-table tbody tr:nth-child(10n + 8) .avatar { --av: #5fbf5f; }
-.lb-table tbody tr:nth-child(10n + 9) .avatar { --av: #22b8c8; }
-.lb-table tbody tr:nth-child(10n + 10) .avatar { --av: #b06cff; }
-
-/* Zeilen-Hover wärmer + linker Akzent */
-.lb-table tbody tr:hover {
-  background: linear-gradient(90deg, rgba(201, 168, 106, 0.10), rgba(201, 168, 106, 0.03));
-  box-shadow: inset 3px 0 0 var(--primary);
+  border: 1px solid color-mix(in srgb, var(--av) 40%, transparent);
+  box-shadow: inset 0 1px 0 rgba(252, 246, 186, 0.18);
 }
 
-/* Top-3 als echtes Podest (Gold/Silber/Bronze) */
-.lb-table tbody tr.rank-top-1 {
-  background: linear-gradient(90deg, rgba(245, 204, 17, 0.16), rgba(245, 204, 17, 0.02) 62%);
-  box-shadow: inset 4px 0 0 #f5cc11;
+/* ── Zeilen: ausfiedelnde Trennlinien + Hover mit Leben ──
+   Die Trennlinie ist der erste Hintergrund-Layer (1px hoch, unten angesetzt) und laeuft
+   zu beiden Raendern hin in Transparenz aus. Der Zeilen-Tint ist der zweite Layer.
+   Beides ueber Custom Properties, damit Hover, Podest und "du"-Zeile denselben Aufbau
+   teilen und keine `background`-Kurzform die Linie wieder wegraeumt. */
+@property --row-tint {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
 }
-.lb-table tbody tr.rank-top-2 {
-  background: linear-gradient(90deg, rgba(215, 208, 194, 0.14), rgba(215, 208, 194, 0.02) 62%);
-  box-shadow: inset 4px 0 0 #d7d0c2;
+@property --row-accent {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
 }
-.lb-table tbody tr.rank-top-3 {
-  background: linear-gradient(90deg, rgba(205, 127, 50, 0.16), rgba(205, 127, 50, 0.02) 62%);
-  box-shadow: inset 4px 0 0 #cd7f32;
+.lb-table tbody tr,
+.rank-lb-table .rank-board-row {
+  --row-tint: transparent;
+  --row-accent: transparent;
+  --row-rule: rgba(201, 168, 106, 0.17);
+  border-bottom: none;
+  background-image:
+    linear-gradient(90deg, transparent 0%, var(--row-rule) 9%, var(--row-rule) 91%, transparent 100%),
+    linear-gradient(90deg, var(--row-tint), color-mix(in srgb, var(--row-tint) 18%, transparent) 60%, transparent);
+  background-size: 100% 1px, 100% 100%;
+  background-position: 0 100%, 0 0;
+  background-repeat: no-repeat;
+  box-shadow: inset 3px 0 0 var(--row-accent);
+  transition: --row-tint 0.22s ease, --row-accent 0.22s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
-.lb-table tbody tr.rank-top-1 .avatar { --av: #f5cc11; }
+.lb-table tbody tr:last-child { --row-rule: transparent; }
+
+/* Sanft aufleuchten, 2px nach rechts, goldener Links-Border — statt plumpem Farbwechsel. */
+.lb-table tbody tr:hover:not(.me-sticky),
+.rank-lb-table .rank-board-row:hover:not(.is-not-expandable) {
+  --row-tint: rgba(201, 168, 106, 0.13);
+  --row-accent: var(--primary);
+  transform: translateX(2px);
+}
+.rank-lb-table .rank-board-row[aria-expanded='true'] {
+  --row-tint: rgba(201, 168, 106, 0.10);
+  --row-accent: var(--primary);
+}
+
+/* Top-3 als Podest. Hier darf Farbe sein: sie steht fuer Gold, Silber, Bronze. */
+.lb-table tbody tr.rank-top-1 { --row-tint: rgba(201, 168, 106, 0.17); --row-accent: #c8a86b; }
+.lb-table tbody tr.rank-top-2 { --row-tint: rgba(215, 208, 194, 0.13); --row-accent: #d7d0c2; }
+.lb-table tbody tr.rank-top-3 { --row-tint: rgba(205, 127, 50, 0.14); --row-accent: #cd7f32; }
+.lb-table tbody tr.rank-top-1 .avatar { --av: #e8c98a; }
 .lb-table tbody tr.rank-top-2 .avatar { --av: #d7d0c2; }
 .lb-table tbody tr.rank-top-3 .avatar { --av: #cd7f32; }
+
+/* Die Top-3 leuchten leicht — der einzige Ort, an dem die Seite wirklich glaenzt. */
+.lb-table tbody tr.rank-top-1 .avatar,
+.lb-table tbody tr.rank-top-2 .avatar,
+.lb-table tbody tr.rank-top-3 .avatar {
+  box-shadow:
+    inset 0 1px 0 rgba(252, 246, 186, 0.28),
+    0 0 0 1px color-mix(in srgb, var(--av) 55%, transparent),
+    0 0 16px color-mix(in srgb, var(--av) 40%, transparent);
+}
+.rank-top-1 .rank-cell,
+.rank-top-2 .rank-cell,
+.rank-top-3 .rank-cell {
+  text-shadow: 0 0 14px color-mix(in srgb, currentColor 45%, transparent);
+}
 .rank-cell .medal { filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.55)); }
+
+/* "du"-Zeile: gleicher Aufbau, damit die Trennlinie erhalten bleibt. Kein background-color
+   hier — dieselbe Zeile traegt unten am Rand klebend auch .me-sticky und braucht deren
+   deckenden Hintergrund, sonst scrollt der Text darunter durch. */
+.lb-table tbody tr.is-me {
+  --row-tint: rgba(201, 168, 106, 0.14);
+  --row-accent: var(--primary);
+}
 
 /* Punkte-Spalte hervorheben */
 .lb-table tbody td.num:last-child {
   color: var(--gold-bright, #efd49d);
   font-weight: 800;
+  text-shadow: 0 0 12px rgba(201, 168, 106, 0.25);
+}
+
+/* Mitspieler-Liste: gleiche Hover-Sprache wie das Leaderboard. */
+.coplayer-list li:not(.state) {
+  transition: border-color 0.15s, background 0.15s, transform 0.18s ease;
+}
+.coplayer-list li:not(.state):hover {
+  transform: translateX(2px);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
