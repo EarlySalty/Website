@@ -26,12 +26,13 @@
   /* Geschliffene Holzplatte: helle Oberkante (Licht faellt von oben), Schatten nach unten. */
   --edge-lit: inset 0 1px 0 rgba(252, 246, 186, 0.14);
 
-  /* Kein Faser-/Streifenmuster: jede gerichtete Struktur (egal ob regelmaessige Streifen
-     oder langgezogenes Rauschen) liest sich als Kord, Bürstenstrich oder Riffelblech und
-     kaempft mit dem Inhalt. Was bleibt, ist richtungsloses Feinkorn — es nimmt der Flaeche
-     die Sterilitaet und das Farbverlauf-Banding, ohne dass man es als Muster wahrnimmt.
-     Statisch, nie animiert (Flackern), Deckkraft bewusst an der Wahrnehmungsgrenze. */
-  --surface-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.09'/%3E%3C/svg%3E");
+  /* Korn und Nebel wie auf der Coaching-Seite (dl-coaching/src/index.css). Kein Faser- oder
+     Streifenmuster: jede gerichtete Struktur liest sich als Kord oder Buerstenstrich und
+     kaempft mit dem Inhalt. Richtungsloses Feinkorn nimmt der Flaeche nur die Sterilitaet.
+     Statisch, nie animiert (Flackern). Teal ist der zweite Nebelton der Coaching-Seite. */
+  --surface-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  --teal: 85, 151, 143;
+  --gold-rgb: 201, 168, 106;
 
   --max-width: 1380px;
   --radius-xl: 8px;
@@ -47,28 +48,41 @@
 
 html { scroll-behavior: smooth; }
 
+/* Farbwelt der Coaching-Seite: warmes Braun statt fast-schwarz, darauf Gold- und Teal-Nebel.
+   Das Braun ist der eigentliche Unterschied — es traegt die Waerme, die Gold allein nicht
+   erzeugt. Reihenfolge wie in dl-coaching: Nebel oben, Grundton unten. */
 body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--font-body, 'Manrope', 'Segoe UI', sans-serif);
   color: var(--text);
-  background: var(--brand-body-background, linear-gradient(180deg, #0b0907, #100c08 55%, #080604));
+  background:
+    radial-gradient(100% 60% at 50% -5%, rgba(var(--gold-rgb), 0.13), transparent 60%),
+    radial-gradient(70% 52% at 86% 32%, rgba(var(--teal), 0.095), transparent 72%),
+    radial-gradient(66% 44% at 12% 28%, rgba(var(--teal), 0.068), transparent 70%),
+    radial-gradient(72% 46% at 86% 86%, rgba(var(--teal), 0.055), transparent 74%),
+    radial-gradient(62% 42% at 8% 78%, rgba(var(--teal), 0.045), transparent 72%),
+    radial-gradient(72% 38% at 52% 98%, rgba(var(--gold-rgb), 0.046), transparent 76%),
+    linear-gradient(180deg, #271f12, #241c11 45%, #1c150d);
+  background-attachment: fixed;
   line-height: 1.6;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Raster + Vignette. Das Raster gibt der Flaeche Halt, die Vignette zieht den Blick nach
+   innen und laesst die Raender ins Dunkle laufen. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgba(201, 168, 106, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 168, 106, 0.03) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse at top, black 50%, transparent 90%);
-  opacity: 0.5;
   z-index: 0;
+  background-image:
+    linear-gradient(rgba(var(--gold-rgb), 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--gold-rgb), 0.03) 1px, transparent 1px),
+    radial-gradient(120% 95% at 50% 42%, transparent 62%, rgba(0, 0, 0, 0.38));
+  background-size: 64px 64px, 64px 64px, auto;
 }
 
 main, footer, header { position: relative; z-index: 1; }
@@ -271,20 +285,34 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
 }
 .tab-icon { font-size: 1rem; }
 
-/* ── Page-Tabs (Hauptnavigation) ── */
+/* ── Page-Tabs (Hauptnavigation) ──
+   Die Leiste lief frueher als randloser Balken ueber die volle Fensterbreite und zerschnitt
+   die Seite. Jetzt schwebt sie als abgerundete Leiste genau ueber dem Inhalt: das Sticky-
+   Verhalten sitzt auf dem Wrapper (der darf keinen Hintergrund haben), die sichtbare Leiste
+   ist der Container — der ist per Definition so breit wie das Leaderboard darunter. */
 .page-tabs {
   position: sticky;
-  top: var(--header-height);
+  top: calc(var(--header-height) + 0.5rem);
   z-index: 20;
-  background: var(--bg-elevated);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  padding-block: 0.5rem;
+  background: none;
+  border-bottom: none;
+  pointer-events: none;
 }
 .page-tabs .container {
   display: flex;
   gap: 0.3rem;
-  padding-block: 0.3rem;
+  padding: 0.4rem;
+  pointer-events: auto;
+  background: var(--card-strong);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--edge-lit), 0 12px 30px rgba(0, 0, 0, 0.45);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.page-tabs .container::-webkit-scrollbar { display: none; }
 .page-tab {
   appearance: none;
   background: transparent;
@@ -1085,23 +1113,18 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
    Glow und Bewegung — die Farbe bleibt warm.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Warmer Ambient-Glow, nur noch Gold/Rost — plus die Maserung als eigener Rausch-Layer.
-   `soft-light` legt das Rauschen als Licht/Schatten auf das Holz, statt es als graue
-   Folie darueberzukleben: helle Fasern hellen auf, dunkle vertiefen, die Farbe bleibt. */
+/* Filmisches Korn ueber der ganzen Seite — wie in dl-coaching. Liegt bewusst UEBER dem
+   Inhalt (z-index 90) und im screen-Blend: dadurch bekommt alles dieselbe Oberflaeche,
+   statt dass nur der Hintergrund koernig ist und die Karten glatt daraufkleben. */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
-  background-image:
-    var(--surface-grain),
-    radial-gradient(52% 46% at 50% -8%, rgba(201, 168, 106, 0.20), transparent 60%),
-    radial-gradient(40% 40% at 93% 0%, rgba(173, 73, 50, 0.14), transparent 58%),
-    radial-gradient(46% 52% at 3% 60%, rgba(201, 168, 106, 0.07), transparent 60%),
-    radial-gradient(42% 46% at 99% 82%, rgba(173, 73, 50, 0.08), transparent 60%);
-  background-blend-mode: soft-light, normal, normal, normal, normal;
-  opacity: 0.9;
+  z-index: 90;
+  opacity: 0.045;
+  mix-blend-mode: screen;
+  background-image: var(--surface-grain);
 }
 
 /* Hero: Eyebrow als Pill, Titel mit Glanzlicht */
@@ -1145,8 +1168,7 @@ body::after {
 .coplayer-card,
 .gate-card {
   position: relative;
-  background-image: var(--surface-grain);
-  background-blend-mode: soft-light;
+  /* Kein eigenes Korn: das liegt global als Overlay ueber der ganzen Seite (body::after). */
   box-shadow: var(--edge-lit), 0 14px 34px rgba(0, 0, 0, 0.42);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
