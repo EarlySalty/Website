@@ -1,4 +1,5 @@
 import './main.css'
+import { patina } from './patina.js'
 import {
   Chart,
   LineController,
@@ -52,6 +53,7 @@ const FALLBACK_RANK_ORDER = [
   'eternus',
 ]
 const TABS = ['voice', 'text', 'peaks', 'ich']
+const DISCORD_MARK = `<svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.27 5.33A16.5 16.5 0 0 0 15.1 4l-.2.38a12.2 12.2 0 0 1 3.7 1.9 14.1 14.1 0 0 0-12.2 0 12.3 12.3 0 0 1 3.7-1.9L9.9 4c-1.5.26-2.9.72-4.17 1.33C3.35 9.06 2.7 12.7 3 16.28a16.7 16.7 0 0 0 5.07 2.56l.82-1.4c-.77-.29-1.5-.65-2.18-1.08l.54-.4a11.9 11.9 0 0 0 10.5 0l.54.4c-.68.43-1.41.79-2.18 1.08l.82 1.4A16.7 16.7 0 0 0 21 16.28c.35-4.16-.6-7.77-1.73-10.95ZM9.3 14.15c-1 0-1.82-.92-1.82-2.05s.8-2.05 1.82-2.05c1.02 0 1.84.92 1.82 2.05 0 1.13-.8 2.05-1.82 2.05Zm5.4 0c-1 0-1.82-.92-1.82-2.05s.8-2.05 1.82-2.05c1.02 0 1.84.92 1.82 2.05 0 1.13-.8 2.05-1.82 2.05Z"/></svg>`
 const RANK_COLORS = {
   initiate:  '#8fa4b4',
   seeker:    '#72aa5a',
@@ -224,7 +226,9 @@ function renderAuthSlot(me) {
     const btn = document.createElement('button')
     btn.type = 'button'
     btn.className = 'button button-discord'
-    btn.textContent = 'Discord-Login'
+    // Das Logo traegt die Erkennung, nicht das Discord-Blau — der Button darf sich in die
+    // Gold/Holz-Palette einfuegen. Statisches Markup, kein Nutzerinhalt.
+    btn.innerHTML = `${DISCORD_MARK}<span>Discord-Login</span>`
     btn.addEventListener('click', loginRedirect)
     slot.appendChild(btn)
   }
@@ -713,7 +717,10 @@ function renderWeeklyChart(data) {
       datasets: rankOrder.map((rank) => ({
         label: prettyRank(rank),
         data: weekly.map((entry) => entry?.data?.[rank] || 0),
-        backgroundColor: rankColor(rank),
+        // Leicht transparent: die grossen Stapelflaechen sind die farbigste Stelle der Seite.
+        // Laesst man das Holz durchscheinen, bindet der warme Grundton die elf Raenge zusammen,
+        // ohne dass sie an Lesbarkeit verlieren.
+        backgroundColor: colorWithAlpha(rankColor(rank), 'd9'),
         borderRadius: 5,
         borderSkipped: false,
       })),
@@ -1372,8 +1379,12 @@ function subrankFromBadgeLevel(badgeLevel) {
   return subrank > 0 ? String(subrank) : ''
 }
 
+// Einziger Ausgang fuer Rangfarben: Donut, Balken, Linien, Chips und Dots holen sie alle hier ab.
+// Deshalb sitzt `patina` hier und nicht in RANK_COLORS — sonst wuerde loadRankColors() die
+// Behandlung mit den Backend-Farben wieder ueberschreiben.
 function rankColor(rank) {
-  return RANK_COLORS[String(rank || '').toLowerCase()] || '#c8a86b'
+  const raw = RANK_COLORS[String(rank || '').toLowerCase()]
+  return raw ? patina(raw) : '#c8a86b'
 }
 
 function normalizeRankEntry(entry) {
