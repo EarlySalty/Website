@@ -763,6 +763,154 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn playlist_mutation_failed_sync_returns_success_after_create_and_keeps_one_row() {
+        let (_db, state, token) = playlist_mutation_test_state().await;
+
+        let response = router(state.clone())
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/videos/playlists",
+                &token,
+                Some(json!({
+                    "title": "Create sync failure",
+                    "source": "yt",
+                    "yt_playlist_id": "PLcreate-failure"
+                })),
+            ))
+            .await
+            .expect("playlist create response");
+        let status = response.status();
+        let body = to_json(response).await;
+        let playlists: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM video_library.playlists WHERE title='Create sync failure'",
+        )
+        .fetch_one(&state.pool)
+        .await
+        .expect("playlist count");
+
+        assert_eq!(playlists, 1);
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(body["sync_failed"], true);
+        assert_eq!(
+            body["sync_error"],
+            "Die YouTube-Playlist konnte nicht geladen werden"
+        );
+    }
+
+    #[tokio::test]
+    async fn playlist_mutation_successful_create_prevents_error_driven_retry_duplicate() {
+        let (_db, state, token) = playlist_mutation_test_state().await;
+        let app = router(state.clone());
+        let payload = json!({
+            "title": "Retry sync failure",
+            "source": "yt",
+            "yt_playlist_id": "PLretry-failure"
+        });
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/videos/playlists",
+                &token,
+                Some(payload.clone()),
+            ))
+            .await
+            .expect("first playlist create response");
+        let first_status = response.status();
+        let attempts = if first_status.is_success() {
+            1
+        } else {
+            app.oneshot(authenticated_request(
+                Method::POST,
+                "/api/videos/playlists",
+                &token,
+                Some(payload),
+            ))
+            .await
+            .expect("retried playlist create response");
+            2
+        };
+        let playlists: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM video_library.playlists WHERE title='Retry sync failure'",
+        )
+        .fetch_one(&state.pool)
+        .await
+        .expect("playlist count");
+
+        assert_eq!(first_status, StatusCode::OK);
+        assert_eq!(attempts, 1);
+        assert_eq!(playlists, 1);
+    }
+
+    #[tokio::test]
+    async fn playlist_mutation_failed_sync_returns_success_after_update_and_keeps_changes() {
+        let (_db, state, token) = playlist_mutation_test_state().await;
+        sqlx::query("INSERT INTO video_library.playlists(id,owner_discord_id,title,source) VALUES('update-sync-failure',940010,'Before update','manual')")
+            .execute(&state.pool)
+            .await
+            .expect("playlist");
+
+        let response = router(state.clone())
+            .oneshot(authenticated_request(
+                Method::PUT,
+                "/api/videos/playlists/update-sync-failure",
+                &token,
+                Some(json!({
+                    "title": "After update",
+                    "description": "Committed despite sync failure",
+                    "source": "yt",
+                    "yt_playlist_id": "PLupdate-failure"
+                })),
+            ))
+            .await
+            .expect("playlist update response");
+        let status = response.status();
+        let body = to_json(response).await;
+        let playlist = sqlx::query(
+            "SELECT title,description,source,yt_playlist_id FROM video_library.playlists WHERE id='update-sync-failure'",
+        )
+        .fetch_one(&state.pool)
+        .await
+        .expect("updated playlist");
+
+        assert_eq!(rows::required_string(&playlist, "title"), "After update");
+        assert_eq!(
+            rows::required_string(&playlist, "description"),
+            "Committed despite sync failure"
+        );
+        assert_eq!(rows::required_string(&playlist, "source"), "yt");
+        assert_eq!(
+            rows::string(&playlist, "yt_playlist_id").as_deref(),
+            Some("PLupdate-failure")
+        );
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(body["sync_failed"], true);
+        assert_eq!(
+            body["sync_error"],
+            "Die YouTube-Playlist konnte nicht geladen werden"
+        );
+    }
+
+    #[tokio::test]
+    async fn playlist_mutation_manual_create_reports_sync_not_failed() {
+        let (_db, state, token) = playlist_mutation_test_state().await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/videos/playlists",
+                &token,
+                Some(json!({"title": "Manual playlist", "source": "manual"})),
+            ))
+            .await
+            .expect("manual playlist create response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(to_json(response).await["sync_failed"], false);
+    }
+
+    #[tokio::test]
     async fn mutating_video_handlers_write_action_audit() {
         let (_db, state) = creator_test_state().await;
         let channel_id: i64 = sqlx::query_scalar("INSERT INTO video_library.channels(owner_discord_id,youtube_channel_id,youtube_url) VALUES(940010,'UCactionaudit0000000000','https://youtube.test/audit') RETURNING id")
@@ -2281,6 +2429,25 @@ mod tests {
             std::time::Duration::from_millis(100),
         )
         .await
+    }
+
+    async fn playlist_mutation_test_state() -> (dl_central_db::TestDb, AppState, String) {
+        let (db, state) = test_state_with(|_| {}, std::time::Duration::from_nanos(1)).await;
+        sqlx::query("INSERT INTO core.meta_users(id,username,display_name,role) VALUES(940010,'playlist-admin','Playlist Admin','admin')")
+            .execute(&state.pool)
+            .await
+            .expect("playlist admin");
+        let token = state
+            .auth
+            .create_session_jwt(
+                "940010",
+                "playlist-admin",
+                "admin",
+                Some("Playlist Admin"),
+                None,
+            )
+            .expect("playlist admin session");
+        (db, state, token)
     }
 
     async fn test_state_with(

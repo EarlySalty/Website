@@ -1,3 +1,11 @@
+## #62 — Playlists: keine Doppel-Anlage mehr
+
+**Ausgangslage:** Wer eine YouTube-Playlist verknüpft hat, bekam eine Fehlermeldung, obwohl die Playlist längst gespeichert war. Wer daraufhin nochmal auf Speichern klickte, legte sie ein zweites Mal an.
+
+**Geändert:** Die Playlist wird jetzt als gespeichert gemeldet, auch wenn die Videos von YouTube gerade nicht geladen werden konnten. Der Hinweis sagt genau das, und die Videos werden automatisch nachgeholt.
+
+**Verhalten:** Ein Speichern legt eine Playlist an, nicht mehr mehrere.
+
 ## #61 — Video-Bibliothek im Community-Look
 
 **Ausgangslage:** Die neue Video-Bibliothek sah aus wie eine fremde Seite. Falsches Logo, falsche Navigation, falscher Stil.

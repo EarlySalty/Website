@@ -371,11 +371,11 @@ async fn require_creator(
         .cfg
         .ddl_creator_role_id
         .ok_or_else(|| AppError::forbidden("Der Creator-Bereich ist noch nicht freigeschaltet"))?;
-    let token = state
-        .cfg
-        .discord_bot_token
-        .as_deref()
-        .ok_or_else(|| AppError::forbidden("Deine Creator-Rolle kann gerade nicht geprüft werden, versuch es gleich nochmal"))?;
+    let token = state.cfg.discord_bot_token.as_deref().ok_or_else(|| {
+        AppError::forbidden(
+            "Deine Creator-Rolle kann gerade nicht geprüft werden, versuch es gleich nochmal",
+        )
+    })?;
     let response = state
         .http
         .get(format!(
@@ -387,16 +387,21 @@ async fn require_creator(
         .header("Authorization", format!("Bot {token}"))
         .send()
         .await
-        .map_err(|_| AppError::forbidden("Deine Creator-Rolle kann gerade nicht geprüft werden, versuch es gleich nochmal"))?;
+        .map_err(|_| {
+            AppError::forbidden(
+                "Deine Creator-Rolle kann gerade nicht geprüft werden, versuch es gleich nochmal",
+            )
+        })?;
     if !response.status().is_success() {
         return Err(AppError::forbidden(
             "Dafür brauchst du die Creator-Rolle auf unserem Discord-Server",
         ));
     }
-    let member: Value = response
-        .json()
-        .await
-        .map_err(|_| AppError::forbidden("Deine Creator-Rolle kann gerade nicht geprüft werden, versuch es gleich nochmal"))?;
+    let member: Value = response.json().await.map_err(|_| {
+        AppError::forbidden(
+            "Deine Creator-Rolle kann gerade nicht geprüft werden, versuch es gleich nochmal",
+        )
+    })?;
     let has_role = member["roles"].as_array().is_some_and(|roles| {
         roles
             .iter()
@@ -450,10 +455,9 @@ pub async fn register_channel(
     let user = require_creator(&state, &headers, peer).await?;
     let discord_id = auth::parse_discord_user_id(&user.sub)?;
     let client = youtube_client(&state);
-    let channel = client
-        .resolve_channel(&body.channel)
-        .await
-        .map_err(|_| AppError::bad_request("Das sieht nicht nach einem gültigen YouTube-Kanal aus"))?;
+    let channel = client.resolve_channel(&body.channel).await.map_err(|_| {
+        AppError::bad_request("Das sieht nicht nach einem gültigen YouTube-Kanal aus")
+    })?;
     let mut tx = state.pool.begin().await?;
     let row = sqlx::query("INSERT INTO video_library.channels (owner_discord_id,youtube_channel_id,youtube_url,title,active,detached_at) VALUES ($1,$2,$3,$4,TRUE,NULL) ON CONFLICT (youtube_channel_id) DO UPDATE SET active=TRUE, detached_at=NULL WHERE video_library.channels.owner_discord_id=EXCLUDED.owner_discord_id RETURNING id")
         .bind(discord_id).bind(&channel.id).bind(format!("https://www.youtube.com/channel/{}", channel.id)).bind(&channel.title).fetch_optional(&mut *tx).await?
@@ -878,15 +882,11 @@ pub async fn create_playlist(
     )
     .await?;
     tx.commit().await?;
-    if body.source == "yt" {
-        if let Some(playlist) = body.yt_playlist_id {
-            if let Err(error) = sync_playlist(&state, &id, &playlist).await {
-                tracing::warn!(?error, playlist_id=%id, "video playlist sync failed");
-                return Err(error);
-            }
-        }
-    }
-    Ok(Json(json!({"id":id})))
+    let (sync_failed, sync_error) =
+        sync_playlist_after_commit(&state, &id, &body.source, body.yt_playlist_id.as_deref()).await;
+    Ok(Json(
+        json!({"id":id,"sync_failed":sync_failed,"sync_error":sync_error}),
+    ))
 }
 
 pub async fn update_playlist(
@@ -946,15 +946,11 @@ pub async fn update_playlist(
         .await?;
     }
     tx.commit().await?;
-    if body.source == "yt" {
-        if let Some(playlist) = body.yt_playlist_id {
-            if let Err(error) = sync_playlist(&state, &id, &playlist).await {
-                tracing::warn!(?error, playlist_id=%id, "video playlist sync failed");
-                return Err(error);
-            }
-        }
-    }
-    Ok(Json(json!({"ok":true})))
+    let (sync_failed, sync_error) =
+        sync_playlist_after_commit(&state, &id, &body.source, body.yt_playlist_id.as_deref()).await;
+    Ok(Json(
+        json!({"ok":true,"sync_failed":sync_failed,"sync_error":sync_error}),
+    ))
 }
 
 pub async fn delete_playlist(
@@ -988,6 +984,30 @@ pub async fn delete_playlist(
 async fn sync_playlist(state: &AppState, id: &str, playlist_id: &str) -> AppResult<()> {
     let client = youtube_client(state);
     sync_playlist_with_client(state, id, playlist_id, client.as_ref()).await
+}
+
+async fn sync_playlist_after_commit(
+    state: &AppState,
+    id: &str,
+    source: &str,
+    yt_playlist_id: Option<&str>,
+) -> (bool, Option<String>) {
+    let Some(playlist_id) = (source == "yt").then_some(yt_playlist_id).flatten() else {
+        return (false, None);
+    };
+    match sync_playlist(state, id, playlist_id).await {
+        Ok(()) => (false, None),
+        Err(error) => {
+            let reason = match &error {
+                AppError::Http(_, detail) => detail.clone(),
+                AppError::Db(_) => "Database error".to_string(),
+                AppError::Json(error) => error.to_string(),
+                AppError::Reqwest(_) => "Internal service is not reachable".to_string(),
+            };
+            tracing::warn!(?error, sync_error=%reason, playlist_id=%id, "video playlist sync failed");
+            (true, Some(reason))
+        }
+    }
 }
 
 pub(crate) async fn sync_playlist_with_client(

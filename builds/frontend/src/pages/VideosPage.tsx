@@ -11,6 +11,7 @@ type Taxonomy = { id: number; dimension: 'type' | 'hero' | 'level'; name: string
 type Playlist = { id: string; owner_discord_id: number; title: string; description: string; featured: boolean; source: 'manual' | 'yt'; yt_playlist_id?: string; videos?: Video[] }
 type Channel = { id: number; youtube_channel_id: string; youtube_url: string; title: string; active: boolean }
 type PlaylistDraft = { id?: string; title: string; description: string; source: 'manual' | 'yt'; ytPlaylist: string; videoIds: number[]; featured: boolean }
+type PlaylistMutationResult = { sync_failed: boolean; sync_error?: string | null }
 
 const emptyPlaylist: PlaylistDraft = { title: '', description: '', source: 'manual', ytPlaylist: '', videoIds: [], featured: false }
 
@@ -139,10 +140,12 @@ function PlaylistManager({ playlists, ownVideos, onChanged, onNotice }: { playli
       featured: draft.featured,
     }
     try {
-      await sendJson(draft.id ? `${api}/playlists/${draft.id}` : `${api}/playlists`, draft.id ? 'PUT' : 'POST', payload)
+      const result = await sendJson<PlaylistMutationResult>(draft.id ? `${api}/playlists/${draft.id}` : `${api}/playlists`, draft.id ? 'PUT' : 'POST', payload)
       setDraft(emptyPlaylist)
       await onChanged()
-      onNotice('Playlist gespeichert.')
+      onNotice(result.sync_failed
+        ? 'Playlist gespeichert. Die Videos von YouTube konnten wir gerade nicht laden, wir versuchen es automatisch weiter.'
+        : 'Playlist gespeichert.')
     } catch {
       onNotice('Playlist konnte nicht gespeichert werden.')
     }
