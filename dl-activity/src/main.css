@@ -26,6 +26,14 @@
   /* Geschliffene Holzplatte: helle Oberkante (Licht faellt von oben), Schatten nach unten. */
   --edge-lit: inset 0 1px 0 rgba(252, 246, 186, 0.14);
 
+  /* Echte Maserung statt Streifenmuster. `repeating-linear-gradient` ergibt perfekt
+     gleichmaessige Linien — das Auge liest Kord oder Riffelblech, kein Holz. Holz ist
+     unregelmaessig, also kommt die Struktur hier aus fraktalem Rauschen (feTurbulence).
+     Die stark asymmetrische baseFrequency (hoch in X, sehr niedrig in Y) zieht das Rauschen
+     zu langen Fasern in Laufrichtung — das ist die Maserung. Inline als data-URI: kein Asset,
+     kein Request. Faserrichtung umdrehen = die beiden baseFrequency-Werte tauschen. */
+  --wood-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.32 0.008' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23g)' opacity='0.16'/%3E%3C/svg%3E");
+
   --max-width: 1380px;
   --radius-xl: 8px;
   --radius-lg: 8px;
@@ -1078,25 +1086,23 @@ a:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border
    Glow und Bewegung — die Farbe bleibt warm.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Warmer Ambient-Glow, nur noch Gold/Rost. Traegt zusaetzlich die Holzmaserung: drei
-   Streifenraster mit teilerfremden Perioden (7/19/31 px) ueberlagern sich zu einer
-   quasi-zufaelligen Struktur — das Auge liest Maserung, kein Muster. Deshalb kein
-   PNG-Overlay: kein Asset, kein Request, gleiche Wirkung. */
+/* Warmer Ambient-Glow, nur noch Gold/Rost — plus die Maserung als eigener Rausch-Layer.
+   `soft-light` legt das Rauschen als Licht/Schatten auf das Holz, statt es als graue
+   Folie darueberzukleben: helle Fasern hellen auf, dunkle vertiefen, die Farbe bleibt. */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    repeating-linear-gradient(91deg, rgba(0, 0, 0, 0.055) 0 1px, transparent 1px 7px),
-    repeating-linear-gradient(90deg, rgba(233, 209, 160, 0.012) 0 1px, transparent 1px 19px),
-    repeating-linear-gradient(89deg, rgba(0, 0, 0, 0.04) 0 2px, transparent 2px 31px),
-    repeating-linear-gradient(90deg, rgba(255, 238, 205, 0.008) 0 44px, rgba(0, 0, 0, 0.02) 44px 96px, transparent 96px 170px),
+  background-image:
+    var(--wood-grain),
     radial-gradient(52% 46% at 50% -8%, rgba(201, 168, 106, 0.20), transparent 60%),
     radial-gradient(40% 40% at 93% 0%, rgba(173, 73, 50, 0.14), transparent 58%),
     radial-gradient(46% 52% at 3% 60%, rgba(201, 168, 106, 0.07), transparent 60%),
     radial-gradient(42% 46% at 99% 82%, rgba(173, 73, 50, 0.08), transparent 60%);
+  background-blend-mode: soft-light, normal, normal, normal, normal;
+  opacity: 0.9;
 }
 
 /* Hero: Eyebrow als Pill, Titel mit Glanzlicht */
@@ -1140,9 +1146,8 @@ body::after {
 .coplayer-card,
 .gate-card {
   position: relative;
-  background-image:
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.055) 0 1px, transparent 1px 9px),
-    repeating-linear-gradient(91deg, rgba(233, 209, 160, 0.015) 0 1px, transparent 1px 23px);
+  background-image: var(--wood-grain);
+  background-blend-mode: soft-light;
   box-shadow: var(--edge-lit), 0 14px 34px rgba(0, 0, 0, 0.42);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
