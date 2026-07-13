@@ -26,13 +26,12 @@
   /* Geschliffene Holzplatte: helle Oberkante (Licht faellt von oben), Schatten nach unten. */
   --edge-lit: inset 0 1px 0 rgba(252, 246, 186, 0.14);
 
-  /* Echte Maserung statt Streifenmuster. `repeating-linear-gradient` ergibt perfekt
-     gleichmaessige Linien — das Auge liest Kord oder Riffelblech, kein Holz. Holz ist
-     unregelmaessig, also kommt die Struktur hier aus fraktalem Rauschen (feTurbulence).
-     Die stark asymmetrische baseFrequency (hoch in X, sehr niedrig in Y) zieht das Rauschen
-     zu langen Fasern in Laufrichtung — das ist die Maserung. Inline als data-URI: kein Asset,
-     kein Request. Faserrichtung umdrehen = die beiden baseFrequency-Werte tauschen. */
-  --wood-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.32 0.008' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23g)' opacity='0.16'/%3E%3C/svg%3E");
+  /* Kein Faser-/Streifenmuster: jede gerichtete Struktur (egal ob regelmaessige Streifen
+     oder langgezogenes Rauschen) liest sich als Kord, Bürstenstrich oder Riffelblech und
+     kaempft mit dem Inhalt. Was bleibt, ist richtungsloses Feinkorn — es nimmt der Flaeche
+     die Sterilitaet und das Farbverlauf-Banding, ohne dass man es als Muster wahrnimmt.
+     Statisch, nie animiert (Flackern), Deckkraft bewusst an der Wahrnehmungsgrenze. */
+  --surface-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.09'/%3E%3C/svg%3E");
 
   --max-width: 1380px;
   --radius-xl: 8px;
@@ -1096,7 +1095,7 @@ body::after {
   pointer-events: none;
   z-index: 0;
   background-image:
-    var(--wood-grain),
+    var(--surface-grain),
     radial-gradient(52% 46% at 50% -8%, rgba(201, 168, 106, 0.20), transparent 60%),
     radial-gradient(40% 40% at 93% 0%, rgba(173, 73, 50, 0.14), transparent 58%),
     radial-gradient(46% 52% at 3% 60%, rgba(201, 168, 106, 0.07), transparent 60%),
@@ -1146,7 +1145,7 @@ body::after {
 .coplayer-card,
 .gate-card {
   position: relative;
-  background-image: var(--wood-grain);
+  background-image: var(--surface-grain);
   background-blend-mode: soft-light;
   box-shadow: var(--edge-lit), 0 14px 34px rgba(0, 0, 0, 0.42);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
