@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paige — Balance-Historie · Deutsche Deadlock Community</title>
+<meta name="description" content="Vollständiger Balance-Verlauf von Paige in Deadlock: alle Nerfs, Buffs und Reworks seit Release, aus dem Deadlock Brain.">
+<link rel="canonical" href="https://deutsche-deadlock-community.de/patch/hero/paige.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Deutsche Deadlock Community">
+<meta property="og:url" content="https://deutsche-deadlock-community.de/patch/hero/paige.html">
+<meta property="og:title" content="Paige — Balance-Historie">
+<meta property="og:description" content="Vollständiger Balance-Verlauf von Paige in Deadlock: alle Nerfs, Buffs und Reworks seit Release, aus dem Deadlock Brain.">
+<meta property="og:image" content="https://deutsche-deadlock-community.de/patch/patch-og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Paige — Balance-Historie, Deutsche Deadlock Community">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Paige — Balance-Historie">
+<meta name="twitter:description" content="Vollständiger Balance-Verlauf von Paige in Deadlock: alle Nerfs, Buffs und Reworks seit Release, aus dem Deadlock Brain.">
+<meta name="twitter:image" content="https://deutsche-deadlock-community.de/patch/patch-og.png">
+
+<link rel="icon" type="image/png" href="/brand/logo/favicon-64.png">
+<link rel="stylesheet" href="/brand/tokens.css">
+<link rel="stylesheet" href="/patch/hero-shell.css">
+<style>
+  /* Balance-Analyse-Style — vollständig auf .balance-doc gescopet,
+     damit er nichts an der Site-Shell verändert. Palette (Gold/Nerf/Buff)
+     unverändert; Body-Hintergrund/-Margin bewusst weggelassen, damit der
+     Site-Grund durchscheint. */
+  .balance-doc{
+    --bg:#0e0f12; --panel:#16181d; --panel2:#1c1f26; --line:#2a2e37;
+    --ink:#e7e3d8; --muted:#9a9384; --gold:#c8a86b; --gold-dim:#8f7a4d;
+    --nerf:#d1685f; --buff:#6fb98a; --neutral:#7c8598; --rework:#c8a86b;
+  }
+  .balance-doc *{box-sizing:border-box}
+  .balance-doc{color:var(--ink);
+    font:16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .balance-doc .wrap{max-width:960px;margin:0 auto;padding:44px 22px 90px}
+  .balance-doc header .kick{color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-size:12px;font-weight:700}
+  .balance-doc h1{font-size:clamp(30px,6vw,46px);margin:.18em 0 .1em;line-height:1.05;
+    background:linear-gradient(90deg,#f0e6cf,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .balance-doc .sub{color:var(--muted);max-width:64ch;margin:0}
+  .balance-doc h2{font-size:22px;margin:52px 0 14px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .balance-doc h2 .n{color:var(--gold-dim);font-variant-numeric:tabular-nums;margin-right:.5em;font-size:15px}
+  .balance-doc h3{font-size:16px;margin:26px 0 8px;color:var(--gold)}
+  .balance-doc p{margin:.55em 0}
+  .balance-doc .lede{font-size:18px;color:#d8d2c4}
+  .balance-doc .grid{display:grid;gap:14px}
+  @media(min-width:640px){.balance-doc .cols-2{grid-template-columns:1fr 1fr}.balance-doc .cols-4{grid-template-columns:repeat(4,1fr)}}
+  .balance-doc .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .balance-doc .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
+  .balance-doc .stat b{display:block;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+  .balance-doc .stat span{color:var(--muted);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  .balance-doc .nerf{color:var(--nerf)} .balance-doc .buff{color:var(--buff)} .balance-doc .gold{color:var(--gold)} .balance-doc .muted{color:var(--muted)}
+  /* scaling arc */
+  .balance-doc .arc{display:flex;align-items:flex-end;gap:0;overflow-x:auto;padding:18px 4px 6px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+  .balance-doc .arc .step{flex:1 0 92px;text-align:center;position:relative;min-width:92px}
+  .balance-doc .arc .bar{margin:0 auto;width:34px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold),var(--gold-dim))}
+  .balance-doc .arc .val{font-variant-numeric:tabular-nums;font-weight:700;margin-top:6px}
+  .balance-doc .arc .date{color:var(--muted);font-size:11px}
+  .balance-doc .arc .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+  .balance-doc table{width:100%;border-collapse:collapse;margin:6px 0;font-size:14.5px}
+  .balance-doc th,.balance-doc td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .balance-doc th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+  .balance-doc td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .balance-doc .pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11.5px;font-weight:700;letter-spacing:.03em}
+  .balance-doc .pill.nerf{background:rgba(209,104,95,.14);color:var(--nerf)}
+  .balance-doc .pill.buff{background:rgba(111,185,138,.14);color:var(--buff)}
+  .balance-doc .pill.rework{background:rgba(200,168,107,.14);color:var(--gold)}
+  /* balance bars */
+  .balance-doc .bal{display:grid;grid-template-columns:130px 1fr;gap:10px 14px;align-items:center;margin:4px 0}
+  .balance-doc .bal .name{font-size:14px}
+  .balance-doc .bal .track{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--panel2);border:1px solid var(--line)}
+  .balance-doc .bal .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#0e0f12}
+  .balance-doc .bal .seg.nerf{background:var(--nerf)} .balance-doc .bal .seg.buff{background:var(--buff)} .balance-doc .bal .seg.other{background:var(--neutral)}
+  /* timeline */
+  .balance-doc .tl{position:relative;margin:10px 0 0;padding-left:18px}
+  .balance-doc .tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .balance-doc .tl .ev{position:relative;padding:6px 0 6px 4px}
+  .balance-doc .tl .ev::before{content:"";position:absolute;left:-16px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--gold-dim);border:2px solid var(--bg)}
+  .balance-doc .tl .ev.big::before{background:var(--gold);width:12px;height:12px;left:-17px}
+  .balance-doc .tl .d{font-variant-numeric:tabular-nums;color:var(--gold);font-weight:700;font-size:13.5px;margin-right:8px}
+  .balance-doc .tl .c{color:var(--muted);font-size:13px}
+  .balance-doc .foot{margin-top:60px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+  .balance-doc code{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:13px;color:var(--gold)}
+</style>
+</head>
+<body>
+  <div class="site-shell">
+
+    <header class="site-header">
+      <div class="container">
+        <div class="header-row">
+          <div class="header-left">
+            <button class="menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="nav-drawer" aria-label="Navigation öffnen">
+              <svg class="icon-menu" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect x="2" y="5" width="18" height="2" rx="1" fill="currentColor"/><rect x="2" y="10" width="18" height="2" rx="1" fill="currentColor"/><rect x="2" y="15" width="18" height="2" rx="1" fill="currentColor"/></svg>
+              <svg class="icon-close" width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 5L17 17M17 5L5 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+            <a class="brand" href="/" aria-label="Deutsche Deadlock Community">
+              <img src="/brand/logo/logo-192.png" alt="" class="brand-logo" />
+              <img src="/brand/logo/wordmark.svg" alt="" class="brand-wordmark-img" />
+            </a>
+          </div>
+          <nav class="nav-links" aria-label="Hauptnavigation">
+            <a class="nav-link" href="/mitspieler/">Mitspieler</a>
+            <a class="nav-link" href="/coaching/">Coaching</a>
+            <a class="nav-link is-active" href="/patch/" aria-current="page">Patch</a>
+          </nav>
+          <div class="header-actions">
+            <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Beitreten</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+      <nav class="nav-drawer-panel" aria-label="Hauptnavigation">
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/">Start</a>
+          <a class="nav-drawer-link" href="/mitspieler/">Mitspieler</a>
+          <a class="nav-drawer-link" href="/coaching/">Coaching</a>
+          <a class="nav-drawer-link is-active" href="/patch/" aria-current="page">Patchnotes</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <span class="nav-drawer-label">Streamer</span>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="/streamer/">Streamer-Netzwerk</a>
+          <a class="nav-drawer-link" href="/streamer/onboarding/">Onboarding</a>
+          <a class="nav-drawer-link" href="/streamer/faq/">FAQ</a>
+        </div>
+        <div class="nav-drawer-divider"></div>
+        <div class="nav-drawer-section">
+          <a class="nav-drawer-link" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Discord beitreten ↗</a>
+        </div>
+      </nav>
+      <div class="nav-drawer-backdrop" data-menu-backdrop aria-hidden="true"></div>
+    </div>
+
+    <main id="main">
+      <div class="container">
+        <a class="balance-breadcrumb" href="/patch/">← Patch-Timeline</a>
+        <div class="balance-doc">
+<div class="wrap">
+
+<header>
+  <div class="kick">Deadlock · Hero-Balance-Historie</div>
+  <h1>Paige</h1>
+  <p class="sub">Vollständiger Balance-Bogen vom ersten erfassten Patch (28.08.2025) bis zum Patch 30.06.2026 — 83 erfasste Änderungen über 10 Patches, gezogen aus <code>brain.patch_changes</code>. Buff/Nerf nach numerischer Richtung + Stat-Polarität (nicht nach dem unzuverlässigen Legacy-Label).</p>
+</header>
+
+<div class="grid cols-4" style="margin-top:26px">
+  <div class="stat"><b class="nerf">17</b><span>Nerfs (numerisch)</span></div>
+  <div class="stat"><b class="buff">21</b><span>Buffs (numerisch)</span></div>
+  <div class="stat"><b class="gold">11</b><span>Reworks</span></div>
+  <div class="stat"><b>10</b><span>Patches mit Änderungen</span></div>
+</div>
+
+<h2><span class="n">01</span>Kurzfassung</h2>
+<p class="lede">Paige ist <b>kein Dauer-Nerf-Kandidat</b>, sondern eine <b class="gold">Dauerbaustelle</b>: numerisch minimal mehr Buffs (<b class="buff">21</b>) als Nerfs (<b class="nerf">17</b>), dazu ungewöhnlich viele <b class="gold">Reworks</b> (11). Sie wurde nicht in eine Richtung abgetragen, sondern breit hin- und her-justiert — vor allem an den Talent-Stufen ihrer Fähigkeiten.</p>
+<p>Zwei ihrer Fähigkeiten wurden im März 2026 sogar umbenannt: <em>Defend and Fight!</em> heißt seither <b class="gold">Plot Armor</b>, <em>Conjure Dragon</em> wurde zu <b class="gold">Bookwyrm</b>. Wer alte und neue Patchnotes nebeneinander liest, muss das mitdenken — die Fähigkeit ist dieselbe, nur der Name wechselte.</p>
+
+<h2><span class="n">02</span>Der Leit-Arc: Plot&nbsp;Armor — Barriere-Spirit-Scaling</h2>
+<p>Eine einzige Zahl erzählt den ganzen Justier-Rhythmus. Das Spirit-Scaling der Barriere (früher „Defend and Fight!", heute „Plot Armor") wurde erst hoch-, dann runter- und schließlich wieder hochgedreht:</p>
+<div class="arc" aria-label="Barriere-Spirit-Scaling-Verlauf">
+  <div class="step"><div class="bar" style="height:78px"></div><div class="val">1.4</div><div class="date">Start</div></div>
+  <div class="step"><div class="bar" style="height:92px;background:linear-gradient(180deg,#6fb98a,#4f8a66)"></div><div class="val buff">1.6</div><div class="date">04.09.25</div><div class="tag buff">Buff</div></div>
+  <div class="step"><div class="bar" style="height:71px"></div><div class="val nerf">1.3</div><div class="date">06.03.26</div><div class="tag nerf">Nerf</div></div>
+  <div class="step"><div class="bar" style="height:85px;background:linear-gradient(180deg,#6fb98a,#4f8a66)"></div><div class="val buff">1.5</div><div class="date">12.06.26</div><div class="tag buff">Buff</div></div>
+</div>
+<p class="muted" style="font-size:13.5px">Kein Abwärts-Trend, sondern ein Pendel: von 1.4 hoch auf 1.6, im großen März-Umbau runter auf 1.3 (<b class="nerf">−19&nbsp;%</b>), dann im Juni fast zurück auf 1.5 (<b class="buff">+15&nbsp;%</b>). Unterm Strich liegt der Wert heute <b>über</b> dem Startniveau. <span class="gold">Wichtig:</span> effektiv gespielt kommt mit T3 (<code>+0.5</code> flach) noch einmal Scaling obendrauf — der reale Wert liegt dann bei <b>2.0</b>.</p>
+
+<h2><span class="n">03</span>Plot Armor — die volle Chronik</h2>
+<p>Ihre Signatur-Barriere ist die meist-angefasste Fähigkeit: Ende 2025 systematisch beschnitten (Cooldown hoch, Barriere runter, Dauer runter), 2026 Stück für Stück wieder aufgewertet.</p>
+<table>
+  <thead><tr><th>Patch</th><th>Stat</th><th class="n">Von → Auf</th><th>Wirkung</th></tr></thead>
+  <tbody>
+    <tr><td class="n">04.09.25</td><td>Barriere Spirit-Scaling</td><td class="n">1.4 → 1.6</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">02.10.25</td><td>Cooldown</td><td class="n">26 → 30</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">02.10.25</td><td>Dauer</td><td class="n">5 → 7</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">21.11.25</td><td>T1 (umgebaut)</td><td class="n">"+50 Barriere" → "+16&nbsp;% Feuerrate"</td><td><span class="pill rework">Rework</span></td></tr>
+    <tr><td class="n">21.11.25</td><td>T2 (umgebaut)</td><td class="n">"+25&nbsp;% Feuerrate" → "+100 Barriere"</td><td><span class="pill rework">Rework</span></td></tr>
+    <tr><td class="n">21.11.25</td><td>Barriere</td><td class="n">200 → 150</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">21.11.25</td><td>Dauer</td><td class="n">7 → 5</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">30.01.26</td><td>Barriere</td><td class="n">150 → 125</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">06.03.26</td><td>Barriere Spirit-Scaling</td><td class="n">1.6 → 1.3</td><td><span class="pill nerf">Nerf</span></td></tr>
+    <tr><td class="n">30.04.26</td><td>Cooldown</td><td class="n">30 → 28</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">12.06.26</td><td>Barriere Spirit-Scaling</td><td class="n">1.3 → 1.5</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">12.06.26</td><td>T3 Spirit-Scaling</td><td class="n">+0.3 → +0.5</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">30.06.26</td><td>T1 Feuerrate-Scaling</td><td class="n">0.13 → 0.16</td><td><span class="pill buff">Buff</span></td></tr>
+    <tr><td class="n">30.06.26</td><td>T3 Barriere</td><td class="n">75&nbsp;% → 100&nbsp;%</td><td><span class="pill buff">Buff</span></td></tr>
+  </tbody>
+</table>
+<p class="muted" style="font-size:13.5px">Am 06.03.26 wurde „Defend and Fight!" in <b>Plot Armor</b> umbenannt — die Werte laufen über den Namenswechsel hinweg durch. Auffällig: Ende 2025 fielen vier Nerfs in Folge auf die Barriere, ab 2026 kippte die Richtung, und die Barriere wurde über Scaling, Cooldown und Talente wieder aufgebaut.</p>
+
+<h2><span class="n">04</span>Balance pro Ability</h2>
+<p>Wo Paige über die Zeit angefasst wurde (grobe Zuordnung nach Fähigkeitsnamen; bewusst <b>nicht gewichtet</b> — „Umbau/Fix" = Talent-Reworks, Umbenennungen, Bugfixes):</p>
+<div class="card">
+  <div class="bal"><div class="name gold">Plot Armor</div><div class="track"><div class="seg buff" style="width:50%">7 Buffs</div><div class="seg nerf" style="width:36%">5 Nerfs</div><div class="seg other" style="width:14%">Rework</div></div></div>
+  <div class="bal"><div class="name">Rallying Charge</div><div class="track"><div class="seg buff" style="width:43%">3 Buffs</div><div class="seg nerf" style="width:29%">2 Nerfs</div><div class="seg other" style="width:28%">Umbau</div></div></div>
+  <div class="bal"><div class="name">Bookwyrm</div><div class="track"><div class="seg other" style="width:60%">Reworks/Fix</div><div class="seg buff" style="width:20%">1 Buff</div><div class="seg nerf" style="width:20%">1 Nerf</div></div></div>
+  <div class="bal"><div class="name">Captivating Read</div><div class="track"><div class="seg buff" style="width:57%">4 Buffs</div><div class="seg nerf" style="width:43%">3 Nerfs</div></div></div>
+  <div class="bal"><div class="name">Waffe / Basis</div><div class="track"><div class="seg buff" style="width:50%">3 Buffs</div><div class="seg nerf" style="width:50%">3 Nerfs</div></div></div>
+</div>
+<div class="grid cols-2" style="margin-top:16px">
+  <div class="card">
+    <h3>Bookwyrm (früher Conjure Dragon)</h3>
+    <p class="muted" style="font-size:13.5px">Der Drache wurde kaum über Rohwerte balanciert, sondern über die Talent-Stufen: T1, T2 und T3 wurden mehrfach neu belegt (Cooldown, Reichweite, Trail-Dauer, Extra-Ladung wanderten hin und her). Die einzige klare Zahl blieb der Cooldown (30→33), dazu ein Recharge-Buff (8→7).</p>
+  </div>
+  <div class="card">
+    <h3>Rallying Charge &amp; Captivating Read</h3>
+    <p class="muted" style="font-size:13.5px">Das Ultimate wurde netto aufgewertet: Schaden und Max-Amp der Talent-Stufen stiegen mehrfach, dafür wurde die Reichweite für den Voll-Bonus gekappt (350→250). Captivating Read pendelte als Kontroll-Werkzeug (Radius und T1-Cooldown gebufft, Grundschaden 120→90 und Immobilisierung 1.25→1 gesenkt).</p>
+  </div>
+</div>
+
+<h2><span class="n">05</span>Patch-Zeitstrahl</h2>
+<p>Änderungen pro Patch — die Ausreißer waren der Oktober-Justier-Patch und der große März-Umbau.</p>
+<div class="tl">
+  <div class="ev"><span class="d">28.08.2025</span><span class="c">Erster erfasster Patch — Bugfix am Drachen-Pathing</span></div>
+  <div class="ev"><span class="d">04.09.2025</span><span class="c">Barriere-Spirit-Scaling hoch (1.4→1.6)</span></div>
+  <div class="ev big"><span class="d">02.10.2025</span><span class="c"><b>14 Änderungen</b> — breiter Justier-Patch: Cooldowns, Rallying-Charge-Werte, Captivating-Read-Radius</span></div>
+  <div class="ev"><span class="d">21.11.2025</span><span class="c">Barriere-Umbau: T1/T2 getauscht, Barriere 200→150, Dauer 7→5</span></div>
+  <div class="ev"><span class="d">30.01.2026</span><span class="c">Kleiner Nerf — Captivating-Read-Schaden 120→90, Barriere 150→125</span></div>
+  <div class="ev big"><span class="d">06.03.2026</span><span class="c"><b>Der große Umbau</b> — Umbenennungen (Plot Armor, Bookwyrm), Talent-Reworks, Scaling 1.6→1.3</span></div>
+  <div class="ev"><span class="d">30.04.2026</span><span class="c">Movement-Patch — Stamina 2→3, Dash langsamer, Plot-Armor-Cooldown 30→28</span></div>
+  <div class="ev"><span class="d">22.05.2026</span><span class="c">Ult-Buff — Rallying Charge T3 +135→+160 Schaden</span></div>
+  <div class="ev big"><span class="d">12.06.2026</span><span class="c"><b>Barriere-Scaling zurück hoch</b> (1.3→1.5), dafür Rallying-Charge-Reichweite 350→250</span></div>
+  <div class="ev"><span class="d">30.06.2026</span><span class="c">Bookwyrm-Talente umgebaut, Health pro Boon 29→33, Plot-Armor-T3 hoch</span></div>
+</div>
+
+<h2><span class="n">06</span>Fazit</h2>
+<p>Über rund zehn Monate wurde Paige nicht abgetragen, sondern <b>ausgemessen</b>: Valve hat vor allem an ihren Talent-Stufen gesucht, was zu ihr passt — Bookwyrm-Tiers mehrfach neu belegt, Plot-Armor-Talente umgebaut, das Barriere-Scaling zwischen 1.3 und 1.6 hin- und hergependelt. Das erklärt die hohe Rework-Zahl (11) bei einem fast ausgeglichenen Buff/Nerf-Verhältnis.</p>
+<p>Heute steht sie <b>solide</b> da: Barriere-Scaling wieder nahe der Spitze (1.5, effektiv ~2.0 mit T3), Ultimate netto gebufft, Waffe/Basis leicht durchgemischt. Kein Nerf-Opfer, sondern ein breit justierter Hero, der noch seine finale Form sucht.</p>
+
+<div class="foot">
+  <p><b>Quelle &amp; Methodik.</b> Zentrale Postgres, View <code>brain.patch_changes</code> (dedupliziert, kanonisch). Buff/Nerf abgeleitet aus <code>numeric_direction</code> + Stat-Polarität (Cooldown/Cost/Delay = weniger ist besser), nicht aus dem Legacy-Feld <code>change_type</code>.</p>
+  <p><b>Bekannte Datengrenze.</b> Einige Patches liegen doppelt vor (Steam-Announcement + Forum-Thread), weshalb die Roh-Änderungszahl (83) Dubletten enthält; die kategorisierten Buff/Nerf/Rework-Zählungen sind davon bereinigt. Die Zuordnung „pro Ability" ist grob, weil der Fähigkeitsname in vielen Zeilen fehlt — sie folgt dem Namen im Klartext, nicht einer sauberen ID.</p>
+  <p class="muted">Generiert 10.07.2026 · Deadlock-Brain</p>
+</div>
+
+</div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-inner">
+          <span class="footer-brand">Deutsche Deadlock Community</span>
+          <nav class="footer-links" aria-label="Footer-Navigation">
+            <a href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Discord</a>
+            <a href="/">Start</a>
+            <a href="/mitspieler/">Mitspieler</a>
+            <a href="/coaching/">Coaching</a>
+            <a href="/aktivitaet/">Aktivität &amp; Ränge</a>
+            <a href="/helden/">Helden</a>
+            <a href="/streamer/">Streamer</a>
+            <a href="/beitreten/">Beitreten</a>
+            <a href="/builds/">Builds</a>
+            <a href="/turnier/">Turnier</a>
+          </nav>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    (function () {
+      var toggle = document.querySelector('[data-menu-toggle]');
+      var drawer = document.getElementById('nav-drawer');
+      if (!toggle || !drawer) return;
+      var iconMenu = toggle.querySelector('.icon-menu');
+      var iconClose = toggle.querySelector('.icon-close');
+      function set(open) {
+        toggle.setAttribute('aria-expanded', String(open));
+        drawer.classList.toggle('is-open', open);
+        drawer.setAttribute('aria-hidden', String(!open));
+        document.body.classList.toggle('menu-open', open);
+        if (iconMenu && iconClose) { iconMenu.style.display = open ? 'none' : ''; iconClose.style.display = open ? '' : 'none'; }
+      }
+      toggle.addEventListener('click', function () { set(!drawer.classList.contains('is-open')); });
+      drawer.querySelectorAll('.nav-drawer-link').forEach(function (l) { l.addEventListener('click', function () { set(false); }); });
+      var bd = drawer.querySelector('[data-menu-backdrop]');
+      if (bd) bd.addEventListener('click', function () { set(false); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+    })();
+  </script>
+</body>
+</html>

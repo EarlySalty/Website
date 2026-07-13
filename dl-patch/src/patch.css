@@ -41,8 +41,10 @@ h4 {
 }
 
 .site-header {
-  background: rgba(11, 11, 11, 0.86);
+  background: rgba(11, 11, 11, 0.94);
   border-bottom-color: rgba(239, 212, 157, 0.12);
+  /* kein sticky-backdrop-filter auf der Patch-Seite: verhindert Repaint-Flackern */
+  backdrop-filter: none;
 }
 
 .menu-button,
@@ -64,46 +66,25 @@ h4 {
 .patch-brand {
   gap: 0.6rem;
   min-width: 0;
+  align-items: center;
 }
 
-.patch-brand-mark {
-  display: grid;
-  width: 40px;
-  height: 40px;
-  place-items: center;
-  border: 1px solid rgba(200, 168, 107, 0.42);
-  border-radius: 8px;
-  background: rgba(200, 168, 107, 0.1);
-  color: var(--primary);
-  font-family: 'Sora', 'Manrope', sans-serif;
-  font-size: 0.74rem;
-  font-weight: 900;
+.patch-brand .brand-logo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  object-fit: contain;
 }
 
-.patch-brand-copy {
-  display: grid;
-  gap: 0.06rem;
-  min-width: 0;
+.patch-brand .brand-wordmark-img {
+  display: block;
+  width: auto;
+  height: 54px;
+  object-fit: contain;
 }
 
-.patch-brand-copy strong {
-  overflow: hidden;
-  color: var(--text);
-  font-family: 'Sora', 'Manrope', sans-serif;
-  font-size: 0.92rem;
-  font-weight: 800;
-  line-height: 1.05;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.patch-brand-copy small {
-  color: var(--primary);
-  font-size: 0.62rem;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  line-height: 1;
-  text-transform: uppercase;
+@media (max-width: 640px) {
+  .patch-brand .brand-wordmark-img { display: none; }
 }
 
 .nav-drawer-panel,
@@ -225,8 +206,9 @@ h4 {
   gap: 0.75rem;
   align-items: center;
   padding: 0.75rem;
-  background: rgba(14, 14, 13, 0.94);
-  backdrop-filter: blur(14px);
+  /* Solider BG statt sticky-backdrop-filter: der Blur komponierte hinter sich
+     liegende Animationen (livePulse, Shimmer) jeden Frame neu -> Flackern. */
+  background: #101010;
 }
 
 .patch-search-wrap {
@@ -635,6 +617,26 @@ h4 {
   font-size: 0.84rem;
 }
 
+.detail-history {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  padding: 0.28rem 0.7rem;
+  border: 1px solid rgba(200, 168, 107, 0.4);
+  border-radius: 999px;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.detail-history:hover {
+  background: rgba(200, 168, 107, 0.12);
+  border-color: var(--primary);
+}
+
 .detail-bars {
   display: grid;
   gap: 0.5rem;
@@ -895,10 +897,6 @@ h4 {
 
   .patch-hero-title {
     font-size: 2.25rem;
-  }
-
-  .patch-brand-copy {
-    display: none;
   }
 
   .patch-kpis {

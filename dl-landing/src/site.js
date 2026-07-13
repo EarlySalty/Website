@@ -401,11 +401,12 @@ async function fetchLiveStats() {
 
 async function fetchDiscordWidget() {
   const root = document.querySelector('[data-live-root]')
-  if (!root) return
+  const tower = document.querySelector('[data-tower]')
+  if (!root && !tower) return
 
-  const lanesList = root.querySelector('[data-lanes-list]')
-  const lanesCount = root.querySelector('[data-lanes-count]')
-  const presenceGrid = root.querySelector('[data-presence-grid]')
+  const lanesList = root?.querySelector('[data-lanes-list]')
+  const lanesCount = root?.querySelector('[data-lanes-count]')
+  const presenceGrid = root?.querySelector('[data-presence-grid]')
 
   let data
   try {
@@ -418,18 +419,31 @@ async function fetchDiscordWidget() {
     }
     if (lanesCount) lanesCount.textContent = ''
     if (presenceGrid) presenceGrid.innerHTML = ''
+    // Der Turm bleibt ohne Live-Daten einfach dunkel — kein Fehlerzustand nötig.
     return
   }
 
+  // Die Widget-API liefert KEIN members_count am Channel; die Belegung steckt
+  // in members[].channel_id (gesetzt, wenn jemand im Voice sitzt).
+  const voiceCountByChannel = new Map()
+  for (const m of data.members || []) {
+    if (!m.channel_id) continue
+    voiceCountByChannel.set(m.channel_id, (voiceCountByChannel.get(m.channel_id) || 0) + 1)
+  }
+
+  const allChannels = (data.channels || []).map((c) => ({
+    id: c.id,
+    rawName: c.name || '',
+    name: (c.name || 'Voice').replace(/^[^\p{L}\d]+/u, '').trim() || c.name,
+    count: voiceCountByChannel.get(c.id) || 0,
+  }))
+
+  if (tower) updateTowerLive(allChannels)
+
   // ── Voice-Lanes ─────────────────────────────────────────────────────────
   if (lanesList) {
-    const channels = (data.channels || [])
-      .filter((c) => !HIDDEN_LANE_PATTERNS.some((re) => re.test(c.name || '')))
-      .map((c) => ({
-        id: c.id,
-        name: (c.name || 'Voice').replace(/^[^\p{L}\d]+/u, '').trim() || c.name,
-        count: Number(c.members_count ?? 0),
-      }))
+    const channels = allChannels
+      .filter((c) => !HIDDEN_LANE_PATTERNS.some((re) => re.test(c.rawName)))
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'de'))
 
     if (channels.length === 0) {
@@ -474,6 +488,95 @@ async function fetchDiscordWidget() {
   }
 }
 
+// ── Server-Gebäude (/mitspieler/) ──────────────────────────────────────────
+// Voice-Channel → Etage; erster Treffer gewinnt, alles Unbekannte ist eine
+// normale Voice-Lane (2F). floor:null = auf der Seite nicht gezeigt.
+const TOWER_FLOOR_RULES = [
+  { floor: null, re: /^afk$|mod\s*voice|vip/i },
+  { floor: 'dach', re: /streamer/i },
+  { floor: '3f', re: /coaching/i },
+  { floor: '4f', re: /^team[\s-]?\d|caster|sammelpunkt|scrim|custom/i },
+]
+
+function floorForVoiceChannel(name) {
+  for (const rule of TOWER_FLOOR_RULES) {
+    if (rule.re.test(String(name || ''))) return rule.floor
+  }
+  return '2f'
+}
+
+// Je mehr Leute auf einer Etage, desto mehr Fenster leuchten (CSS wertet data-lit aus).
+function towerLitBucket(count) {
+  if (count >= 10) return '3'
+  if (count >= 4) return '2'
+  if (count >= 1) return '1'
+  return '0'
+}
+
+function setupTower() {
+  const tower = document.querySelector('[data-tower]')
+  if (!tower) return
+
+  const buttons = Array.from(tower.querySelectorAll('[data-floor-btn]'))
+  const details = Array.from(tower.querySelectorAll('[data-floor-detail]'))
+  const svgFloors = Array.from(tower.querySelectorAll('.tw-floor'))
+
+  function select(floor) {
+    buttons.forEach((b) => {
+      const active = b.dataset.floorBtn === floor
+      b.classList.toggle('is-active', active)
+      b.setAttribute('aria-selected', String(active))
+    })
+    details.forEach((d) => {
+      d.hidden = d.dataset.floorDetail !== floor
+    })
+    svgFloors.forEach((g) => g.classList.toggle('is-selected', g.dataset.floor === floor))
+  }
+
+  buttons.forEach((b) => b.addEventListener('click', () => select(b.dataset.floorBtn)))
+  svgFloors.forEach((g) => g.addEventListener('click', () => select(g.dataset.floor)))
+  select('2f')
+}
+
+function updateTowerLive(channels) {
+  const tower = document.querySelector('[data-tower]')
+  if (!tower) return
+
+  const counts = { eg: 0, '1f': 0, '2f': 0, '3f': 0, '4f': 0, dach: 0 }
+  channels.forEach((c) => {
+    const floor = floorForVoiceChannel(c.rawName ?? c.name)
+    if (floor && floor in counts) counts[floor] += c.count
+  })
+
+  // Funk-Wellen an der Antenne, wenn im Streamer-Studio gesendet wird
+  tower.classList.toggle('dach-live', counts.dach > 0)
+
+  Object.entries(counts).forEach(([floor, count]) => {
+    const g = tower.querySelector(`.tw-floor[data-floor="${floor}"]`)
+    if (g) {
+      g.setAttribute('data-lit', towerLitBucket(count))
+      g.classList.toggle('is-lit', count > 0)
+    }
+
+    const badge = tower.querySelector(`[data-floor-live="${floor}"]`)
+    if (badge) {
+      badge.hidden = count === 0
+      badge.textContent = `${count} drin`
+    }
+
+    const detailLive = tower.querySelector(`[data-floor-count="${floor}"]`)
+    if (detailLive) {
+      detailLive.hidden = count === 0
+      const text = detailLive.querySelector('[data-floor-count-text]')
+      if (text) {
+        text.textContent = count === 1
+          ? 'Eine Person ist gerade hier im Voice'
+          : `${count} Leute sind gerade hier im Voice`
+      }
+    }
+  })
+}
+
 function boot() {
   document.documentElement.classList.add('js')
   setActiveNav()
@@ -484,6 +587,7 @@ function boot() {
   setupCardTilt()
   setupParallax()
   syncYear()
+  setupTower()
   fetchLiveStats()
   fetchDiscordWidget()
 }

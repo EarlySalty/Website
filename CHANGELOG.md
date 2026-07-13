@@ -1,3 +1,59 @@
+## #61 — Video-Bibliothek im Community-Look
+
+**Ausgangslage:** Die neue Video-Bibliothek sah aus wie eine fremde Seite. Falsches Logo, falsche Navigation, falscher Stil.
+
+**Geändert:** Die Seite trägt jetzt unser echtes Branding. Gold auf dunklem Grund, unsere Schriften, das Community-Logo im Kopf, die Fahrstuhl-Navigation und der bekannte Look der Startseite.
+
+**Verhalten:** /videos fühlt sich jetzt wie ein Teil unserer Website an, nicht wie ein Fremdkörper.
+
+## #60 — Neue Video-Bibliothek für Community-Creator
+
+**Ausgangslage:** Videos unserer YouTuber gingen im Discord unter und waren später kaum wiederzufinden. Neue Spieler mussten sich Anfänger-Guides mühsam zusammensuchen.
+
+**Geändert:** Unter /videos gibt es jetzt eine eigene Video-Bibliothek. Creator mit der Content-Creator-Rolle verbinden einmal ihren YouTube-Kanal, neue Videos landen automatisch auf der Seite, sobald sie auf YouTube den Tag Deadlock tragen. Alles ist nach Typ, Held und Level filterbar, dazu gibt es eine Suche, Creator-Profile und kuratierte Lernpfade für den Einstieg.
+
+**Verhalten:** Wer Deadlock lernen will, findet die Videos der Community jetzt gesammelt, sortiert und dauerhaft an einem Ort. Creator bekommen dafür sichtbare Profile mit Link zu ihrem Kanal.
+
+## #59 — Richtiges Vorschaubild für den Patch-Bereich
+
+**Ausgangslage:** Beim Teilen des Patch-Links (z.B. auf Discord) erschien als Vorschaubild ein Screenshot der Discord-Kanäle — mit der Patch-Timeline hatte das nichts zu tun.
+
+**Geändert:** Der Patch-Bereich hat jetzt ein eigenes, gebrandetes Vorschaubild („Patch Timeline · Balance-Historie für jeden Helden"). Jede Helden-Historie bekommt zusätzlich eine eigene Link-Vorschau mit Titel und Beschreibung.
+
+**Verhalten:** Geteilte Patch- und Helden-Links sehen jetzt sauber und on-brand aus statt fehlleitend.
+
+## #58 — Balance-Historie im Seiten-Look + Klick-Durchstieg
+
+**Ausgangslage:** Die Balance-Historie-Seiten hingen als eigenständige Dokumente ohne Kopfzeile, Navigation und Footer neben der Seite. Außerdem flackerte der Patch-Bereich beim Scrollen leicht.
+
+**Geändert:** Jede Balance-Historie hat jetzt dieselbe Kopfzeile, Navigation, Schrift und den Hintergrund wie der Rest der Seite, plus einen Zurück-Link zur Timeline. Ein Klick auf einen Held in der Hotspots-Liste führt direkt zu seiner Historie. Das Flackern ist weg.
+
+**Verhalten:** Optisch ein durchgehender Auftritt statt loser Einzelseiten; Helden sind aus der Übersicht mit einem Klick erreichbar.
+
+## #57 — Balance-Historie pro Held
+
+**Ausgangslage:** Der Patch-Bereich zeigte pro Held nur die letzten Änderungen. Der lange Bogen — wie ein Held über die Jahre generft, gebufft oder umgebaut wurde, bis er heute ungefähr ausbalanciert ist — war nirgends sichtbar.
+
+**Geändert:** Jeder Held hat jetzt eine eigene Balance-Historie-Seite mit dem kompletten Verlauf seit Release: die wichtigste Nerf-/Buff-Geschichte, die volle Chronik der Kern-Fähigkeit und ein Patch-Zeitstrahl. Ein Klick auf einen Held im Patch-Bereich führt direkt dorthin.
+
+**Verhalten:** 38 Helden abgedeckt. Alle Zahlen stammen aus der zentralen Patch-Datenbank; Buff und Nerf werden nach echter Wirkungsrichtung eingeordnet, nicht nach dem alten Textlabel.
+
+## #56 — Übergänge komplett aufgelöst
+
+**Ausgangslage:** Trotz weicher Verläufe war zwischen Startbild und den Abschnitten darunter noch eine Trennung zu erkennen.
+
+**Geändert:** Das Startbild löst sich jetzt nach unten vollständig im Seitengrund auf, statt an einer Grenze zu enden, und die Abschnitte blenden über eine deutlich längere Strecke ein.
+
+**Wie's jetzt läuft:** Vom Seitenanfang bis zum Server-Haus gibt es keine erkennbare Kante mehr, alles liegt auf einer durchgehenden Fläche.
+
+## #55 — Weiche Übergänge statt harter Kanten
+
+**Ausgangslage:** Die Abschnitte der Mitspieler-Seite stießen mit harten Kanten aneinander: Das Startbild endete abrupt, und die farbigen Bereiche begannen wie mit dem Lineal gezogen.
+
+**Geändert:** Alle Abschnittshintergründe laufen jetzt oben und unten weich aus und gehen ineinander über. Das Startbild blendet sanft in den Seitengrund aus, bevor der nächste Abschnitt beginnt.
+
+**Wie's jetzt läuft:** Die Seite liest sich wie eine durchgehende Szene, kein Bereich schneidet mehr sichtbar ab.
+
 ## #54 — Mehr Platz in der Coaching-Kopfzeile
 
 **Ausgangslage:** „Coaching-Etage“ stand direkt unter dem Community-Schriftzug und machte die volle Navigation unnötig eng. Im Seitenkopf wiederholte außerdem ein langer Absatz Dinge, die der Ablauf darunter bereits erklärt.
@@ -5,6 +61,46 @@
 **Geändert:** Die Kopfzeile zeigt nur noch Logo und Community-Namen. „Coaching-Etage“ steht jetzt als kleines Seitenlabel über der Überschrift; der doppelte Erklärtext ist entfernt.
 
 **Wie's jetzt läuft:** Marke, Navigation und Nutzerbereich haben getrennt Platz, während sofort erkennbar bleibt, dass man im Coaching-Bereich ist.
+
+## #53 — Bühnenlicht für die ganze Seite
+
+**Ausgangslage:** Zwischen dem Startbereich und dem Server-Haus lagen flache, einfarbig braune Zonen, die tot wirkten. Die Coaching-Seite zeigt, wie es besser geht: farbige Lichtflecken und ein feines Muster im Hintergrund.
+
+**Geändert:** Diese Bildsprache liegt jetzt auch über der Mitspieler-Seite. Türkise und goldene Lichtflecken wandern durch die Bereiche, dazu ein dezentes goldenes Gitter im Hintergrund. Der Kopfbereich oben hat eine goldene Lichtkante und etwas Farbe bekommen. Der Hinweistext unter dem Haus ist weg, das Bild erklärt sich selbst.
+
+**Wie's jetzt läuft:** Kein totes Braun mehr zwischen den Abschnitten, die Seite wirkt durchgehend wie aus einem Guss mit der Coaching-Etage.
+
+## #52 — Flackern abgestellt, das Haus lebt jetzt
+
+**Ausgangslage:** Über der ganzen Website lag ein animiertes Filmkorn, das auf dunklen Flächen als Flackern zu sehen war. Derselbe Effekt war auf der Aufzug-Startseite schon einmal entschärft worden, in den Unterseiten lief er weiter. Außerdem wirkte das neue Server-Haus zu flach und leblos.
+
+**Geändert:** Das Filmkorn steht jetzt überall still und ist dezenter, die Körnung als Textur bleibt. Das Haus hat Tiefe bekommen: Licht fällt von links auf die Fassaden, rechts liegen sie im Schatten, dahinter staffeln sich Silhouetten der Nachbarschaft unter einem Sternenhimmel. Beleuchtete Fenster glimmen in zwei Warmtönen ganz langsam, vor dem Eingang liegt ein warmer Lichtschein, und beim Etagenwechsel gleitet die Beschreibung sanft ein.
+
+**Wie's jetzt läuft:** Kein Zucken mehr im Bild, dafür eine ruhige Nachtszene, in der man sieht, wo im Haus gerade Leben ist.
+
+## #51 — Die Mitspieler-Seite zeigt den Server als Haus
+
+**Ausgangslage:** Die Mitspieler-Seite hat erzählt, dass bei uns viel los ist, aber man konnte es nicht sehen. Ein Screenshot vom Discord, etwas Text, das war's.
+
+**Geändert:** Die Seite wurde neu gebaut. Ihr Herzstück ist jetzt ein goldenes Hochhaus, das unseren Server zeigt: unten die Lobby, darüber Community, Voice-Lanes, Coaching, Wettkampf und ganz oben das Streamer-Studio. Die Fenster leuchten live dort, wo gerade Leute im Voice sitzen, und je mehr los ist, desto mehr Fenster gehen an. Jede Etage lässt sich anklicken und erklärt, was es dort gibt. Darunter zeigt die Seite die aktuell offenen Voice-Lanes mit Belegung und wer gerade online ist.
+
+**Wie's jetzt läuft:** Wer wissen will, ob sich der Beitritt lohnt, sieht es jetzt auf einen Blick: brennt Licht im Haus, wird gespielt. Nebenbei zeigen die Voice-Lane-Anzeigen auf der Startseite jetzt echte Belegungszahlen statt dauerhaft "leer".
+
+## #50 — Ein Look für alles: neues Logo, Aufzug-Navigation und echte Farben
+
+**Ausgangslage:** Jede Seite sah anders aus: drei verschiedene Logos gleichzeitig, im Browser-Tab ein veraltetes Icon, die Startseite flackerte und lag unter einem grauen Filter, der Aufzug ging nicht mehr, und die Aktivitätsseite bekam gar keine Daten.
+
+**Geändert:** Überall dasselbe Markenbild — das Deadlock-D als Tab-Icon und im Kopfbereich zusammen mit dem goldenen Schriftzug. Der Aufzug ist zurück und fährt jetzt zwischen den Seiten: links andocken, Etage wählen, Türen schließen sich, Ziel geht auf. Das Flackern und der Graufilter auf der Startseite sind weg, die Bilder zeigen wieder ihre echten Farben. Die Mitspieler-Seite hat neue Bilder im Stil der Startseite, die Aktivitätsseite echte Icons statt Standard-Emojis, und die Patchnotes-Seite lädt sofort statt erst nach mehreren Sekunden.
+
+**Wie's jetzt läuft:** Egal wo man einsteigt — gleicher Look, gleicher Aufzug links, und unten verlinkt jede Seite auf alle anderen. Die Aktivitätsseite zeigt ihre Leaderboards wieder mit echten Daten.
+
+## #49 — Scrims: Anmeldung und Team-Bau laufen über die Website
+
+**Ausgangslage:** Anmelden ging nur über Discord, im Pool lagen freie und schon zugewiesene Spieler durcheinander, und einen passenden Kader zusammenzustellen hieß weiter, die Wochenzeiten von Hand zu vergleichen.
+
+**Geändert:** Spieler melden sich jetzt komplett über die Website an — Rang, Rolle und Wochen-Verfügbarkeit in einem Formular. Im Coach-Cockpit sind Pool und Teams getrennt, der Pool zeigt standardmäßig nur freie Spieler in kompakten Zeilen, und neue Teams legt man direkt an — mit eigener Discord-Rolle. Für ein Team schlägt das System auf Knopfdruck einen Kader aus dem Pool vor, nach bester zeitlicher Überschneidung und optional um ein Wunsch-Fenster herum.
+
+**Wie's jetzt läuft:** Der Coach entscheidet nur noch — bestätigen, tauschen, ansetzen; das Sammeln, Rechnen und Rollenvergeben macht das System. Vorgeschlagene Spieler landen mit einem Klick im Team oder wieder im Pool.
 
 ## #48 — Aktivität: Ranglisten laden wieder + wärmerer Look
 

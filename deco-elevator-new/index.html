@@ -3,53 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b0907">
-  <meta name="robots" content="noindex, nofollow">
-  <title>Deutsche Deadlock Community — Neue Website</title>
-  <meta name="description" content="Die neue Website der Deutschen Deadlock Community – Mitspieler, Coaching, Builds, Helden und Streamer.">
-  <link rel="icon" href="assets/logos/favicon.svg">
-  <link rel="stylesheet" href="styles.css">
-  <script src="script.js" defer></script>
+  <meta name="theme-color" content="#241c11">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <title>Deutsche Deadlock Community | Mitspieler, Coaching & Streamer auf Deutsch</title>
+  <meta name="description" content="Die aktivste deutsche Deadlock-Community: Finde Mitspieler, werde durch Coaching besser und werde als Streamer sichtbar – alles auf einem Discord.">
+  <link rel="canonical" href="https://deutsche-deadlock-community.de/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Deutsche Deadlock Community | Mitspieler, Coaching & Streamer">
+  <meta property="og:description" content="Die aktivste deutsche Deadlock-Community: Mitspieler, Coaching und Streamer-Support auf Deutsch.">
+  <meta property="og:url" content="https://deutsche-deadlock-community.de/">
+  <link rel="icon" type="image/png" href="/brand/logo/favicon-64.png">
+  <link rel="stylesheet" href="/new/styles.css">
+  <script src="/new/script.js" defer></script>
+  <!-- Einheitliche Brand-Aufzug-Nav (verlinkt die echten Unterseiten) -->
+  <link rel="stylesheet" href="/brand/tokens.css">
+  <link rel="stylesheet" href="/brand/nav.css">
+  <script src="/brand/nav.js" defer></script>
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
 
-  <aside class="elevator-nav" aria-label="Aufzug-Navigation">
-    <button class="elevator-call" type="button" aria-label="Etagenmenü öffnen" aria-expanded="false">
-      <span class="call-arrow">▲</span>
-      <span class="call-jewel"></span>
-      <span class="call-arrow">▼</span>
-    </button>
-    <div class="elevator-panel">
-      <span class="panel-screw screw-tl"></span><span class="panel-screw screw-tr"></span>
-      <span class="panel-screw screw-bl"></span><span class="panel-screw screw-br"></span>
-      <div class="elevator-brand">DEUTSCHE DEADLOCK<br>COMMUNITY</div>
-      <div class="floor-indicator"><span class="indicator-arrow">▲</span><b>E</b></div>
-      <div class="elevator-buttons">
-        <button type="button" class="floor-button is-active" data-target="top" data-floor="E" data-label="Empfang" data-background="assets/deco/cityscape-portal.png"><i></i><span>E</span><em>Empfang</em></button>
-        <button type="button" class="floor-button" data-target="community" data-floor="1" data-label="Community" data-background="assets/deco/green-windows.png"><i></i><span>1</span><em>Community</em></button>
-        <button type="button" class="floor-button" data-target="mitspieler" data-floor="2" data-label="Mitspieler" data-background="assets/deco/mitspieler.png"><i></i><span>2</span><em>Mitspieler</em></button>
-        <button type="button" class="floor-button" data-target="coaching" data-floor="3" data-label="Coaching" data-background="assets/deco/coaching.png"><i></i><span>3</span><em>Coaching</em></button>
-        <button type="button" class="floor-button" data-target="helden" data-floor="4" data-label="Helden" data-background="assets/deco/streamer.png"><i></i><span>4</span><em>Helden</em></button>
-        <button type="button" class="floor-button" data-target="beitreten" data-floor="5" data-label="Beitreten" data-background="assets/deco/newsroom.png"><i></i><span>5</span><em>Beitreten</em></button>
-      </div>
-      <div class="elevator-lever"><span>AN</span><i><b></b></i><span>STOP</span></div>
-      <small>DEUTSCHE DEADLOCK COMMUNITY · MCMXXIV</small>
-    </div>
-  </aside>
-
-  <dialog class="elevator-ride" aria-label="Aufzug fährt">
-    <img class="ride-background" src="assets/deco/cityscape-portal.png" alt="">
-    <div class="ride-indicator"><span>ETAGE</span><b>E</b><small>EMPFANG</small></div>
-    <div class="ride-rank"><img src="assets/deco/ranks/initiate.png" alt=""></div>
-    <div class="ride-gate ride-gate-left"></div>
-    <div class="ride-gate ride-gate-right"></div>
-  </dialog>
-
   <header class="site-header">
-    <a class="brand" href="#top" aria-label="Startseite der Deutschen Deadlock Community">
-      <img src="assets/logos/community-logo-deco.svg" alt="Deutsche Deadlock Community">
+    <a class="brand" href="/" aria-label="Deutsche Deadlock Community">
+      <img src="/brand/logo/logo-192.png" class="brand-logo" alt="">
+      <img src="/brand/logo/wordmark.svg" class="brand-wordmark-img" alt="">
     </a>
     <button class="menu-button" type="button" aria-label="Menü öffnen" aria-expanded="false">
       <span></span><span></span>
@@ -67,7 +45,7 @@
     <section class="hero">
       <div class="hero-art" aria-hidden="true"></div>
       <div class="hero-emblem" aria-hidden="true">
-        <img src="assets/logos/community-icon-deco.svg" alt="">
+        <img src="/brand/logo/logo-192.png" alt="">
       </div>
       <div class="hero-content">
         <p class="overline reveal">Dein Team wartet in der nächsten Lane</p>
@@ -145,7 +123,7 @@
 
         <div class="service-grid">
           <a class="service-card service-card-large reveal" id="mitspieler" href="https://deutsche-deadlock-community.de/mitspieler/">
-            <img src="assets/deco/mitspieler.png" alt="" loading="lazy">
+            <img src="/new/assets/deco/mitspieler.png" alt="" loading="lazy">
             <div class="card-shade"></div>
             <div class="card-index">01</div>
             <div class="card-content">
@@ -157,7 +135,7 @@
           </a>
 
           <a class="service-card reveal" id="coaching" href="https://deutsche-deadlock-community.de/coaching/">
-            <img src="assets/deco/coaching.png" alt="" loading="lazy">
+            <img src="/new/assets/deco/coaching.png" alt="" loading="lazy">
             <div class="card-shade"></div>
             <div class="card-index">02</div>
             <div class="card-content">
@@ -169,7 +147,7 @@
           </a>
 
           <a class="service-card reveal" href="https://deutsche-deadlock-community.de/helden/">
-            <img src="assets/deco/helden.png" alt="" loading="lazy">
+            <img src="/new/assets/deco/helden.png" alt="" loading="lazy">
             <div class="card-shade"></div>
             <div class="card-index">03</div>
             <div class="card-content">
@@ -181,7 +159,7 @@
           </a>
 
           <a class="service-card service-card-wide reveal" href="https://deutsche-deadlock-community.de/streamer/">
-            <img src="assets/deco/streamer.png" alt="" loading="lazy">
+            <img src="/new/assets/deco/streamer.png" alt="" loading="lazy">
             <div class="card-shade"></div>
             <div class="card-index">04</div>
             <div class="card-content">
@@ -208,16 +186,16 @@
         </div>
 
         <div class="rank-track reveal" aria-label="Deadlock Ränge">
-          <div><img src="assets/deco/ranks/initiate.png" alt=""><span>Initiate</span></div>
-          <div><img src="assets/deco/ranks/seeker.png" alt=""><span>Seeker</span></div>
-          <div><img src="assets/deco/ranks/arcanist.png" alt=""><span>Arcanist</span></div>
-          <div><img src="assets/deco/ranks/ritualist.png" alt=""><span>Ritualist</span></div>
-          <div><img src="assets/deco/ranks/emissary.png" alt=""><span>Emissary</span></div>
-          <div><img src="assets/deco/ranks/archon.png" alt=""><span>Archon</span></div>
-          <div><img src="assets/deco/ranks/oracle.png" alt=""><span>Oracle</span></div>
-          <div><img src="assets/deco/ranks/phantom.png" alt=""><span>Phantom</span></div>
-          <div><img src="assets/deco/ranks/ascendant.png" alt=""><span>Ascendant</span></div>
-          <div><img src="assets/deco/ranks/eternus.png" alt=""><span>Eternus</span></div>
+          <div><img src="/new/assets/deco/ranks/initiate.png" alt=""><span>Initiate</span></div>
+          <div><img src="/new/assets/deco/ranks/seeker.png" alt=""><span>Seeker</span></div>
+          <div><img src="/new/assets/deco/ranks/arcanist.png" alt=""><span>Arcanist</span></div>
+          <div><img src="/new/assets/deco/ranks/ritualist.png" alt=""><span>Ritualist</span></div>
+          <div><img src="/new/assets/deco/ranks/emissary.png" alt=""><span>Emissary</span></div>
+          <div><img src="/new/assets/deco/ranks/archon.png" alt=""><span>Archon</span></div>
+          <div><img src="/new/assets/deco/ranks/oracle.png" alt=""><span>Oracle</span></div>
+          <div><img src="/new/assets/deco/ranks/phantom.png" alt=""><span>Phantom</span></div>
+          <div><img src="/new/assets/deco/ranks/ascendant.png" alt=""><span>Ascendant</span></div>
+          <div><img src="/new/assets/deco/ranks/eternus.png" alt=""><span>Eternus</span></div>
         </div>
       </div>
     </section>
@@ -232,12 +210,12 @@
           <p>Verstehe Rollen, Fähigkeiten und Synergien schneller – und finde einen Main, mit dem du deinem Team wirklich hilfst.</p>
         </div>
         <div class="hero-roster reveal">
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/abrams.png" alt="Abrams"><span>Abrams</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/haze.png" alt="Haze"><span>Haze</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/ivy.png" alt="Ivy"><span>Ivy</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/lash.png" alt="Lash"><span>Lash</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/paradox.png" alt="Paradox"><span>Paradox</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="assets/heroes/pocket.png" alt="Pocket"><span>Pocket</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/abrams.png" alt="Abrams"><span>Abrams</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/haze.png" alt="Haze"><span>Haze</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/ivy.png" alt="Ivy"><span>Ivy</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/lash.png" alt="Lash"><span>Lash</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/paradox.png" alt="Paradox"><span>Paradox</span></a>
+          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/pocket.png" alt="Pocket"><span>Pocket</span></a>
         </div>
         <div class="center reveal">
           <a class="button button-ghost" href="https://deutsche-deadlock-community.de/helden/">Alle Helden ansehen <span>→</span></a>
@@ -248,7 +226,7 @@
     <section class="final-cta" id="beitreten">
       <div class="final-art" aria-hidden="true"></div>
       <div class="final-content reveal">
-        <img src="assets/logos/community-icon-deco.svg" alt="" class="final-mark">
+        <img src="/brand/logo/logo-192.png" alt="" class="final-mark">
         <p class="overline">Die Aufzugtür ist offen</p>
         <h2>Deine nächste gute Runde<br><span>beginnt mit den richtigen Leuten.</span></h2>
         <p>Discord öffnen, Rank und Spielstil auswählen und deine erste Gruppe finden. Kein Bewerbungsprozess. Einfach Deadlock.</p>
@@ -259,13 +237,27 @@
 
   <footer>
     <div class="footer-main">
-      <img src="assets/logos/community-logo-deco.svg" alt="Deutsche Deadlock Community">
+      <div class="footer-brand">
+        <img src="/brand/logo/logo-192.png" class="brand-logo" alt="">
+        <img src="/brand/logo/wordmark.svg" class="brand-wordmark-img" alt="Deutsche Deadlock Community">
+      </div>
       <p>Dein deutschsprachiges Zuhause für Deadlock.</p>
       <div class="footer-links">
         <a href="https://deutsche-deadlock-community.de/impressum/">Impressum</a>
         <a href="https://deutsche-deadlock-community.de/datenschutz/">Datenschutz</a>
         <a href="https://discord.gg/PhkP3WgY7w">Discord</a>
       </div>
+      <nav class="footer-links footer-pages" aria-label="Seiten">
+        <a href="/mitspieler/">Mitspieler</a>
+        <a href="/coaching/">Coaching</a>
+        <a href="/aktivitaet/">Aktivität &amp; Ränge</a>
+        <a href="/patch/">Patchnotes</a>
+        <a href="/helden/">Helden</a>
+        <a href="/streamer/">Streamer</a>
+        <a href="/beitreten/">Beitreten</a>
+        <a href="/builds/">Builds</a>
+        <a href="/turnier/">Turnier</a>
+      </nav>
     </div>
     <div class="footer-bottom">
       <span>Deutsche Deadlock Community</span>

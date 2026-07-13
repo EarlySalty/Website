@@ -22,20 +22,19 @@
       content="Die aktuelle Meta der Deadlock Heroes auf einen Blick."
     />
     <meta name="tierlist-api-base" content="/builds" />
-    <link rel="icon" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/brand/logo/favicon-64.png">
+    <link rel="stylesheet" href="/brand/tokens.css" />
+    <link rel="stylesheet" href="/brand/nav.css" />
+    <script src="/brand/nav.js" defer></script>
     <script type="module" src="/src/tierlist.js"></script>
   </head>
   <body>
     <header class="site-header">
       <div class="container site-header__inner">
-        <a class="brand" href="/builds/">
-          <img
-            src="/logos/logo-community-bars.svg"
-            alt="Deutsche Deadlock Community"
-            class="brand-logo"
-          />
+        <a class="brand" href="/" aria-label="Deutsche Deadlock Community">
+          <img src="/brand/logo/logo-192.png" alt="" class="brand-logo" />
           <span class="brand-copy">
-            <span class="brand-mark">Deadlock Tierlist</span>
+            <img src="/brand/logo/wordmark.svg" alt="" class="brand-wordmark-img" />
             <span class="brand-subtitle">
               Patch <span id="patch-date">—</span> · aktualisiert <span id="last-updated-date">—</span>
             </span>

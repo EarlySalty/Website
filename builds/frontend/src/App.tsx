@@ -16,11 +16,28 @@ import CoachDashboardPage from './pages/CoachDashboardPage'
 import CoachOverviewPage from './pages/CoachOverviewPage'
 import CoacheeDetailPage from './pages/CoacheeDetailPage'
 import MyCoachingPage from './pages/MyCoachingPage'
+import VideosPage from './pages/VideosPage'
+import DdlShell from './components/DdlShell'
+
+const DDL_SHELL = import.meta.env.VITE_SHELL === 'ddl'
+
+const videoRoutes = (
+  <>
+    <Route path="videos" element={<VideosPage />} />
+    <Route path="videos/playlists/:id" element={<VideosPage view="playlist" />} />
+    <Route path="videos/creators/:id" element={<VideosPage view="creator" />} />
+  </>
+)
 
 export default function App() {
   return (
     <Routes>
       <Route path="/auth/login" element={<LoginPage />} />
+      {DDL_SHELL && (
+        <Route path="/" element={<DdlShell />}>
+          {videoRoutes}
+        </Route>
+      )}
       <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="heroes" element={<HeroesPage />} />
@@ -44,6 +61,7 @@ export default function App() {
         <Route path="coaching/overview" element={<CoachOverviewPage />} />
         <Route path="coaching/coachees/:id" element={<CoacheeDetailPage />} />
         <Route path="coaching/me" element={<MyCoachingPage />} />
+        {!DDL_SHELL && videoRoutes}
       </Route>
     </Routes>
   )
