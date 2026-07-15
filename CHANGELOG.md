@@ -1,3 +1,11 @@
+## #64 — Ein Look für alle Seiten: Patch-Schwarz mit Gold
+
+**Ausgangslage:** Jede Unterseite hatte ihre eigene Farbwelt — die Tierliste war nachtblau, viele Seiten warm-braun, nur die Patch-Seite trug das dunkle Schwarz mit Gold. Auch die Kopfzeilen waren uneinheitlich: mal mit Menüleiste, mal mit anderem Logo, und der Aufzug fehlte auf etlichen Unterseiten.
+
+**Geändert:** Das Schwarz der Patch-Seite ist jetzt die Grundfarbe überall, kombiniert mit dem matten und glänzenden Gold. Jede Seite trägt oben links das Logo mit Schriftzug, mit etwas Abstand zum Rand, und rechts den Beitreten-Knopf. Der Aufzug ist auf jeder Seite da — auch auf den Helden-Historien und dem Tierlisten-Verlauf — und hat eine neue Etage für die Tierlist bekommen.
+
+**Verhalten:** Egal wo man landet, die Seite sieht nach derselben Community aus, und über den Aufzug kommt man von überall auf jede andere Seite. Stimmungsbilder wie die Stadtszene auf der Startseite bleiben erhalten.
+
 ## #63 — Aktivitätsseite: Gold statt Regenbogen
 
 **Ausgangslage:** Die Seite sollte nach Holz und Gold aussehen, hatte aber ein flaches Senfgelb, einen sterilen Hintergrund und einen knallblauen Discord-Button. Vor allem die Diagramme und die Avatare leuchteten in Neonfarben, die gegen den dunklen Look gearbeitet haben.
