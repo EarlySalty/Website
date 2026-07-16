@@ -53,6 +53,11 @@ interface ParticipantUpdate {
   patch: ScrimParticipantPatch
 }
 
+interface SubstituteAssignment {
+  participantId: number
+  assignmentWindow: ScrimWindow
+}
+
 function draftFromWindow(window: ScrimWindow | null | undefined): WindowDraft {
   return {
     day: window?.day ?? 'mon',
@@ -111,6 +116,19 @@ export default function ScrimBoardPage() {
       suggestMutation.reset()
     },
   })
+  const substituteMutation = useMutation({
+    mutationFn: ({ participantId, assignmentWindow }: SubstituteAssignment) =>
+      scrims.confirmSubstitute(teamId, {
+        participant_id: participantId,
+        window: assignmentWindow,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['scrim-board'] })
+      qc.invalidateQueries({ queryKey: ['scrim-pool'] })
+      qc.invalidateQueries({ queryKey: ['scrim-me'] })
+      suggestMutation.reset()
+    },
+  })
 
   if (!isCoach) return <CoachOnly />
   if (isLoading) return <PageSpinner />
@@ -128,7 +146,7 @@ export default function ScrimBoardPage() {
   const nonBench = members.filter(m => !m.is_bench).length
   const nameOf = new Map(members.map(m => [m.participant_id, m.display_name]))
   const bestRoster = bestRosterWindow(overlap, nonBench)
-  const updateBusy = participantMutation.isPending
+  const updateBusy = participantMutation.isPending || substituteMutation.isPending
 
   return (
     <div className="content-grid space-y-8 py-8">
@@ -245,7 +263,15 @@ export default function ScrimBoardPage() {
           window={suggestMutation.data?.best_window ?? selectedWindow}
           busy={updateBusy}
           pool={lastPool}
-          onAssign={(participantId) => participantMutation.mutate({ participantId, patch: { team_id: teamId, status: 'assigned' } })}
+          onAssign={(participantId, assignmentWindow) => {
+            if (lastPool === 'reserve') {
+              if (assignmentWindow) {
+                substituteMutation.mutate({ participantId, assignmentWindow })
+              }
+              return
+            }
+            participantMutation.mutate({ participantId, patch: { team_id: teamId, status: 'assigned' } })
+          }}
         />
       </div>
 
@@ -271,6 +297,7 @@ export default function ScrimBoardPage() {
           ))}
         </div>
         {participantMutation.isError && <p className="mt-2 text-xs" style={{ color: 'var(--red)' }}>{participantMutation.error.message}</p>}
+        {substituteMutation.isError && <p className="mt-2 text-xs" style={{ color: 'var(--red)' }}>{substituteMutation.error.message}</p>}
       </div>
     </div>
   )
@@ -299,7 +326,7 @@ function SuggestionResult({
   window: ScrimWindow | null
   busy: boolean
   pool: ScrimPoolSource
-  onAssign: (participantId: number) => void
+  onAssign: (participantId: number, window: ScrimWindow | null) => void
 }) {
   if (!result) {
     return <p className="mt-4 text-sm" style={{ color: 'var(--text-muted)' }}>{COPY.noSuggestion}</p>
@@ -327,7 +354,8 @@ function SuggestionResult({
               candidate={candidate}
               window={window}
               busy={busy}
-              onAssign={() => onAssign(candidate.participant_id)}
+              assignable={pool !== 'reserve' || window !== null}
+              onAssign={() => onAssign(candidate.participant_id, window)}
             />
           ))}
         </div>
@@ -340,11 +368,13 @@ function CandidateRow({
   candidate,
   window,
   busy,
+  assignable,
   onAssign,
 }: {
   candidate: ScrimRosterSuggestionCandidate
   window: ScrimWindow | null
   busy: boolean
+  assignable: boolean
   onAssign: () => void
 }) {
   const pct = Math.round(candidate.fit_ratio * 100)
@@ -365,7 +395,13 @@ function CandidateRow({
         <span className="badge mt-2 inline-flex">{fitText}</span>
       </div>
       <AvailabilityGrid weekly={candidate.availability_slots} compact />
-      <button type="button" disabled={busy} onClick={onAssign} className="btn-amber rounded-sm px-4 py-2 text-sm">
+      <button
+        type="button"
+        disabled={busy || !assignable}
+        title={assignable ? undefined : 'Für eine Aushilfe wird ein konkretes Zeitfenster benötigt.'}
+        onClick={onAssign}
+        className="btn-amber rounded-sm px-4 py-2 text-sm"
+      >
         {COPY.assign}
       </button>
     </div>
