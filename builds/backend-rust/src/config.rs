@@ -154,6 +154,14 @@ impl Config {
             db_master_key_v1: first_env(&["DB_MASTER_KEY_V1"]),
         }
     }
+
+    pub fn scrim_substitute_sweep_interval_seconds(&self) -> u64 {
+        env::var("SCRIM_SUBSTITUTE_SWEEP_INTERVAL_SECONDS")
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(600)
+    }
 }
 
 pub fn first_env(names: &[&str]) -> Option<String> {
