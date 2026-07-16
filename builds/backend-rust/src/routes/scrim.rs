@@ -271,6 +271,16 @@ pub struct ScrimCreateTeamRequest {
 pub struct ScrimSuggestRosterRequest {
     pub window: Option<ScrimWindow>,
     pub size: Option<u32>,
+    #[serde(default)]
+    pub pool: ScrimPoolSource,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ScrimPoolSource {
+    #[default]
+    Players,
+    Reserve,
 }
 
 #[derive(Debug, Serialize)]
@@ -770,7 +780,11 @@ pub async fn suggest_roster(
     let window = body.window.map(canonicalize_scrim_window).transpose()?;
     let requested_size = body.size.unwrap_or(6);
 
-    let rows = sqlx::query(FREE_POOL_SELECT).fetch_all(&state.pool).await?;
+    let pool_select = match body.pool {
+        ScrimPoolSource::Players => FREE_POOL_SELECT,
+        ScrimPoolSource::Reserve => RESERVE_POOL_SELECT,
+    };
+    let rows = sqlx::query(pool_select).fetch_all(&state.pool).await?;
     let pool = rows
         .iter()
         .map(roster_pool_candidate_from_row)
@@ -1226,7 +1240,15 @@ const FREE_POOL_SELECT: &str = "\
     SELECT p.id, p.display_name, p.rank, p.roles, p.availability, p.availability_slots, \
            p.status, p.source \
     FROM scrim.participants p \
-    WHERE p.status <> 'inactive' \
+    WHERE p.status NOT IN ('inactive', 'reserve') \
+      AND NOT EXISTS (SELECT 1 FROM scrim.team_members tm WHERE tm.participant_id=p.id) \
+    ORDER BY p.created_at ASC, p.id ASC";
+
+const RESERVE_POOL_SELECT: &str = "\
+    SELECT p.id, p.display_name, p.rank, p.roles, p.availability, p.availability_slots, \
+           p.status, p.source \
+    FROM scrim.participants p \
+    WHERE p.status = 'reserve' \
       AND NOT EXISTS (SELECT 1 FROM scrim.team_members tm WHERE tm.participant_id=p.id) \
     ORDER BY p.created_at ASC, p.id ASC";
 
@@ -2175,6 +2197,18 @@ mod tests {
     }
 
     #[test]
+    fn suggest_roster_pool_defaults_to_players() {
+        let request: ScrimSuggestRosterRequest =
+            serde_json::from_value(json!({})).expect("default roster pool");
+        assert!(matches!(request.pool, ScrimPoolSource::Players));
+    }
+
+    #[test]
+    fn free_player_pool_query_excludes_reserve() {
+        assert!(FREE_POOL_SELECT.contains("p.status NOT IN ('inactive', 'reserve')"));
+    }
+
+    #[test]
     fn roster_suggestion_ranks_empty_pool_and_auto_window() {
         let window = ScrimWindow {
             day: Weekday::Mon,
@@ -2693,6 +2727,87 @@ mod tests {
         );
         assert_eq!(value["members"][0]["availability"]["mon"]["from"], 1140);
         assert!(value["members"][0]["discord_linked"].is_boolean());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn roster_pool_sources_filter_statuses_and_keep_window_ranking() {
+        let Some(state) = test_state().await else {
+            return;
+        };
+        let reserve_fit = serde_json::to_value(weekly_with_mon(DaySlot::available(
+            Some(20 * 60),
+            Some(22 * 60),
+        )))
+        .expect("reserve fit availability");
+        let unavailable = serde_json::to_value(weekly_with_mon(DaySlot::unavailable()))
+            .expect("unavailable availability");
+        sqlx::query(
+            "INSERT INTO scrim.participants \
+             (id, display_name, rank_source, availability_slots, status, source, created_at, updated_at) \
+             VALUES \
+             (20, 'Reserve Fit', 'self', $1::jsonb, 'reserve', 'test', now(), now()), \
+             (21, 'Reserve Unavailable', 'self', $2::jsonb, 'reserve', 'test', now(), now()), \
+             (22, 'Waitlist Player', 'self', $1::jsonb, 'waitlist', 'test', now(), now()), \
+             (23, 'Inactive Player', 'self', $1::jsonb, 'inactive', 'test', now(), now())",
+        )
+        .bind(reserve_fit)
+        .bind(unavailable)
+        .execute(&state.pool)
+        .await
+        .expect("seed roster pools");
+
+        let coach_token = state
+            .auth
+            .create_session_jwt("9000", "coach_user", "user", Some("Coach User"), None)
+            .expect("coach token");
+        let app = router(state);
+        let request = |pool: &str| {
+            authenticated_request(
+                Method::POST,
+                "/api/scrim/teams/1/suggest",
+                &coach_token,
+                Some(json!({
+                    "pool": pool,
+                    "window": { "day": "mon", "from": 20 * 60, "to": 22 * 60 },
+                    "size": 10
+                })),
+            )
+        };
+
+        let players = to_json(
+            app.clone()
+                .oneshot(request("players"))
+                .await
+                .expect("players suggestion"),
+        )
+        .await;
+        let player_names = players["candidates"]
+            .as_array()
+            .expect("player candidates")
+            .iter()
+            .filter_map(|candidate| candidate["display_name"].as_str())
+            .collect::<Vec<_>>();
+        assert!(player_names.contains(&"Waitlist Player"));
+        assert!(!player_names.contains(&"Reserve Fit"));
+        assert!(!player_names.contains(&"Reserve Unavailable"));
+        assert!(!player_names.contains(&"Inactive Player"));
+
+        let reserve = to_json(
+            app.oneshot(request("reserve"))
+                .await
+                .expect("reserve suggestion"),
+        )
+        .await;
+        let reserve_names = reserve["candidates"]
+            .as_array()
+            .expect("reserve candidates")
+            .iter()
+            .filter_map(|candidate| candidate["display_name"].as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(reserve_names, vec!["Reserve Fit", "Reserve Unavailable"]);
+        assert!(!reserve_names.contains(&"Waitlist Player"));
+        assert!(!reserve_names.contains(&"Inactive Player"));
     }
 
     #[tokio::test]
