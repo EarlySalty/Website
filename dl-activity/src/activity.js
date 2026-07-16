@@ -72,7 +72,7 @@ const BRAND_CHART = {
   border: 'rgba(201, 168, 106, 0.24)',
   grid: 'rgba(201, 168, 106, 0.08)',
   gridSoft: 'rgba(201, 168, 106, 0.06)',
-  tick: '#b7aa91',
+  tick: '#b5aea2',
   donutBorder: '#130f0b',
   gold: 'rgba(201, 168, 106, 1)',
   goldFill: 'rgba(201, 168, 106, 0.16)',

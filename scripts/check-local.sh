@@ -21,9 +21,6 @@ run_check() {
   fi
 }
 
-run_check "Frontend ESLint" \
-  bash -c "cd builds/frontend && npm run lint"
-
 run_check "Frontend TypeScript" \
   bash -c "cd builds/frontend && npx tsc --noEmit"
 

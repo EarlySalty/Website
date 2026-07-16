@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   scrims,
   type DiscordSyncStatus,
+  type ScrimCoach,
   type ScrimParticipantPatch,
   type ScrimPoolParticipant,
   type ScrimTeam,
@@ -13,19 +14,69 @@ import {
 import { useAuth } from '@/context/AuthContext'
 import AvailabilityGrid from '@/components/AvailabilityGrid'
 import { CoachOnly, EmptyState, PageSpinner, SectionHead } from '@/components/ui'
-import { scrimWindowText, TIME_OPTIONS, WEEKDAYS } from '@/lib/availability'
+import { formatMinutes, scrimWindowText, TIME_OPTIONS, WEEKDAYS } from '@/lib/availability'
 
 const STATUS_OPTIONS = [
   { value: 'new', label: 'Neu' },
-  { value: 'waitlist', label: 'Warteliste' },
+  { value: 'waitlist', label: 'Spieler-Pool' },
+  { value: 'reserve', label: 'Auswechselspieler' },
   { value: 'assigned', label: 'Zugewiesen' },
   { value: 'inactive', label: 'Inaktiv' },
 ] as const
 
+/** Die vier Toepfe entlang des echten Ablaufs: Eingang → Sichtung → Verwendung. Disjunkt nach status, damit niemand doppelt oder gar nicht auftaucht. */
+const POOL_GROUPS = [
+  {
+    key: 'new' as const,
+    title: 'Neue Anmeldungen',
+    hint: 'Frisch reingekommen und noch nicht einsortiert. Schieb sie in den Spieler-Pool oder auf die Auswechselbank.',
+  },
+  {
+    key: 'waitlist' as const,
+    title: 'Spieler-Pool',
+    hint: 'Warten auf ein festes Team. Aus diesem Topf schlägt das Team-Board Kader nach Zeitüberschneidung vor.',
+  },
+  {
+    key: 'reserve' as const,
+    title: 'Auswechselspieler',
+    hint: 'Springen ein, wenn einem Team jemand fehlt — über die Discord-Rolle „Auswechselspieler" anpingbar.',
+  },
+  {
+    key: 'assigned' as const,
+    title: 'In Teams',
+    hint: 'Fest eingeteilt. Kader und Termine stehen im jeweiligen Team-Board.',
+  },
+]
+
 const COPY = {
   createTeam: '＋ Team erstellen',
-  freeOnly: 'nur frei',
-  allPlayers: 'alle',
+  announce: 'Aufruf posten',
+  editTeam: 'Bearbeiten',
+  noWindow: 'Keine Stammzeit',
+  noCoach: '— kein Coach —',
+  coachHint: 'Bekommt automatisch die Team-Rolle und sieht damit den Team-Kanal.',
+  windowLabel: 'Übliche Spielzeit',
+  defaultWindowHint: 'Wann spielt das Team normalerweise? Steht im Aufruf und füllt die Einspringer-Suche vor. Der Wochentag bleibt offen.',
+  openEnd: 'offenes Ende',
+  announceTitle: 'Aufruf posten',
+  announceHint: 'Der Bot postet das im Scrim-Kanal und pingt die Teilnehmer. Du entscheidest, wann — geschrieben wird es fertig.',
+  announceNote: 'Noch was dazusagen? (optional)',
+  announceSend: 'Im Scrim-Kanal posten',
+  announceSending: 'Poste …',
+  preview: 'Vorschau',
+  findSub: 'Auswechselspieler finden',
+  findSubHint: 'Sag uns, für welches Team und wann — wir schauen, wer von der Auswechselbank zu der Zeit kann.',
+  forTeam: 'Für welches Team',
+  search: 'Passende suchen',
+  searching: 'Suche …',
+  canPlay: 'kann zu der Zeit',
+  cannotPlay: 'kann eher nicht',
+  minutes: 'min',
+  confirmSub: 'Einspringen lassen',
+  confirmed: 'Bescheid gegeben ✓',
+  confirmedHint: 'Hat die Rolle von {team} und eine DM mit Team und Uhrzeit bekommen. Auswechselspieler bleibt er.',
+  noSubsTitle: 'Niemand frei',
+  noSubs: 'Kein Auswechselspieler hat zu dieser Zeit Zeit. Versuch ein anderes Fenster.',
   dialogTitle: 'Neues Team',
   teamName: 'Name',
   coach: 'Coach',
@@ -45,7 +96,7 @@ const COPY = {
 
 interface TeamForm {
   name: string
-  coach: string
+  coachId: string
   useWindow: boolean
   day: Weekday
   from: string
@@ -54,7 +105,7 @@ interface TeamForm {
 
 const DEFAULT_TEAM_FORM: TeamForm = {
   name: '',
-  coach: '',
+  coachId: '',
   useWindow: false,
   day: 'mon',
   from: '1140',
@@ -65,10 +116,6 @@ function statusLabel(value: string): string {
   return STATUS_OPTIONS.find(o => o.value === value)?.label ?? value
 }
 
-function optionalValue(value: string): string | undefined {
-  const trimmed = value.trim()
-  return trimmed || undefined
-}
 
 function teamWindow(form: TeamForm): ScrimWindow | null {
   if (!form.useWindow) return null
@@ -78,23 +125,71 @@ function teamWindow(form: TeamForm): ScrimWindow | null {
   return { day: form.day, from, to }
 }
 
+/**
+ * Fuellt Tag/Von/Bis aus der Team-Stammzeit vor. Offenes Ende (1440) taugt nicht als Suchfenster —
+ * daraus wird ein zweistuendiges ab der Startzeit, das kann der Coach anpassen.
+ */
+function windowDraftForTeam(team: ScrimTeam | undefined): { day: Weekday; from: string; to: string } {
+  const from = team?.default_from ?? 1140
+  const rawTo = team?.default_to ?? 1320
+  const to = rawTo >= 1440 ? Math.min(from + 120, 1439) : rawTo
+  return { day: 'thu', from: String(from), to: String(to) }
+}
+
+/** Stammzeit als Text. 1440 = offenes Ende ("ab 16:00"), sonst Fenster. Gleiche Sprache wie im Discord-Aufruf. */
+function teamWindowText(team: ScrimTeam): string {
+  if (team.default_from == null || team.default_to == null) return COPY.noWindow
+  if (team.default_to >= 1440) return `ab ${formatMinutes(team.default_from)} Uhr`
+  return `${formatMinutes(team.default_from)}–${formatMinutes(team.default_to)} Uhr`
+}
+
+/**
+ * Teilt den Pool disjunkt auf die Toepfe auf. Wer im Team ist, gilt als zugewiesen —
+ * auch wenn sein status etwas anderes behauptet; sonst waere er in zwei Toepfen.
+ * Unbekannte status-Werte landen bei den neuen Anmeldungen statt zu verschwinden.
+ */
+function groupPool(pool: ScrimPoolParticipant[]) {
+  const groups = { new: [], waitlist: [], reserve: [], assigned: [], inactive: [] } as
+    Record<'new' | 'waitlist' | 'reserve' | 'assigned' | 'inactive', ScrimPoolParticipant[]>
+  for (const p of pool) {
+    const status = p.status?.trim().toLowerCase()
+    if (status === 'inactive') groups.inactive.push(p)
+    else if (p.team) groups.assigned.push(p)
+    else if (status === 'reserve') groups.reserve.push(p)
+    else if (status === 'waitlist') groups.waitlist.push(p)
+    else if (status === 'assigned') groups.waitlist.push(p) // zugewiesen ohne Team = wieder frei
+    else groups.new.push(p)
+  }
+  return groups
+}
+
 export default function ScrimPoolPage() {
   const { isCoach } = useAuth()
   const qc = useQueryClient()
   const navigate = useNavigate()
-  const [freeOnly, setFreeOnly] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
+  const [showFindSub, setShowFindSub] = useState(false)
+  const [announceTeam, setAnnounceTeam] = useState<ScrimTeam | null>(null)
+  const [editTeam, setEditTeam] = useState<ScrimTeam | null>(null)
   const [teamForm, setTeamForm] = useState<TeamForm>(DEFAULT_TEAM_FORM)
-  const [poolOpen, setPoolOpen] = useState(false)
 
   const teamsQuery = useQuery({ queryKey: ['scrim-teams'], queryFn: () => scrims.teams(), enabled: isCoach })
+  const coachesQuery = useQuery({ queryKey: ['scrim-coaches'], queryFn: () => scrims.coaches(), enabled: isCoach })
   const poolQuery = useQuery({
     queryKey: ['scrim-pool'],
     queryFn: () => scrims.pool(),
     enabled: isCoach,
   })
   const createTeamMutation = useMutation({
-    mutationFn: () => scrims.createTeam({ name: teamForm.name, coach: optionalValue(teamForm.coach) ?? null }),
+    // Das Zeitfenster ist zugleich die Stammzeit des Teams — der Tag daraus fuellt nur den
+    // ersten Roster-Vorschlag vor, die Uhrzeit bleibt dauerhaft am Team haengen.
+    mutationFn: () =>
+      scrims.createTeam({
+        name: teamForm.name,
+        coach_discord_id: teamForm.coachId || null,
+        default_from: teamForm.useWindow ? Number(teamForm.from) : null,
+        default_to: teamForm.useWindow ? Number(teamForm.to) : null,
+      }),
     onSuccess: team => {
       qc.invalidateQueries({ queryKey: ['scrim-teams'] })
       setShowCreate(false)
@@ -108,7 +203,7 @@ export default function ScrimPoolPage() {
 
   const teams = teamsQuery.data ?? []
   const pool = poolQuery.data ?? []
-  const visiblePool = freeOnly ? pool.filter(p => !p.team) : pool
+  const grouped = groupPool(pool)
 
   return (
     <div className="content-grid space-y-8 py-8">
@@ -124,16 +219,26 @@ export default function ScrimPoolPage() {
           label="Teams"
           count={teams.length}
           action={
-            <button
-              type="button"
-              onClick={() => {
-                createTeamMutation.reset()
-                setShowCreate(true)
-              }}
-              className="btn-amber rounded-sm px-3 py-1.5 text-xs"
-            >
-              {COPY.createTeam}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setShowFindSub(true)}
+                disabled={teams.length === 0}
+                className="btn-ghost rounded-sm px-3 py-1.5 text-xs"
+              >
+                {COPY.findSub}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  createTeamMutation.reset()
+                  setShowCreate(true)
+                }}
+                className="btn-amber rounded-sm px-3 py-1.5 text-xs"
+              >
+                {COPY.createTeam}
+              </button>
+            </div>
           }
         />
         {teamsQuery.isLoading ? (
@@ -143,75 +248,431 @@ export default function ScrimPoolPage() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {teams.map(team => (
-              <Link key={team.id} to={`/scrims/teams/${team.id}`} className="card card-hover p-4">
-                <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{team.name}</span>
-                {team.coach && <p className="stat-label mt-1">Coach {team.coach}</p>}
-                <span className="eyebrow mt-3 inline-block">Board öffnen →</span>
-              </Link>
+              <div key={team.id} className="card p-4">
+                <Link to={`/scrims/teams/${team.id}`} className="block">
+                  <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{team.name}</span>
+                  {team.coach && <p className="stat-label mt-1">Coach {team.coach}</p>}
+                  <p className="stat-label mt-1">{teamWindowText(team)}</p>
+                  <span className="eyebrow mt-3 inline-block">Board öffnen →</span>
+                </Link>
+                <div className="mt-3 flex flex-wrap gap-2 border-t pt-3" style={{ borderColor: 'var(--border-dim)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setAnnounceTeam(team)}
+                    className="btn-amber rounded-sm px-2.5 py-1 text-xs"
+                  >
+                    {COPY.announce}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditTeam(team)}
+                    className="btn-ghost rounded-sm px-2.5 py-1 text-xs"
+                  >
+                    {COPY.editTeam}
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
 
-      <div>
-        <button
-          type="button"
-          onClick={() => setPoolOpen(o => !o)}
-          aria-expanded={poolOpen}
-          className="card card-hover flex w-full items-center justify-between gap-3 p-4 text-left"
-        >
-          <span className="flex items-center gap-2">
-            <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Spieler-Pool</span>
-            <span className="badge badge-amber">{visiblePool.length}</span>
-          </span>
-          <span className="eyebrow">{poolOpen ? 'schließen ▾' : 'öffnen ▸'}</span>
-        </button>
+      {poolQuery.isLoading ? (
+        <PageSpinner />
+      ) : (
+        POOL_GROUPS.map(group => (
+          <PoolGroup
+            key={group.key}
+            title={group.title}
+            hint={group.hint}
+            participants={grouped[group.key]}
+            teams={teams}
+            defaultOpen={group.key === 'new' && grouped.new.length > 0}
+          />
+        ))
+      )}
 
-        {poolOpen && (
-          <div className="mt-4 space-y-3">
-            <div className="flex justify-end">
-              <div className="flex rounded-sm border p-0.5" style={{ borderColor: 'var(--border-dim)' }}>
-                <button
-                  type="button"
-                  aria-pressed={freeOnly}
-                  onClick={() => setFreeOnly(true)}
-                  className={`rounded-sm px-3 py-1 text-xs font-semibold ${freeOnly ? 'btn-amber' : 'btn-ghost'}`}
-                >
-                  {COPY.freeOnly}
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={!freeOnly}
-                  onClick={() => setFreeOnly(false)}
-                  className={`rounded-sm px-3 py-1 text-xs font-semibold ${freeOnly ? 'btn-ghost' : 'btn-amber'}`}
-                >
-                  {COPY.allPlayers}
-                </button>
-              </div>
-            </div>
-            {poolQuery.isLoading ? (
-              <PageSpinner />
-            ) : visiblePool.length === 0 ? (
-              <EmptyState title="Keine Spieler" copy="Für diesen Filter gibt es aktuell keine Einträge." />
-            ) : (
-              <div className="space-y-2">
-                {visiblePool.map(p => (
-                  <PoolRow key={p.id} participant={p} teams={teams} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      {grouped.inactive.length > 0 && (
+        <PoolGroup
+          title="Ausgetreten"
+          hint="Nicht mehr dabei. Discord-Rollen sind entzogen."
+          participants={grouped.inactive}
+          teams={teams}
+          defaultOpen={false}
+        />
+      )}
+
+      {showFindSub && <FindSubstituteModal teams={teams} onClose={() => setShowFindSub(false)} />}
+      {announceTeam && <AnnounceModal team={announceTeam} onClose={() => setAnnounceTeam(null)} />}
+      {editTeam && <EditTeamModal team={editTeam} onClose={() => setEditTeam(null)} />}
 
       {showCreate && (
         <CreateTeamModal
           form={teamForm}
           setForm={setTeamForm}
           mutation={createTeamMutation}
+          coaches={coachesQuery.data ?? []}
           onClose={() => setShowCreate(false)}
         />
       )}
+    </div>
+  )
+}
+
+function PoolGroup({
+  title,
+  hint,
+  participants,
+  teams,
+  defaultOpen,
+}: {
+  title: string
+  hint: string
+  participants: ScrimPoolParticipant[]
+  teams: ScrimTeam[]
+  defaultOpen: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        className="card card-hover flex w-full items-center justify-between gap-3 p-4 text-left"
+      >
+        <span className="flex items-center gap-2">
+          <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{title}</span>
+          <span className="badge badge-amber">{participants.length}</span>
+        </span>
+        <span className="eyebrow">{open ? 'schließen ▾' : 'öffnen ▸'}</span>
+      </button>
+
+      {open && (
+        <div className="mt-4 space-y-3">
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{hint}</p>
+          {participants.length === 0 ? (
+            <EmptyState title="Niemand hier" copy="In diesem Topf ist gerade niemand." />
+          ) : (
+            <div className="space-y-2">
+              {participants.map(p => (
+                <PoolRow key={p.id} participant={p} teams={teams} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Zwei Schritte in einem Dialog: erst suchen (Team + Zeit → Vorschlag aus der Auswechselbank),
+ * dann bestätigen. Bestätigen gibt die Team-Rolle für die Aushilfe; Auswechselspieler bleibt er.
+ */
+/** Coach loest aus, Bot formatiert: Vorschau zeigen, damit klar ist was rausgeht — posten tut es erst der Klick. */
+function AnnounceModal({ team, onClose }: { team: ScrimTeam; onClose: () => void }) {
+  const [note, setNote] = useState('')
+  const post = useMutation({
+    mutationFn: () => scrims.announceTeam(team.id, { note: note.trim() || null }),
+  })
+
+  const windowText = teamWindowText(team)
+  const hasWindow = team.default_from != null && team.default_to != null
+  const previewText = hasWindow
+    ? `Das Team spielt üblicherweise ${windowText}. Wenn du zu der Zeit kannst und Lust hast, reagier hier mit ✅ — wir melden uns bei dir.`
+    : 'Wenn du Lust hast, in diesem Team zu spielen, reagier hier mit ✅ — wir melden uns bei dir.'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+      <div className="panel-strong max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-extrabold" style={{ color: 'var(--text-primary)' }}>
+            {COPY.announceTitle}
+          </h2>
+          <button type="button" onClick={onClose} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">
+            {COPY.cancel}
+          </button>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{COPY.announceHint}</p>
+
+        <div className="card space-y-1.5 border-l-2 p-3" style={{ borderLeftColor: '#C8A86B' }}>
+          <span className="stat-label">{COPY.preview}</span>
+          <p className="font-display text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+            {team.name} sucht Verstärkung
+          </p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{previewText}</p>
+          {note.trim() && (
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <strong>Dazu noch:</strong> {note.trim()}
+            </p>
+          )}
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="stat-label">{COPY.announceNote}</span>
+          <textarea
+            className="input-field min-h-[70px]"
+            maxLength={500}
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="z. B. Wir suchen vor allem jemanden für die Solo-Lane."
+          />
+        </label>
+
+        {post.data && (
+          <p className="text-sm" style={{ color: post.data.ok ? 'var(--text-primary)' : 'var(--red)' }}>
+            {post.data.detail}
+          </p>
+        )}
+        {post.isError && <p className="text-sm" style={{ color: 'var(--red)' }}>{post.error.message}</p>}
+
+        {!post.data?.ok && (
+          <button
+            type="button"
+            className="btn-amber rounded-sm px-4 py-2 text-sm"
+            disabled={post.isPending}
+            onClick={() => post.mutate()}
+          >
+            {post.isPending ? COPY.announceSending : COPY.announceSend}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Team bearbeiten — vor allem die Stammzeit, die es fuer die 4 Bestandsteams noch nicht gibt. */
+function EditTeamModal({ team, onClose }: { team: ScrimTeam; onClose: () => void }) {
+  const qc = useQueryClient()
+  const [name, setName] = useState(team.name)
+  const [coachId, setCoachId] = useState(team.coach_discord_id ?? '')
+  const [useWindow, setUseWindow] = useState(team.default_from != null)
+  const [from, setFrom] = useState(String(team.default_from ?? 1200))
+  const [to, setTo] = useState(String(team.default_to ?? 1320))
+
+  const coachesQuery = useQuery({ queryKey: ['scrim-coaches'], queryFn: () => scrims.coaches() })
+
+  const save = useMutation({
+    mutationFn: () =>
+      scrims.patchTeam(team.id, {
+        name: name.trim(),
+        coach_discord_id: coachId || null,
+        default_from: useWindow ? Number(from) : null,
+        default_to: useWindow ? Number(to) : null,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['scrim-teams'] })
+      onClose()
+    },
+  })
+
+  const invalid = useWindow && Number(from) >= Number(to)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+      <form
+        className="panel-strong w-full max-w-lg space-y-4 p-5"
+        onSubmit={e => { e.preventDefault(); if (!invalid) save.mutate() }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-extrabold" style={{ color: 'var(--text-primary)' }}>{team.name}</h2>
+          <button type="button" onClick={onClose} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">{COPY.cancel}</button>
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="stat-label">{COPY.teamName}</span>
+          <input className="input-field" value={name} onChange={e => setName(e.target.value)} required />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="stat-label">{COPY.coach}</span>
+          <select className="input-field" value={coachId} onChange={e => setCoachId(e.target.value)}>
+            <option value="">{COPY.noCoach}</option>
+            {(coachesQuery.data ?? []).map(c => (
+              <option key={c.discord_user_id} value={c.discord_user_id}>{c.display_name}</option>
+            ))}
+          </select>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{COPY.coachHint}</span>
+        </label>
+
+        <div className="space-y-2">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={useWindow} onChange={e => setUseWindow(e.target.checked)} />
+            <span className="stat-label">{COPY.windowLabel}</span>
+          </label>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{COPY.defaultWindowHint}</p>
+          {useWindow && (
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="stat-label">{COPY.from}</span>
+                <select className="input-field" value={from} onChange={e => setFrom(e.target.value)}>
+                  {TIME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="stat-label">{COPY.to}</span>
+                <select className="input-field" value={to} onChange={e => setTo(e.target.value)}>
+                  {TIME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  <option value="1440">{COPY.openEnd}</option>
+                </select>
+              </label>
+            </div>
+          )}
+          {invalid && <p className="text-xs" style={{ color: 'var(--red)' }}>{COPY.invalidWindow}</p>}
+        </div>
+
+        {save.isError && <p className="text-sm" style={{ color: 'var(--red)' }}>{save.error.message}</p>}
+        <button type="submit" className="btn-amber rounded-sm px-4 py-2 text-sm" disabled={save.isPending || invalid}>
+          Speichern
+        </button>
+      </form>
+    </div>
+  )
+}
+
+function FindSubstituteModal({ teams, onClose }: { teams: ScrimTeam[]; onClose: () => void }) {
+  const qc = useQueryClient()
+  const [teamId, setTeamId] = useState<number | ''>(teams[0]?.id ?? '')
+  const [draft, setDraft] = useState(() => windowDraftForTeam(teams[0]))
+  const [confirmedId, setConfirmedId] = useState<number | null>(null)
+
+  // Genau dafuer ist die Stammzeit da: Team waehlen -> die uebliche Zeit steht schon drin,
+  // der Coach setzt nur noch den Tag. Ein offenes Ende (1440) waere als Suchfenster sinnlos.
+  const selectTeam = (id: number) => {
+    setTeamId(id)
+    setDraft(current => ({ ...current, ...windowDraftForTeam(teams.find(t => t.id === id)) }))
+    setConfirmedId(null)
+  }
+
+  const window: ScrimWindow | null = (() => {
+    const from = Number(draft.from)
+    const to = Number(draft.to)
+    if (!Number.isFinite(from) || !Number.isFinite(to) || from >= to) return null
+    return { day: draft.day, from, to }
+  })()
+
+  const search = useMutation({
+    mutationFn: () => scrims.suggestRoster(Number(teamId), { window, size: 1, pool: 'reserve' }),
+  })
+
+  const confirm = useMutation({
+    mutationFn: (participantId: number) =>
+      scrims.confirmSubstitute(Number(teamId), { participant_id: participantId, window: window! }),
+    onSuccess: (data, participantId) => {
+      setConfirmedId(data.dm.ok ? participantId : null)
+      qc.invalidateQueries({ queryKey: ['scrim-pool'] })
+      qc.invalidateQueries({ queryKey: ['scrim-board'] })
+    },
+  })
+
+  const teamName = teams.find(t => t.id === Number(teamId))?.name ?? ''
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+      <div className="panel-strong max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-extrabold" style={{ color: 'var(--text-primary)' }}>
+            {COPY.findSub}
+          </h2>
+          <button type="button" onClick={onClose} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">
+            {COPY.cancel}
+          </button>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{COPY.findSubHint}</p>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5 sm:col-span-2">
+            <span className="stat-label">{COPY.forTeam}</span>
+            <select className="input-field" value={teamId} onChange={e => selectTeam(Number(e.target.value))}>
+              {teams.map(team => (
+                <option key={team.id} value={team.id}>{team.name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="stat-label">{COPY.day}</span>
+            <select className="input-field" value={draft.day} onChange={e => setDraft(d => ({ ...d, day: e.target.value as Weekday }))}>
+              {WEEKDAYS.map(day => (
+                <option key={day.key} value={day.key}>{day.long}</option>
+              ))}
+            </select>
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex flex-col gap-1.5">
+              <span className="stat-label">{COPY.from}</span>
+              <select className="input-field" value={draft.from} onChange={e => setDraft(d => ({ ...d, from: e.target.value }))}>
+                {TIME_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="stat-label">{COPY.to}</span>
+              <select className="input-field" value={draft.to} onChange={e => setDraft(d => ({ ...d, to: e.target.value }))}>
+                {TIME_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </label>
+          </div>
+        </div>
+
+        {!window && <p className="text-xs" style={{ color: 'var(--red)' }}>{COPY.invalidWindow}</p>}
+
+        <button
+          type="button"
+          className="btn-amber rounded-sm px-4 py-2 text-sm"
+          disabled={!window || !teamId || search.isPending}
+          onClick={() => { setConfirmedId(null); search.mutate() }}
+        >
+          {search.isPending ? COPY.searching : COPY.search}
+        </button>
+
+        {search.isError && <p className="text-xs" style={{ color: 'var(--red)' }}>{search.error.message}</p>}
+
+        {search.data && (
+          search.data.candidates.length === 0 ? (
+            <EmptyState title={COPY.noSubsTitle} copy={COPY.noSubs} />
+          ) : (
+            <div className="space-y-2">
+              {search.data.candidates.map(candidate => (
+                <div key={candidate.participant_id} className="card flex items-center justify-between gap-3 p-3">
+                  <div>
+                    <span className="font-display text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {candidate.display_name}
+                    </span>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      {[candidate.rank, candidate.roles].filter(Boolean).join(' · ') || '—'}
+                      {candidate.fit_minutes > 0
+                        ? ` · ${COPY.canPlay} (${candidate.fit_minutes} ${COPY.minutes})`
+                        : ` · ${COPY.cannotPlay}`}
+                    </p>
+                  </div>
+                  {confirmedId === candidate.participant_id ? (
+                    <span className="badge badge-amber">{COPY.confirmed}</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-amber rounded-sm px-3 py-1.5 text-xs"
+                      disabled={confirm.isPending}
+                      onClick={() => confirm.mutate(candidate.participant_id)}
+                    >
+                      {COPY.confirmSub}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {confirm.isError && <p className="text-xs" style={{ color: 'var(--red)' }}>{confirm.error.message}</p>}
+        {confirm.data?.dm.ok === false && (
+          <p className="text-xs" style={{ color: 'var(--red)' }}>{confirm.data.dm.detail}</p>
+        )}
+        {confirmedId !== null && (
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            {COPY.confirmedHint.replace('{team}', teamName)}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -220,11 +681,13 @@ function CreateTeamModal({
   form,
   setForm,
   mutation,
+  coaches,
   onClose,
 }: {
   form: TeamForm
   setForm: React.Dispatch<React.SetStateAction<TeamForm>>
   mutation: UseMutationResult<ScrimTeam, Error, void, unknown>
+  coaches: ScrimCoach[]
   onClose: () => void
 }) {
   const window = teamWindow(form)
@@ -261,7 +724,13 @@ function CreateTeamModal({
 
         <label className="flex flex-col gap-1.5">
           <span className="stat-label">{COPY.coach}</span>
-          <input className="input-field" value={form.coach} onChange={e => update({ coach: e.target.value })} />
+          <select className="input-field" value={form.coachId} onChange={e => update({ coachId: e.target.value })}>
+            <option value="">{COPY.noCoach}</option>
+            {coaches.map(c => (
+              <option key={c.discord_user_id} value={c.discord_user_id}>{c.display_name}</option>
+            ))}
+          </select>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{COPY.coachHint}</span>
         </label>
 
         <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-primary)' }}>

@@ -27,9 +27,10 @@ export default function Layout() {
               <nav className="hidden items-center gap-1 md:flex">
                 <NavLink to="/" active={isActive('/', true)}>Coaches</NavLink>
                 <NavLink to="/anfrage" active={isActive('/anfrage')}>Anfrage</NavLink>
+                {/* Ohne Login sichtbar: sonst fuehrt der einzige Weg zur Scrim-Anmeldung ueber die DM. */}
+                <NavLink to="/scrims/signup" active={isActive('/scrims/signup')}>Scrims</NavLink>
                 {user && <NavLink to="/me" active={isActive('/me', true)}>Mein Coaching</NavLink>}
                 {user && <NavLink to="/me/scrims" active={isActive('/me/scrims')}>Mein Team</NavLink>}
-                {user && <NavLink to="/scrims/signup" active={isActive('/scrims/signup')}>Anmeldung</NavLink>}
                 {isCoach && (
                   <NavLink to="/dashboard" active={isActive('/dashboard') || isActive('/overview') || isActive('/coachees')}>
                     Coach-Bereich

@@ -4,6 +4,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import type {
   DayOverlap,
   ScrimParticipantPatch,
+  ScrimPoolSource,
   ScrimRosterSuggestResponse,
   ScrimRosterSuggestionCandidate,
   ScrimTeamBoardMember,
@@ -26,9 +27,11 @@ const COPY = {
   to: 'bis',
   size: 'Größe',
   invalidWindow: 'Startzeit muss vor Endzeit liegen.',
+  findSub: 'Einspringer finden',
   suggestion: 'Bestes Fenster',
   noSuggestion: 'Noch kein Vorschlag — auf „Roster vorschlagen" klicken.',
   noCandidates: 'Keine passenden Spieler im freien Pool gefunden.',
+  noSubs: 'Kein Auswechselspieler hat zu dieser Zeit Zeit.',
   fits: 'passt',
   minutes: 'min',
   assign: 'Zuweisen',
@@ -87,9 +90,17 @@ export default function ScrimBoardPage() {
   const invalidWindow = useWindow && !selectedWindow
   const requestedSize = Number(size) || 6
 
+  // Ein Aufruf, zwei Toepfe: Kader aus dem Spieler-Pool, Einspringer von der Auswechselbank —
+  // gleiche Engine, gleiches Zeitfenster. `variables` merkt sich, welcher Topf zuletzt lief.
   const suggestMutation = useMutation({
-    mutationFn: () => scrims.suggestRoster(teamId, { window: selectedWindow, size: requestedSize }),
+    mutationFn: (pool: ScrimPoolSource) =>
+      scrims.suggestRoster(teamId, {
+        window: selectedWindow,
+        size: pool === 'reserve' ? 1 : requestedSize,
+        pool,
+      }),
   })
+  const lastPool = suggestMutation.variables ?? 'players'
 
   const participantMutation = useMutation({
     mutationFn: ({ participantId, patch }: ParticipantUpdate) => scrims.updateParticipant(participantId, patch),
@@ -213,10 +224,18 @@ export default function ScrimBoardPage() {
           <button
             type="button"
             disabled={suggestMutation.isPending || invalidWindow}
-            onClick={() => suggestMutation.mutate()}
+            onClick={() => suggestMutation.mutate('players')}
             className="btn-amber rounded-sm px-4 py-2 text-sm"
           >
             {COPY.rosterSuggest}
+          </button>
+          <button
+            type="button"
+            disabled={suggestMutation.isPending || invalidWindow}
+            onClick={() => suggestMutation.mutate('reserve')}
+            className="btn-ghost rounded-sm px-4 py-2 text-sm"
+          >
+            {COPY.findSub}
           </button>
         </div>
         {invalidWindow && <p className="mt-2 text-xs" style={{ color: 'var(--red)' }}>{COPY.invalidWindow}</p>}
@@ -225,6 +244,7 @@ export default function ScrimBoardPage() {
           result={suggestMutation.data}
           window={suggestMutation.data?.best_window ?? selectedWindow}
           busy={updateBusy}
+          pool={lastPool}
           onAssign={(participantId) => participantMutation.mutate({ participantId, patch: { team_id: teamId, status: 'assigned' } })}
         />
       </div>
@@ -272,11 +292,13 @@ function SuggestionResult({
   result,
   window,
   busy,
+  pool,
   onAssign,
 }: {
   result: ScrimRosterSuggestResponse | undefined
   window: ScrimWindow | null
   busy: boolean
+  pool: ScrimPoolSource
   onAssign: (participantId: number) => void
 }) {
   if (!result) {
@@ -294,7 +316,9 @@ function SuggestionResult({
         </span>
       </div>
       {result.candidates.length === 0 ? (
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{COPY.noCandidates}</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          {pool === 'reserve' ? COPY.noSubs : COPY.noCandidates}
+        </p>
       ) : (
         <div className="space-y-2">
           {result.candidates.map(candidate => (

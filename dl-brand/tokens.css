@@ -43,15 +43,15 @@
 }
 
 :root {
-  --ink: #241c11;
-  --ink-soft: #2c2318;
-  --ink-raised: #352a1b;
-  --panel: rgba(59, 47, 30, 0.72);
-  --panel-solid: #3b2f1e;
+  --ink: #0b0b0b;
+  --ink-soft: #121211;
+  --ink-raised: #1a1a18;
+  --panel: rgba(22, 22, 22, 0.9);
+  --panel-solid: #161616;
 
-  --bone: #ece0c8;
-  --bone-dim: #b7aa91;
-  --bone-faint: #746a57;
+  --bone: #f2eee6;
+  --bone-dim: #b5aea2;
+  --bone-faint: #8d867a;
 
   --gold: #c8a86b;
   --gold-bright: #efd49d;
@@ -84,13 +84,13 @@
   --shadow-glow-amber: 0 0 38px rgba(201, 168, 106, 0.22), 0 18px 50px rgba(0, 0, 0, 0.5);
 
   --brand-body-background:
-    radial-gradient(100% 60% at 50% -5%, rgba(201, 168, 106, 0.1), transparent 60%),
-    radial-gradient(80% 50% at 85% 35%, rgba(85, 151, 143, 0.06), transparent 70%),
-    linear-gradient(180deg, #271f12, #241c11 45%, #1c150d);
+    radial-gradient(100% 60% at 50% -5%, rgba(201, 168, 106, 0.07), transparent 60%),
+    radial-gradient(80% 50% at 85% 35%, rgba(85, 151, 143, 0.04), transparent 70%),
+    linear-gradient(180deg, #0e0d0c, #0b0b0b 45%, #080808);
 
   --bg-base: var(--ink);
   --bg-surface: var(--ink-soft);
-  --bg-card: rgba(59, 47, 30, 0.86);
+  --bg-card: rgba(22, 22, 22, 0.9);
   --bg-raised: var(--panel-solid);
 
   --border-dim: var(--line-soft);
@@ -129,10 +129,9 @@
 
 .brand-grain {
   z-index: 100;
-  opacity: 0.045;
+  opacity: 0.03;
   mix-blend-mode: screen;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: brand-grain 0.5s steps(3) infinite;
 }
 
 .brand-vignette {
@@ -141,15 +140,35 @@
   mix-blend-mode: multiply;
 }
 
-@keyframes brand-grain {
-  0% { transform: translate(0); }
-  33% { transform: translate(-2%, 2%); }
-  66% { transform: translate(2%, -2%); }
-  100% { transform: translate(-1%, -1%); }
+/* Einheitlicher Logo-Stand: Header läuft über die volle Breite,
+   Logo + Wordmark sitzen links mit Gutter-Abstand vom Rand. */
+.site-header .container {
+  width: auto;
+  max-width: none;
+  margin-inline: var(--gutter);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .brand-grain {
-    animation: none;
-  }
+.site-header .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.site-header .brand-logo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.site-header .brand-wordmark-img {
+  display: block;
+  width: auto;
+  height: 54px;
+  object-fit: contain;
+}
+
+@media (max-width: 640px) {
+  .site-header .brand-wordmark-img { height: 44px; }
 }
