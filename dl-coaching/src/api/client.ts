@@ -221,9 +221,13 @@ export interface ScrimCreateTeamRequest {
   coach?: string | null
 }
 
+/** Aus welchem Topf Kandidaten kommen: feste Teams aus dem Spieler-Pool, Einspringer von der Auswechselbank. */
+export type ScrimPoolSource = 'players' | 'reserve'
+
 export interface ScrimSuggestRosterRequest {
   window?: ScrimWindow | null
   size?: number
+  pool?: ScrimPoolSource
 }
 
 export interface ScrimRosterSuggestionCandidate {
@@ -300,6 +304,18 @@ export interface ScrimParticipantPatch {
   roles?: string
 }
 
+/** Aushilfe bestätigen: Team-Rolle für diese Session, Auswechselspieler-Status bleibt. */
+export interface ScrimSubstituteRequest {
+  participant_id: number
+  window: ScrimWindow
+}
+
+export interface ScrimSubstituteResponse {
+  participant: ScrimPoolParticipant
+  discord_sync: DiscordSyncStatus
+  dm: DiscordSyncStatus
+}
+
 export const scrims = {
   me: () => request<ScrimMeResponse>('/scrim/me'),
   signup: (data: ScrimSignupRequest) =>
@@ -312,6 +328,8 @@ export const scrims = {
   teamBoard: (id: number) => request<ScrimTeamBoardResponse>(`/scrim/teams/${id}/board`),
   suggestRoster: (id: number, data: ScrimSuggestRosterRequest) =>
     request<ScrimRosterSuggestResponse>(`/scrim/teams/${id}/suggest`, { method: 'POST', body: JSON.stringify(data) }),
+  confirmSubstitute: (teamId: number, data: ScrimSubstituteRequest) =>
+    request<ScrimSubstituteResponse>(`/scrim/teams/${teamId}/substitute`, { method: 'POST', body: JSON.stringify(data) }),
   pool: (status?: string) => {
     const query = status ? `?${new URLSearchParams({ status }).toString()}` : ''
     return request<ScrimPoolParticipant[]>(`/scrim/pool${query}`)
