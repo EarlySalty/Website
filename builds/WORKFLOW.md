@@ -1,80 +1,63 @@
-# Deadlock Meta Website - WORKFLOW
+# Website-Backend – Workflow
 
-## Ziel
-Nachbau von deadlockmeta.com als `earlysalty.com/builds` mit eigenem Backend (FastAPI + SQLite + Discord OAuth)
+## Aktueller Stand
 
-## Status
-- [x] Projektstruktur erstellt
-- [x] Frontend (React + Vite + Tailwind) Basis
-- [x] Frontend erfolgreich gebaut (dist/)
-- [x] Backend (FastAPI) Basis mit allen Routern
-- [x] Backend getestet (API funktioniert)
-- [x] Datenbank-Schema mit Sample Data
-- [x] Caddyfile aktualisiert (builds.earlysalty.com)
-- [ ] Discord OAuth konfigurieren (Client ID/Secret)
-- [ ] DNS/Subdomain einrichten
+Das aktive Website-Backend liegt unter `builds/backend-rust`. Das frühere
+FastAPI-/SQLite-Backend ist entfernt und steht nicht mehr als Fallback zur
+Verfügung.
 
-## Backend starten (Production)
-```bash
-cd /home/naniadm/Documents/Website/builds/backend
-source .venv/bin/activate
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+Der Rust-Dienst:
 
-## Tech Stack
-- **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS v4 (dark mode)
-- **Backend**: Python + FastAPI + aiosqlite
-- **Auth**: Discord OAuth (bestehend aus Dashboard)
-- **Datenbank**: SQLite
+- läuft lokal auf `127.0.0.1:8772`,
+- nutzt die zentrale Postgres-Datenbank über `DEADLOCK_CENTRAL_DSN`,
+- wird durch `deadlock-website-backend.service` gestartet,
+- lädt Secrets ausschließlich über `scripts/run_builds_backend.sh` aus
+  Infisical.
+
+Das öffentliche `/builds/`-Portal ist davon getrennt: Caddy liefert dort
+`dl-tierlist/dist` aus und leitet dessen API an den Dienst auf Port `8771`
+weiter.
 
 ## Projektstruktur
-```
-/home/naniadm/Documents/Website/builds/
-├── frontend/          # React + Vite
-│   ├── src/
-│   │   ├── api/       # API Client
-│   │   ├── components/ # Layout, etc.
-│   │   ├── context/   # AuthContext
-│   │   ├── hooks/     # useDragDrop
-│   │   ├── pages/     # Alle Seiten
-│   │   ├── types/     # TypeScript Types
-│   │   └── App.tsx, main.tsx, index.css
-│   └── package.json, vite.config.ts, tailwind.config.js
-├── backend/           # FastAPI
-│   ├── app/
-│   │   ├── routers/   # auth, heroes, builds, items, tierlists, patchnotes, history, admin
-│   │   ├── database.py
-│   │   ├── schemas.py
-│   │   └── main.py
-│   └── package.json
+
+```text
+builds/
+├── backend-rust/  # Rust/Axum, SQLx, zentrale Postgres-Datenbank
+├── frontend/      # React/Vite-Frontend für die Website-Anwendungen
 └── WORKFLOW.md
 ```
 
-## API Endpunkte
-- `GET /api/auth/discord/login` - Login mit Discord
-- `GET /api/auth/discord/callback` - OAuth Callback
-- `GET /api/auth/me` - Current User
-- `GET/POST/PUT/DELETE /api/heroes` - Heroes CRUD
-- `GET/POST/PUT/DELETE /api/builds` - Builds CRUD
-- `POST /api/builds/:id/vote` - Vote
-- `POST /api/builds/:id/report` - Report
-- `GET /api/tierlists` - Öffentliche Tierlisten
-- `GET /api/tierlists/my` - Eigene Tierlisten
-- `POST /api/tierlists/:id/fork` - Fork
-- `GET/POST/DELETE /api/patchnotes`
-- `GET /api/history`
-- Admin: reports, votes, announcement, users
+## Lokal prüfen
 
-## Nächste Schritte
-1. **Discord OAuth konfigurieren**: Client ID/Secret in `app/routers/auth.py` eintragen
-2. **Backend installieren**: `cd backend && pip install -r requirements.txt` (oder npm scripts nutzen)
-3. **Backend starten**: `python -m uvicorn app.main:app --reload --port 8000`
-4. **Frontend installieren**: `cd frontend && npm install`
-5. **Frontend starten**: `npm run dev`
-6. **DNS**: Subdomain `builds.earlysalty.com` auf Server zeigen lassen
+```bash
+cd /home/naniadm/Documents/Website/builds/backend-rust
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo build --release
+```
 
-## Offene TODOs
-- Admin Auth Guard implementieren
-- Build Voting mit meta_votes Tabelle
-- Drag & Drop Tier-Editor fertigstellen
-- Feedback Formular an Backend anbinden
+DB-Tests dürfen nur gegen die Wegwerf-Testdatenbank laufen. Die Scrim-Tests
+erwarten zusätzlich `DATABASE_URL_TEST`:
+
+```bash
+cd /home/naniadm/Documents/Deadlock-Bots/rust
+./scripts/central_test_db.sh bash -lc \
+  'unset SQLX_OFFLINE; export DATABASE_URL_TEST="$CENTRAL_TEST_DSN" DATABASE_URL="$CENTRAL_TEST_DSN"; cargo test --manifest-path /home/naniadm/Documents/Website/builds/backend-rust/Cargo.toml --all-features'
+```
+
+## Produktion
+
+Nach einem verifizierten Release-Build wird der User-Service neu gestartet:
+
+```bash
+cd /home/naniadm/Documents/Website/builds/backend-rust
+cargo build --release
+systemctl --user restart deadlock-website-backend.service
+curl -fsS http://127.0.0.1:8772/api/health
+```
+
+Der Dienst soll nicht direkt gestartet werden. Der systemd-Service ruft den
+Infisical-Wrapper auf und stellt damit die benötigte Laufzeitkonfiguration
+bereit.
+
+Weitere Betriebsdetails stehen in `builds/backend-rust/README.md`.
