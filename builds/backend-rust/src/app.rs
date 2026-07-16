@@ -389,6 +389,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/scrim/signup", post(routes::scrim::signup))
         .route("/api/scrim/pool", get(routes::scrim::pool))
+        .route("/api/scrim/coaches", get(routes::scrim::coaches))
         .route(
             "/api/scrim/teams",
             get(routes::scrim::teams).post(routes::scrim::create_team),
