@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   scrims,
   type DiscordSyncStatus,
+  type ScrimCoach,
   type ScrimParticipantPatch,
   type ScrimPoolParticipant,
   type ScrimTeam,
@@ -52,6 +53,8 @@ const COPY = {
   announce: 'Aufruf posten',
   editTeam: 'Bearbeiten',
   noWindow: 'Keine Stammzeit',
+  noCoach: '— kein Coach —',
+  coachHint: 'Bekommt automatisch die Team-Rolle und sieht damit den Team-Kanal.',
   windowLabel: 'Übliche Spielzeit',
   defaultWindowHint: 'Wann spielt das Team normalerweise? Steht im Aufruf und füllt die Einspringer-Suche vor. Der Wochentag bleibt offen.',
   openEnd: 'offenes Ende',
@@ -93,7 +96,7 @@ const COPY = {
 
 interface TeamForm {
   name: string
-  coach: string
+  coachId: string
   useWindow: boolean
   day: Weekday
   from: string
@@ -102,7 +105,7 @@ interface TeamForm {
 
 const DEFAULT_TEAM_FORM: TeamForm = {
   name: '',
-  coach: '',
+  coachId: '',
   useWindow: false,
   day: 'mon',
   from: '1140',
@@ -113,10 +116,6 @@ function statusLabel(value: string): string {
   return STATUS_OPTIONS.find(o => o.value === value)?.label ?? value
 }
 
-function optionalValue(value: string): string | undefined {
-  const trimmed = value.trim()
-  return trimmed || undefined
-}
 
 function teamWindow(form: TeamForm): ScrimWindow | null {
   if (!form.useWindow) return null
@@ -175,13 +174,22 @@ export default function ScrimPoolPage() {
   const [teamForm, setTeamForm] = useState<TeamForm>(DEFAULT_TEAM_FORM)
 
   const teamsQuery = useQuery({ queryKey: ['scrim-teams'], queryFn: () => scrims.teams(), enabled: isCoach })
+  const coachesQuery = useQuery({ queryKey: ['scrim-coaches'], queryFn: () => scrims.coaches(), enabled: isCoach })
   const poolQuery = useQuery({
     queryKey: ['scrim-pool'],
     queryFn: () => scrims.pool(),
     enabled: isCoach,
   })
   const createTeamMutation = useMutation({
-    mutationFn: () => scrims.createTeam({ name: teamForm.name, coach: optionalValue(teamForm.coach) ?? null }),
+    // Das Zeitfenster ist zugleich die Stammzeit des Teams — der Tag daraus fuellt nur den
+    // ersten Roster-Vorschlag vor, die Uhrzeit bleibt dauerhaft am Team haengen.
+    mutationFn: () =>
+      scrims.createTeam({
+        name: teamForm.name,
+        coach_discord_id: teamForm.coachId || null,
+        default_from: teamForm.useWindow ? Number(teamForm.from) : null,
+        default_to: teamForm.useWindow ? Number(teamForm.to) : null,
+      }),
     onSuccess: team => {
       qc.invalidateQueries({ queryKey: ['scrim-teams'] })
       setShowCreate(false)
@@ -303,6 +311,7 @@ export default function ScrimPoolPage() {
           form={teamForm}
           setForm={setTeamForm}
           mutation={createTeamMutation}
+          coaches={coachesQuery.data ?? []}
           onClose={() => setShowCreate(false)}
         />
       )}
@@ -438,16 +447,18 @@ function AnnounceModal({ team, onClose }: { team: ScrimTeam; onClose: () => void
 function EditTeamModal({ team, onClose }: { team: ScrimTeam; onClose: () => void }) {
   const qc = useQueryClient()
   const [name, setName] = useState(team.name)
-  const [coach, setCoach] = useState(team.coach ?? '')
+  const [coachId, setCoachId] = useState(team.coach_discord_id ?? '')
   const [useWindow, setUseWindow] = useState(team.default_from != null)
   const [from, setFrom] = useState(String(team.default_from ?? 1200))
   const [to, setTo] = useState(String(team.default_to ?? 1320))
+
+  const coachesQuery = useQuery({ queryKey: ['scrim-coaches'], queryFn: () => scrims.coaches() })
 
   const save = useMutation({
     mutationFn: () =>
       scrims.patchTeam(team.id, {
         name: name.trim(),
-        coach: coach.trim() || null,
+        coach_discord_id: coachId || null,
         default_from: useWindow ? Number(from) : null,
         default_to: useWindow ? Number(to) : null,
       }),
@@ -476,7 +487,13 @@ function EditTeamModal({ team, onClose }: { team: ScrimTeam; onClose: () => void
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="stat-label">{COPY.coach}</span>
-          <input className="input-field" value={coach} onChange={e => setCoach(e.target.value)} />
+          <select className="input-field" value={coachId} onChange={e => setCoachId(e.target.value)}>
+            <option value="">{COPY.noCoach}</option>
+            {(coachesQuery.data ?? []).map(c => (
+              <option key={c.discord_user_id} value={c.discord_user_id}>{c.display_name}</option>
+            ))}
+          </select>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{COPY.coachHint}</span>
         </label>
 
         <div className="space-y-2">
@@ -661,11 +678,13 @@ function CreateTeamModal({
   form,
   setForm,
   mutation,
+  coaches,
   onClose,
 }: {
   form: TeamForm
   setForm: React.Dispatch<React.SetStateAction<TeamForm>>
   mutation: UseMutationResult<ScrimTeam, Error, void, unknown>
+  coaches: ScrimCoach[]
   onClose: () => void
 }) {
   const window = teamWindow(form)
@@ -702,7 +721,13 @@ function CreateTeamModal({
 
         <label className="flex flex-col gap-1.5">
           <span className="stat-label">{COPY.coach}</span>
-          <input className="input-field" value={form.coach} onChange={e => update({ coach: e.target.value })} />
+          <select className="input-field" value={form.coachId} onChange={e => update({ coachId: e.target.value })}>
+            <option value="">{COPY.noCoach}</option>
+            {coaches.map(c => (
+              <option key={c.discord_user_id} value={c.discord_user_id}>{c.display_name}</option>
+            ))}
+          </select>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{COPY.coachHint}</span>
         </label>
 
         <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-primary)' }}>

@@ -187,6 +187,15 @@ export interface ScrimTeam {
   /** Uebliche Spielzeit in Minuten seit Mitternacht; null = keine hinterlegt. Kein Wochentag — der wird pro Woche ausgehandelt. */
   default_from: number | null
   default_to: number | null
+  /** Snowflake als String — eine rohe Zahl sprengt JS-Zahlen. */
+  coach_discord_id: string | null
+}
+
+/** Auswaehlbarer Coach fuers Team-Dropdown (aktive Coaches mit Discord-Konto). */
+export interface ScrimCoach {
+  discord_user_id: string
+  display_name: string
+  avatar_url: string | null
 }
 
 export interface ScrimTeamMember {
@@ -222,14 +231,16 @@ export interface ScrimSignupRequest {
 export interface ScrimCreateTeamRequest {
   name: string
   coach?: string | null
+  coach_discord_id?: string | null
   default_from?: number | null
   default_to?: number | null
 }
 
-/** Weggelassen = unveraendert, null = Stammzeit loeschen, Zahl = setzen. */
+/** Weggelassen = unveraendert, null = loeschen, Wert = setzen. */
 export interface ScrimPatchTeamRequest {
   name?: string
   coach?: string | null
+  coach_discord_id?: string | null
   default_from?: number | null
   default_to?: number | null
 }
@@ -346,6 +357,7 @@ export const scrims = {
   setAvailability: (data: WeeklyAvailability) =>
     request<ScrimParticipant>('/scrim/me/availability', { method: 'PUT', body: JSON.stringify(data) }),
   teams: () => request<ScrimTeam[]>('/scrim/teams'),
+  coaches: () => request<ScrimCoach[]>('/scrim/coaches'),
   createTeam: (data: ScrimCreateTeamRequest) =>
     request<ScrimTeam>('/scrim/teams', { method: 'POST', body: JSON.stringify(data) }),
   patchTeam: (id: number, data: ScrimPatchTeamRequest) =>
