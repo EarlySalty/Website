@@ -7,47 +7,6 @@ permissions:
   contents: read
 
 jobs:
-  python-quality:
-    name: "⚡ Python Lint & Type Check"
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: "3.13"
-
-      - name: Install tools
-        run: pip install ruff mypy
-
-      - name: Run Ruff
-        run: |
-          ruff check builds/backend/ dl-landing/mcp-server/ --output-format=github
-          ruff format builds/backend/ dl-landing/mcp-server/ --check
-
-      - name: Run Ruff SARIF
-        if: always()
-        run: |
-          ruff check builds/backend/ dl-landing/mcp-server/ --output-format=sarif -o ruff.sarif || true
-
-      - name: Upload Ruff SARIF
-        if: always() && hashFiles('ruff.sarif') != ''
-        uses: github/codeql-action/upload-sarif@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4
-        with:
-          sarif_file: ruff.sarif
-          category: ruff
-
-      - name: Run mypy
-        run: |
-          mypy builds/backend/ dl-landing/mcp-server/ \
-            --ignore-missing-imports \
-            --no-error-summary \
-            --show-column-numbers
-
   frontend-react:
     name: "🧪 Frontend React CI"
     runs-on: ubuntu-latest

@@ -1,0 +1,6 @@
+name: "Website CodeQL configuration"
+
+paths-ignore:
+  - builds/frontend/dist-*/**
+  - "**/dist/**"
+  - dl-landing/assets/**

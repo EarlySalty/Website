@@ -1,64 +1,103 @@
 # Deployment
 
-Das Website-Repo besteht aus mehreren getrennt buildbaren Frontends plus einer separaten `builds`-Backend-/Frontend-Kombination. Deployment ist deshalb kein einzelner "npm run build"-Schritt für alles, sondern ein Bündel aus statischen Vite-Builds und einer optionalen FastAPI-Anwendung.
+## Laufzeitaufteilung
 
-## Subprojekte und Zielpfade
+Das Repository enthält mehrere statische Frontends und ein gemeinsames
+Rust-Backend. Der produktive Checkout ist
+`/home/naniadm/Documents/Website`; Caddy und systemd lesen ausschließlich aus
+diesem Pfad. Ein Merge in einem anderen Worktree aktualisiert die laufende
+Website daher noch nicht.
 
-Aus dem Code lassen sich aktuell diese Basispfade ableiten:
+| Öffentlicher Pfad | Live-Ziel |
+|---|---|
+| `/` | `dl-landing/dist` |
+| `/patch/` | `dl-patch/dist` |
+| `/aktivitaet/` | `dl-activity/dist` |
+| `/coaching/` | `dl-coaching/dist` |
+| `/builds/` | `dl-tierlist/dist` |
+| `/brand/` | direkt aus `dl-brand` |
 
-- Landing: `/`
-- Activity: `/aktivitaet/`
-- Patch-Portal: `/patch/`
-- Tierlist-/Builds-Portal: `/builds/`
+Das Rust-Backend unter `builds/backend-rust` läuft auf `127.0.0.1:8772` und
+bedient unter anderem `/coaching/api/*`, die Video-API und die öffentlichen
+Patch-Endpunkte. `/builds/api/*` und `/aktivitaet/api/*` gehören dagegen zum
+separaten Dienst auf Port `8771`.
 
-Die Landing ist ein Multi-Page-Build mit mehreren HTML-Einstiegen, darunter Start, Mitspieler, Coaching, Streamer, Helden und Guide-Seiten. `dl-activity`, `dl-patch` und `dl-tierlist` werden jeweils als eigene Vite-Anwendungen gebaut.
+## Backend prüfen
 
-## Landing-Deployment
+```bash
+cd /home/naniadm/Documents/Website/builds/backend-rust
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo build --release
+```
 
-Für `dl-landing` gibt es ein konkretes Deploy-Skript für IIS. Der Ablauf ist:
+DB-Tests laufen ausschließlich gegen die zentrale Wegwerf-Testdatenbank. Für
+die Scrim-Tests muss dieselbe DSN zusätzlich als `DATABASE_URL_TEST` gesetzt
+werden:
 
-1. optional Build ausführen
-2. sicherstellen, dass das Zielverzeichnis existiert
-3. kompletten `dist`-Inhalt spiegeln
-4. bestehende `robots.txt` und `sitemap.xml` aus dem Build mitnehmen
+```bash
+cd /home/naniadm/Documents/Deadlock-Bots/rust
+./scripts/central_test_db.sh bash -lc \
+  'unset SQLX_OFFLINE; export DATABASE_URL_TEST="$CENTRAL_TEST_DSN" DATABASE_URL="$CENTRAL_TEST_DSN"; cargo test --manifest-path /home/naniadm/Documents/Website/builds/backend-rust/Cargo.toml --all-features'
+```
 
-Das Skript ist klar auf statisches Hosting ausgelegt. Aus `setup.md` geht zusätzlich hervor, dass die Umgebung auf Windows/IIS mit URL-Rewrite, HTTPS und statischem Dateihosting ausgelegt ist.
+Wenn das Backend neue zentrale DB-Spalten voraussetzt, müssen die zugehörigen
+Migrationen zuerst versioniert, der zentrale Migrator neu gebaut und die
+Migrationen vor dem Website-Neustart angewendet werden.
 
-## Vite-Builds
+## Backend deployen
 
-Alle vier Frontends bauen in `dist`, aber mit unterschiedlichen Basen:
+```bash
+cd /home/naniadm/Documents/Website/builds/backend-rust
+cargo build --release
+old_pid="$(systemctl --user show deadlock-website-backend.service -p MainPID --value)"
+systemctl --user restart deadlock-website-backend.service
+new_pid="$(systemctl --user show deadlock-website-backend.service -p MainPID --value)"
+test "$old_pid" != "$new_pid"
+readlink "/proc/$new_pid/exe"
+readlink "/proc/$new_pid/cwd"
+curl -fsS http://127.0.0.1:8772/api/health
+```
 
-- `dl-landing`: `base: '/'`
-- `dl-activity`: `base: '/aktivitaet/'`
-- `dl-patch`: `base: '/patch/'`
-- `dl-tierlist`: `base: '/builds/'`
+Das neue Binary muss unter
+`/home/naniadm/Documents/Website/builds/backend-rust/target/release/` liegen und
+darf bei `/proc/<PID>/exe` nicht als `(deleted)` erscheinen. Anschließend sind
+der öffentliche Healthcheck und das Journal auf Startfehler zu prüfen:
 
-Wichtig für Deployments: Wer ein Portal unter einem anderen Prefix ausliefert, muss die jeweilige Vite-Base anpassen. Besonders `dl-tierlist` und `dl-patch` sind hart an ihre Routing-Basis gekoppelt.
+```bash
+curl -fsS https://deutsche-deadlock-community.de/coaching/api/health
+journalctl --user -u deadlock-website-backend.service --since "2 minutes ago" --no-pager
+```
 
-## Builds-App
+Der Service startet über `scripts/run_builds_backend.sh`; nur dieser Wrapper
+lädt die Laufzeit-Secrets aus Infisical. Das Backend wird nicht direkt aus der
+Shell gestartet.
 
-Unter `Website/builds/` existiert zusätzlich eine FastAPI-App mit React-Frontend. Das ist kein rein statisches Portal:
+## Frontends deployen
 
-- Backend initialisiert beim Start die Datenbank
-- Frontend spricht Router für Auth, Heroes, Builds, Items, Tierlists, Patchnotes, History, Admin und Coaching an
-- Healthcheck liegt auf `/api/health`
+Nach Backend und Healthcheck werden die betroffenen Vite-Anwendungen gebaut:
 
-Das bedeutet operativ: Für die `builds`-App reicht statisches Ausrollen allein nicht, wenn ihre API-Funktionen aktiv genutzt werden sollen. Dann müssen Frontend und Backend gemeinsam verfügbar sein.
+```bash
+for project in dl-landing dl-patch dl-activity dl-coaching dl-tierlist; do
+  (cd "/home/naniadm/Documents/Website/$project" && npm run build)
+done
+```
 
-## SEO-nahe Deploy-Schritte
+Caddy liefert die jeweiligen `dist`-Verzeichnisse direkt aus; Merge und Push
+allein aktualisieren diese Artefakte nicht. `dl-brand` und
+`deco-elevator-new` werden ohne Build direkt ausgeliefert. Ein Caddy-Reload ist
+nur bei einer Konfigurationsänderung nötig.
 
-Vor einem produktiven Deploy sollte die Sitemap neu gebaut werden. Die vorhandenen SEO-Skripte gehen davon aus, dass `sitemap.xml` und die IndexNow-Key-Datei aus dem Build ausgeliefert werden. Deshalb ist der korrekte Zeitpunkt:
+Die Video-Anwendung ist ein Sonderfall: Caddy liest
+`builds/frontend/dist-ddl`. Änderungen daran müssen deshalb gezielt gegen
+dieses Live-Ziel gebaut und separat geprüft werden; das normale
+`builds/frontend`-Build ist nicht das `/builds/`-Portal.
 
-1. Sitemap bauen
-2. Frontend builden
-3. Artefakte deployen
-4. danach SEO-Submit ausführen
+## Abschlussprüfung
 
-## Praktische Empfehlungen
-
-- Portale getrennt deploybar halten; ein Fehler im Patch-Portal darf die Landing nicht blockieren.
-- Basispfade nie "nebenbei" ändern, ohne Redirects und API-URLs gegenzuprüfen.
-- Für das `builds`-Backend klare Prozesssteuerung und Healthchecks verwenden; es verhält sich anders als die statischen Seiten.
-- Public-Folder-Artefakte wie `robots.txt`, `sitemap.xml` und Verifikationsdateien als festen Teil des Deployments behandeln.
-
-Kurz: Das Repo deployt sich am stabilsten als Sammlung kleiner Websites plus optionaler API-App. Die operative Falle ist nicht der Build selbst, sondern inkonsistente Prefixe oder ein statisch ausgeliefertes Frontend ohne die dazugehörige API.
+- neuer Backend-PID und aktuelles, nicht gelöschtes Binary
+- lokaler und öffentlicher Healthcheck erfolgreich
+- Journal ohne neue `error`, `panic` oder `fatal`-Einträge
+- geänderte Frontend-Routen liefern HTTP 200 und aktuelle Assets
+- keine Migration oder ignoriertes `dist`-Artefakt bleibt nur in einem anderen
+  Worktree liegen

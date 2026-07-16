@@ -1,5 +1,6 @@
 import '@shared/site.css'
 import './patch.css'
+import { sourceFromUrl } from './source-from-url.mjs'
 
 const TIMELINE_API_URL = '/api/public/patch-timeline'
 const PATCH_NOTES_API_URL = '/api/public/patch-notes'
@@ -780,13 +781,6 @@ function resolveEntityImage(entity) {
 function setStatus(text) {
   const status = document.getElementById('data-status')
   if (status) status.textContent = text
-}
-
-function sourceFromUrl(url) {
-  const value = String(url ?? '').toLowerCase()
-  if (value.includes('store.steampowered.com')) return 'steam'
-  if (value.includes('forums.playdeadlock.com')) return 'forum'
-  return 'other'
 }
 
 function estimateChangeLines(content) {

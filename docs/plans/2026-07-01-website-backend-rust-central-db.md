@@ -6,11 +6,11 @@ Datum: 2026-07-01
 
 Ziel ist die Korrektur des vorherigen Fehlplans: Der live gestartete Dienst
 `deadlock-website-backend.service` nutzt standardmaessig das Rust-Binary
-`builds/backend-rust/target/release/ddc-website-backend`. Der Python-Code unter
-`builds/backend` bleibt nur Fallback und ist nicht Ziel dieser Umsetzung.
+`builds/backend-rust/target/release/ddc-website-backend`. Das fruehere
+Python-Fallback-Backend ist inzwischen entfernt.
 
 Dieser Plan beschreibt die spaetere Umstellung von `builds/backend-rust` von
-lokaler SQLite-Datei `builds/backend/deadlock.db` auf die zentrale
+lokaler Legacy-SQLite-Datei `deadlock.db` auf die zentrale
 TimescaleDB/Postgres-Instanz aus `central-postgres-sp1`.
 
 Nicht Teil dieses Planungsschritts:
@@ -39,8 +39,8 @@ Gelesene Quellen fuer diesen Plan:
 
 ## Ausgangslage
 
-- `scripts/run_builds_backend.sh` startet bei `WEBSITE_BACKEND_IMPL` Default
-  `rust` das Binary `builds/backend-rust/target/release/ddc-website-backend`.
+- `scripts/run_builds_backend.sh` startet das Binary
+  `builds/backend-rust/target/release/ddc-website-backend`.
 - `builds/backend-rust/Cargo.toml` nutzt `sqlx` aktuell nur mit Feature
   `sqlite`.
 - `src/app.rs` haelt `sqlx::SqlitePool` im `AppState`.
@@ -496,8 +496,7 @@ Aufgaben:
 - Wrapper pruefen: Infisical exportiert `DEADLOCK_CENTRAL_DSN`, aber der Wert
   wird nie ausgegeben.
 - Optionaler Readiness-Smoke: nur Counts/Booleans loggen, keine DSN.
-- Rollback-Doku: `WEBSITE_BACKEND_IMPL=python` bleibt Fallback, aber Python ist
-  nicht Ziel der Central-Rust-Umsetzung.
+- Rollback-Doku: Der fruehere Python-Fallback ist inzwischen entfernt.
 - Cutover-Befehl erst nach Review:
   `systemctl --user restart deadlock-website-backend.service`.
 
@@ -508,9 +507,10 @@ Akzeptanz:
 
 Status (2026-07-02): erledigt. `builds/backend-rust/README.md` beschreibt
 Central-Postgres als Rust-Runtime, `DEADLOCK_CENTRAL_DSN` als Pflicht-Env,
-`WEBSITE_BACKEND_IMPL=python` nur als Rollback-Fallback und den Cutover-Restart
+den damaligen Python-Rollback-Fallback und den Cutover-Restart
 `systemctl --user restart deadlock-website-backend.service` ausdruecklich erst
-nach Review. `scripts/run_builds_backend.sh` bricht im Rust-Pfad bei fehlender
+nach Review. Der Python-Rollback-Fallback ist inzwischen entfernt.
+`scripts/run_builds_backend.sh` bricht im Rust-Pfad bei fehlender
 DSN nach Infisical-Export ab und loggt nur `central DB DSN present: true`, nie
 den Secret-Wert.
 
@@ -524,7 +524,7 @@ Aufgaben:
 - Read-only Central-Checks vor Live-Freigabe:
   - erwartete Schemas/Tabellen vorhanden,
   - Website-Tabellen haben erwartete Row-Counts oder bewusst dokumentierte Diffs,
-  - keine neuen Writes in `builds/backend/deadlock.db` seit letztem Snapshot,
+  - keine neuen Writes in die lokale Legacy-SQLite-Datei seit letztem Snapshot,
   - `coaching.requests` enthaelt keine offensichtlichen Duplikate zwischen
     `request_uid`, `website_request_id`, `bot_request_id`.
 - Erst nach Review und Freigabe: Build deployen und User-Service neu starten.
