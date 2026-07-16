@@ -162,6 +162,14 @@ impl Config {
             .filter(|v| *v > 0)
             .unwrap_or(600)
     }
+
+    pub fn scrim_announce_channel_id(&self) -> u64 {
+        env::var("SCRIM_ANNOUNCE_CHANNEL_ID")
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(1_520_842_755_037_855_975)
+    }
 }
 
 pub fn first_env(names: &[&str]) -> Option<String> {

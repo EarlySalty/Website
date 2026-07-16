@@ -393,6 +393,11 @@ pub fn router(state: AppState) -> Router {
             "/api/scrim/teams",
             get(routes::scrim::teams).post(routes::scrim::create_team),
         )
+        .route("/api/scrim/teams/{id}", patch(routes::scrim::patch_team))
+        .route(
+            "/api/scrim/teams/{id}/announce",
+            post(routes::scrim::announce_team),
+        )
         .route(
             "/api/scrim/teams/{id}/board",
             get(routes::scrim::team_board),
