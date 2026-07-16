@@ -22,6 +22,8 @@ pub trait DiscordRoleBroker: Send + Sync {
         &'a self,
         request: DiscordCreateRoleBrokerRequest,
     ) -> DiscordRoleBrokerFuture<'a, u64>;
+
+    fn send_dm<'a>(&'a self, request: DiscordDmBrokerRequest) -> DiscordRoleBrokerFuture<'a>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,6 +64,12 @@ pub struct DiscordCreateRoleBrokerRequest {
     pub mentionable: bool,
     pub reason: Option<String>,
     pub idempotency_key: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DiscordDmBrokerRequest {
+    pub user_id: u64,
+    pub content: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -161,6 +169,33 @@ impl DiscordRoleBroker for ReqwestDiscordRoleBroker {
                 .ok_or(DiscordRoleBrokerError::InvalidResponse)
         })
     }
+
+    fn send_dm<'a>(&'a self, request: DiscordDmBrokerRequest) -> DiscordRoleBrokerFuture<'a> {
+        Box::pin(async move {
+            let Some(token) = self.token.as_deref() else {
+                return Err(DiscordRoleBrokerError::Unconfigured);
+            };
+            let request = build_discord_dm_request(&self.client, &self.base, token, &request)
+                .map_err(|_| DiscordRoleBrokerError::Transport)?;
+            let response = self
+                .client
+                .execute(request)
+                .await
+                .map_err(|_| DiscordRoleBrokerError::Transport)?;
+            if response.status() != StatusCode::OK {
+                return Err(DiscordRoleBrokerError::HttpStatus);
+            }
+            let response = response
+                .json::<DiscordRoleBrokerResponse>()
+                .await
+                .map_err(|_| DiscordRoleBrokerError::InvalidResponse)?;
+            if response.ok {
+                Ok(())
+            } else {
+                Err(DiscordRoleBrokerError::Rejected)
+            }
+        })
+    }
 }
 
 pub fn build_discord_role_request(
@@ -211,6 +246,23 @@ pub fn build_discord_create_role_request(
         request = request.header("X-Idempotency-Key", idempotency_key);
     }
     request.json(&body).build()
+}
+
+pub fn build_discord_dm_request(
+    client: &Client,
+    base: &str,
+    token: &str,
+    payload: &DiscordDmBrokerRequest,
+) -> Result<reqwest::Request, reqwest::Error> {
+    let url = format!(
+        "{}/internal/master/v1/discord/send-dm",
+        base.trim_end_matches('/')
+    );
+    client
+        .post(url)
+        .header("X-Internal-Token", token)
+        .json(payload)
+        .build()
 }
 
 #[derive(Deserialize)]
@@ -326,5 +378,41 @@ mod tests {
         assert_eq!(body["mentionable"], true);
         assert_eq!(body["reason"], "Scrim-Reserve");
         assert!(body.get("idempotency_key").is_none());
+    }
+
+    #[test]
+    fn discord_dm_request_sets_header_and_json_body() {
+        let client = Client::new();
+        let request = build_discord_dm_request(
+            &client,
+            "http://127.0.0.1:8770/",
+            "unit-token",
+            &DiscordDmBrokerRequest {
+                user_id: 456,
+                content: "Willkommen!".to_string(),
+            },
+        )
+        .expect("request builds");
+
+        assert_eq!(request.method(), Method::POST);
+        assert_eq!(
+            request.url().as_str(),
+            "http://127.0.0.1:8770/internal/master/v1/discord/send-dm"
+        );
+        assert_eq!(
+            request
+                .headers()
+                .get("X-Internal-Token")
+                .and_then(|value| value.to_str().ok()),
+            Some("unit-token")
+        );
+
+        let body = request
+            .body()
+            .and_then(|body| body.as_bytes())
+            .expect("json body");
+        let body: Value = serde_json::from_slice(body).expect("json body parses");
+        assert_eq!(body["user_id"], 456);
+        assert_eq!(body["content"], "Willkommen!");
     }
 }
