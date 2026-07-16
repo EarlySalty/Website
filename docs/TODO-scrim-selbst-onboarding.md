@@ -49,14 +49,15 @@ Danach nach `main` mergen (Test-Gate + Merge-Kritiker beachten).
 `backfill_pending=TRUE`, also passiert nichts — vor dem Restart trotzdem kurz prüfen:
 `SELECT id, backfill_pending FROM bot.reaction_role_mappings;`
 
-## 2. Website: den Haken automatisch setzen (hängt an #1)
+## 2. Website: den Haken automatisch setzen — erledigt
 
-`announce_team` in `builds/backend-rust/src/routes/scrim.rs` postet den Aufruf und gibt zurück:
-> „Der Aufruf steht im Scrim-Kanal. Setz bitte einmal selbst den Haken darunter …"
+`DiscordRoleBroker` unterstützt den neuen `add-reaction`-Endpunkt. Nach einem erfolgreichen
+`send_rich_message` setzt `announce_team` automatisch ✅ auf die zurückgegebene Nachricht. Der
+Erfolgstext fordert nicht mehr zum Handklick auf. Schlägt nur die Reaktion fehl, bleibt der bereits
+gepostete Aufruf erfolgreich und die Antwort nennt den manuellen Haken als Fallback.
 
-Sobald #1 live ist: `discord_broker.rs` um `add_reaction` erweitern (Muster: `send_rich_message`),
-nach erfolgreichem Post die ✅-Reaktion setzen, und **den Text oben anpassen** — sonst schickt die
-Meldung Leo weiterhin zum Handklick, obwohl es der Bot erledigt hat.
+Auf Website-Seite ist nichts mehr offen. Wirksam wird der Ablauf, sobald der Broker aus Abschnitt 1
+live ist.
 
 ## 3. Stammzeiten eintragen (Leo, 2 Minuten, kein Code)
 

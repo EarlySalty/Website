@@ -31,6 +31,11 @@ pub trait DiscordRoleBroker: Send + Sync {
         &'a self,
         request: DiscordRichMessageBrokerRequest,
     ) -> DiscordRoleBrokerFuture<'a, String>;
+
+    fn add_reaction<'a>(
+        &'a self,
+        request: DiscordAddReactionBrokerRequest,
+    ) -> DiscordRoleBrokerFuture<'a>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,6 +90,13 @@ pub struct DiscordRichMessageBrokerRequest {
     pub content: Option<String>,
     pub embed: Value,
     pub allowed_role_ids: Vec<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DiscordAddReactionBrokerRequest {
+    pub channel_id: u64,
+    pub message_id: String,
+    pub emoji: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -245,6 +257,37 @@ impl DiscordRoleBroker for ReqwestDiscordRoleBroker {
                 .ok_or(DiscordRoleBrokerError::InvalidResponse)
         })
     }
+
+    fn add_reaction<'a>(
+        &'a self,
+        request: DiscordAddReactionBrokerRequest,
+    ) -> DiscordRoleBrokerFuture<'a> {
+        Box::pin(async move {
+            let Some(token) = self.token.as_deref() else {
+                return Err(DiscordRoleBrokerError::Unconfigured);
+            };
+            let request =
+                build_discord_add_reaction_request(&self.client, &self.base, token, &request)
+                    .map_err(|_| DiscordRoleBrokerError::Transport)?;
+            let response = self
+                .client
+                .execute(request)
+                .await
+                .map_err(|_| DiscordRoleBrokerError::Transport)?;
+            if response.status() != StatusCode::OK {
+                return Err(DiscordRoleBrokerError::HttpStatus);
+            }
+            let response = response
+                .json::<DiscordRoleBrokerResponse>()
+                .await
+                .map_err(|_| DiscordRoleBrokerError::InvalidResponse)?;
+            if response.ok {
+                Ok(())
+            } else {
+                Err(DiscordRoleBrokerError::Rejected)
+            }
+        })
+    }
 }
 
 pub fn build_discord_role_request(
@@ -331,6 +374,27 @@ pub fn build_discord_rich_message_request(
         .header(
             "X-Idempotency-Key",
             discord_idempotency_key("rich-message", payload),
+        )
+        .json(payload)
+        .build()
+}
+
+pub fn build_discord_add_reaction_request(
+    client: &Client,
+    base: &str,
+    token: &str,
+    payload: &DiscordAddReactionBrokerRequest,
+) -> Result<reqwest::Request, reqwest::Error> {
+    let url = format!(
+        "{}/internal/master/v1/discord/add-reaction",
+        base.trim_end_matches('/')
+    );
+    client
+        .post(url)
+        .header("X-Internal-Token", token)
+        .header(
+            "X-Idempotency-Key",
+            discord_idempotency_key("add-reaction", payload),
         )
         .json(payload)
         .build()
@@ -613,5 +677,83 @@ mod tests {
         assert_eq!(body["content"], "<@&456>");
         assert_eq!(body["embed"]["title"], "Aufruf");
         assert_eq!(body["allowed_role_ids"], serde_json::json!([456]));
+    }
+
+    #[test]
+    fn discord_add_reaction_request_sets_header_and_json_body() {
+        let client = Client::new();
+        let payload = DiscordAddReactionBrokerRequest {
+            channel_id: 123,
+            message_id: "456".to_string(),
+            emoji: "✅".to_string(),
+        };
+        let request = build_discord_add_reaction_request(
+            &client,
+            "http://127.0.0.1:8770/",
+            "unit-token",
+            &payload,
+        )
+        .expect("request builds");
+        let repeated_request = build_discord_add_reaction_request(
+            &client,
+            "http://127.0.0.1:8770/",
+            "unit-token",
+            &payload,
+        )
+        .expect("repeated request builds");
+        let different_request = build_discord_add_reaction_request(
+            &client,
+            "http://127.0.0.1:8770/",
+            "unit-token",
+            &DiscordAddReactionBrokerRequest {
+                channel_id: 123,
+                message_id: "789".to_string(),
+                emoji: "✅".to_string(),
+            },
+        )
+        .expect("different request builds");
+
+        assert_eq!(request.method(), Method::POST);
+        assert_eq!(
+            request.url().as_str(),
+            "http://127.0.0.1:8770/internal/master/v1/discord/add-reaction"
+        );
+        assert_eq!(
+            request
+                .headers()
+                .get("X-Internal-Token")
+                .and_then(|value| value.to_str().ok()),
+            Some("unit-token")
+        );
+        let idempotency_key = request
+            .headers()
+            .get("X-Idempotency-Key")
+            .and_then(|value| value.to_str().ok())
+            .expect("idempotency header");
+        assert!(idempotency_key.starts_with("website-discord-add-reaction-"));
+        assert!(idempotency_key.len() <= 128);
+        assert_eq!(
+            repeated_request
+                .headers()
+                .get("X-Idempotency-Key")
+                .and_then(|value| value.to_str().ok()),
+            Some(idempotency_key)
+        );
+        assert_ne!(
+            different_request
+                .headers()
+                .get("X-Idempotency-Key")
+                .and_then(|value| value.to_str().ok()),
+            Some(idempotency_key)
+        );
+
+        let body = request
+            .body()
+            .and_then(|body| body.as_bytes())
+            .expect("json body");
+        let body: Value = serde_json::from_slice(body).expect("json body parses");
+        assert_eq!(body["channel_id"], 123);
+        assert_eq!(body["message_id"], "456");
+        assert_eq!(body["emoji"], "✅");
     }
 }

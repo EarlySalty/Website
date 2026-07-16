@@ -14,8 +14,9 @@ use crate::{
     app::AppState,
     auth::{self, User},
     discord_broker::{
-        DiscordCreateRoleBrokerRequest, DiscordDmBrokerRequest, DiscordRichMessageBrokerRequest,
-        DiscordRoleBroker, DiscordRoleBrokerRequest, DiscordRoleOperation,
+        DiscordAddReactionBrokerRequest, DiscordCreateRoleBrokerRequest, DiscordDmBrokerRequest,
+        DiscordRichMessageBrokerRequest, DiscordRoleBroker, DiscordRoleBrokerRequest,
+        DiscordRoleOperation,
     },
     error::{AppError, AppResult},
 };
@@ -949,18 +950,34 @@ pub async fn announce_team(
         return Err(AppError::not_found("Team nicht gefunden."));
     };
     let team = team_from_row(&row);
-    let request = build_team_announcement(&team, body.note, state.cfg.scrim_announce_channel_id());
+    let channel_id = state.cfg.scrim_announce_channel_id();
+    let request = build_team_announcement(&team, body.note, channel_id);
 
     let response = match state.discord_role_broker.send_rich_message(request).await {
-        Ok(message_id) => ScrimAnnounceResponse {
-            message_id: Some(message_id),
-            ok: true,
-            // Der Bot kann selbst keinen Haken setzen (Broker hat keinen Reaktions-Endpunkt),
-            // ohne den ersten Haken muss aber jeder das Emoji suchen. Also ehrlich ansagen.
-            detail: "Der Aufruf steht im Scrim-Kanal. Setz bitte einmal selbst den Haken \
-                     darunter — dann können die Leute direkt draufklicken."
-                .to_string(),
-        },
+        Ok(message_id) => {
+            let reaction = DiscordAddReactionBrokerRequest {
+                channel_id,
+                message_id: message_id.clone(),
+                emoji: "✅".to_string(),
+            };
+            let detail = match state.discord_role_broker.add_reaction(reaction).await {
+                Ok(()) => "Der Aufruf steht im Scrim-Kanal. Der ✅-Haken ist gesetzt — die Leute können direkt draufklicken.".to_string(),
+                Err(err) => {
+                    tracing::warn!(
+                        ?err,
+                        team_id,
+                        message_id,
+                        "Scrim-Aufruf steht, aber der Reaktions-Haken konnte nicht gesetzt werden"
+                    );
+                    "Der Aufruf steht im Scrim-Kanal, aber der ✅-Haken konnte nicht gesetzt werden. Setz ihn bitte einmal selbst darunter.".to_string()
+                }
+            };
+            ScrimAnnounceResponse {
+                message_id: Some(message_id),
+                ok: true,
+                detail,
+            }
+        }
         Err(err) => {
             tracing::warn!(?err, team_id, "Scrim-Aufruf konnte nicht gepostet werden");
             ScrimAnnounceResponse {
@@ -4331,6 +4348,84 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    async fn scrim_announce_sets_check_reaction_automatically() {
+        let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
+        let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
+        let Some(state) = test_state_with_broker(broker_for_state).await else {
+            return;
+        };
+        let expected_channel_id = state.cfg.scrim_announce_channel_id();
+        let app = router(state.clone());
+        let coach_token = state
+            .auth
+            .create_session_jwt("9000", "coach_user", "user", Some("Coach User"), None)
+            .expect("coach token");
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams/1/announce",
+                &coach_token,
+                Some(json!({ "note": null })),
+            ))
+            .await
+            .expect("announce response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["ok"], true);
+        assert_eq!(body["message_id"], "1521000000000000000");
+        assert_eq!(
+            body["detail"],
+            "Der Aufruf steht im Scrim-Kanal. Der ✅-Haken ist gesetzt — die Leute können direkt draufklicken."
+        );
+        assert!(!body["detail"]
+            .as_str()
+            .is_some_and(|detail| detail.contains("selbst")));
+        let reaction_calls = broker.reaction_calls();
+        assert_eq!(reaction_calls.len(), 1);
+        assert_eq!(reaction_calls[0].channel_id, expected_channel_id);
+        assert_eq!(reaction_calls[0].message_id, "1521000000000000000");
+        assert_eq!(reaction_calls[0].emoji, "✅");
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn scrim_announce_is_fail_open_when_check_reaction_fails() {
+        let broker = Arc::new(FakeDiscordRoleBroker::configured(false).with_reaction_failure());
+        let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
+        let Some(state) = test_state_with_broker(broker_for_state).await else {
+            return;
+        };
+        let app = router(state.clone());
+        let coach_token = state
+            .auth
+            .create_session_jwt("9000", "coach_user", "user", Some("Coach User"), None)
+            .expect("coach token");
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams/1/announce",
+                &coach_token,
+                Some(json!({ "note": null })),
+            ))
+            .await
+            .expect("announce response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["ok"], true);
+        assert_eq!(body["message_id"], "1521000000000000000");
+        assert_eq!(
+            body["detail"],
+            "Der Aufruf steht im Scrim-Kanal, aber der ✅-Haken konnte nicht gesetzt werden. Setz ihn bitte einmal selbst darunter."
+        );
+        assert_eq!(broker.reaction_calls().len(), 1);
+    }
+
+    #[tokio::test]
+    #[serial]
     async fn scrim_announce_returns_http_200_with_detail_on_broker_failure() {
         let broker = Arc::new(FakeDiscordRoleBroker::configured(true));
         let broker_for_state: Arc<dyn DiscordRoleBroker> = broker;
@@ -5167,10 +5262,12 @@ mod tests {
         configured: bool,
         fail: Arc<AtomicBool>,
         fail_dm: bool,
+        fail_reaction: bool,
         calls: Arc<Mutex<Vec<(DiscordRoleOperation, DiscordRoleBrokerRequest)>>>,
         create_calls: Arc<Mutex<Vec<DiscordCreateRoleBrokerRequest>>>,
         dm_calls: Arc<Mutex<Vec<DiscordDmBrokerRequest>>>,
         rich_message_calls: Arc<Mutex<Vec<DiscordRichMessageBrokerRequest>>>,
+        reaction_calls: Arc<Mutex<Vec<crate::discord_broker::DiscordAddReactionBrokerRequest>>>,
         create_role_id: u64,
     }
 
@@ -5180,10 +5277,12 @@ mod tests {
                 configured: true,
                 fail: Arc::new(AtomicBool::new(fail)),
                 fail_dm: false,
+                fail_reaction: false,
                 calls: Arc::new(Mutex::new(Vec::new())),
                 create_calls: Arc::new(Mutex::new(Vec::new())),
                 dm_calls: Arc::new(Mutex::new(Vec::new())),
                 rich_message_calls: Arc::new(Mutex::new(Vec::new())),
+                reaction_calls: Arc::new(Mutex::new(Vec::new())),
                 create_role_id: 901,
             }
         }
@@ -5193,10 +5292,12 @@ mod tests {
                 configured: false,
                 fail: Arc::new(AtomicBool::new(false)),
                 fail_dm: false,
+                fail_reaction: false,
                 calls: Arc::new(Mutex::new(Vec::new())),
                 create_calls: Arc::new(Mutex::new(Vec::new())),
                 dm_calls: Arc::new(Mutex::new(Vec::new())),
                 rich_message_calls: Arc::new(Mutex::new(Vec::new())),
+                reaction_calls: Arc::new(Mutex::new(Vec::new())),
                 create_role_id: 901,
             }
         }
@@ -5214,6 +5315,11 @@ mod tests {
             self
         }
 
+        fn with_reaction_failure(mut self) -> Self {
+            self.fail_reaction = true;
+            self
+        }
+
         fn create_calls(&self) -> Vec<DiscordCreateRoleBrokerRequest> {
             self.create_calls
                 .lock()
@@ -5223,6 +5329,13 @@ mod tests {
 
         fn dm_calls(&self) -> Vec<DiscordDmBrokerRequest> {
             self.dm_calls.lock().expect("fake broker dm calls").clone()
+        }
+
+        fn reaction_calls(&self) -> Vec<crate::discord_broker::DiscordAddReactionBrokerRequest> {
+            self.reaction_calls
+                .lock()
+                .expect("fake broker reaction calls")
+                .clone()
         }
     }
 
@@ -5302,6 +5415,26 @@ mod tests {
                     Err(DiscordRoleBrokerError::Rejected)
                 } else {
                     Ok("1521000000000000000".to_string())
+                }
+            })
+        }
+
+        fn add_reaction<'a>(
+            &'a self,
+            request: crate::discord_broker::DiscordAddReactionBrokerRequest,
+        ) -> DiscordRoleBrokerFuture<'a> {
+            Box::pin(async move {
+                if !self.configured {
+                    return Err(DiscordRoleBrokerError::Unconfigured);
+                }
+                self.reaction_calls
+                    .lock()
+                    .expect("fake broker reaction calls")
+                    .push(request);
+                if self.fail_reaction {
+                    Err(DiscordRoleBrokerError::Rejected)
+                } else {
+                    Ok(())
                 }
             })
         }
