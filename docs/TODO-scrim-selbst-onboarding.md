@@ -1,6 +1,6 @@
 # Scrim-Selbst-Onboarding — offene Punkte
 
-**Stand:** 2026-07-16, Session-Ende.
+**Stand:** 2026-07-16, Abschlusslauf.
 **Live-Zustand ist stabil.** Alles unten Beschriebene ist zusätzlich — nichts ist halb deployed,
 nichts wartet auf einen Fix. Wer hier weitermacht, kann in Ruhe anfangen.
 
@@ -20,34 +20,20 @@ Kontext und Bedienung: `Deadlock-Docs/internal/website/scrim-cockpit-handbuch.ht
 | Team-Stammzeit + „Aufruf posten" | `PATCH /api/scrim/teams/{id}`, `POST …/announce` |
 | Coach per Dropdown + Team-Rolle für den Coach | `GET /api/scrim/coaches` |
 
-Website-Branch **`feat/brand-black-standard`** = LIVE-Branch (nicht `main`!), gepusht.
-Letzter Commit: `7889dd8 feat(scrim): Coach per Dropdown statt Freitext`.
+Website-Branch **`main`** ist nach dem Abschluss-Deploy wieder der Live-Stand.
 
 ---
 
-## 1. Bot deployen — Broker kann Reaktionen setzen (angefangen, NICHT fertig)
+## 1. Bot deployen — Broker kann Reaktionen setzen — erledigt
 
-**Warum:** Nach „Aufruf posten" muss Leo aktuell selbst in Discord den ersten ✅-Haken unter den
-Aufruf setzen. Ohne ersten Haken muss jeder das Emoji suchen, und dann reagiert kaum wer. Der
-Broker konnte bisher keine Reaktionen — das ist jetzt gebaut, aber **nicht deployed**.
+**Warum:** Nach „Aufruf posten" musste Leo bisher selbst in Discord den ersten ✅-Haken unter den
+Aufruf setzen. Ohne ersten Haken musste jeder das Emoji suchen.
 
-**Stand:** Repo `Deadlock-Bots`, Branch **`feat/broker-add-reaction`** (enthält
-`feat/scrim-substitute-expiry` als Vorfahre), Commit `00f1cd8d`. Tests + Clippy grün.
+**Stand:** Der Broker-Endpunkt ist in `Deadlock-Bots/main`, als Release gebaut und live.
 Neuer Endpunkt: `POST /internal/master/v1/discord/add-reaction` mit `{channel_id, message_id, emoji}`,
 prüft die Channel-Allowlist wie `send-rich-message`, nutzt Serenity `create_reaction` (kodiert selbst).
-
-**Zu tun:**
-```bash
-cd ~/Documents/Deadlock-Bots/rust
-RUSTC_WRAPPER= cargo build --release -p dl-bot -j 2   # -j 2: earlyoom killt den Build sonst (SIGTERM)
-systemctl --user restart deadlock-bot-rust.service
-# Beweis: PID-Wechsel + /proc/<pid>/exe zeigt auf die frische Binary + Journal ohne error/panic
-```
-Danach nach `main` mergen (Test-Gate + Merge-Kritiker beachten).
-
-**Vorsicht:** Der Bot-Neustart löst `run_pending_backfills()` aus. Aktuell steht kein Mapping auf
-`backfill_pending=TRUE`, also passiert nichts — vor dem Restart trotzdem kurz prüfen:
-`SELECT id, backfill_pending FROM bot.reaction_role_mappings;`
+Der Live-Healthcheck meldet den Bot bereit; vor dem Neustart standen null aktive Mappings auf
+`backfill_pending=TRUE`.
 
 ## 2. Website: den Haken automatisch setzen — erledigt
 
@@ -56,8 +42,7 @@ Danach nach `main` mergen (Test-Gate + Merge-Kritiker beachten).
 Erfolgstext fordert nicht mehr zum Handklick auf. Schlägt nur die Reaktion fehl, bleibt der bereits
 gepostete Aufruf erfolgreich und die Antwort nennt den manuellen Haken als Fallback.
 
-Auf Website-Seite ist nichts mehr offen. Wirksam wird der Ablauf, sobald der Broker aus Abschnitt 1
-live ist.
+Website und Broker sind verdrahtet; der Ablauf ist nach dem Abschluss-Deploy live.
 
 ## 3. Stammzeiten eintragen (Leo, 2 Minuten, kein Code)
 
@@ -116,10 +101,10 @@ Website → Broker ist verifiziert (Token da, Broker antwortet 200), aber ein ec
 - **`npm run build` in `dl-coaching/` IST der Deploy** — Caddy serviert `dist/` direkt aus dem
   Arbeitsverzeichnis. Immer **Backend zuerst** bauen+neustarten, sonst ruft die neue Oberfläche
   Endpunkte, die es noch nicht gibt. (Ist mir in dieser Session einmal passiert, ~3 Min Lücke.)
-- **LIVE-Branch der Website ist `feat/brand-black-standard`, nicht `main`.**
+- **LIVE-Branch der Website ist wieder `main`.**
 - **Migrationen laufen nur über `dl-central-migrate`** (Repo Deadlock-Bots), das Website-Backend hat
-  keinen Runner. Vorher `touch bin/dl-central-migrate/src/main.rs`, sonst sieht `sqlx::migrate!` neue
-  `.sql`-Dateien nicht und meldet trotzdem Erfolg.
+  keinen zentralen Runner. Es prüft beim Start die benötigten Scrim-Versionen und verweigert einen
+  Betrieb gegen ein veraltetes Schema.
 - **Release-Builds mit `-j 2`** — earlyoom killt sie sonst mit SIGTERM (in dieser Session passiert).
 - **`reaction_role_dm_log.sent_at` heißt „versucht", nicht „zugestellt"** — wird schon beim
   Reservieren gesetzt. Zustellung = Zeile da UND kein „permanente DM-Ablehnung" im Journal.

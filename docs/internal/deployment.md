@@ -41,9 +41,12 @@ cd /home/naniadm/Documents/Deadlock-Bots/rust
   'unset SQLX_OFFLINE; export DATABASE_URL_TEST="$CENTRAL_TEST_DSN" DATABASE_URL="$CENTRAL_TEST_DSN"; cargo test --manifest-path /home/naniadm/Documents/Website/builds/backend-rust/Cargo.toml --all-features'
 ```
 
-Wenn das Backend neue zentrale DB-Spalten voraussetzt, müssen die zugehörigen
-Migrationen zuerst versioniert, der zentrale Migrator neu gebaut und die
-Migrationen vor dem Website-Neustart angewendet werden.
+Das zentrale Scrim-Schema gehört ausschließlich dem Repo `Deadlock-Bots`; die
+Website dupliziert diese Migrationen absichtlich nicht. Vor diesem Stand müssen
+dort `2026071601`, `2026071602`, `2026071603` und `2026071662` erfolgreich über
+`dl-central-migrate` angewendet sein. Das Website-Backend prüft diese vier
+Versionen beim Start und verweigert einen Betrieb gegen ein veraltetes Schema,
+bevor Scrim-Routen oder der Aushilfen-Sweeper laufen.
 
 ## Backend deployen
 
