@@ -13,7 +13,7 @@ import {
 import { useAuth } from '@/context/AuthContext'
 import AvailabilityGrid from '@/components/AvailabilityGrid'
 import { CoachOnly, EmptyState, PageSpinner, SectionHead } from '@/components/ui'
-import { scrimWindowText, TIME_OPTIONS, WEEKDAYS } from '@/lib/availability'
+import { formatMinutes, scrimWindowText, TIME_OPTIONS, WEEKDAYS } from '@/lib/availability'
 
 const STATUS_OPTIONS = [
   { value: 'new', label: 'Neu' },
@@ -49,6 +49,18 @@ const POOL_GROUPS = [
 
 const COPY = {
   createTeam: '＋ Team erstellen',
+  announce: 'Aufruf posten',
+  editTeam: 'Bearbeiten',
+  noWindow: 'Keine Stammzeit',
+  windowLabel: 'Übliche Spielzeit',
+  defaultWindowHint: 'Wann spielt das Team normalerweise? Steht im Aufruf und füllt die Einspringer-Suche vor. Der Wochentag bleibt offen.',
+  openEnd: 'offenes Ende',
+  announceTitle: 'Aufruf posten',
+  announceHint: 'Der Bot postet das im Scrim-Kanal und pingt die Teilnehmer. Du entscheidest, wann — geschrieben wird es fertig.',
+  announceNote: 'Noch was dazusagen? (optional)',
+  announceSend: 'Im Scrim-Kanal posten',
+  announceSending: 'Poste …',
+  preview: 'Vorschau',
   findSub: 'Auswechselspieler finden',
   findSubHint: 'Sag uns, für welches Team und wann — wir schauen, wer von der Auswechselbank zu der Zeit kann.',
   forTeam: 'Für welches Team',
@@ -115,6 +127,24 @@ function teamWindow(form: TeamForm): ScrimWindow | null {
 }
 
 /**
+ * Fuellt Tag/Von/Bis aus der Team-Stammzeit vor. Offenes Ende (1440) taugt nicht als Suchfenster —
+ * daraus wird ein zweistuendiges ab der Startzeit, das kann der Coach anpassen.
+ */
+function windowDraftForTeam(team: ScrimTeam | undefined): { day: Weekday; from: string; to: string } {
+  const from = team?.default_from ?? 1140
+  const rawTo = team?.default_to ?? 1320
+  const to = rawTo >= 1440 ? Math.min(from + 120, 1439) : rawTo
+  return { day: 'thu', from: String(from), to: String(to) }
+}
+
+/** Stammzeit als Text. 1440 = offenes Ende ("ab 16:00"), sonst Fenster. Gleiche Sprache wie im Discord-Aufruf. */
+function teamWindowText(team: ScrimTeam): string {
+  if (team.default_from == null || team.default_to == null) return COPY.noWindow
+  if (team.default_to >= 1440) return `ab ${formatMinutes(team.default_from)} Uhr`
+  return `${formatMinutes(team.default_from)}–${formatMinutes(team.default_to)} Uhr`
+}
+
+/**
  * Teilt den Pool disjunkt auf die Toepfe auf. Wer im Team ist, gilt als zugewiesen —
  * auch wenn sein status etwas anderes behauptet; sonst waere er in zwei Toepfen.
  * Unbekannte status-Werte landen bei den neuen Anmeldungen statt zu verschwinden.
@@ -140,6 +170,8 @@ export default function ScrimPoolPage() {
   const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
   const [showFindSub, setShowFindSub] = useState(false)
+  const [announceTeam, setAnnounceTeam] = useState<ScrimTeam | null>(null)
+  const [editTeam, setEditTeam] = useState<ScrimTeam | null>(null)
   const [teamForm, setTeamForm] = useState<TeamForm>(DEFAULT_TEAM_FORM)
 
   const teamsQuery = useQuery({ queryKey: ['scrim-teams'], queryFn: () => scrims.teams(), enabled: isCoach })
@@ -208,11 +240,30 @@ export default function ScrimPoolPage() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {teams.map(team => (
-              <Link key={team.id} to={`/scrims/teams/${team.id}`} className="card card-hover p-4">
-                <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{team.name}</span>
-                {team.coach && <p className="stat-label mt-1">Coach {team.coach}</p>}
-                <span className="eyebrow mt-3 inline-block">Board öffnen →</span>
-              </Link>
+              <div key={team.id} className="card p-4">
+                <Link to={`/scrims/teams/${team.id}`} className="block">
+                  <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{team.name}</span>
+                  {team.coach && <p className="stat-label mt-1">Coach {team.coach}</p>}
+                  <p className="stat-label mt-1">{teamWindowText(team)}</p>
+                  <span className="eyebrow mt-3 inline-block">Board öffnen →</span>
+                </Link>
+                <div className="mt-3 flex flex-wrap gap-2 border-t pt-3" style={{ borderColor: 'var(--border-dim)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setAnnounceTeam(team)}
+                    className="btn-amber rounded-sm px-2.5 py-1 text-xs"
+                  >
+                    {COPY.announce}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditTeam(team)}
+                    className="btn-ghost rounded-sm px-2.5 py-1 text-xs"
+                  >
+                    {COPY.editTeam}
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -244,6 +295,8 @@ export default function ScrimPoolPage() {
       )}
 
       {showFindSub && <FindSubstituteModal teams={teams} onClose={() => setShowFindSub(false)} />}
+      {announceTeam && <AnnounceModal team={announceTeam} onClose={() => setAnnounceTeam(null)} />}
+      {editTeam && <EditTeamModal team={editTeam} onClose={() => setEditTeam(null)} />}
 
       {showCreate && (
         <CreateTeamModal
@@ -309,11 +362,171 @@ function PoolGroup({
  * Zwei Schritte in einem Dialog: erst suchen (Team + Zeit → Vorschlag aus der Auswechselbank),
  * dann bestätigen. Bestätigen gibt die Team-Rolle für die Aushilfe; Auswechselspieler bleibt er.
  */
+/** Coach loest aus, Bot formatiert: Vorschau zeigen, damit klar ist was rausgeht — posten tut es erst der Klick. */
+function AnnounceModal({ team, onClose }: { team: ScrimTeam; onClose: () => void }) {
+  const [note, setNote] = useState('')
+  const post = useMutation({
+    mutationFn: () => scrims.announceTeam(team.id, { note: note.trim() || null }),
+  })
+
+  const windowText = teamWindowText(team)
+  const hasWindow = team.default_from != null && team.default_to != null
+  const previewText = hasWindow
+    ? `Das Team spielt üblicherweise ${windowText}. Wenn du zu der Zeit kannst und Lust hast, reagier hier mit ✅ — wir melden uns bei dir.`
+    : 'Wenn du Lust hast, in diesem Team zu spielen, reagier hier mit ✅ — wir melden uns bei dir.'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+      <div className="panel-strong max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-extrabold" style={{ color: 'var(--text-primary)' }}>
+            {COPY.announceTitle}
+          </h2>
+          <button type="button" onClick={onClose} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">
+            {COPY.cancel}
+          </button>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{COPY.announceHint}</p>
+
+        <div className="card space-y-1.5 border-l-2 p-3" style={{ borderLeftColor: '#C8A86B' }}>
+          <span className="stat-label">{COPY.preview}</span>
+          <p className="font-display text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+            {team.name} sucht Verstärkung
+          </p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{previewText}</p>
+          {note.trim() && (
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <strong>Dazu noch:</strong> {note.trim()}
+            </p>
+          )}
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="stat-label">{COPY.announceNote}</span>
+          <textarea
+            className="input-field min-h-[70px]"
+            maxLength={500}
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="z. B. Wir suchen vor allem jemanden für die Solo-Lane."
+          />
+        </label>
+
+        {post.data && (
+          <p className="text-sm" style={{ color: post.data.ok ? 'var(--text-primary)' : 'var(--red)' }}>
+            {post.data.detail}
+          </p>
+        )}
+        {post.isError && <p className="text-sm" style={{ color: 'var(--red)' }}>{post.error.message}</p>}
+
+        {!post.data?.ok && (
+          <button
+            type="button"
+            className="btn-amber rounded-sm px-4 py-2 text-sm"
+            disabled={post.isPending}
+            onClick={() => post.mutate()}
+          >
+            {post.isPending ? COPY.announceSending : COPY.announceSend}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Team bearbeiten — vor allem die Stammzeit, die es fuer die 4 Bestandsteams noch nicht gibt. */
+function EditTeamModal({ team, onClose }: { team: ScrimTeam; onClose: () => void }) {
+  const qc = useQueryClient()
+  const [name, setName] = useState(team.name)
+  const [coach, setCoach] = useState(team.coach ?? '')
+  const [useWindow, setUseWindow] = useState(team.default_from != null)
+  const [from, setFrom] = useState(String(team.default_from ?? 1200))
+  const [to, setTo] = useState(String(team.default_to ?? 1320))
+
+  const save = useMutation({
+    mutationFn: () =>
+      scrims.patchTeam(team.id, {
+        name: name.trim(),
+        coach: coach.trim() || null,
+        default_from: useWindow ? Number(from) : null,
+        default_to: useWindow ? Number(to) : null,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['scrim-teams'] })
+      onClose()
+    },
+  })
+
+  const invalid = useWindow && Number(from) >= Number(to)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+      <form
+        className="panel-strong w-full max-w-lg space-y-4 p-5"
+        onSubmit={e => { e.preventDefault(); if (!invalid) save.mutate() }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-extrabold" style={{ color: 'var(--text-primary)' }}>{team.name}</h2>
+          <button type="button" onClick={onClose} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">{COPY.cancel}</button>
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="stat-label">{COPY.teamName}</span>
+          <input className="input-field" value={name} onChange={e => setName(e.target.value)} required />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="stat-label">{COPY.coach}</span>
+          <input className="input-field" value={coach} onChange={e => setCoach(e.target.value)} />
+        </label>
+
+        <div className="space-y-2">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={useWindow} onChange={e => setUseWindow(e.target.checked)} />
+            <span className="stat-label">{COPY.windowLabel}</span>
+          </label>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{COPY.defaultWindowHint}</p>
+          {useWindow && (
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="stat-label">{COPY.from}</span>
+                <select className="input-field" value={from} onChange={e => setFrom(e.target.value)}>
+                  {TIME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="stat-label">{COPY.to}</span>
+                <select className="input-field" value={to} onChange={e => setTo(e.target.value)}>
+                  {TIME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  <option value="1440">{COPY.openEnd}</option>
+                </select>
+              </label>
+            </div>
+          )}
+          {invalid && <p className="text-xs" style={{ color: 'var(--red)' }}>{COPY.invalidWindow}</p>}
+        </div>
+
+        {save.isError && <p className="text-sm" style={{ color: 'var(--red)' }}>{save.error.message}</p>}
+        <button type="submit" className="btn-amber rounded-sm px-4 py-2 text-sm" disabled={save.isPending || invalid}>
+          Speichern
+        </button>
+      </form>
+    </div>
+  )
+}
+
 function FindSubstituteModal({ teams, onClose }: { teams: ScrimTeam[]; onClose: () => void }) {
   const qc = useQueryClient()
   const [teamId, setTeamId] = useState<number | ''>(teams[0]?.id ?? '')
-  const [draft, setDraft] = useState({ day: 'thu' as Weekday, from: '1140', to: '1320' })
+  const [draft, setDraft] = useState(() => windowDraftForTeam(teams[0]))
   const [confirmedId, setConfirmedId] = useState<number | null>(null)
+
+  // Genau dafuer ist die Stammzeit da: Team waehlen -> die uebliche Zeit steht schon drin,
+  // der Coach setzt nur noch den Tag. Ein offenes Ende (1440) waere als Suchfenster sinnlos.
+  const selectTeam = (id: number) => {
+    setTeamId(id)
+    setDraft(current => ({ ...current, ...windowDraftForTeam(teams.find(t => t.id === id)) }))
+    setConfirmedId(null)
+  }
 
   const window: ScrimWindow | null = (() => {
     const from = Number(draft.from)
@@ -354,7 +567,7 @@ function FindSubstituteModal({ teams, onClose }: { teams: ScrimTeam[]; onClose: 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5 sm:col-span-2">
             <span className="stat-label">{COPY.forTeam}</span>
-            <select className="input-field" value={teamId} onChange={e => setTeamId(Number(e.target.value))}>
+            <select className="input-field" value={teamId} onChange={e => selectTeam(Number(e.target.value))}>
               {teams.map(team => (
                 <option key={team.id} value={team.id}>{team.name}</option>
               ))}

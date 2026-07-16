@@ -785,7 +785,7 @@ pub async fn announce_team(
         .is_some_and(|note| note.chars().count() > 500)
     {
         return Err(AppError::bad_request(
-            "PLATZHALTER: Zusatzzeile darf höchstens 500 Zeichen lang sein.",
+            "Die Zusatzzeile darf höchstens 500 Zeichen haben.",
         ));
     }
 
@@ -806,14 +806,22 @@ pub async fn announce_team(
         Ok(message_id) => ScrimAnnounceResponse {
             message_id: Some(message_id),
             ok: true,
-            detail: "PLATZHALTER: Aufruf gepostet; automatische Reaktion nicht verfügbar."
+            // Der Bot kann selbst keinen Haken setzen (Broker hat keinen Reaktions-Endpunkt),
+            // ohne den ersten Haken muss aber jeder das Emoji suchen. Also ehrlich ansagen.
+            detail: "Der Aufruf steht im Scrim-Kanal. Setz bitte einmal selbst den Haken \
+                     darunter — dann können die Leute direkt draufklicken."
                 .to_string(),
         },
-        Err(err) => ScrimAnnounceResponse {
-            message_id: None,
-            ok: false,
-            detail: format!("PLATZHALTER: Discord-Aufruf fehlgeschlagen ({err:?})."),
-        },
+        Err(err) => {
+            tracing::warn!(?err, team_id, "Scrim-Aufruf konnte nicht gepostet werden");
+            ScrimAnnounceResponse {
+                message_id: None,
+                ok: false,
+                detail: "Discord hat den Aufruf nicht angenommen. Versuch es gleich noch mal — \
+                         wenn es dabei bleibt, sag Nani Bescheid."
+                    .to_string(),
+            }
+        }
     };
     Ok(Json(response))
 }

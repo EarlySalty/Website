@@ -184,6 +184,9 @@ export interface ScrimTeam {
   coach: string | null
   discord_role_id: number | null
   discord_channel_id: number | null
+  /** Uebliche Spielzeit in Minuten seit Mitternacht; null = keine hinterlegt. Kein Wochentag — der wird pro Woche ausgehandelt. */
+  default_from: number | null
+  default_to: number | null
 }
 
 export interface ScrimTeamMember {
@@ -219,6 +222,26 @@ export interface ScrimSignupRequest {
 export interface ScrimCreateTeamRequest {
   name: string
   coach?: string | null
+  default_from?: number | null
+  default_to?: number | null
+}
+
+/** Weggelassen = unveraendert, null = Stammzeit loeschen, Zahl = setzen. */
+export interface ScrimPatchTeamRequest {
+  name?: string
+  coach?: string | null
+  default_from?: number | null
+  default_to?: number | null
+}
+
+export interface ScrimAnnounceRequest {
+  note?: string | null
+}
+
+export interface ScrimAnnounceResponse {
+  message_id: string | null
+  ok: boolean
+  detail: string
 }
 
 /** Aus welchem Topf Kandidaten kommen: feste Teams aus dem Spieler-Pool, Einspringer von der Auswechselbank. */
@@ -325,6 +348,10 @@ export const scrims = {
   teams: () => request<ScrimTeam[]>('/scrim/teams'),
   createTeam: (data: ScrimCreateTeamRequest) =>
     request<ScrimTeam>('/scrim/teams', { method: 'POST', body: JSON.stringify(data) }),
+  patchTeam: (id: number, data: ScrimPatchTeamRequest) =>
+    request<ScrimTeam>(`/scrim/teams/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  announceTeam: (id: number, data: ScrimAnnounceRequest) =>
+    request<ScrimAnnounceResponse>(`/scrim/teams/${id}/announce`, { method: 'POST', body: JSON.stringify(data) }),
   teamBoard: (id: number) => request<ScrimTeamBoardResponse>(`/scrim/teams/${id}/board`),
   suggestRoster: (id: number, data: ScrimSuggestRosterRequest) =>
     request<ScrimRosterSuggestResponse>(`/scrim/teams/${id}/suggest`, { method: 'POST', body: JSON.stringify(data) }),
