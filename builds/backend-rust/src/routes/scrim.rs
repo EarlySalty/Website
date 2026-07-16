@@ -512,10 +512,14 @@ pub async fn signup(
         .fetch_one(&mut *tx)
         .await?;
     let participant = participant_from_row(&row);
-    let discord_sync_plan =
-        fetch_discord_role_snapshot(&mut *tx, participant_id, scrim_reserve_role_id(&state))
-            .await?
-            .map(|snapshot| DiscordRoleSyncPlan::resync(&snapshot));
+    let discord_sync_plan = fetch_discord_role_snapshot(
+        &mut *tx,
+        participant_id,
+        scrim_reserve_role_id(&state),
+        scrim_signup_role_id(&state),
+    )
+    .await?
+    .map(|snapshot| DiscordRoleSyncPlan::resync(&snapshot));
     tx.commit().await?;
 
     if let Some(plan) = discord_sync_plan {
@@ -798,8 +802,10 @@ pub async fn patch_participant(
         .await?;
 
     let reserve_role_id = scrim_reserve_role_id(&state);
+    let signup_role_id = scrim_signup_role_id(&state);
     let Some(before_discord_roles) =
-        fetch_discord_role_snapshot(&mut *tx, participant_id, reserve_role_id).await?
+        fetch_discord_role_snapshot(&mut *tx, participant_id, reserve_role_id, signup_role_id)
+            .await?
     else {
         return Err(AppError::not_found("Teilnehmer nicht gefunden."));
     };
@@ -886,7 +892,7 @@ pub async fn patch_participant(
         .await?;
     let participant = pool_participant_from_row(&row);
     let after_discord_roles =
-        fetch_discord_role_snapshot(&mut *tx, participant_id, reserve_role_id)
+        fetch_discord_role_snapshot(&mut *tx, participant_id, reserve_role_id, signup_role_id)
             .await?
             .ok_or_else(|| AppError::not_found("Teilnehmer nicht gefunden."))?;
     let sync_plan = DiscordRoleSyncPlan::diff(&before_discord_roles, &after_discord_roles);
@@ -908,9 +914,13 @@ pub async fn resync_participant_discord(
 ) -> AppResult<Json<ScrimDiscordResyncResponse>> {
     require_scrim_coach(&state, &headers, Some(peer)).await?;
 
-    let Some(snapshot) =
-        fetch_discord_role_snapshot(&state.pool, participant_id, scrim_reserve_role_id(&state))
-            .await?
+    let Some(snapshot) = fetch_discord_role_snapshot(
+        &state.pool,
+        participant_id,
+        scrim_reserve_role_id(&state),
+        scrim_signup_role_id(&state),
+    )
+    .await?
     else {
         return Err(AppError::not_found("Teilnehmer nicht gefunden."));
     };
@@ -929,6 +939,12 @@ struct DiscordRoleSnapshot {
     participant_id: i32,
     discord_user_id: Option<u64>,
     role_ids: BTreeSet<u64>,
+}
+
+struct DiscordRoleParticipantRow {
+    discord_user_id: Option<u64>,
+    status: String,
+    team_role_id: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1059,12 +1075,13 @@ async fn fetch_discord_role_snapshot<'e, E>(
     executor: E,
     participant_id: i32,
     reserve_role_id: Option<u64>,
+    signup_role_id: Option<u64>,
 ) -> Result<Option<DiscordRoleSnapshot>, sqlx::Error>
 where
     E: sqlx::Executor<'e, Database = sqlx::Postgres>,
 {
     let rows = sqlx::query(
-        "SELECT p.discord_id, p.status, tm.team_id, t.discord_role_id \
+        "SELECT p.discord_id, p.status, t.discord_role_id \
          FROM scrim.participants p \
          LEFT JOIN scrim.team_members tm ON tm.participant_id=p.id \
          LEFT JOIN scrim.teams t ON t.id=tm.team_id \
@@ -1074,9 +1091,18 @@ where
     .bind(participant_id)
     .fetch_all(executor)
     .await?;
+    let rows = rows
+        .iter()
+        .map(|row| DiscordRoleParticipantRow {
+            discord_user_id: positive_i64_as_u64(row.get("discord_id")),
+            status: row.get("status"),
+            team_role_id: positive_i64_as_u64(row.get("discord_role_id")),
+        })
+        .collect::<Vec<_>>();
     Ok(discord_role_snapshot_from_rows(
         participant_id,
         reserve_role_id,
+        signup_role_id,
         &rows,
     ))
 }
@@ -1084,23 +1110,23 @@ where
 fn discord_role_snapshot_from_rows(
     participant_id: i32,
     reserve_role_id: Option<u64>,
-    rows: &[PgRow],
+    signup_role_id: Option<u64>,
+    rows: &[DiscordRoleParticipantRow],
 ) -> Option<DiscordRoleSnapshot> {
     let first = rows.first()?;
-    let discord_user_id = positive_i64_as_u64(first.get("discord_id"));
-    let status: String = first.get("status");
+    let discord_user_id = first.discord_user_id;
     let mut role_ids = BTreeSet::new();
-    if !status.trim().eq_ignore_ascii_case("inactive") {
-        let has_team = rows
-            .iter()
-            .any(|row| row.get::<Option<i32>, _>("team_id").is_some());
-        if !has_team {
+    if !first.status.trim().eq_ignore_ascii_case("inactive") {
+        if let Some(role_id) = signup_role_id {
+            role_ids.insert(role_id);
+        }
+        if first.status.trim().eq_ignore_ascii_case("reserve") {
             if let Some(role_id) = reserve_role_id {
                 role_ids.insert(role_id);
             }
         }
         for row in rows {
-            if let Some(role_id) = positive_i64_as_u64(row.get("discord_role_id")) {
+            if let Some(role_id) = row.team_role_id {
                 role_ids.insert(role_id);
             }
         }
@@ -1117,6 +1143,16 @@ fn scrim_reserve_role_id(state: &AppState) -> Option<u64> {
     if role_id.is_none() {
         tracing::warn!(
             "SCRIM_RESERVE_ROLE_ID nicht gesetzt; Scrim-Reserve-Rollen-Sync deaktiviert"
+        );
+    }
+    role_id
+}
+
+fn scrim_signup_role_id(state: &AppState) -> Option<u64> {
+    let role_id = positive_i64_as_u64(state.cfg.scrim_signup_role_id);
+    if role_id.is_none() {
+        tracing::warn!(
+            "SCRIM_SIGNUP_ROLE_ID nicht gesetzt; Scrim-Teilnehmer-Rollen-Sync deaktiviert"
         );
     }
     role_id
@@ -1863,6 +1899,54 @@ mod tests {
     use super::*;
     use crate::discord_broker::{DiscordRoleBrokerError, DiscordRoleBrokerFuture};
     use crate::{app::router, config::Config};
+
+    const TEST_SIGNUP_ROLE_ID: u64 = 9_000;
+    const TEST_RESERVE_ROLE_ID: u64 = 9_001;
+
+    #[test]
+    fn discord_role_snapshot_pool_without_team_has_signup_but_not_reserve() {
+        assert_eq!(
+            snapshot_role_ids("new", None),
+            BTreeSet::from([TEST_SIGNUP_ROLE_ID])
+        );
+    }
+
+    #[test]
+    fn discord_role_snapshot_reserve_has_signup_and_reserve() {
+        assert_eq!(
+            snapshot_role_ids(" ReSeRvE ", None),
+            BTreeSet::from([TEST_SIGNUP_ROLE_ID, TEST_RESERVE_ROLE_ID])
+        );
+    }
+
+    #[test]
+    fn discord_role_snapshot_assigned_team_has_signup_and_team_but_not_reserve() {
+        assert_eq!(
+            snapshot_role_ids("assigned", Some(101)),
+            BTreeSet::from([101, TEST_SIGNUP_ROLE_ID])
+        );
+    }
+
+    #[test]
+    fn discord_role_snapshot_inactive_is_empty() {
+        assert!(snapshot_role_ids(" InAcTiVe ", Some(101)).is_empty());
+    }
+
+    fn snapshot_role_ids(status: &str, team_role_id: Option<u64>) -> BTreeSet<u64> {
+        let rows = [DiscordRoleParticipantRow {
+            discord_user_id: Some(123),
+            status: status.to_string(),
+            team_role_id,
+        }];
+        discord_role_snapshot_from_rows(
+            1,
+            Some(TEST_RESERVE_ROLE_ID),
+            Some(TEST_SIGNUP_ROLE_ID),
+            &rows,
+        )
+        .expect("snapshot")
+        .role_ids
+    }
 
     #[test]
     fn parse_legacy_covers_real_excel_values() {
@@ -3047,7 +3131,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn scrim_signup_adds_reserve_role_when_configured() {
+    async fn scrim_signup_does_not_add_reserve_role_without_reserve_status() {
         let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
         let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
         let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
@@ -3071,11 +3155,7 @@ mod tests {
             .expect("signup response");
 
         assert_eq!(response.status(), StatusCode::OK);
-        let calls = broker.calls();
-        assert_eq!(calls.len(), 1);
-        assert_eq!(calls[0].0, DiscordRoleOperation::Add);
-        assert_eq!(calls[0].1.user_id, 3333);
-        assert_eq!(calls[0].1.role_id, 9001);
+        assert!(broker.calls().is_empty());
     }
 
     #[tokio::test]
@@ -3286,7 +3366,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn scrim_patch_pool_to_team_removes_reserve_and_adds_team_role() {
+    async fn scrim_patch_pool_to_team_adds_team_role_without_reserve_transition() {
         let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
         let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
         let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
@@ -3314,16 +3394,14 @@ mod tests {
         assert_eq!(body["team"]["id"], 1);
 
         let calls = broker.calls();
-        assert_eq!(calls.len(), 2);
-        assert_eq!(calls[0].0, DiscordRoleOperation::Remove);
-        assert_eq!(calls[0].1.role_id, 9001);
-        assert_eq!(calls[1].0, DiscordRoleOperation::Add);
-        assert_eq!(calls[1].1.role_id, 101);
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].0, DiscordRoleOperation::Add);
+        assert_eq!(calls[0].1.role_id, 101);
     }
 
     #[tokio::test]
     #[serial]
-    async fn scrim_patch_team_to_pool_removes_team_role_and_adds_reserve() {
+    async fn scrim_patch_team_to_pool_removes_team_role_without_adding_reserve() {
         let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
         let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
         let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
@@ -3351,16 +3429,14 @@ mod tests {
         assert!(body["team"].is_null());
 
         let calls = broker.calls();
-        assert_eq!(calls.len(), 2);
+        assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].0, DiscordRoleOperation::Remove);
         assert_eq!(calls[0].1.role_id, 101);
-        assert_eq!(calls[1].0, DiscordRoleOperation::Add);
-        assert_eq!(calls[1].1.role_id, 9001);
     }
 
     #[tokio::test]
     #[serial]
-    async fn scrim_patch_pool_inactive_removes_reserve_role() {
+    async fn scrim_patch_pool_inactive_is_noop_without_managed_roles() {
         let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
         let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
         let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
@@ -3387,10 +3463,7 @@ mod tests {
         let body = to_json(response).await;
         assert_eq!(body["status"], "inactive");
 
-        let calls = broker.calls();
-        assert_eq!(calls.len(), 1);
-        assert_eq!(calls[0].0, DiscordRoleOperation::Remove);
-        assert_eq!(calls[0].1.role_id, 9001);
+        assert!(broker.calls().is_empty());
     }
 
     #[tokio::test]
@@ -3637,6 +3710,7 @@ mod tests {
         seed_database(&pool).await;
         let mut cfg = Config::from_env();
         cfg.master_broker_token = None;
+        cfg.scrim_signup_role_id = None;
         cfg.scrim_reserve_role_id = scrim_reserve_role_id;
         Some(AppState::for_test_pool_with_broker(
             pool,
