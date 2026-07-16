@@ -559,8 +559,8 @@ function FindSubstituteModal({ teams, onClose }: { teams: ScrimTeam[]; onClose: 
   const confirm = useMutation({
     mutationFn: (participantId: number) =>
       scrims.confirmSubstitute(Number(teamId), { participant_id: participantId, window: window! }),
-    onSuccess: (_data, participantId) => {
-      setConfirmedId(participantId)
+    onSuccess: (data, participantId) => {
+      setConfirmedId(data.dm.ok ? participantId : null)
       qc.invalidateQueries({ queryKey: ['scrim-pool'] })
       qc.invalidateQueries({ queryKey: ['scrim-board'] })
     },
@@ -664,6 +664,9 @@ function FindSubstituteModal({ teams, onClose }: { teams: ScrimTeam[]; onClose: 
         )}
 
         {confirm.isError && <p className="text-xs" style={{ color: 'var(--red)' }}>{confirm.error.message}</p>}
+        {confirm.data?.dm.ok === false && (
+          <p className="text-xs" style={{ color: 'var(--red)' }}>{confirm.data.dm.detail}</p>
+        )}
         {confirmedId !== null && (
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
             {COPY.confirmedHint.replace('{team}', teamName)}

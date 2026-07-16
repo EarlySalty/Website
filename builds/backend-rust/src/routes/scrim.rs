@@ -1231,6 +1231,14 @@ pub async fn patch_participant(
             .bind(status)
             .execute(&mut *tx)
             .await?;
+        if status.trim().eq_ignore_ascii_case("assigned") {
+            sqlx::query(
+                "UPDATE scrim.team_members SET substitute_until=NULL WHERE participant_id=$1",
+            )
+            .bind(participant_id)
+            .execute(&mut *tx)
+            .await?;
+        }
     }
 
     match body.team_id {
@@ -1476,7 +1484,6 @@ async fn expire_substitute(state: &AppState, team_id: i32, participant_id: i32) 
     let sync_plan = before
         .zip(after)
         .map(|(before, after)| DiscordRoleSyncPlan::diff(&before, &after));
-    tx.commit().await?;
 
     if let Some(plan) = sync_plan {
         let status = execute_discord_sync(state, plan).await;
@@ -1486,8 +1493,10 @@ async fn expire_substitute(state: &AppState, team_id: i32, participant_id: i32) 
                 detail = %status.detail,
                 "Discord-Rollen nach Scrim-Aushilfe-Ablauf nicht vollständig synchronisiert"
             );
+            return Ok(false);
         }
     }
+    tx.commit().await?;
     Ok(true)
 }
 
@@ -2579,7 +2588,10 @@ mod tests {
     use std::{
         collections::BTreeSet,
         net::{IpAddr, Ipv4Addr, SocketAddr},
-        sync::{Arc, Mutex},
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc, Mutex,
+        },
     };
 
     use axum::{
@@ -4721,6 +4733,60 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    async fn scrim_patch_promoting_substitute_in_same_team_clears_expiry() {
+        let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
+        let broker_for_state: Arc<dyn DiscordRoleBroker> = broker;
+        let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
+        else {
+            return;
+        };
+        sqlx::query(
+            "INSERT INTO scrim.participants \
+             (id, discord_id, display_name, rank_source, rank_verified, status, source, created_at, updated_at) \
+             VALUES (4, 4444, 'Reserve User', 'self', false, 'reserve', 'seed', now(), now())",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("seed reserve");
+        sqlx::query(
+            "INSERT INTO scrim.team_members \
+             (team_id, participant_id, is_captain, is_bench, substitute_until) \
+             VALUES (1, 4, false, true, now() + interval '24 hours')",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("seed temporary membership");
+        let app = router(state.clone());
+        let coach_token = state
+            .auth
+            .create_session_jwt("9000", "coach_user", "user", Some("Coach User"), None)
+            .expect("coach token");
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::PATCH,
+                "/api/scrim/participants/4",
+                &coach_token,
+                Some(json!({ "status": "assigned" })),
+            ))
+            .await
+            .expect("patch response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body["status"], "assigned");
+        let substitute_until: Option<DateTime<Utc>> = sqlx::query_scalar(
+            "SELECT substitute_until FROM scrim.team_members \
+             WHERE team_id=1 AND participant_id=4",
+        )
+        .fetch_one(&state.pool)
+        .await
+        .expect("promoted membership");
+        assert!(substitute_until.is_none());
+    }
+
+    #[tokio::test]
+    #[serial]
     async fn scrim_substitute_keeps_reserve_status_and_sets_temporary_bench_membership() {
         let broker = Arc::new(FakeDiscordRoleBroker::configured(false));
         let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
@@ -4943,6 +5009,66 @@ mod tests {
         assert_eq!(snapshot.role_ids, BTreeSet::from([TEST_RESERVE_ROLE_ID]));
     }
 
+    #[tokio::test]
+    #[serial]
+    async fn substitute_sweep_retries_after_discord_role_removal_failure() {
+        let broker = Arc::new(FakeDiscordRoleBroker::configured(true));
+        let broker_for_state: Arc<dyn DiscordRoleBroker> = broker.clone();
+        let Some(state) = test_state_with_broker_and_reserve(broker_for_state, Some(9001)).await
+        else {
+            return;
+        };
+        sqlx::query(
+            "INSERT INTO scrim.participants \
+             (id, discord_id, display_name, rank_source, rank_verified, status, source, created_at, updated_at) \
+             VALUES (4, 4444, 'Expired Reserve', 'self', false, 'reserve', 'seed', now(), now())",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("seed reserve");
+        sqlx::query(
+            "INSERT INTO scrim.team_members \
+             (team_id, participant_id, is_captain, is_bench, substitute_until) \
+             VALUES (1, 4, false, true, now() - interval '1 minute')",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("seed expired membership");
+
+        let first_sweep = sweep_expired_substitutes(&state)
+            .await
+            .expect("first sweep");
+        assert_eq!(first_sweep, 0);
+        let retained_after_failure: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM scrim.team_members \
+             WHERE team_id=1 AND participant_id=4)",
+        )
+        .fetch_one(&state.pool)
+        .await
+        .expect("retained membership");
+        assert!(retained_after_failure);
+
+        broker.set_failure(false);
+        let retry_sweep = sweep_expired_substitutes(&state)
+            .await
+            .expect("retry sweep");
+        assert_eq!(retry_sweep, 1);
+        let retained_after_retry: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM scrim.team_members \
+             WHERE team_id=1 AND participant_id=4)",
+        )
+        .fetch_one(&state.pool)
+        .await
+        .expect("removed membership");
+        assert!(!retained_after_retry);
+
+        let calls = broker.calls();
+        assert_eq!(calls.len(), 2);
+        assert!(calls.iter().all(|(operation, request)| *operation
+            == DiscordRoleOperation::Remove
+            && request.role_id == 101));
+    }
+
     fn availability_roundtrip_body() -> WeeklyAvailability {
         WeeklyAvailability {
             mon: DaySlot::available(Some(1140), Some(1320)),
@@ -5039,7 +5165,7 @@ mod tests {
     #[derive(Clone)]
     struct FakeDiscordRoleBroker {
         configured: bool,
-        fail: bool,
+        fail: Arc<AtomicBool>,
         fail_dm: bool,
         calls: Arc<Mutex<Vec<(DiscordRoleOperation, DiscordRoleBrokerRequest)>>>,
         create_calls: Arc<Mutex<Vec<DiscordCreateRoleBrokerRequest>>>,
@@ -5052,7 +5178,7 @@ mod tests {
         fn configured(fail: bool) -> Self {
             Self {
                 configured: true,
-                fail,
+                fail: Arc::new(AtomicBool::new(fail)),
                 fail_dm: false,
                 calls: Arc::new(Mutex::new(Vec::new())),
                 create_calls: Arc::new(Mutex::new(Vec::new())),
@@ -5065,7 +5191,7 @@ mod tests {
         fn unconfigured() -> Self {
             Self {
                 configured: false,
-                fail: false,
+                fail: Arc::new(AtomicBool::new(false)),
                 fail_dm: false,
                 calls: Arc::new(Mutex::new(Vec::new())),
                 create_calls: Arc::new(Mutex::new(Vec::new())),
@@ -5077,6 +5203,10 @@ mod tests {
 
         fn calls(&self) -> Vec<(DiscordRoleOperation, DiscordRoleBrokerRequest)> {
             self.calls.lock().expect("fake broker calls").clone()
+        }
+
+        fn set_failure(&self, fail: bool) {
+            self.fail.store(fail, Ordering::SeqCst);
         }
 
         fn with_dm_failure(mut self) -> Self {
@@ -5111,7 +5241,7 @@ mod tests {
                     .lock()
                     .expect("fake broker calls")
                     .push((operation, request));
-                if self.fail {
+                if self.fail.load(Ordering::SeqCst) {
                     Err(DiscordRoleBrokerError::Rejected)
                 } else {
                     Ok(())
@@ -5131,7 +5261,7 @@ mod tests {
                     .lock()
                     .expect("fake broker create calls")
                     .push(request);
-                if self.fail {
+                if self.fail.load(Ordering::SeqCst) {
                     Err(DiscordRoleBrokerError::Rejected)
                 } else {
                     Ok(self.create_role_id)
@@ -5168,7 +5298,7 @@ mod tests {
                     .lock()
                     .expect("fake broker rich message calls")
                     .push(request);
-                if self.fail {
+                if self.fail.load(Ordering::SeqCst) {
                     Err(DiscordRoleBrokerError::Rejected)
                 } else {
                     Ok("1521000000000000000".to_string())

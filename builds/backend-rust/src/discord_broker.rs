@@ -3,6 +3,7 @@ use std::{future::Future, pin::Pin, sync::Arc, time::Duration};
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 
 use crate::config::Config;
 
@@ -309,6 +310,7 @@ pub fn build_discord_dm_request(
     client
         .post(url)
         .header("X-Internal-Token", token)
+        .header("X-Idempotency-Key", discord_idempotency_key("dm", payload))
         .json(payload)
         .build()
 }
@@ -326,8 +328,17 @@ pub fn build_discord_rich_message_request(
     client
         .post(url)
         .header("X-Internal-Token", token)
+        .header(
+            "X-Idempotency-Key",
+            discord_idempotency_key("rich-message", payload),
+        )
         .json(payload)
         .build()
+}
+
+fn discord_idempotency_key(kind: &str, payload: &impl std::fmt::Debug) -> String {
+    let digest = Sha256::digest(format!("{payload:?}").as_bytes());
+    format!("website-discord-{kind}-{digest:x}")
 }
 
 #[derive(Deserialize)]
@@ -459,16 +470,26 @@ mod tests {
     #[test]
     fn discord_dm_request_sets_header_and_json_body() {
         let client = Client::new();
-        let request = build_discord_dm_request(
+        let payload = DiscordDmBrokerRequest {
+            user_id: 456,
+            content: "Willkommen!".to_string(),
+        };
+        let request =
+            build_discord_dm_request(&client, "http://127.0.0.1:8770/", "unit-token", &payload)
+                .expect("request builds");
+        let repeated_request =
+            build_discord_dm_request(&client, "http://127.0.0.1:8770/", "unit-token", &payload)
+                .expect("repeated request builds");
+        let different_request = build_discord_dm_request(
             &client,
             "http://127.0.0.1:8770/",
             "unit-token",
             &DiscordDmBrokerRequest {
                 user_id: 456,
-                content: "Willkommen!".to_string(),
+                content: "Andere Nachricht".to_string(),
             },
         )
-        .expect("request builds");
+        .expect("different request builds");
 
         assert_eq!(request.method(), Method::POST);
         assert_eq!(
@@ -481,6 +502,27 @@ mod tests {
                 .get("X-Internal-Token")
                 .and_then(|value| value.to_str().ok()),
             Some("unit-token")
+        );
+        let idempotency_key = request
+            .headers()
+            .get("X-Idempotency-Key")
+            .and_then(|value| value.to_str().ok())
+            .expect("idempotency header");
+        assert!(idempotency_key.starts_with("website-discord-dm-"));
+        assert!(idempotency_key.len() <= 128);
+        assert_eq!(
+            repeated_request
+                .headers()
+                .get("X-Idempotency-Key")
+                .and_then(|value| value.to_str().ok()),
+            Some(idempotency_key)
+        );
+        assert_ne!(
+            different_request
+                .headers()
+                .get("X-Idempotency-Key")
+                .and_then(|value| value.to_str().ok()),
+            Some(idempotency_key)
         );
 
         let body = request
@@ -495,18 +537,38 @@ mod tests {
     #[test]
     fn discord_rich_message_request_sets_header_and_json_body() {
         let client = Client::new();
+        let payload = DiscordRichMessageBrokerRequest {
+            channel_id: 123,
+            content: Some("<@&456>".to_string()),
+            embed: serde_json::json!({"title": "Aufruf"}),
+            allowed_role_ids: vec![456],
+        };
         let request = build_discord_rich_message_request(
+            &client,
+            "http://127.0.0.1:8770/",
+            "unit-token",
+            &payload,
+        )
+        .expect("request builds");
+        let repeated_request = build_discord_rich_message_request(
+            &client,
+            "http://127.0.0.1:8770/",
+            "unit-token",
+            &payload,
+        )
+        .expect("repeated request builds");
+        let different_request = build_discord_rich_message_request(
             &client,
             "http://127.0.0.1:8770/",
             "unit-token",
             &DiscordRichMessageBrokerRequest {
                 channel_id: 123,
                 content: Some("<@&456>".to_string()),
-                embed: serde_json::json!({"title": "Aufruf"}),
+                embed: serde_json::json!({"title": "Anderer Aufruf"}),
                 allowed_role_ids: vec![456],
             },
         )
-        .expect("request builds");
+        .expect("different request builds");
 
         assert_eq!(request.method(), Method::POST);
         assert_eq!(
@@ -519,6 +581,27 @@ mod tests {
                 .get("X-Internal-Token")
                 .and_then(|value| value.to_str().ok()),
             Some("unit-token")
+        );
+        let idempotency_key = request
+            .headers()
+            .get("X-Idempotency-Key")
+            .and_then(|value| value.to_str().ok())
+            .expect("idempotency header");
+        assert!(idempotency_key.starts_with("website-discord-rich-message-"));
+        assert!(idempotency_key.len() <= 128);
+        assert_eq!(
+            repeated_request
+                .headers()
+                .get("X-Idempotency-Key")
+                .and_then(|value| value.to_str().ok()),
+            Some(idempotency_key)
+        );
+        assert_ne!(
+            different_request
+                .headers()
+                .get("X-Idempotency-Key")
+                .and_then(|value| value.to_str().ok()),
+            Some(idempotency_key)
         );
 
         let body = request
