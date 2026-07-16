@@ -1464,6 +1464,7 @@ mod tests {
             master_broker_base: "http://127.0.0.1:8770".into(),
             master_broker_token: None,
             scrim_guild_id: 1,
+            scrim_signup_role_id: None,
             scrim_reserve_role_id: None,
             ddl_creator_role_id: None,
             youtube_api_key: None,

@@ -20,13 +20,12 @@ to the central Postgres/TimescaleDB database:
   overridden with `DISCORD_OAUTH_AUTHORIZE_BASE`.
 
 `scripts/run_builds_backend.sh` loads Infisical secrets first, then starts
-`builds/backend-rust/target/release/ddc-website-backend` by default. For the
+`builds/backend-rust/target/release/ddc-website-backend`. For the
 Rust backend, `DEADLOCK_CENTRAL_DSN` must be exported by Infisical; the wrapper
 fails fast when it is missing and never prints the value. There is no `DB_PATH`
 runtime mode for the Rust backend anymore.
 
-Set `WEBSITE_BACKEND_IMPL=python` only for rollback. The Python backend remains a
-fallback path, not the target of the Central-Postgres migration.
+The removed Python backend is no longer available as a runtime fallback.
 
 ## Cutover Runbook
 

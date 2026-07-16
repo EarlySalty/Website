@@ -26,7 +26,7 @@
   padding: clamp(1.4rem, 2vw, 2rem);
   border-radius: var(--radius-lg);
   border: 1px solid rgba(201, 168, 106, 0.16);
-  background: linear-gradient(180deg, rgba(44, 35, 24, 0.88), rgba(36, 28, 17, 0.96));
+  background: linear-gradient(180deg, rgba(18, 18, 17, 0.88), rgba(11, 11, 11, 0.96));
   box-shadow: var(--shadow);
 }
 
@@ -47,7 +47,7 @@
 }
 
 .survey-card p {
-  color: #ece0c8;
+  color: #f2eee6;
 }
 
 .survey-card--loading {
@@ -146,7 +146,7 @@
 .survey-upload-feedback {
   min-height: 1.4rem;
   font-size: 0.92rem;
-  color: #ece0c8;
+  color: #f2eee6;
 }
 
 .survey-upload-feedback.is-error {
@@ -196,7 +196,7 @@
   border-radius: 16px;
   border: 1px solid rgba(201, 168, 106, 0.14);
   background: rgba(20, 15, 9, 0.78);
-  color: #ece0c8;
+  color: #f2eee6;
   font-size: 0.95rem;
 }
 

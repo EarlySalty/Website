@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Startet das Website-Backend (builds/backend, "Deadlock Meta"-API inkl. Coaching-Plattform)
+# Startet das Rust-Website-Backend ("Deadlock Meta"-API inkl. Coaching-Plattform)
 # auf 127.0.0.1. Secrets kommen wie beim Bot aus Infisical (export_infisical_env.py),
 # damit u.a. TWITCH_INTERNAL_API_TOKEN (Coaching-Mirror) und Discord-OAuth verfuegbar sind.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # .../Website
-BACKEND_DIR="$ROOT_DIR/builds/backend"
 RUST_BACKEND_BIN="${RUST_BACKEND_BIN:-$ROOT_DIR/builds/backend-rust/target/release/ddc-website-backend}"
 INFISICAL_CONFIG_FILE="${INFISICAL_CONFIG_FILE:-$HOME/.config/deadlock-bots/infisical.conf}"
 EXPORT_SCRIPT="${INFISICAL_EXPORT_SCRIPT:-/home/naniadm/Documents/Deadlock-Bots/scripts/export_infisical_env.py}"
@@ -29,17 +28,11 @@ if [[ -z "${INFISICAL_SERVICE_TOKEN:-}" ]]; then
   exit 1
 fi
 
-if [[ -x "$BACKEND_DIR/.venv/bin/python" ]]; then
-  PYTHON_BIN="${PYTHON_BIN:-$BACKEND_DIR/.venv/bin/python}"
-else
-  PYTHON_BIN="${PYTHON_BIN:-python3}"
-fi
-
 INFISICAL_RETRY_DELAY="${INFISICAL_RETRY_DELAY:-5}"
 INFISICAL_MAX_ATTEMPTS="${INFISICAL_MAX_ATTEMPTS:-0}"
 attempt=0
 while true; do
-  if INFISICAL_EXPORT="$("$PYTHON_BIN" "$EXPORT_SCRIPT" --format shell)"; then
+  if INFISICAL_EXPORT="$(python3 "$EXPORT_SCRIPT" --format shell)"; then
     eval "$INFISICAL_EXPORT"
     break
   fi
@@ -52,8 +45,6 @@ while true; do
   sleep "$INFISICAL_RETRY_DELAY"
 done
 
-export PYTHONUNBUFFERED=1
-
 # Eigene oeffentliche OAuth-Rueck-Adresse (redirect_after im delegierten Flow):
 # Der zentrale Broker (/callback/discord, 127.0.0.1:8766) leitet nach dem
 # Discord-Login hierher zurueck. Caddy strippt /coaching, bevor das Backend die
@@ -63,29 +54,13 @@ export PYTHONUNBUFFERED=1
 export AUTH_PUBLIC_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/callback"
 export DISCORD_ROLE_CONNECTION_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/linked-role/callback"
 
-cd "$BACKEND_DIR"
-
-case "${WEBSITE_BACKEND_IMPL:-rust}" in
-  rust)
-    if [[ ! -x "$RUST_BACKEND_BIN" ]]; then
-      echo "Rust Website Backend fehlt oder ist nicht ausführbar: $RUST_BACKEND_BIN" >&2
-      exit 1
-    fi
-    if [[ -z "${DEADLOCK_CENTRAL_DSN:-}" ]]; then
-      echo "DEADLOCK_CENTRAL_DSN fehlt nach Infisical-Export; Rust Website Backend startet nicht." >&2
-      exit 1
-    fi
-    echo "Rust Website Backend: central DB DSN present: true" >&2
-    exec "$RUST_BACKEND_BIN"
-    ;;
-  python)
-    ;;
-  *)
-    echo "Ungültiges WEBSITE_BACKEND_IMPL=${WEBSITE_BACKEND_IMPL:-}; erlaubt: rust|python" >&2
-    exit 1
-    ;;
-esac
-
-exec "$PYTHON_BIN" -m uvicorn app.main:app \
-  --host "${WEBSITE_BACKEND_HOST:-127.0.0.1}" \
-  --port "${WEBSITE_BACKEND_PORT:-8772}"
+if [[ ! -x "$RUST_BACKEND_BIN" ]]; then
+  echo "Rust Website Backend fehlt oder ist nicht ausführbar: $RUST_BACKEND_BIN" >&2
+  exit 1
+fi
+if [[ -z "${DEADLOCK_CENTRAL_DSN:-}" ]]; then
+  echo "DEADLOCK_CENTRAL_DSN fehlt nach Infisical-Export; Rust Website Backend startet nicht." >&2
+  exit 1
+fi
+echo "Rust Website Backend: central DB DSN present: true" >&2
+exec "$RUST_BACKEND_BIN"

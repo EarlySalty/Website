@@ -4,15 +4,15 @@ Datum: 2026-07-01
 
 ## Ziel und Grenzen
 
-Ziel ist nur der dringende Python/FastAPI-Fix fuer `builds/backend`: die lokale SQLite-Datei `builds/backend/deadlock.db` darf nach dem Cutover nicht mehr die schreibende Quelle fuer Website-/Coaching-Daten sein. Das Backend soll stattdessen die zentrale TimescaleDB/Postgres-Instanz ueber die Infisical-Env `DEADLOCK_CENTRAL_DSN` nutzen.
+Ziel war nur der dringende Python/FastAPI-Fix fuer das inzwischen entfernte Legacy-Backend: Seine lokale SQLite-Datei durfte nach dem Cutover nicht mehr die schreibende Quelle fuer Website-/Coaching-Daten sein. Das Backend sollte stattdessen die zentrale TimescaleDB/Postgres-Instanz ueber die Infisical-Env `DEADLOCK_CENTRAL_DSN` nutzen.
 
 Nicht Teil dieses Schritts: Rust-Port / `dl-etage`, Live-Service-Aenderung, Secret-Ausgabe, Datenbank-Schreibzugriff, automatische Reconciliation ohne Review.
 
 ## Ausgangslage
 
-- Backend: FastAPI/Uvicorn in `builds/backend/app/main.py`.
-- Aktuelle DB-Schicht: `builds/backend/app/database.py` nutzt `aiosqlite`, Raw-SQL und eine globale persistente SQLite-Connection.
-- Konfiguration: `DB_PATH`, Default `builds/backend/deadlock.db`.
+- Backend: FastAPI/Uvicorn im inzwischen entfernten Legacy-Backend.
+- Aktuelle DB-Schicht: Das entfernte Modul nutzte `aiosqlite`, Raw-SQL und eine globale persistente SQLite-Connection.
+- Konfiguration: `DB_PATH`, Default war die lokale `deadlock.db`.
 - `requirements.txt` enthaelt zwar `sqlalchemy==2.0.31`, der Python-Code nutzt aber kein ORM.
 - Startup legt Tabellen per `CREATE TABLE IF NOT EXISTS` lokal an und fuegt Sample-Daten ein, wenn `meta_heroes` leer ist.
 - SQLite-spezifisch im Code: `?`-Parameter, `PRAGMA table_info`, `INTEGER` als Boolean, JSON als Textspalten mit `_json`-Suffix, `reserved_until` teils als Unix-Epoch.
@@ -72,7 +72,7 @@ Konkreter Zielzustand:
 
 ### P0 - Scope- und Safety-Guards
 
-- In `app/database.py` bei `WEBSITE_BACKEND_IMPL=python` fuer Produktion hart auf `DEADLOCK_CENTRAL_DSN` pruefen.
+- Das inzwischen entfernte Python-Backend haette fuer Produktion hart auf `DEADLOCK_CENTRAL_DSN` pruefen muessen.
 - `DB_PATH` nicht mehr als Produktions-Fallback verwenden.
 - Logs pruefen: keine DSN-Ausgabe, keine Secret-Env-Dumps.
 - Startup darf zentral keine DDL/Sample-Daten schreiben.
@@ -140,7 +140,7 @@ Betroffene Reconciliation-Tabellen sind alle oben gelisteten 21 Website-Tabellen
 
 ### P6 - Tests
 
-- Bestehende Tests in `builds/backend/tests` von direkter `aiosqlite`-Connection auf Adapter-Fixtures umstellen.
+- Bestehende Legacy-Backend-Tests von direkter `aiosqlite`-Connection auf Adapter-Fixtures umstellen.
 - Mindestens testen:
   - Coaching-Request erzeugen,
   - Bot-Sync idempotent,
@@ -155,11 +155,10 @@ Akzeptanz: Pytest laeuft ohne Zugriff auf produktive Postgres-Daten.
 
 - `deadlock-website-backend.service` bzw. `scripts/run_builds_backend.sh` muss `DEADLOCK_CENTRAL_DSN` aus Infisical im Prozess-Env haben.
 - `DB_PATH` aus der Produktiv-Konfiguration entfernen oder ignorieren.
-- Falls der Python-Fix live gehen soll, `WEBSITE_BACKEND_IMPL=python` setzen; der aktuelle Wrapper startet sonst standardmaessig das Rust-Binary.
-- Optional `Environment=WEBSITE_BACKEND_IMPL=python` in der User-Unit setzen; Secret selbst bleibt in Infisical, nicht in Unit-Dateien.
+- Ein Python-Rollback ist nach Entfernung des Legacy-Backends nicht mehr verfuegbar.
 - Neustart erst nach Review/Freigabe: `systemctl --user restart deadlock-website-backend.service`.
 
-Akzeptanz: Prozess nutzt `DEADLOCK_CENTRAL_DSN`; es gibt keine neue Schreibverbindung zu `builds/backend/deadlock.db`.
+Akzeptanz: Prozess nutzt `DEADLOCK_CENTRAL_DSN`; es gibt keine neue Schreibverbindung zur lokalen Legacy-SQLite-Datei.
 
 ### P8 - Rollback
 

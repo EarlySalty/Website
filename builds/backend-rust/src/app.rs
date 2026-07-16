@@ -53,6 +53,7 @@ impl AppState {
             }),
         };
         crate::discord_role_connection::spawn_sync_worker(state.clone());
+        crate::routes::scrim::spawn_substitute_sweep_worker(state.clone());
         crate::video::spawn_ingest_worker(state.clone());
         Ok(state)
     }
@@ -388,9 +389,15 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/scrim/signup", post(routes::scrim::signup))
         .route("/api/scrim/pool", get(routes::scrim::pool))
+        .route("/api/scrim/coaches", get(routes::scrim::coaches))
         .route(
             "/api/scrim/teams",
             get(routes::scrim::teams).post(routes::scrim::create_team),
+        )
+        .route("/api/scrim/teams/{id}", patch(routes::scrim::patch_team))
+        .route(
+            "/api/scrim/teams/{id}/announce",
+            post(routes::scrim::announce_team),
         )
         .route(
             "/api/scrim/teams/{id}/board",
@@ -399,6 +406,10 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/scrim/teams/{id}/suggest",
             post(routes::scrim::suggest_roster),
+        )
+        .route(
+            "/api/scrim/teams/{id}/substitute",
+            post(routes::scrim::substitute),
         )
         .route(
             "/api/scrim/participants/{id}/resync-discord",

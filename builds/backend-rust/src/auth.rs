@@ -530,3 +530,32 @@ pub fn json_user(user: User, is_coach: bool) -> Value {
         "is_coach": is_coach,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn session_jwt_round_trip_rejects_wrong_key() {
+        let mut cfg = Config::from_env();
+        cfg.auth_session_secret = Some("round-trip-secret".into());
+        cfg.session_issuer = "test-issuer".into();
+        cfg.session_audience = "test-audience".into();
+        cfg.session_ttl_seconds = 60;
+
+        let auth = Auth::new(cfg.clone());
+        let token = auth
+            .create_session_jwt("user-123", "tester", "user", None, None)
+            .expect("HS256 session token should encode");
+        let claims = auth
+            .decode_jwt(&token)
+            .expect("HS256 session token should decode");
+
+        assert_eq!(claims.sub.as_deref(), Some("user-123"));
+        assert_eq!(claims.username.as_deref(), Some("tester"));
+        assert_eq!(claims.role.as_deref(), Some("user"));
+
+        cfg.auth_session_secret = Some("wrong-secret".into());
+        assert!(Auth::new(cfg).decode_jwt(&token).is_none());
+    }
+}

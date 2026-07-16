@@ -13,12 +13,12 @@
 }
 
 :root {
-  --ink: #241c11;
-  --ink-soft: #2c2318;
-  --panel: rgba(59, 47, 30, .72);
-  --bone: #ece0c8;
-  --bone-dim: #b7aa91;
-  --bone-faint: #746a57;
+  --ink: #0b0b0b;
+  --ink-soft: #121211;
+  --panel: rgba(22, 22, 22, .72);
+  --bone: #f2eee6;
+  --bone-dim: #b5aea2;
+  --bone-faint: #8d867a;
   --gold: #c8a86b;
   --gold-bright: #efd49d;
   --gold-dark: #806534;
@@ -43,7 +43,7 @@ body {
   background:
     radial-gradient(100% 60% at 50% -5%, rgba(201, 168, 106, .1), transparent 60%),
     radial-gradient(80% 50% at 85% 35%, rgba(63, 115, 106, .06), transparent 70%),
-    linear-gradient(180deg, #271f12, #241c11 45%, #1c150d);
+    linear-gradient(180deg, #0e0d0c, #0b0b0b 45%, #080808);
   font: 500 clamp(.98rem, .93rem + .22vw, 1.1rem)/1.65 var(--body);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -101,12 +101,18 @@ button { font: inherit; }
   transition: color .25s;
 }
 .main-nav a:hover { color: var(--gold-bright); }
-.main-nav .nav-cta {
-  color: var(--ink);
+.site-header .nav-cta {
+  color: #15110a;
   background: var(--gold);
   padding: .75rem 1.1rem;
   border: 1px solid var(--gold-bright);
+  text-decoration: none;
+  text-transform: uppercase;
+  font-size: .69rem;
+  font-weight: 800;
+  letter-spacing: .16em;
 }
+.site-header .nav-cta:hover { background: var(--gold-bright); }
 .menu-button {
   display: none;
   width: 44px;

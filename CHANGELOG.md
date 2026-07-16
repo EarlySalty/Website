@@ -1,3 +1,19 @@
+## #65 — Scrims: Anmelden geht jetzt selbst
+
+**Ausgangslage:** Wer bei den Inhouse-Coachscrims mitmachen wollte, hat im Chat geschrieben, was er spielt und wann er kann — und Leo hat das von Hand eingesammelt und einsortiert. Rang, Lane und Zeiten mussten einzeln erfragt werden, und wer neu dazukam, sah die Scrim-Kanäle erst, wenn jemand ihm die Rolle gab.
+
+**Geändert:** Die Anmeldung läuft über die Website: Rang mit Unterstufe, Lane und die Zeiten, an denen du kannst — direkt in einem Wochenraster statt als Fließtext. Die Zeiten sind Pflicht, denn daran rechnen wir aus, wann dein Team gemeinsam kann. Wer sich anmeldet oder im Ankündigungskanal mit dem Haken reagiert, bekommt die Scrim-Rolle automatisch und sieht die Kanäle sofort. Beim Veröffentlichen setzt der Bot diesen Haken direkt selbst, damit niemand erst das Emoji suchen muss. Ganz oben steht jetzt, worauf du dich einlässt: zwei bis drei Mal die Woche Training im Team, alle ein bis zwei Wochen ein Inhouse.
+
+**Verhalten:** Coaches sehen die Anmeldungen sortiert nach neu, Spieler-Pool, Auswechselspieler und fest im Team, und können Leute per Klick verschieben. Fehlt einem Team jemand, findet „Auswechselspieler finden" über Team und Uhrzeit die passenden Ersatzleute — wer einspringt, bekommt die Team-Rolle und eine Nachricht mit Termin, und ist nach der Aushilfe automatisch wieder frei.
+
+## #64 — Ein Look für alle Seiten: Patch-Schwarz mit Gold
+
+**Ausgangslage:** Jede Unterseite hatte ihre eigene Farbwelt — die Tierliste war nachtblau, viele Seiten warm-braun, nur die Patch-Seite trug das dunkle Schwarz mit Gold. Auch die Kopfzeilen waren uneinheitlich: mal mit Menüleiste, mal mit anderem Logo, und der Aufzug fehlte auf etlichen Unterseiten.
+
+**Geändert:** Das Schwarz der Patch-Seite ist jetzt die Grundfarbe überall, kombiniert mit dem matten und glänzenden Gold. Jede Seite trägt oben links das Logo mit Schriftzug, mit etwas Abstand zum Rand, und rechts den Beitreten-Knopf. Der Aufzug ist auf jeder Seite da — auch auf den Helden-Historien und dem Tierlisten-Verlauf — und hat eine neue Etage für die Tierlist bekommen.
+
+**Verhalten:** Egal wo man landet, die Seite sieht nach derselben Community aus, und über den Aufzug kommt man von überall auf jede andere Seite. Stimmungsbilder wie die Stadtszene auf der Startseite bleiben erhalten.
+
 ## #63 — Aktivitätsseite: Gold statt Regenbogen
 
 **Ausgangslage:** Die Seite sollte nach Holz und Gold aussehen, hatte aber ein flaches Senfgelb, einen sterilen Hintergrund und einen knallblauen Discord-Button. Vor allem die Diagramme und die Avatare leuchteten in Neonfarben, die gegen den dunklen Look gearbeitet haben.

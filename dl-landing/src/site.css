@@ -45,14 +45,14 @@
 
 /* ── Custom Properties ── */
 :root {
-  --bg: #241c11;
-  --bg-elevated: rgba(36, 28, 17, 0.88);
-  --card: rgba(59, 47, 30, 0.86);
-  --card-strong: rgba(59, 47, 30, 0.95);
+  --bg: #0b0b0b;
+  --bg-elevated: rgba(11, 11, 11, 0.88);
+  --card: rgba(22, 22, 22, 0.86);
+  --card-strong: rgba(22, 22, 22, 0.95);
   --border: rgba(201, 168, 106, 0.14);
   --border-strong: rgba(201, 168, 106, 0.28);
-  --text: #ece0c8;
-  --muted: #b7aa91;
+  --text: #f2eee6;
+  --muted: #b5aea2;
   --primary: #c8a86b;
   --primary-soft: rgba(201, 168, 106, 0.22);
   --accent: #55978f;
@@ -81,7 +81,7 @@ body {
   min-height: 100vh;
   font-family: 'Manrope', 'Segoe UI', sans-serif;
   color: var(--text);
-  background: linear-gradient(160deg, #241c11 0%, #1c150d 55%, #201910 100%);
+  background: linear-gradient(160deg, #0b0b0b 0%, #080808 55%, #201910 100%);
   line-height: 1.6;
   overflow-x: hidden;
 }
@@ -163,7 +163,7 @@ ol {
 
 ::selection {
   background: rgba(201, 168, 106, 0.42);
-  color: #241c11;
+  color: #0b0b0b;
 }
 
 .site-shell {
@@ -229,7 +229,7 @@ ol {
   background:
     radial-gradient(60% 120% at 92% 0%, rgba(85, 151, 143, 0.1), transparent 70%),
     radial-gradient(50% 120% at 12% 0%, rgba(201, 168, 106, 0.09), transparent 70%),
-    rgba(36, 28, 17, 0.74);
+    rgba(11, 11, 11, 0.74);
   border-bottom: 1px solid rgba(201, 168, 106, 0.14);
 }
 
@@ -247,9 +247,9 @@ ol {
 }
 
 .site-header .container {
-  margin-left: 0.5rem;
-  margin-right: 8rem;
-  width: calc(100% - 8.5rem);
+  margin-inline: clamp(1.2rem, 4vw, 4rem);
+  width: auto;
+  max-width: none;
 }
 
 .header-row {
@@ -429,7 +429,7 @@ ol {
 
 .button-primary {
   background: linear-gradient(180deg, #efd49d, #c8a86b);
-  color: #241c11;
+  color: #0b0b0b;
   border: 1px solid #efd49d;
   border-radius: 8px;
   box-shadow: 0 12px 28px rgba(201, 168, 106, 0.22);
@@ -457,7 +457,7 @@ ol {
 .button-ghost {
   background: rgba(11, 9, 7, 0.5);
   border: 1px solid rgba(201, 168, 106, 0.4);
-  color: #ece0c8;
+  color: #f2eee6;
 }
 
 .button-ghost:hover {
@@ -523,7 +523,7 @@ ol {
   inset: 0;
   background:
     radial-gradient(ellipse 80% 60% at 70% 35%, rgba(201, 168, 106, 0.12), transparent 60%),
-    linear-gradient(180deg, transparent 0%, transparent 30%, rgba(36, 28, 17, 0.75) 68%, #241c11 94%);
+    linear-gradient(180deg, transparent 0%, transparent 30%, rgba(11, 11, 11, 0.75) 68%, #0b0b0b 94%);
 }
 
 .hero-bg::before {
@@ -540,7 +540,7 @@ ol {
 /* ── Helden-Übersicht /helden/ ── */
 .heroes-hero {
   padding: 6rem 0 2rem;
-  background: linear-gradient(180deg, rgba(44, 35, 24, 0.4), transparent 80%);
+  background: linear-gradient(180deg, rgba(18, 18, 17, 0.4), transparent 80%);
 }
 
 .heroes-hero h1 {
@@ -588,7 +588,7 @@ ol {
   gap: 0.7rem;
   padding: 1rem;
   border-radius: 14px;
-  background: rgba(36, 28, 17, 0.55);
+  background: rgba(11, 11, 11, 0.55);
   border: 1px solid rgba(201, 168, 106, 0.12);
 }
 
@@ -612,7 +612,7 @@ ol {
 
 .filter-pill:hover {
   background: rgba(201, 168, 106, 0.08);
-  color: #ece0c8;
+  color: #f2eee6;
 }
 
 .filter-pill.is-active {
@@ -648,7 +648,7 @@ ol {
   gap: 0.85rem;
   padding: 1.1rem;
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(44, 35, 24, 0.55), rgba(36, 28, 17, 0.85));
+  background: linear-gradient(180deg, rgba(18, 18, 17, 0.55), rgba(11, 11, 11, 0.85));
   border: 1px solid rgba(201, 168, 106, 0.14);
   transition: transform 0.18s ease, border-color 0.18s ease;
 }
@@ -684,7 +684,7 @@ ol {
 .hero-card-body h3 {
   margin: 0 0 0.45rem;
   font-size: 1.1rem;
-  color: #ece0c8;
+  color: #f2eee6;
 }
 
 .hero-card-tags {
@@ -728,7 +728,7 @@ ol {
 /* ── Long-Form Guide /guides/anfaenger/ ── */
 .guide-hero {
   padding: 6rem 0 2.2rem;
-  background: linear-gradient(180deg, rgba(44, 35, 24, 0.4), transparent 80%);
+  background: linear-gradient(180deg, rgba(18, 18, 17, 0.4), transparent 80%);
 }
 
 .guide-hero h1 {
@@ -765,7 +765,7 @@ ol {
   margin: 1.5rem 0 0;
   padding: 1.2rem 1.4rem;
   border-radius: 14px;
-  background: rgba(36, 28, 17, 0.55);
+  background: rgba(11, 11, 11, 0.55);
   border: 1px solid rgba(201, 168, 106, 0.14);
 }
 
@@ -787,7 +787,7 @@ ol {
 }
 
 .guide-toc a {
-  color: #ece0c8;
+  color: #f2eee6;
   text-decoration: none;
   font-size: 0.95rem;
 }
@@ -813,26 +813,26 @@ ol {
 .guide-body h3 {
   font-size: 1.2rem;
   margin: 1.6rem 0 0.5rem;
-  color: #ece0c8;
+  color: #f2eee6;
 }
 
 .guide-body p {
   font-size: 1rem;
   line-height: 1.7;
-  color: #b7aa91;
+  color: #b5aea2;
   margin: 0 0 1rem;
 }
 
 .guide-body ul, .guide-body ol {
   padding-left: 1.4rem;
   margin: 0 0 1.2rem;
-  color: #b7aa91;
+  color: #b5aea2;
   line-height: 1.65;
 }
 
 .guide-body li { margin-bottom: 0.35rem; }
 
-.guide-body strong { color: #ece0c8; }
+.guide-body strong { color: #f2eee6; }
 
 .guide-body a {
   color: var(--primary);
@@ -847,10 +847,10 @@ ol {
   border-radius: 12px;
   background: rgba(201, 168, 106, 0.08);
   border-left: 3px solid var(--primary);
-  color: #b7aa91;
+  color: #b5aea2;
 }
 
-.guide-callout strong { color: #ece0c8; }
+.guide-callout strong { color: #f2eee6; }
 
 /* ── Live aus der Community ── */
 .live-section {
@@ -874,7 +874,7 @@ ol {
   gap: 1rem;
   padding: 1.5rem;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(44, 35, 24, 0.55), rgba(36, 28, 17, 0.85));
+  background: linear-gradient(180deg, rgba(18, 18, 17, 0.55), rgba(11, 11, 11, 0.85));
   border: 1px solid rgba(201, 168, 106, 0.14);
   position: relative;
   overflow: hidden;
@@ -914,7 +914,7 @@ ol {
 }
 
 .live-card-meta [data-stat="online"] {
-  color: #ece0c8;
+  color: #f2eee6;
   font-weight: 700;
 }
 
@@ -967,7 +967,7 @@ ol {
 }
 
 .lane-name {
-  color: #ece0c8;
+  color: #f2eee6;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -1022,7 +1022,7 @@ ol {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.05);
   object-fit: cover;
-  border: 2px solid rgba(44, 35, 24, 0.85);
+  border: 2px solid rgba(18, 18, 17, 0.85);
 }
 
 .presence-skeleton {
@@ -1041,12 +1041,12 @@ ol {
   background: rgba(201, 168, 106, 0.12);
   border-radius: 50%;
   aspect-ratio: 1;
-  border: 2px solid rgba(44, 35, 24, 0.85);
+  border: 2px solid rgba(18, 18, 17, 0.85);
 }
 
 /* Patch-Tile */
 .patch-tile-body { position: relative; }
-.patch-tile-body h3 { font-size: 1.1rem; margin: 0 0 0.4rem; color: #ece0c8; }
+.patch-tile-body h3 { font-size: 1.1rem; margin: 0 0 0.4rem; color: #f2eee6; }
 .patch-tile-body p  { color: var(--muted); font-size: 0.92rem; margin: 0; }
 
 /* Live-Indicator im Header (Subseiten) */
@@ -1057,7 +1057,7 @@ ol {
   padding: 0.4rem 0.75rem;
   border: 1px solid rgba(201, 168, 106, 0.25);
   border-radius: 999px;
-  background: rgba(36, 28, 17, 0.55);
+  background: rgba(11, 11, 11, 0.55);
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 500;
@@ -1075,7 +1075,7 @@ ol {
 }
 
 .header-live-text [data-stat="online"] {
-  color: #ece0c8;
+  color: #f2eee6;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -1215,7 +1215,7 @@ ol {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  background: linear-gradient(160deg, var(--card), rgba(59, 47, 30, 0.94));
+  background: linear-gradient(160deg, var(--card), rgba(22, 22, 22, 0.94));
   box-shadow: var(--shadow);
   transition: transform 260ms ease, border-color 260ms ease, box-shadow 260ms ease;
   transform-style: preserve-3d;
@@ -1338,7 +1338,7 @@ ol {
   padding: 2rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: linear-gradient(160deg, var(--card), rgba(59, 47, 30, 0.94));
+  background: linear-gradient(160deg, var(--card), rgba(22, 22, 22, 0.94));
   position: relative;
   overflow: hidden;
 }
@@ -1448,7 +1448,7 @@ ol {
 .footer {
   padding: 2rem 0 3rem;
   border-top: 1px solid rgba(201, 168, 106, 0.08);
-  background: rgba(36, 28, 17, 0.45);
+  background: rgba(11, 11, 11, 0.45);
 }
 
 .footer-grid {
@@ -1495,8 +1495,8 @@ ol {
 
 .hero--mitspieler .hero-bg::after {
   background:
-    linear-gradient(180deg, rgba(11, 9, 7, 0.2), rgba(11, 9, 7, 0.5) 45%, rgba(22, 17, 10, 0.8) 85%),
-    linear-gradient(90deg, rgba(11, 9, 7, 0.7), transparent 35%, transparent 65%, rgba(11, 9, 7, 0.7));
+    linear-gradient(180deg, rgba(11, 11, 11, 0.35), rgba(11, 11, 11, 0.6) 45%, rgba(11, 11, 11, 0.88) 85%),
+    linear-gradient(90deg, rgba(11, 11, 11, 0.75), transparent 35%, transparent 65%, rgba(11, 11, 11, 0.75));
 }
 
 /* Das Hero-Bild löst sich nach unten in den Seitengrund auf, statt an der
@@ -1528,13 +1528,13 @@ ol {
   padding: 2rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: linear-gradient(160deg, var(--card), rgba(59, 47, 30, 0.94));
+  background: linear-gradient(160deg, var(--card), rgba(22, 22, 22, 0.94));
   counter-increment: step;
 }
 
 .steps-grid--deco .step-card {
   border: 1px solid rgba(200, 168, 107, 0.24);
-  background: linear-gradient(160deg, rgba(28, 22, 14, 0.96), rgba(11, 9, 7, 0.92));
+  background: linear-gradient(160deg, rgba(22, 22, 21, 0.96), rgba(11, 9, 7, 0.92));
 }
 
 .step-card::before {
@@ -1968,7 +1968,7 @@ ol {
   padding: 1.25rem 1.5rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: rgba(44, 35, 24, 0.6);
+  background: rgba(18, 18, 17, 0.6);
   text-decoration: none;
   color: var(--text);
   transition: border-color 200ms ease, background 200ms ease;
@@ -2081,7 +2081,7 @@ html::after {
   padding: 1.6rem 1.6rem 1.4rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
-  background: linear-gradient(160deg, rgba(44, 35, 24, 0.5), rgba(28, 21, 13, 0.42));
+  background: linear-gradient(160deg, rgba(18, 18, 17, 0.5), rgba(28, 21, 13, 0.42));
 }
 
 /* Gold-Hairline-Divider mit Rauten-Marke — Sektions-Trenner */
@@ -2213,7 +2213,7 @@ html::after {
   padding: clamp(1.6rem, 3vw, 2.4rem);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-strong);
-  background: linear-gradient(160deg, var(--card), rgba(59, 47, 30, 0.94));
+  background: linear-gradient(160deg, var(--card), rgba(22, 22, 22, 0.94));
   text-align: center;
 }
 
@@ -2316,7 +2316,7 @@ html::after {
   padding: 0.8rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
-  background: linear-gradient(160deg, rgba(44, 35, 24, 0.6), rgba(28, 21, 13, 0.5));
+  background: linear-gradient(160deg, rgba(18, 18, 17, 0.6), rgba(28, 21, 13, 0.5));
 }
 .tower-btn {
   display: flex;
@@ -2335,12 +2335,12 @@ html::after {
 }
 .tower-btn:hover {
   background: rgba(201, 168, 106, 0.08);
-  color: #ece0c8;
+  color: #f2eee6;
 }
 .tower-btn.is-active {
   background: rgba(201, 168, 106, 0.12);
   border-color: rgba(201, 168, 106, 0.4);
-  color: #ece0c8;
+  color: #f2eee6;
 }
 .tower-btn-num {
   display: inline-flex;
@@ -2350,7 +2350,7 @@ html::after {
   height: 30px;
   border-radius: 50%;
   border: 1px solid rgba(201, 168, 106, 0.5);
-  background: radial-gradient(circle at 35% 30%, #4a3b26, #2c2318);
+  background: radial-gradient(circle at 35% 30%, #4a3b26, #121211);
   color: #c8a86b;
   font-family: 'Sora', sans-serif;
   font-size: 0.82rem;
@@ -2360,7 +2360,7 @@ html::after {
 }
 .tower-btn.is-active .tower-btn-num {
   background: radial-gradient(circle at 35% 30%, #efd49d, #ae8442);
-  color: #241c11;
+  color: #0b0b0b;
   box-shadow: 0 0 12px rgba(239, 212, 157, 0.45);
 }
 .tower-btn-name {
@@ -2388,7 +2388,7 @@ html::after {
   padding: 1.5rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, rgba(44, 35, 24, 0.55), rgba(36, 28, 17, 0.85));
+  background: linear-gradient(180deg, rgba(18, 18, 17, 0.55), rgba(11, 11, 11, 0.85));
 }
 .tower-detail-eyebrow {
   display: block;
@@ -2444,7 +2444,7 @@ html::after {
   padding: 1.3rem 1.5rem;
   border: 1px solid rgba(201, 168, 106, 0.14);
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(44, 35, 24, 0.55), rgba(36, 28, 17, 0.85));
+  background: linear-gradient(180deg, rgba(18, 18, 17, 0.55), rgba(11, 11, 11, 0.85));
 }
 .tower-live-head {
   display: flex;

@@ -19,6 +19,7 @@ pub struct Config {
     pub master_broker_base: String,
     pub master_broker_token: Option<String>,
     pub scrim_guild_id: u64,
+    pub scrim_signup_role_id: Option<i64>,
     pub scrim_reserve_role_id: Option<i64>,
     pub ddl_creator_role_id: Option<u64>,
     pub youtube_api_key: Option<String>,
@@ -85,10 +86,14 @@ impl Config {
                 .ok()
                 .and_then(|v| v.trim().parse().ok())
                 .unwrap_or(1_289_721_245_281_292_288),
+            scrim_signup_role_id: env::var("SCRIM_SIGNUP_ROLE_ID")
+                .map_or(Some(1_520_849_762_851_618_817), |v| {
+                    v.trim().parse().ok().filter(|v| *v > 0)
+                }),
             scrim_reserve_role_id: env::var("SCRIM_RESERVE_ROLE_ID")
-                .ok()
-                .and_then(|v| v.trim().parse().ok())
-                .filter(|v| *v > 0),
+                .map_or(Some(1_523_803_562_306_703_430), |v| {
+                    v.trim().parse().ok().filter(|v| *v > 0)
+                }),
             ddl_creator_role_id: env::var("DDL_CREATOR_ROLE_ID")
                 .ok()
                 .and_then(|v| v.trim().parse().ok())
@@ -148,6 +153,22 @@ impl Config {
             .unwrap_or(30),
             db_master_key_v1: first_env(&["DB_MASTER_KEY_V1"]),
         }
+    }
+
+    pub fn scrim_substitute_sweep_interval_seconds(&self) -> u64 {
+        env::var("SCRIM_SUBSTITUTE_SWEEP_INTERVAL_SECONDS")
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(600)
+    }
+
+    pub fn scrim_announce_channel_id(&self) -> u64 {
+        env::var("SCRIM_ANNOUNCE_CHANNEL_ID")
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(1_520_842_755_037_855_975)
     }
 }
 

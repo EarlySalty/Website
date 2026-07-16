@@ -60,5 +60,3 @@ env/
 .superpowers
 docs/superpowers/
 WORKFLOW.md
-builds/backend/deadlock.db-shm
-builds/backend/deadlock.db-wal
