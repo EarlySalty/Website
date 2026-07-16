@@ -744,7 +744,6 @@ pub async fn create_team(
         .execute(&mut *tx)
         .await?;
 
-    let mut before_snapshots = Vec::new();
     if let Some(coach_discord_id) = coach_discord_id {
         coach = Some(
             sqlx::query_scalar(
@@ -756,30 +755,48 @@ pub async fn create_team(
             .await?
             .ok_or_else(|| AppError::bad_request("Ungueltiger Coach."))?,
         );
-        before_snapshots.push((
-            coach_discord_id,
-            fetch_coach_discord_role_snapshot(&mut *tx, coach_discord_id).await?,
-        ));
     }
 
     let team_id: i32 = sqlx::query_scalar("SELECT COALESCE(MAX(id), 0) + 1 FROM scrim.teams")
         .fetch_one(&mut *tx)
         .await?;
-    let discord_role_id = create_discord_team_role(&state, team_id, &name).await;
+    sqlx::query(
+        "INSERT INTO scrim.teams(id, name, coach, default_from, default_to, created_at) \
+         VALUES($1, $2, $3, $4, $5, now())",
+    )
+    .bind(team_id)
+    .bind(&name)
+    .bind(coach.as_deref())
+    .bind(body.default_from)
+    .bind(body.default_to)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
 
+    let discord_role_id = create_discord_team_role(&state, team_id, &name).await;
+    let mut tx = state.pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock($1)")
+        .bind(0x4451_0008_0004_0001i64)
+        .execute(&mut *tx)
+        .await?;
+
+    let mut before_snapshots = Vec::new();
+    if let Some(coach_discord_id) = coach_discord_id {
+        before_snapshots.push((
+            coach_discord_id,
+            fetch_coach_discord_role_snapshot(&mut *tx, coach_discord_id).await?,
+        ));
+    }
     let row = sqlx::query(
-        "INSERT INTO scrim.teams( \
-             id, name, coach, coach_discord_id, discord_role_id, default_from, default_to, created_at \
-         ) VALUES($1, $2, $3, $4, $5, $6, $7, now()) \
+        "UPDATE scrim.teams \
+         SET coach=$2, coach_discord_id=$3, discord_role_id=$4 \
+         WHERE id=$1 \
          RETURNING id, name, coach, coach_discord_id, discord_role_id, discord_channel_id, default_from, default_to",
     )
     .bind(team_id)
-    .bind(name)
     .bind(coach)
     .bind(coach_discord_id)
     .bind(discord_role_id)
-    .bind(body.default_from)
-    .bind(body.default_to)
     .fetch_one(&mut *tx)
     .await?;
     let team = team_from_row(&row);
