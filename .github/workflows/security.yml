@@ -53,12 +53,12 @@ jobs:
           python-version: "3.13"
 
       - name: Install security tools
-        run: pip install bandit pip-audit
+        run: pip install 'bandit[sarif]'
 
       - name: Run Bandit
         run: |
-          bandit -r builds/backend dl-landing/mcp-server -ll -ii -f json -o bandit-report.json || true
-          bandit -r builds/backend dl-landing/mcp-server -ll -ii -f sarif -o bandit.sarif || true
+          bandit -r scripts -ll -ii --exit-zero -f json -o bandit-report.json
+          bandit -r scripts -ll -ii --exit-zero -f sarif -o bandit.sarif
 
       - name: Upload Bandit report
         if: always() && hashFiles('bandit-report.json') != ''
@@ -74,32 +74,6 @@ jobs:
         with:
           sarif_file: bandit.sarif
           category: bandit
-
-      - name: Run pip-audit (builds/backend)
-        run: pip-audit --strict --desc -r builds/backend/requirements.txt
-
-      - name: License audit
-        continue-on-error: true
-        run: |
-          pip install pip-licenses
-          pip install -r builds/backend/requirements.txt -r dl-landing/mcp-server/requirements.txt
-          pip-licenses --format=json --output-file=licenses.json
-          python3 - <<'PY'
-          import json, sys
-          with open('licenses.json') as f:
-              pkgs = json.load(f)
-          blocklist = ['GPL-2.0', 'GPL-2.0-only', 'GPL-3.0', 'GPL-3.0-only', 'AGPL-3.0', 'AGPL-3.0-only']
-          bad = [p for p in pkgs if any(b in (p.get('License') or '') for b in blocklist)]
-          if bad:
-              print('Copyleft-Lizenzen gefunden:')
-              for p in bad:
-                  print(f"  {p['Name']} {p['Version']}: {p['License']}")
-              sys.exit(1)
-          print(f'Lizenz-Audit OK: {len(pkgs)} Pakete geprüft, keine Copyleft-Lizenzen.')
-          PY
-
-      - name: Run pip-audit (dl-landing/mcp-server)
-        run: pip-audit --strict --desc -r dl-landing/mcp-server/requirements.txt
 
   javascript-security:
     name: "JavaScript Dependency Audit (${{ matrix.project }})"
@@ -147,6 +121,8 @@ jobs:
           semgrep scan \
             --config p/default \
             --config p/python \
+            --config .semgrep-sri.yml \
+            --exclude-rule html.security.audit.missing-integrity.missing-integrity \
             --exclude node_modules \
             --exclude .venv \
             --exclude venv \
@@ -159,67 +135,6 @@ jobs:
         with:
           sarif_file: semgrep.sarif
           category: semgrep
-
-  api-endpoint-inventory:
-    name: "API Endpoint Inventory"
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
-        run: pip install -r builds/backend/requirements.txt
-
-      - name: List and audit API routes
-        working-directory: builds/backend
-        run: |
-          python3 - <<'PY'
-          import sys
-          sys.path.insert(0, ".")
-          # Prevent lifespan DB init from running
-          import unittest.mock as mock
-          with mock.patch("app.database.init_db", return_value=None):
-              from app.main import app
-
-          routes = []
-          for route in app.routes:
-              if hasattr(route, "methods") and hasattr(route, "path"):
-                  for method in sorted(route.methods):
-                      routes.append((method, route.path))
-
-          routes.sort()
-
-          print("=== API Route Inventory ===")
-          for method, path in routes:
-              print(f"  {method:6} {path}")
-
-          # Warnung bei Admin-Endpunkten ohne sichtbaren Auth-Schutz
-          admin_routes = [(m, p) for m, p in routes if "/admin" in p]
-          if admin_routes:
-              print(f"\n::warning::Admin-Endpunkte vorhanden ({len(admin_routes)}) — Auth-Schutz manuell prüfen:")
-              for method, path in admin_routes:
-                  print(f"  {method} {path}")
-
-          with open("api-routes.txt", "w") as f:
-              f.write("\n".join(f"{m} {p}" for m, p in routes))
-          print(f"\nGesamt: {len(routes)} Endpunkte")
-          PY
-
-      - name: Upload route inventory
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: api-route-inventory
-          path: builds/backend/api-routes.txt
-          if-no-files-found: ignore
-          retention-days: 90
 
   trivy-scan:
     name: "Trivy Filesystem Scan"

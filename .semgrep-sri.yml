@@ -1,0 +1,18 @@
+rules:
+  - id: html.external-script-missing-sri
+    languages: [generic]
+    paths:
+      include: ["*.html", "**/*.html"]
+    message: External scripts require integrity and crossorigin attributes.
+    severity: ERROR
+    pattern-regex: >-
+      (?i)<script\b(?=[^>]*\bsrc\s*=\s*["'](?:https?:)?//)(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
+
+  - id: html.external-stylesheet-missing-sri
+    languages: [generic]
+    paths:
+      include: ["*.html", "**/*.html"]
+    message: External stylesheets require integrity and crossorigin attributes.
+    severity: ERROR
+    pattern-regex: >-
+      (?i)<link\b(?=[^>]*\brel\s*=\s*["'][^"']*\bstylesheet\b[^"']*["'])(?=[^>]*\bhref\s*=\s*["'](?:https?:)?//)(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
