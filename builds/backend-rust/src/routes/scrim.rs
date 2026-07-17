@@ -1,4 +1,8 @@
-use std::{collections::BTreeSet, net::SocketAddr, time::Duration};
+use std::{
+    collections::{BTreeSet, HashMap},
+    net::SocketAddr,
+    time::Duration,
+};
 
 use axum::{
     extract::{ConnectInfo, Path, Query, State},
@@ -1924,7 +1928,7 @@ const POOL_SELECT_BY_ID: &str = "\
     WHERE p.id=$1";
 
 const FREE_POOL_SELECT: &str = "\
-    SELECT p.id, p.display_name, p.rank, p.roles, p.availability, p.availability_slots, \
+    SELECT p.id, p.discord_id, p.display_name, p.rank, p.roles, p.availability, p.availability_slots, \
            p.status, p.source \
     FROM scrim.participants p \
     WHERE p.status NOT IN ('inactive', 'reserve') \
@@ -1932,7 +1936,7 @@ const FREE_POOL_SELECT: &str = "\
     ORDER BY p.created_at ASC, p.id ASC";
 
 const RESERVE_POOL_SELECT: &str = "\
-    SELECT p.id, p.display_name, p.rank, p.roles, p.availability, p.availability_slots, \
+    SELECT p.id, p.discord_id, p.display_name, p.rank, p.roles, p.availability, p.availability_slots, \
            p.status, p.source \
     FROM scrim.participants p \
     WHERE p.status = 'reserve' \
@@ -2099,6 +2103,7 @@ fn team_board_member_from_row(row: &PgRow) -> ScrimTeamBoardMember {
 #[derive(Debug, Clone)]
 struct RosterPoolCandidate {
     participant_id: i32,
+    discord_id: Option<i64>,
     display_name: String,
     rank: Option<String>,
     roles: Option<String>,
@@ -2123,6 +2128,7 @@ fn roster_pool_candidate_from_row(row: &PgRow) -> RosterPoolCandidate {
     let availability_slots = effective(availability_slots_value, availability.as_deref());
     RosterPoolCandidate {
         participant_id: row.get("id"),
+        discord_id: row.get("discord_id"),
         display_name: row.get("display_name"),
         rank: row.get("rank"),
         roles: row.get("roles"),
@@ -2134,12 +2140,33 @@ fn roster_pool_candidate_from_row(row: &PgRow) -> RosterPoolCandidate {
     }
 }
 
+fn dedupe_roster_pool(pool: &[RosterPoolCandidate]) -> Vec<RosterPoolCandidate> {
+    let mut selected: Vec<RosterPoolCandidate> = Vec::new();
+    let mut by_discord_id: HashMap<i64, usize> = HashMap::new();
+    for candidate in pool {
+        let Some(discord_id) = candidate.discord_id else {
+            selected.push(candidate.clone());
+            continue;
+        };
+        if let Some(&index) = by_discord_id.get(&discord_id) {
+            if candidate.availability_confirmed && !selected[index].availability_confirmed {
+                selected[index] = candidate.clone();
+            }
+        } else {
+            by_discord_id.insert(discord_id, selected.len());
+            selected.push(candidate.clone());
+        }
+    }
+    selected
+}
+
 fn build_roster_suggestion(
     pool: &[RosterPoolCandidate],
     requested_window: Option<ScrimWindow>,
     size: usize,
 ) -> RosterSuggestion {
-    let window = requested_window.or_else(|| best_pool_window(pool));
+    let pool = dedupe_roster_pool(pool);
+    let window = requested_window.or_else(|| best_pool_window(&pool));
     let mut candidates = pool
         .iter()
         .map(|candidate| roster_suggestion_candidate(candidate, window))
@@ -3045,6 +3072,35 @@ mod tests {
                 to: 21 * 60,
             })
         );
+    }
+
+    #[test]
+    fn roster_suggestion_dedupliziert_discord_id_mit_bestaetigter_verfuegbarkeit() {
+        let window = ScrimWindow {
+            day: Weekday::Mon,
+            from: 18 * 60,
+            to: 22 * 60,
+        };
+        let mut imported = roster_pool_candidate(
+            1,
+            "DraGSkopE",
+            weekly_with_mon(DaySlot::available(Some(18 * 60), Some(22 * 60))),
+        );
+        imported.discord_id = Some(42);
+        imported.availability_confirmed = false;
+        let mut confirmed = roster_pool_candidate(
+            2,
+            "DraGSkopE",
+            weekly_with_mon(DaySlot::available(Some(18 * 60), Some(22 * 60))),
+        );
+        confirmed.discord_id = Some(42);
+        confirmed.availability_confirmed = true;
+
+        let ranked = build_roster_suggestion(&[imported, confirmed], Some(window), 6);
+
+        assert_eq!(ranked.candidates.len(), 1);
+        assert_eq!(ranked.candidates[0].participant_id, 2);
+        assert!(ranked.candidates[0].availability_confirmed);
     }
 
     #[test]
@@ -5201,6 +5257,7 @@ mod tests {
     ) -> RosterPoolCandidate {
         RosterPoolCandidate {
             participant_id,
+            discord_id: None,
             display_name: display_name.to_string(),
             rank: None,
             roles: Some("Flex".to_string()),
