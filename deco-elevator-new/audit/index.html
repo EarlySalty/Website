@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Deadlock Mod-Audit</title>
+  <link rel="preload" href="/new/audit/report.js?v=8" as="script">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #11130f;
+      --panel: #181c15;
+      --panel-2: #22281d;
+      --text: #f2f0e7;
+      --muted: #b7b29f;
+      --line: #3b432f;
+      --gold: #d7b65d;
+      --green: #78b96b;
+      --blue: #72a8c7;
+      --red: #d87562;
+      --ink: #080906;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { width: min(1280px, calc(100vw - 28px)); margin: 0 auto; padding: 32px 0 60px; }
+    header { border-bottom: 1px solid var(--line); padding-bottom: 22px; margin-bottom: 24px; }
+    .kicker { color: var(--gold); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { margin: 8px 0 10px; font-size: clamp(32px, 6vw, 72px); line-height: .95; letter-spacing: 0; max-width: 980px; }
+    h2 { margin: 34px 0 14px; font-size: clamp(22px, 3vw, 34px); line-height: 1.1; }
+    h3 { margin: 22px 0 10px; color: var(--gold); font-size: 18px; }
+    p { max-width: 900px; color: var(--muted); }
+    a { color: var(--gold); }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+    .stat, .panel, .note { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+    .stat b { display: block; font-size: clamp(26px, 4vw, 44px); line-height: 1; }
+    .stat span, .muted { color: var(--muted); }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .bars { display: grid; gap: 9px; }
+    .bar { display: grid; grid-template-columns: 160px minmax(90px, 1fr) 90px; gap: 10px; align-items: center; min-height: 28px; }
+    .bar label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    .track { height: 11px; background: #0c0e0a; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+    .fill { display: block; height: 100%; width: var(--w); background: linear-gradient(90deg, var(--gold), var(--green)); }
+    output { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+    .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--gold); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .heat { display: grid; gap: 8px; min-width: 960px; padding: 14px; }
+    .heat-row { display: grid; grid-template-columns: 128px repeat(77, 1fr); gap: 3px; align-items: center; }
+    .heat-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .mod-block { border-bottom: 1px solid var(--line); padding: 12px 14px 14px; min-width: 1040px; }
+    .mod-block:last-child { border-bottom: 0; }
+    .mod-title { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; }
+    .mod-title span { color: var(--muted); font-size: 12px; }
+    .mod-grid { display: grid; gap: 5px; }
+    .mod-row { display: grid; grid-template-columns: 150px repeat(77, 1fr); gap: 3px; align-items: center; }
+    .cell { height: 18px; border-radius: 3px; background: #252a20; border: 1px solid rgba(255,255,255,.04); }
+    .cell[data-level="1"] { background: #3f4930; }
+    .cell[data-level="2"] { background: #6f6a38; }
+    .cell[data-level="3"] { background: #b08d45; }
+    .cell[data-level="4"] { background: #d7b65d; }
+    .cell[data-level="5"] { background: #78b96b; }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-2); color: var(--text); font-size: 13px; }
+    .timeline { display: grid; grid-template-columns: repeat(77, minmax(8px, 1fr)); gap: 3px; align-items: end; min-width: 960px; height: 130px; padding: 14px; }
+    .daybar { background: linear-gradient(180deg, var(--green), var(--gold)); min-height: 2px; border-radius: 3px 3px 0 0; }
+    details { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 10px 0; }
+    summary { cursor: pointer; padding: 12px 14px; font-weight: 750; }
+    .daybody { padding: 0 14px 14px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
+    .mini { color: var(--muted); font-size: 13px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .commit-list { margin: 8px 0 0 0; padding-left: 18px; max-height: 260px; overflow: auto; }
+    .commit-list li { margin: 3px 0; color: var(--muted); }
+    .commit-list b { color: var(--text); }
+    .quote { font-size: clamp(19px, 2.4vw, 28px); color: var(--text); border-left: 4px solid var(--gold); padding-left: 16px; max-width: 1000px; }
+    .small { font-size: 12px; color: var(--muted); }
+    .leaders { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .leader { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #11140f; }
+    .leader h3 { margin-top: 0; font-size: 15px; }
+    .leader ol { margin: 0; padding-left: 18px; color: var(--muted); }
+    .leader li { margin: 3px 0; }
+    .profiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .profile { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+    .profile-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+    .profile-head strong { font-size: 18px; }
+    .task-list { display: grid; gap: 7px; margin: 12px 0; }
+    .task-line { display: grid; grid-template-columns: 145px minmax(110px, 1fr) 130px; gap: 9px; align-items: center; min-height: 27px; }
+    .task-line label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .task-line output { font-size: 13px; }
+    .source-row { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    @media (max-width: 900px) {
+      .grid, .two, .three, .daybody, .leaders, .profiles { grid-template-columns: 1fr; }
+      .bar { grid-template-columns: 118px 1fr 70px; }
+      .task-line { grid-template-columns: 118px 1fr 96px; }
+      main { width: min(100vw - 18px, 1280px); }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="kicker">Deadlock Mod-Audit · 07.05.2026 bis 22.07.2026</div>
+    <h1>Wer wann was getragen hat</h1>
+    <p>Aus Git-Repos, zentraler Postgres-DB, Twitch-Analytics-DB, Discord-Auditlog und lokalen Codex-/Claude-Transcripts. Die Seite ist absichtlich visuell: Heatmaps, Tagesverlauf, Team-Matrix und Pitch→Partner-Funnel.</p>
+  </header>
+
+  <section class="grid" id="stats"></section>
+
+  <section class="note">
+    <p class="quote">Die Daten zeigen nicht nur einzelne Commits, sondern laufende Verantwortung: Technik, Deployments, Moderation, Discord-Betrieb, Voice-Präsenz, Twitch-Partneraufbau und Support liefen im selben Zeitraum parallel.</p>
+  </section>
+
+  <section>
+    <h2>Zeitgraph</h2>
+    <p>Jede Spalte ist ein Tag. Heller bedeutet mehr Aktivität in diesem Bereich.</p>
+    <div class="scroll"><div id="heatmap" class="heat"></div></div>
+    <div class="legend"><span class="pill">Code</span><span class="pill">Discord-Chat</span><span class="pill">Voice</span><span class="pill">Auditlog</span><span class="pill">Twitch-Chat</span><span class="pill">Pitches</span><span class="pill">neue Partner</span></div>
+  </section>
+
+  <section>
+    <h2>Nani / earlysalty</h2>
+    <p>Dein persönlicher Zeitgraph: gleiche Tageslogik, aber nur deine Discord-, Voice-, Coding-, Audit-, Twitch- und Pitch-Aktivität.</p>
+    <div class="scroll"><div id="naniHeatmap" class="heat"></div></div>
+  </section>
+
+  <section>
+    <h2>Mod-Zeitgraph</h2>
+    <p>Nur bekannte Mod-Rollen: Moderator, Community-Mod und Turnier-Mod. Coaches, VIPs und reine Auditlog-Funde sind ausgeschlossen.</p>
+    <div class="scroll"><div id="modHeatmap" class="heat"></div></div>
+  </section>
+
+  <section>
+    <h2>Aufgabenprofil pro Mod</h2>
+    <p>Feinere Aufteilung aus Discord-Chatmengen, Top-Chat-Kanälen, Voice, Twitch/Pitches und typisierten Discord-Auditlogs. Discord-Chattexte selbst liegen in der Aktivitätstabelle nicht vor. Normale User, VIPs, Coaches und reine Auditlog-Funde bleiben hier draußen; Nani ist als Owner/Technik separat enthalten.</p>
+    <div id="taskProfiles" class="profiles"></div>
+  </section>
+
+  <section>
+    <h2>Team-Matrix</h2>
+    <p>Nur Impact-Rollen: Owner/Technik, Moderator:innen, Community-Mods, Coaches, Turnier-Mods und per harten Auditlog-Aktionen erkannte Server-Akteure. Normale User/VIPs werden nicht über Chat-Aktivität aufgenommen.</p>
+    <div id="teamMatrix" class="scroll"></div>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <h2>Rollen-Impact</h2>
+      <div id="roleImpact" class="bars"></div>
+    </div>
+    <div class="panel">
+      <h2>Top nach Aufgabe</h2>
+      <div id="taskLeaders" class="leaders"></div>
+    </div>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <h2>Moderationsarten</h2>
+      <div id="auditTypes" class="bars"></div>
+    </div>
+    <div class="panel">
+      <h2>Abdeckung</h2>
+      <div id="coverage" class="bars"></div>
+      <p class="small">Auto-Erkennung nutzt harte Server-/Moderationsaktionen. Role-Update-, Invite- und unklare Massenlogs werden nicht verwendet, damit normale User/VIPs nicht in der Mod-Matrix landen.</p>
+    </div>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <h2>Coding</h2>
+      <div id="repoBars" class="bars"></div>
+    </div>
+    <div class="panel">
+      <h2>Commits + Stunden</h2>
+      <div class="scroll"><div id="codeTimeline" class="timeline"></div></div>
+      <p class="small">Stunden: Codex-/Claude-Transcripts als aktive Zeitfenster, auf den alten Berichtswert skaliert.</p>
+    </div>
+  </section>
+
+  <section class="three">
+    <div class="panel">
+      <h2>Twitch-Funnel</h2>
+      <div id="twitchFunnel" class="bars"></div>
+    </div>
+    <div class="panel">
+      <h2>Pitch-Akteure</h2>
+      <div id="pitchActors" class="bars"></div>
+    </div>
+    <div class="panel">
+      <h2>Streamer-Betrieb</h2>
+      <div id="streamOps" class="bars"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pitch → Partner</h2>
+    <p>Gefiltert aus Twitch-Chat: `earlysalty` + Community/Partner/Raid/Discord/Server/Deadlock-Bezug. Direkt gezählt wird nur, wenn der Partner-Beitritt am selben Tag oder nach dem ersten Pitch liegt.</p>
+    <div id="pitchPartners" class="scroll"></div>
+  </section>
+
+  <section>
+    <h2>Tagesprotokoll</h2>
+    <p>Pro Tag: Coding-Features, Commit-Liste, Discord-Teamaktivität, Voice, Auditlog, Twitch-Chat und neue Streamer/Partner.</p>
+    <div id="dayLog"></div>
+  </section>
+
+  <footer class="small">
+    Datenstand: <span id="generatedAt"></span>. Discord-Auditlog in Postgres ab 27.05.2026. Twitch-Outreach-Audit-Tabelle war im Zeitraum leer; Pitch-Nachweise kommen daher aus gefiltertem Twitch-Chat. Chat-Snippets sind gekürzt und gefiltert.
+  </footer>
+</main>
+<script src="/new/audit/report.js?v=8"></script>
+<script src="/new/audit/app.js?v=8"></script>
+</body>
+</html>
