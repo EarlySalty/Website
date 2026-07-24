@@ -1,3 +1,11 @@
+## #66 — Website-Backend startet mit Rust-Infisical-Loader
+
+**Ausgangslage:** Das Website-Backend hing nach Restarts am alten Python-Secret-Exporter aus dem Bot-Repo.
+
+**Geändert:** Der Backend-Wrapper nutzt jetzt den vorhandenen Rust-Loader und startet danach erst die eigentliche API.
+
+**Verhalten:** Der Dienst startet wieder direkt bis zum lauschenden Backend-Prozess; der Bootstrap-Token wird nicht an die API weitergereicht.
+
 ## #65 — Scrims: Anmelden geht jetzt selbst
 
 **Ausgangslage:** Wer bei den Inhouse-Coachscrims mitmachen wollte, hat im Chat geschrieben, was er spielt und wann er kann — und Leo hat das von Hand eingesammelt und einsortiert. Rang, Lane und Zeiten mussten einzeln erfragt werden, und wer neu dazukam, sah die Scrim-Kanäle erst, wenn jemand ihm die Rolle gab.
