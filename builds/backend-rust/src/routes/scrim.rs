@@ -338,7 +338,7 @@ pub struct ScrimSubstituteResponse {
     pub dm: DiscordSyncStatus,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ScrimPoolSource {
     #[default]
@@ -5627,6 +5627,8 @@ mod tests {
             .method(method)
             .uri(uri)
             .header("Cookie", format!("ddc_session={token}"))
+            .header("Host", "deutsche-deadlock-community.de")
+            .header("Origin", "https://deutsche-deadlock-community.de")
             .header("content-type", "application/json");
         let bytes = body.map(|value| value.to_string()).unwrap_or_default();
         let mut request = builder.body(Body::from(bytes)).expect("request");

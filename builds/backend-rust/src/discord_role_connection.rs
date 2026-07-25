@@ -1480,6 +1480,12 @@ mod tests {
             discord_role_connection_sync_interval_seconds: 30,
             db_master_key_v1: Some("00".repeat(32)),
             discord_oauth_authorize_base: "https://discord.com/oauth2/authorize".into(),
+            scrim_backend_mode: crate::config::ScrimBackendMode::Legacy,
+            scrim_turnier_base: "http://127.0.0.1:8767".into(),
+            scrim_turnier_token: None,
+            scrim_ai_base: "http://127.0.0.1:8766".into(),
+            scrim_ai_token: None,
+            scrim_upstream_timeout_ms: 5_000,
         }
     }
 

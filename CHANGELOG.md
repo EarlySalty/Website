@@ -1,3 +1,7 @@
+## #67 — Scrim-Zentrale bekommt eine sichere Backend-Grenze
+
+**Ausgangslage:** Die Website griff für Scrim-Verwaltung selbst auf Fachdaten zu; ein schrittweiser Umzug hätte dadurch doppelte Schreibwege und uneinheitliche Antworten erzeugt. **Änderung:** Eine abgesicherte Backend-Grenze leitet Scrim-Aufrufe an die zuständigen Dienste weiter, schützt Identität und Wiederholungen serverseitig und hält die bestehenden Team-, Pool- und Verfügbarkeitsseiten kompatibel. **Aktuelles Verhalten:** Standardmäßig bleibt der bisherige Pfad aktiv; der neue Proxy kann kontrolliert zugeschaltet werden und meldet noch nicht verfügbare Aktionen eindeutig statt sie vorzutäuschen.
+
 ## #66 — Website-Backend startet mit Rust-Infisical-Loader
 
 **Ausgangslage:** Das Website-Backend hing nach Restarts am alten Python-Secret-Exporter aus dem Bot-Repo.
