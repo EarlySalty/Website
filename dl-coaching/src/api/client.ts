@@ -1,6 +1,17 @@
 import type { User } from '@/types'
+import type { ScrimCommandCenter } from '@/lib/commandCenter'
+
+export type { ScrimCommandCenter }
 
 const BASE = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api`
+
+/** Fehler mit HTTP-Status, damit Aufrufer 404/403 unterscheiden koennen statt Fehlertexte zu raten. */
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -13,7 +24,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Request failed' }))
-    throw new Error(err.detail || 'Request failed')
+    throw new ApiError(err.detail || 'Request failed', res.status)
   }
   return res.json()
 }
@@ -353,6 +364,11 @@ export interface ScrimSubstituteResponse {
 }
 
 export const scrims = {
+  /**
+   * Orga-Lagebild in einem Aufruf. Existiert nur im Proxy-Modus (SCRIM_BACKEND_MODE=proxy) —
+   * der Legacy-Router mountet diese Route nicht und antwortet mit 404.
+   */
+  commandCenter: () => request<ScrimCommandCenter>('/scrim/command-center'),
   me: () => request<ScrimMeResponse>('/scrim/me'),
   signup: (data: ScrimSignupRequest) =>
     request<ScrimParticipant>('/scrim/signup', { method: 'POST', body: JSON.stringify(data) }),

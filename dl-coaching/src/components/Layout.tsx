@@ -37,6 +37,7 @@ export default function Layout() {
                   </NavLink>
                 )}
                 {isCoach && <NavLink to="/scrims" active={isActive('/scrims', true)}>Scrim-Pool</NavLink>}
+                {isCoach && <NavLink to="/scrims/lage" active={isActive('/scrims/lage')}>Scrim-Lage</NavLink>}
               </nav>
             </div>
 
