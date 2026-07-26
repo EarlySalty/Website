@@ -876,6 +876,66 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn legacy_mode_uses_legacy_router_without_upstream_calls() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "proxied": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "proxied": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Legacy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/pool",
+                &token,
+                None,
+            ))
+            .await
+            .expect("legacy pool response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(to_json(response).await.is_array());
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_returns_bad_gateway_when_upstream_is_unreachable() {
+        let listener = tokio::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+            .await
+            .expect("temporary upstream listener");
+        let unreachable_base = format!(
+            "http://{}",
+            listener.local_addr().expect("temporary upstream address")
+        );
+        drop(listener);
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(unreachable_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                &token,
+                None,
+            ))
+            .await
+            .expect("unreachable upstream response");
+
+        assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+        let body = to_json(response).await;
+        assert_eq!(body["detail"], "Scrim upstream failed");
+        assert!(body["request_id"].as_str().is_some());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
     async fn scrim_proxy_command_center_forwards_actor_request_id_and_token() {
         let upstream: Value = serde_json::from_str(include_str!(
             "../tests/fixtures/scrim-turnier-command-center.json"

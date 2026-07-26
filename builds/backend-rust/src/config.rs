@@ -19,7 +19,7 @@ impl ScrimBackendMode {
             .to_ascii_lowercase()
             .as_str()
         {
-            "legacy" => Ok(Self::Legacy),
+            "" | "legacy" => Ok(Self::Legacy),
             "proxy" => Ok(Self::Proxy),
             "maintenance" => Ok(Self::Maintenance),
             value => bail!("unknown SCRIM_BACKEND_MODE: {value}"),
@@ -318,5 +318,22 @@ fn is_truthy(value: &str, default: bool) -> bool {
         "1" | "true" | "yes" | "on" => true,
         "0" | "false" | "no" | "off" => false,
         _ => default,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ScrimBackendMode;
+
+    #[test]
+    fn scrim_backend_mode_defaults_to_legacy_when_unset_or_empty() {
+        assert_eq!(
+            ScrimBackendMode::from_env_value(None).expect("unset mode"),
+            ScrimBackendMode::Legacy
+        );
+        assert_eq!(
+            ScrimBackendMode::from_env_value(Some("  ".into())).expect("empty mode"),
+            ScrimBackendMode::Legacy
+        );
     }
 }
