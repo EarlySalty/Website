@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>Scrim-BFF Contract Alignment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; max-width: 980px; }
+      code { background: #f4f4f5; padding: 0.1rem 0.25rem; border-radius: 0.25rem; }
+      table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+      th, td { border: 1px solid #d4d4d8; padding: 0.5rem; text-align: left; vertical-align: top; }
+      th { background: #fafafa; }
+    </style>
+  </head>
+  <body>
+    <h1>Scrim-BFF Contract Alignment</h1>
+    <p>Stand: 2026-07-25. Diese Notiz beschreibt den Website-BFF-Vertrag fuer die Scrim-Anbindung. Public canonical bleibt <code>/api/scrim/*</code>; die alte Bot-/Dashboard-Fassade <code>/api/scrims/*</code> existiert nur als expliziter Adapter.</p>
+
+    <h2>Grenzen</h2>
+    <ul>
+      <li>Public: <code>/api/scrim/*</code>, keine public <code>/v1</code>-Duplikate.</li>
+      <li>Turnier-intern: <code>/internal/turnier/v1/scrims</code>.</li>
+      <li>AI-intern: <code>/internal/dl-bots/v1/scrim/lagebilder</code> nur fuer Lagebild-Refresh und Korrekturen.</li>
+      <li>IDs sind JSON-Strings mit positiven Dezimalwerten. Alte numerische Eingaben werden nur in <code>/api/scrims/*</code>-Kompatibilitaetsstellen normalisiert.</li>
+      <li>Frontend-Hauptseite bleibt durch die Coaching-App-Basis <code>/coaching/scrims</code>.</li>
+    </ul>
+
+    <h2>Auth</h2>
+    <ul>
+      <li>Self-Service: <code>GET /me</code>, <code>PUT /me/availability</code>, <code>POST /signup</code> brauchen eine normale Discord-Session und leiten nur die eigene Identitaet weiter.</li>
+      <li>Management: jede Route ausser Self-Service braucht einen aktiven Eintrag in <code>coaching.coaches</code>.</li>
+      <li>Caddy-Admin-Header zaehlen im Scrim-BFF nicht als Coach-Bypass. Ein numerischer Discord-User muss weiterhin aktiver Coach sein.</li>
+    </ul>
+
+    <h2>Security und Limits</h2>
+    <ul>
+      <li>Browser duerfen keine Actor-, Request-ID- oder Idempotency-Header setzen; der BFF erzeugt <code>X-Actor-Discord-Id</code>, <code>X-Actor-Display-Name</code>, <code>X-Request-Id</code> und <code>Idempotency-Key</code>.</li>
+      <li>Actor-Felder im Body werden abgelehnt.</li>
+      <li>Upstream-HTTP nutzt internen Token, <code>no_proxy</code>, keine Redirects und standardmaessig 3 Sekunden Timeout.</li>
+      <li>Request-Cap: 64 KiB. Response-Cap: 256 KiB.</li>
+      <li>Browser-Fehlerform: <code>{"detail":"...","request_id":"..."}</code>.</li>
+    </ul>
+
+    <h2>Planning-DTO</h2>
+    <pre><code>{
+  "technical_template_key": "regular_scrim",
+  "deadline": "2026-08-01T18:00:00Z",
+  "slots": [
+    { "day": "fri", "from_minute": 1170, "to_minute": 1290 },
+    { "day": "sat", "from_minute": 960, "to_minute": 1080 }
+  ],
+  "pairings": [
+    { "team_a_id": "101", "team_b_id": "102", "slots": null },
+    { "team_a_id": "103", "team_b_id": null, "slots": [
+      { "day": "sun", "from_minute": 960, "to_minute": 1080 },
+      { "day": "mon", "from_minute": 1110, "to_minute": 1230 }
+    ] }
+  ]
+}</code></pre>
+    <p>Effektive Slots kommen aus Pairing-Slots oder globalen Slots. Pro Pairing sind 2 bis 5 effektive Slots erforderlich; <code>team_b_id:null</code> ist ein offener Gegner.</p>
+
+    <h2>Kanonische Routen</h2>
+    <table>
+      <thead><tr><th>Public</th><th>Intern</th><th>Notiz</th></tr></thead>
+      <tbody>
+        <tr><td><code>/command-center</code></td><td><code>/command-center</code></td><td>Adapter nutzt <code>participants</code>, <code>teams</code>, <code>matches</code>, <code>match_request_batches</code>, <code>lagebild_refs</code>; operative Matches bleiben als <code>operational_matches</code> und Timeline-Eintraege sichtbar.</td></tr>
+        <tr><td><code>/pool</code>, <code>/coaches</code>, <code>/teams</code>, <code>/teams/{id}/board</code>, <code>/teams/{id}/timeline</code>, <code>/participants/{id}</code></td><td>gleiches Suffix</td><td>Website-Kompatibilitaetsadapter fuer Pool, Teams und Board.</td></tr>
+        <tr><td><code>/match-requests/defaults</code></td><td><code>/match-requests/defaults</code></td><td>Defaults fuer Planung.</td></tr>
+        <tr><td><code>/match-request-batches...</code></td><td><code>/match-request-batches...</code></td><td>Planungsbatch-Erstellung und Batch-Reads.</td></tr>
+        <tr><td><code>/match-requests/{id}</code>, <code>/status-preview</code>, <code>/release</code>, <code>/reminders</code>, <code>/status-publications</code>, <code>/replacement-needs</code></td><td>gleiches Suffix</td><td>String-ID, aktive Coaches.</td></tr>
+        <tr><td><code>/matches/{id}/lobby-code</code></td><td>gleiches Suffix</td><td>Public Methode <code>PUT</code>.</td></tr>
+        <tr><td><code>/matches/{id}/match-ids</code></td><td>gleiches Suffix</td><td>Public Methode <code>POST</code>.</td></tr>
+        <tr><td><code>/matches/{id}/result-refs/{ref_id}</code></td><td>gleiches Suffix</td><td>Public Methode <code>PATCH</code>, Body <code>{"message":"..."}</code>.</td></tr>
+        <tr><td><code>/matches/{id}/result-fetches</code></td><td>gleiches Suffix</td><td>Ergebnisabruf anfordern.</td></tr>
+        <tr><td><code>/replacement-needs/{id}/candidates</code>, <code>/replacement-needs/{id}/requests</code>, <code>/replacement-requests/{id}</code></td><td>gleiches Suffix</td><td>Ersatzbedarf und Ersatzanfragen.</td></tr>
+        <tr><td><code>/blocks/{id}/announcement-preview</code>, <code>/announcement-publications</code>, <code>/actions/{id}</code></td><td>gleiches Suffix</td><td>Block-Ankuendigungen und Action-Details.</td></tr>
+        <tr><td><code>/teams/{id}/lagebild/refresh</code>, <code>/teams/{id}/lagebild/corrections</code></td><td><code>/internal/dl-bots/v1/scrim/lagebilder/{id}/refresh|corrections</code></td><td>AI-Upstream, aktive Coaches, Body <code>{}</code> bzw. <code>{"message":"..."}</code>.</td></tr>
+      </tbody>
+    </table>
+  </body>
+</html>

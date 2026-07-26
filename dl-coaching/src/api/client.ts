@@ -182,8 +182,10 @@ export interface ScrimTeam {
   id: number
   name: string
   coach: string | null
-  discord_role_id: number | null
-  discord_channel_id: number | null
+  /** Snowflake als String — eine rohe Zahl sprengt JS-Zahlen. */
+  discord_role_id: string | null
+  /** Snowflake als String — eine rohe Zahl sprengt JS-Zahlen. */
+  discord_channel_id: string | null
   /** Uebliche Spielzeit in Minuten seit Mitternacht; null = keine hinterlegt. Kein Wochentag — der wird pro Woche ausgehandelt. */
   default_from: number | null
   default_to: number | null

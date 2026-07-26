@@ -1,16 +1,17 @@
 use std::sync::Arc;
 
 use axum::{
+    http::{header, Method},
     routing::{delete, get, patch, post, put},
     Router,
 };
 use reqwest::Client;
 use sqlx::PgPool;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 
 use crate::{
     auth::Auth,
-    config::Config,
+    config::{Config, ScrimBackendMode},
     db,
     discord_broker::{DynDiscordRoleBroker, ReqwestDiscordRoleBroker},
     discord_role_connection::{DynDiscordRoleConnectionClient, ReqwestDiscordRoleConnectionClient},
@@ -26,6 +27,7 @@ pub struct AppInner {
     pub cfg: Config,
     pub pool: PgPool,
     pub http: Client,
+    pub scrim_http: Client,
     pub discord_role_broker: DynDiscordRoleBroker,
     pub discord_role_connections: DynDiscordRoleConnectionClient,
     pub auth: Auth,
@@ -33,11 +35,13 @@ pub struct AppInner {
 
 impl AppState {
     pub async fn new(cfg: Config) -> anyhow::Result<Self> {
+        cfg.validate_startup()?;
         let pool = db::connect().await?;
         db::init(&pool).await?;
         let http = Client::builder()
             .timeout(std::time::Duration::from_secs(20))
             .build()?;
+        let scrim_http = scrim_http_client(&cfg)?;
         let discord_role_broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg)?);
         let discord_role_connections =
             Arc::new(ReqwestDiscordRoleConnectionClient::from_config(&cfg)?);
@@ -47,13 +51,16 @@ impl AppState {
                 cfg,
                 pool,
                 http,
+                scrim_http,
                 discord_role_broker,
                 discord_role_connections,
                 auth,
             }),
         };
         crate::discord_role_connection::spawn_sync_worker(state.clone());
-        crate::routes::scrim::spawn_substitute_sweep_worker(state.clone());
+        if state.cfg.scrim_backend_mode == ScrimBackendMode::Legacy {
+            crate::routes::scrim::spawn_substitute_sweep_worker(state.clone());
+        }
         crate::video::spawn_ingest_worker(state.clone());
         Ok(state)
     }
@@ -68,6 +75,7 @@ impl AppState {
             .timeout(std::time::Duration::from_secs(20))
             .build()
             .expect("test http client");
+        let scrim_http = scrim_http_client(&cfg).expect("test scrim http client");
         let auth = Auth::new(cfg.clone());
         let discord_role_connections =
             Arc::new(ReqwestDiscordRoleConnectionClient::from_config(&cfg).expect("role client"));
@@ -76,6 +84,7 @@ impl AppState {
                 cfg,
                 pool,
                 http,
+                scrim_http,
                 discord_role_broker,
                 discord_role_connections,
                 auth,
@@ -94,12 +103,14 @@ impl AppState {
             .timeout(std::time::Duration::from_secs(20))
             .build()
             .expect("test http client");
+        let scrim_http = scrim_http_client(&cfg).expect("test scrim http client");
         let auth = Auth::new(cfg.clone());
         Self {
             inner: Arc::new(AppInner {
                 cfg,
                 pool,
                 http,
+                scrim_http,
                 discord_role_broker,
                 discord_role_connections,
                 auth,
@@ -382,6 +393,75 @@ pub fn router(state: AppState) -> Router {
             get(routes::platform::get_my_coach_profile)
                 .patch(routes::platform::update_my_coach_profile),
         )
+        .merge(scrim_router(state.cfg.scrim_backend_mode))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            routes::scrim_proxy::scrim_browser_security_middleware,
+        ))
+        .layer(cors_layer(&state.cfg))
+        .with_state(state)
+}
+
+fn scrim_router(mode: ScrimBackendMode) -> Router<AppState> {
+    match mode {
+        ScrimBackendMode::Legacy => legacy_scrim_router(),
+        ScrimBackendMode::Proxy | ScrimBackendMode::Maintenance => routes::scrim_proxy::router(),
+    }
+}
+
+fn scrim_http_client(cfg: &Config) -> anyhow::Result<Client> {
+    Ok(Client::builder()
+        .timeout(std::time::Duration::from_millis(
+            cfg.scrim_upstream_timeout_ms,
+        ))
+        .redirect(reqwest::redirect::Policy::none())
+        .no_proxy()
+        .build()?)
+}
+
+fn cors_layer(cfg: &Config) -> CorsLayer {
+    let cfg = cfg.clone();
+    CorsLayer::new()
+        .allow_origin(AllowOrigin::predicate(move |origin, _parts| {
+            origin
+                .to_str()
+                .ok()
+                .is_some_and(|origin| origin_allowed(&cfg, origin))
+        }))
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::PATCH,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
+        .allow_headers([header::CONTENT_TYPE])
+        .allow_credentials(true)
+}
+
+fn origin_allowed(cfg: &Config, origin: &str) -> bool {
+    let Ok(url) = url::Url::parse(origin) else {
+        return false;
+    };
+    if url.path() != "/" || url.query().is_some() || url.fragment().is_some() {
+        return false;
+    }
+    let Some(host) = url.host_str().map(|host| host.to_ascii_lowercase()) else {
+        return false;
+    };
+    if matches!(host.as_str(), "localhost" | "127.0.0.1" | "::1") {
+        return matches!(url.scheme(), "http" | "https");
+    }
+    if url.scheme() != "https" {
+        return false;
+    }
+    let domain = cfg.ddc_cookie_domain.as_str();
+    host == domain || host == format!("www.{domain}") || host == format!("admin.{domain}")
+}
+
+fn legacy_scrim_router() -> Router<AppState> {
+    Router::new()
         .route("/api/scrim/me", get(routes::scrim::get_me))
         .route(
             "/api/scrim/me/availability",
@@ -419,33 +499,2336 @@ pub fn router(state: AppState) -> Router {
             "/api/scrim/participants/{id}",
             patch(routes::scrim::patch_participant),
         )
-        .layer(
-            CorsLayer::new()
-                .allow_origin(Any)
-                .allow_methods(Any)
-                .allow_headers(Any),
-        )
-        .with_state(state)
 }
 
 #[cfg(test)]
 mod tests {
     use std::{
         net::{IpAddr, Ipv4Addr, SocketAddr},
-        sync::Arc,
+        sync::{Arc, Mutex},
     };
 
     use axum::{
         body::{to_bytes, Body},
         extract::connect_info::ConnectInfo,
-        http::{Method, Request, StatusCode},
+        http::{HeaderMap, HeaderValue, Method, Request, StatusCode, Uri},
+        response::IntoResponse,
+        routing::any,
     };
     use chrono::{TimeZone, Utc};
     use serde_json::{json, Value};
     use tower::ServiceExt;
 
     use super::*;
-    use crate::{auth, rows};
+    use crate::{auth, config::ScrimBackendMode, rows};
+
+    #[derive(Debug, Clone)]
+    struct RecordedScrimUpstreamRequest {
+        method: Method,
+        path_and_query: String,
+        internal_token: Option<String>,
+        request_id: Option<String>,
+        idempotency_key: Option<String>,
+        actor_discord_id: Option<String>,
+        actor_display_name: Option<String>,
+        browser_actor_header: Option<String>,
+        body: Value,
+    }
+
+    #[derive(Clone)]
+    struct MockScrimRoute {
+        method: Method,
+        path: &'static str,
+        status: StatusCode,
+        response: Value,
+        raw_response: Option<&'static str>,
+        retry_after: Option<&'static str>,
+        expected_body: Option<Value>,
+        delay_ms: Option<u64>,
+    }
+
+    impl MockScrimRoute {
+        fn new(method: Method, path: &'static str, status: StatusCode, response: Value) -> Self {
+            Self {
+                method,
+                path,
+                status,
+                response,
+                raw_response: None,
+                retry_after: None,
+                expected_body: None,
+                delay_ms: None,
+            }
+        }
+
+        fn expect_body(mut self, body: Value) -> Self {
+            self.expected_body = Some(body);
+            self
+        }
+
+        fn retry_after(mut self, value: &'static str) -> Self {
+            self.retry_after = Some(value);
+            self
+        }
+
+        fn raw_response(mut self, value: &'static str) -> Self {
+            self.raw_response = Some(value);
+            self
+        }
+
+        fn delay_ms(mut self, value: u64) -> Self {
+            self.delay_ms = Some(value);
+            self
+        }
+    }
+
+    async fn spawn_scrim_upstream(
+        status: StatusCode,
+        response: Value,
+    ) -> (String, Arc<Mutex<Vec<RecordedScrimUpstreamRequest>>>) {
+        spawn_scrim_upstream_routes(vec![
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/command-center",
+                status,
+                response.clone(),
+            ),
+            MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/match-request-batches",
+                status,
+                response,
+            ),
+        ])
+        .await
+    }
+
+    async fn spawn_scrim_upstream_routes(
+        routes: Vec<MockScrimRoute>,
+    ) -> (String, Arc<Mutex<Vec<RecordedScrimUpstreamRequest>>>) {
+        let listener = tokio::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+            .await
+            .expect("scrim upstream listener");
+        let addr = listener.local_addr().expect("scrim upstream addr");
+        let recorded = Arc::new(Mutex::new(Vec::new()));
+        let mut app = Router::new();
+        for route in routes {
+            let recorded_for_route = Arc::clone(&recorded);
+            let path = route.path;
+            app = app.route(
+                path,
+                any(
+                    move |method: Method, uri: Uri, headers: HeaderMap, body: Body| {
+                        let route = route.clone();
+                        let recorded = Arc::clone(&recorded_for_route);
+                        async move {
+                            if method != route.method {
+                                return (StatusCode::METHOD_NOT_ALLOWED, axum::Json(json!({})))
+                                    .into_response();
+                            }
+                            if let Some(delay_ms) = route.delay_ms {
+                                tokio::time::sleep(std::time::Duration::from_millis(delay_ms))
+                                    .await;
+                            }
+                            let bytes = to_bytes(body, usize::MAX).await.expect("upstream body");
+                            let body = if bytes.is_empty() {
+                                Value::Null
+                            } else {
+                                serde_json::from_slice(&bytes).expect("upstream json body")
+                            };
+                            if let Some(expected) = route.expected_body.as_ref() {
+                                assert_eq!(&body, expected);
+                            }
+                            recorded.lock().expect("record upstream").push(
+                                RecordedScrimUpstreamRequest {
+                                    method,
+                                    path_and_query: uri
+                                        .path_and_query()
+                                        .map(|value| value.as_str().to_string())
+                                        .unwrap_or_else(|| uri.path().to_string()),
+                                    internal_token: header_string(&headers, "X-Internal-Token"),
+                                    request_id: header_string(&headers, "X-Request-Id"),
+                                    idempotency_key: header_string(&headers, "Idempotency-Key"),
+                                    actor_discord_id: header_string(&headers, "X-Actor-Discord-Id"),
+                                    actor_display_name: header_string(
+                                        &headers,
+                                        "X-Actor-Display-Name",
+                                    ),
+                                    browser_actor_header: header_string(&headers, "X-DDC-Actor"),
+                                    body,
+                                },
+                            );
+                            let mut headers = HeaderMap::new();
+                            if let Some(retry_after) = route.retry_after {
+                                headers
+                                    .insert("Retry-After", HeaderValue::from_static(retry_after));
+                            }
+                            if let Some(raw_response) = route.raw_response {
+                                return (route.status, headers, raw_response.to_string())
+                                    .into_response();
+                            }
+                            (route.status, headers, axum::Json(route.response)).into_response()
+                        }
+                    },
+                ),
+            );
+        }
+        tokio::spawn(async move {
+            axum::serve(listener, app)
+                .await
+                .expect("scrim upstream server");
+        });
+        (format!("http://{addr}"), recorded)
+    }
+
+    fn header_string(headers: &HeaderMap, name: &str) -> Option<String> {
+        headers
+            .get(name)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_string)
+    }
+
+    fn valid_planning_payload() -> Value {
+        serde_json::from_str(include_str!(
+            "../tests/fixtures/scrim-turnier-planning-create.json"
+        ))
+        .expect("planning fixture")
+    }
+
+    fn turnier_scrim_read_model() -> Value {
+        json!({
+            "participants": [
+                {
+                    "id": "201",
+                    "discord_id": "111111111111111111",
+                    "display_name": "Main Player",
+                    "rank": "Oracle",
+                    "rank_source": "self",
+                    "rank_verified": false,
+                    "roles": "Carry",
+                    "availability": "Flexibel",
+                    "availability_slots": null,
+                    "notes": "Shotcaller",
+                    "status": "assigned",
+                    "source": "web_form",
+                    "created_at": "2026-07-25T10:00:00Z",
+                    "updated_at": "2026-07-25T10:00:00Z"
+                },
+                {
+                    "id": "202",
+                    "discord_id": null,
+                    "display_name": "Confirmed Player",
+                    "rank": null,
+                    "rank_source": "self",
+                    "rank_verified": false,
+                    "roles": "Support",
+                    "availability": null,
+                    "availability_slots": {
+                        "mon": { "status": "available", "from": 1140, "to": 1320 },
+                        "tue": { "status": "unavailable", "from": null, "to": null }
+                    },
+                    "notes": null,
+                    "status": "assigned",
+                    "source": "web_form",
+                    "created_at": "2026-07-25T10:01:00Z",
+                    "updated_at": "2026-07-25T10:01:00Z"
+                },
+                {
+                    "id": "203",
+                    "discord_id": "333333333333333333",
+                    "display_name": "Bench Player",
+                    "rank": "Ritualist",
+                    "rank_source": "self",
+                    "rank_verified": false,
+                    "roles": "Flex",
+                    "availability": "Geht nicht",
+                    "availability_slots": null,
+                    "notes": "Bench only",
+                    "status": "reserve",
+                    "source": "web_form",
+                    "created_at": "2026-07-25T10:02:00Z",
+                    "updated_at": "2026-07-25T10:02:00Z"
+                }
+            ],
+            "teams": [
+                {
+                    "id": "101",
+                    "name": "Team Alpha",
+                    "coach": "Coach A",
+                    "coach_discord_id": "222222222222222222",
+                    "discord_role_id": "444444444444444444",
+                    "discord_channel_id": "555555555555555555",
+                    "default_from": 1140,
+                    "default_to": 1320,
+                    "created_at": "2026-07-25T09:00:00Z",
+                    "members": [
+                        {
+                            "team_id": "101",
+                            "participant_id": "201",
+                            "display_name": "Main Player",
+                            "rank": "Oracle",
+                            "discord_id": "111111111111111111",
+                            "roles": "Carry",
+                            "availability": "Flexibel",
+                            "availability_slots": null,
+                            "notes": "Shotcaller",
+                            "role": "Captain",
+                            "is_captain": true,
+                            "is_bench": false,
+                            "substitute_until": null
+                        },
+                        {
+                            "team_id": "101",
+                            "participant_id": "202",
+                            "display_name": "Confirmed Player",
+                            "rank": null,
+                            "discord_id": null,
+                            "roles": "Support",
+                            "availability": null,
+                            "availability_slots": {
+                                "mon": { "status": "available", "from": 1140, "to": 1320 },
+                                "tue": { "status": "unavailable", "from": null, "to": null }
+                            },
+                            "notes": null,
+                            "role": null,
+                            "is_captain": false,
+                            "is_bench": false,
+                            "substitute_until": null
+                        },
+                        {
+                            "team_id": "101",
+                            "participant_id": "203",
+                            "display_name": "Bench Player",
+                            "rank": "Ritualist",
+                            "discord_id": "333333333333333333",
+                            "roles": "Flex",
+                            "availability": "Geht nicht",
+                            "availability_slots": null,
+                            "notes": "Bench only",
+                            "role": "Sub",
+                            "is_captain": false,
+                            "is_bench": true,
+                            "substitute_until": null
+                        }
+                    ]
+                }
+            ],
+            "matches": [
+                {
+                    "id": "301",
+                    "team_a": { "id": "101", "name": "Team Alpha" },
+                    "team_b": { "id": "102", "name": "Team Beta" },
+                    "when_text": "Freitag 20 Uhr",
+                    "scheduled_at": "2026-08-02T18:00:00Z",
+                    "status": "planned"
+                }
+            ],
+            "match_request_batches": [{ "id": "401", "missing_response_count": 1 }],
+            "lagebild_refs": [{ "id": "501", "team_id": "101" }]
+        })
+    }
+
+    async fn proxy_test_state(
+        turnier_base: String,
+        ai_base: String,
+        mode: ScrimBackendMode,
+    ) -> (dl_central_db::TestDb, AppState, String) {
+        proxy_test_state_with_timeout(turnier_base, ai_base, mode, 3_000).await
+    }
+
+    async fn proxy_test_state_with_timeout(
+        turnier_base: String,
+        ai_base: String,
+        mode: ScrimBackendMode,
+        scrim_timeout_ms: u64,
+    ) -> (dl_central_db::TestDb, AppState, String) {
+        let (db, state) = test_state_with(
+            move |cfg| {
+                cfg.scrim_backend_mode = mode;
+                cfg.scrim_turnier_base = turnier_base;
+                cfg.scrim_turnier_token = Some("turnier-token".into());
+                cfg.scrim_ai_base = ai_base;
+                cfg.scrim_ai_token = Some("ai-token".into());
+                cfg.scrim_upstream_timeout_ms = scrim_timeout_ms;
+            },
+            std::time::Duration::from_secs(5),
+        )
+        .await;
+        sqlx::query(
+            "INSERT INTO coaching.coaches \
+             (id, discord_user_id, discord_username, display_name, status, created_at, updated_at) \
+             VALUES ('scrim-bff-coach', 940901, 'scrim_bff_coach', 'Scrim BFF Coach', 'active', now(), now())",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("seed active coach");
+        let token = state
+            .auth
+            .create_session_jwt(
+                "940901",
+                "scrim_bff_coach",
+                "user",
+                Some("Scrim BFF Coach"),
+                None,
+            )
+            .expect("coach session");
+        (db, state, token)
+    }
+
+    #[tokio::test]
+    async fn legacy_mode_uses_legacy_router_without_upstream_calls() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "proxied": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "proxied": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Legacy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/pool",
+                &token,
+                None,
+            ))
+            .await
+            .expect("legacy pool response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(to_json(response).await.is_array());
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_returns_bad_gateway_when_upstream_is_unreachable() {
+        let listener = tokio::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+            .await
+            .expect("temporary upstream listener");
+        let unreachable_base = format!(
+            "http://{}",
+            listener.local_addr().expect("temporary upstream address")
+        );
+        drop(listener);
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(unreachable_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                &token,
+                None,
+            ))
+            .await
+            .expect("unreachable upstream response");
+
+        assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+        let body = to_json(response).await;
+        assert_eq!(body["detail"], "Scrim upstream failed");
+        assert!(body["request_id"].as_str().is_some());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_command_center_forwards_actor_request_id_and_token() {
+        let upstream: Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/scrim-turnier-command-center.json"
+        ))
+        .expect("command center fixture");
+        let (turnier_base, turnier_requests) = spawn_scrim_upstream(StatusCode::OK, upstream).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center?team_id=7",
+                &token,
+                None,
+            ))
+            .await
+            .expect("proxy response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            to_json(response).await,
+            json!({
+                "attention": [{ "kind": "missing_responses", "source": "match_request_batch", "id": "401" }],
+                "participants": [{ "id": "201", "display_name": "Missing Vote" }],
+                "teams": [{ "id": "101" }],
+                "matches": [{ "id": "401", "missing_response_count": 1 }],
+                "match_request_batches": [{ "id": "401", "missing_response_count": 1 }],
+                "operational_matches": [{ "id": "301", "status": "scheduled" }],
+                "timeline": [
+                    { "kind": "lagebild_ref", "lagebild_ref": { "id": "501", "team_id": "101" } },
+                    { "kind": "operational_match", "match": { "id": "301", "status": "scheduled" } }
+                ],
+                "lagebild_refs": [{ "id": "501", "team_id": "101" }]
+            })
+        );
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].method, Method::GET);
+        assert_eq!(
+            requests[0].path_and_query,
+            "/internal/turnier/v1/scrims/command-center?team_id=7"
+        );
+        assert_eq!(requests[0].internal_token.as_deref(), Some("turnier-token"));
+        assert!(requests[0]
+            .request_id
+            .as_deref()
+            .is_some_and(|value| value.starts_with("scrim_bff:v1:")));
+        assert!(requests[0].idempotency_key.is_none());
+        assert_eq!(requests[0].actor_discord_id.as_deref(), Some("940901"));
+        assert_eq!(
+            requests[0].actor_display_name.as_deref(),
+            Some("Scrim BFF Coach")
+        );
+        assert!(requests[0].browser_actor_header.is_none());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_mutation_rejects_browser_actor_fields_before_upstream() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ok": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/match-request-batches",
+                &token,
+                Some(json!({
+                    "actor": { "id": "evil" },
+                    "technical_template_key": "regular_scrim",
+                    "slots": [
+                        { "day": "fri", "from_minute": 120, "to_minute": 240 },
+                        { "day": "sat", "from_minute": 240, "to_minute": 360 }
+                    ],
+                    "pairings": [{ "team_a_id": "101", "team_b_id": null, "slots": null }]
+                })),
+            ))
+            .await
+            .expect("proxy response");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_mutation_requires_same_origin_and_rejects_actor_headers() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ok": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        let mut missing_origin = authenticated_request(
+            Method::POST,
+            "/api/scrim/match-request-batches",
+            &token,
+            Some(valid_planning_payload()),
+        );
+        missing_origin.headers_mut().remove("Origin");
+        let response = app
+            .clone()
+            .oneshot(missing_origin)
+            .await
+            .expect("missing origin response");
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let mut evil_origin = authenticated_request(
+            Method::POST,
+            "/api/scrim/match-request-batches",
+            &token,
+            Some(valid_planning_payload()),
+        );
+        evil_origin
+            .headers_mut()
+            .insert("Origin", HeaderValue::from_static("https://evil.example"));
+        let response = app
+            .clone()
+            .oneshot(evil_origin)
+            .await
+            .expect("evil origin response");
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+        let mut admin_origin = authenticated_request(
+            Method::POST,
+            "/api/scrim/match-request-batches",
+            &token,
+            Some(valid_planning_payload()),
+        );
+        admin_origin.headers_mut().insert(
+            "Host",
+            HeaderValue::from_static("admin.deutsche-deadlock-community.de"),
+        );
+        admin_origin.headers_mut().insert(
+            "Origin",
+            HeaderValue::from_static("https://admin.deutsche-deadlock-community.de"),
+        );
+        let response = app
+            .clone()
+            .oneshot(admin_origin)
+            .await
+            .expect("admin origin response");
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+        let mut actor_header = authenticated_request(
+            Method::POST,
+            "/api/scrim/match-request-batches",
+            &token,
+            Some(valid_planning_payload()),
+        );
+        actor_header
+            .headers_mut()
+            .insert("X-Actor-Discord-Id", HeaderValue::from_static("1"));
+        let response = app
+            .oneshot(actor_header)
+            .await
+            .expect("actor header response");
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_preserves_conflict_and_adds_idempotency_key() {
+        let payload = valid_planning_payload();
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/match-request-batches",
+                StatusCode::CONFLICT,
+                json!({ "detail": "upstream conflict" }),
+            )
+            .expect_body(payload.clone())])
+            .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let request = authenticated_request(
+            Method::POST,
+            "/api/scrim/match-request-batches",
+            &token,
+            Some(payload.clone()),
+        );
+        let response = router(state)
+            .oneshot(request)
+            .await
+            .expect("proxy response");
+
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+        let body = to_json(response).await;
+        assert_eq!(body["detail"], "upstream conflict");
+        assert!(body["request_id"].as_str().is_some());
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].method, Method::POST);
+        assert_eq!(
+            requests[0].path_and_query,
+            "/internal/turnier/v1/scrims/match-request-batches"
+        );
+        let key = requests[0]
+            .idempotency_key
+            .as_deref()
+            .expect("idempotency key");
+        assert!(key.starts_with("scrim_bff:v1:"));
+        assert!(key.len() <= 110);
+        assert_ne!(key, "scrim_bff:v1:POST:_match-request-batches:940901:none");
+        assert_eq!(requests[0].body, payload);
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_planning_forwards_deadline_at_contract_without_deadline() {
+        let payload = valid_planning_payload();
+        assert!(payload.get("deadline_at").is_some());
+        assert!(payload.get("deadline").is_none());
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/match-request-batches",
+                StatusCode::OK,
+                json!({ "ok": true }),
+            )
+            .expect_body(payload.clone())])
+            .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/match-request-batches",
+                &token,
+                Some(payload.clone()),
+            ))
+            .await
+            .expect("planning response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].body, payload);
+        assert!(requests[0].body.get("deadline_at").is_some());
+        assert!(requests[0].body.get("deadline").is_none());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_planning_rejects_missing_deadline_at_before_upstream() {
+        let mut payload = valid_planning_payload();
+        payload
+            .as_object_mut()
+            .expect("planning fixture object")
+            .remove("deadline_at");
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ok": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/match-request-batches",
+                &token,
+                Some(payload),
+            ))
+            .await
+            .expect("missing deadline_at response");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_planning_accepts_optional_template_and_pairing_slots() {
+        let payload = json!({
+            "deadline_at": "2026-08-01T18:00:00Z",
+            "pairings": [{
+                "team_a_id": "101",
+                "team_b_id": "102",
+                "slots": [
+                    { "day": "fri", "from_minute": 120, "to_minute": 240 },
+                    { "day": "sat", "from_minute": 240, "to_minute": 360 }
+                ]
+            }]
+        });
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/match-request-batches",
+                StatusCode::OK,
+                json!({ "ok": true }),
+            )
+            .expect_body(payload.clone())])
+            .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/match-request-batches",
+                &token,
+                Some(payload.clone()),
+            ))
+            .await
+            .expect("planning response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(turnier_requests.lock().expect("turnier requests").len(), 1);
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_idempotency_key_is_unique_per_browser_request() {
+        let payload = json!({ "message": "ping" });
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/match-requests/77/reminders",
+                StatusCode::OK,
+                json!({ "ok": true }),
+            )])
+            .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        for _ in 0..2 {
+            let response = app
+                .clone()
+                .oneshot(authenticated_request(
+                    Method::POST,
+                    "/api/scrim/match-requests/77/reminders",
+                    &token,
+                    Some(payload.clone()),
+                ))
+                .await
+                .expect("reminder response");
+            assert_eq!(response.status(), StatusCode::OK);
+        }
+
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 2);
+        let first = requests[0].idempotency_key.as_deref().expect("first key");
+        let second = requests[1].idempotency_key.as_deref().expect("second key");
+        assert_ne!(first, second);
+        assert!(first.starts_with("scrim_bff:v1:"));
+        assert!(second.starts_with("scrim_bff:v1:"));
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_rejects_browser_request_and_idempotency_headers() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ok": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        for header in ["X-Request-Id", "Idempotency-Key", "X-Idempotency-Key"] {
+            let mut request = authenticated_request(
+                Method::POST,
+                "/api/scrim/match-request-batches",
+                &token,
+                Some(valid_planning_payload()),
+            );
+            request
+                .headers_mut()
+                .insert(header, HeaderValue::from_static("browser-value"));
+            let response = router(state.clone())
+                .oneshot(request)
+                .await
+                .expect("header rejection response");
+            assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+            assert!(to_json(response).await["request_id"].as_str().is_some());
+        }
+
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_has_no_wildcard_tunnel_and_preserves_rate_limit_status() {
+        let (turnier_base, turnier_requests) = spawn_scrim_upstream_routes(vec![
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/command-center",
+                StatusCode::TOO_MANY_REQUESTS,
+                json!({ "detail": "slow down" }),
+            )
+            .retry_after("30"),
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/history",
+                StatusCode::NOT_IMPLEMENTED,
+                json!({ "message": "history not ready" }),
+            ),
+        ])
+        .await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/not-a-real/route",
+                &token,
+                None,
+            ))
+            .await
+            .expect("unknown route response");
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        assert!(response.headers().contains_key("X-Request-Id"));
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/matches/88/history",
+                &token,
+                None,
+            ))
+            .await
+            .expect("removed generic route response");
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                &token,
+                None,
+            ))
+            .await
+            .expect("rate limited response");
+        assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_eq!(
+            response
+                .headers()
+                .get("Retry-After")
+                .and_then(|value| value.to_str().ok()),
+            Some("30")
+        );
+        let body = to_json(response).await;
+        assert_eq!(body["detail"], "slow down");
+        assert!(body["request_id"].as_str().is_some());
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/history",
+                &token,
+                None,
+            ))
+            .await
+            .expect("not implemented response");
+        assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
+        let body = to_json(response).await;
+        assert_eq!(body["detail"], "history not ready");
+        assert!(body["request_id"].as_str().is_some());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_enforces_timeout_redirect_and_body_caps() {
+        let (turnier_base, turnier_requests) = spawn_scrim_upstream_routes(vec![
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/command-center",
+                StatusCode::OK,
+                json!({ "teams": [] }),
+            )
+            .delay_ms(100),
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/history",
+                StatusCode::FOUND,
+                json!({ "detail": "redirect" }),
+            ),
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/teams",
+                StatusCode::OK,
+                json!([{ "blob": "x".repeat(300 * 1024) }]),
+            ),
+        ])
+        .await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state_with_timeout(turnier_base, ai_base, ScrimBackendMode::Proxy, 20).await;
+        let app = router(state);
+
+        let timeout = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                &token,
+                None,
+            ))
+            .await
+            .expect("timeout response");
+        assert_eq!(timeout.status(), StatusCode::GATEWAY_TIMEOUT);
+        assert!(to_json(timeout).await["request_id"].as_str().is_some());
+
+        let redirect = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/history",
+                &token,
+                None,
+            ))
+            .await
+            .expect("redirect response");
+        assert_eq!(redirect.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let response_cap = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/teams",
+                &token,
+                None,
+            ))
+            .await
+            .expect("response cap response");
+        assert_eq!(response_cap.status(), StatusCode::BAD_GATEWAY);
+        assert!(to_json(response_cap).await["request_id"].as_str().is_some());
+
+        let request_cap = app
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/match-requests/77/reminders",
+                &token,
+                Some(json!({ "message": "x".repeat(70 * 1024) })),
+            ))
+            .await
+            .expect("request cap response");
+        assert_eq!(request_cap.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        assert!(to_json(request_cap).await["request_id"].as_str().is_some());
+
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+        assert!(!turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_maps_malformed_success_json_to_bad_gateway() {
+        let (turnier_base, _turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/command-center",
+                StatusCode::OK,
+                json!({}),
+            )
+            .raw_response("{not json")])
+            .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                &token,
+                None,
+            ))
+            .await
+            .expect("malformed json response");
+
+        assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+        let body = to_json(response).await;
+        assert_eq!(body["detail"], "Scrim upstream failed");
+        assert!(body["request_id"].as_str().is_some());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_hides_upstream_internal_auth_failure_as_503_with_request_id() {
+        let (turnier_base, _turnier_requests) = spawn_scrim_upstream(
+            StatusCode::UNAUTHORIZED,
+            json!({ "detail": "bad internal token" }),
+        )
+        .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                &token,
+                None,
+            ))
+            .await
+            .expect("proxy response");
+        let request_id = response
+            .headers()
+            .get("X-Request-Id")
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_string)
+            .expect("request id header");
+
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let body = to_json(response).await;
+        assert_eq!(body["request_id"], request_id);
+        assert_ne!(body["detail"], "bad internal token");
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_preserves_upstream_forbidden_as_user_forbidden() {
+        let (turnier_base, _turnier_requests) = spawn_scrim_upstream(
+            StatusCode::FORBIDDEN,
+            json!({ "detail": "coach cannot release this batch" }),
+        )
+        .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                &token,
+                None,
+            ))
+            .await
+            .expect("forbidden response");
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        let body = to_json(response).await;
+        assert_eq!(body["detail"], "coach cannot release this batch");
+        assert!(body["request_id"].as_str().is_some());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_rejects_unknown_force_fields_and_invalid_planning_boundaries() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ok": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        for body in [
+            json!({
+                "technical_template_key": "regular_scrim",
+                "deadline_at": "2026-08-01T18:00:00Z",
+                "slots": [{ "day": "fri", "from_minute": 120, "to_minute": 240 }],
+                "pairings": [{ "team_a_id": "101", "team_b_id": "102", "slots": null }]
+            }),
+            json!({
+                "technical_template_key": "regular_scrim",
+                "deadline_at": "2026-08-01T18:00:00Z",
+                "slots": [
+                    { "day": "fri", "from_minute": 120, "to_minute": 240 },
+                    { "day": "sat", "from_minute": 1441, "to_minute": 1441 }
+                ],
+                "pairings": [{ "team_a_id": "101", "team_b_id": "102", "slots": null }]
+            }),
+            json!({
+                "technical_template_key": "regular_scrim",
+                "deadline_at": "2026-08-01T18:00:00Z",
+                "slots": [
+                    { "day": "fri", "from_minute": 120, "to_minute": 240 },
+                    { "day": "sat", "from_minute": 240, "to_minute": 360 }
+                ],
+                "pairings": [{ "team_a_id": "101", "team_b_id": "102", "slots": null }],
+                "force": true
+            }),
+            json!({
+                "technical_template_key": "regular_scrim",
+                "deadline_at": "2026-08-01T18:00:00Z",
+                "slots": [
+                    { "day": "fri", "from_minute": 120, "to_minute": 240 },
+                    { "day": "sat", "from_minute": 240, "to_minute": 360 }
+                ],
+                "pairings": [{ "team_a_id": 101, "team_b_id": "102", "slots": null }]
+            }),
+            json!({
+                "technical_template_key": "regular_scrim",
+                "deadline_at": "2026-08-01T18:00:00Z",
+                "slots": [
+                    { "day": "funday", "from_minute": 120, "to_minute": 240 },
+                    { "day": "sat", "from_minute": 240, "to_minute": 360 }
+                ],
+                "pairings": [{ "team_a_id": "101", "team_b_id": "102", "slots": null }]
+            }),
+        ] {
+            let response = app
+                .clone()
+                .oneshot(authenticated_request(
+                    Method::POST,
+                    "/api/scrim/match-request-batches",
+                    &token,
+                    Some(body),
+                ))
+                .await
+                .expect("planning boundary response");
+            assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        }
+
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_accepts_decimal_string_ids_and_maps_canonical_methods() {
+        let (turnier_base, turnier_requests) = spawn_scrim_upstream_routes(vec![
+            MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/match-requests/77/release",
+                StatusCode::OK,
+                json!({ "released": true }),
+            )
+            .expect_body(json!({ "slot_index": 0, "reason": null })),
+            MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/matches/88/match-ids",
+                StatusCode::OK,
+                json!({ "match_ids": true }),
+            )
+            .expect_body(json!({ "match_ids": ["12345"] })),
+            MockScrimRoute::new(
+                Method::PATCH,
+                "/internal/turnier/v1/scrims/matches/88/result-refs/99",
+                StatusCode::OK,
+                json!({ "patched": true }),
+            )
+            .expect_body(json!({ "message": "wrong winner" })),
+            MockScrimRoute::new(
+                Method::PUT,
+                "/internal/turnier/v1/scrims/matches/88/lobby-code",
+                StatusCode::OK,
+                json!({ "lobby": true }),
+            )
+            .expect_body(json!({ "lobby_code": "ABC12" })),
+        ])
+        .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/match-requests/77/release",
+                &token,
+                Some(json!({ "slot_index": 0, "reason": null })),
+            ))
+            .await
+            .expect("release response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::PUT,
+                "/api/scrim/matches/88/lobby-code",
+                &token,
+                Some(json!({ "lobby_code": "ABC12" })),
+            ))
+            .await
+            .expect("lobby response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::PATCH,
+                "/api/scrim/matches/88/result-refs/99",
+                &token,
+                Some(json!({ "message": "wrong winner" })),
+            ))
+            .await
+            .expect("result ref patch response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/matches/88/match-ids",
+                &token,
+                Some(json!({ "match_ids": ["12345"] })),
+            ))
+            .await
+            .expect("match ids response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 4);
+        assert_eq!(requests[0].method, Method::POST);
+        assert_eq!(requests[1].method, Method::PUT);
+        assert_eq!(requests[2].method, Method::PATCH);
+        assert_eq!(requests[3].method, Method::POST);
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_canonical_match_ids_reject_numeric_json_ids_before_upstream() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/matches/88/match-ids",
+                StatusCode::OK,
+                json!({ "ok": true }),
+            )])
+            .await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/matches/88/match-ids",
+                &token,
+                Some(json!({ "match_ids": [12345] })),
+            ))
+            .await
+            .expect("numeric match ids response");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_browser_compat_ids_accept_ui_numbers_and_forward_strings() {
+        let (turnier_base, turnier_requests) = spawn_scrim_upstream_routes(vec![
+            MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/teams/7/substitute",
+                StatusCode::OK,
+                json!({ "substituted": true }),
+            )
+            .expect_body(json!({
+                "participant_id": "123",
+                "window": { "day": "fri", "from": 1200, "to": 1320 }
+            })),
+            MockScrimRoute::new(
+                Method::PATCH,
+                "/internal/turnier/v1/scrims/participants/123",
+                StatusCode::OK,
+                json!({ "patched": true }),
+            )
+            .expect_body(json!({ "team_id": "7" })),
+            MockScrimRoute::new(
+                Method::PATCH,
+                "/internal/turnier/v1/scrims/participants/124",
+                StatusCode::OK,
+                json!({ "patched": true }),
+            )
+            .expect_body(json!({ "team_id": null })),
+        ])
+        .await;
+        let (ai_base, ai_requests) = spawn_scrim_upstream(StatusCode::OK, json!({})).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams/7/substitute",
+                &token,
+                Some(json!({
+                    "participant_id": 123,
+                    "window": { "day": "fri", "from": 1200, "to": 1320 }
+                })),
+            ))
+            .await
+            .expect("numeric substitute response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::PATCH,
+                "/api/scrim/participants/123",
+                &token,
+                Some(json!({ "team_id": 7 })),
+            ))
+            .await
+            .expect("numeric participant patch response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::PATCH,
+                "/api/scrim/participants/124",
+                &token,
+                Some(json!({ "team_id": null })),
+            ))
+            .await
+            .expect("null participant patch response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 3);
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_browser_compat_ids_reject_invalid_numbers_and_strings() {
+        let (turnier_base, turnier_requests) = spawn_scrim_upstream_routes(vec![
+            MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/teams/7/substitute",
+                StatusCode::OK,
+                json!({ "substituted": true }),
+            ),
+            MockScrimRoute::new(
+                Method::PATCH,
+                "/internal/turnier/v1/scrims/participants/123",
+                StatusCode::OK,
+                json!({ "patched": true }),
+            ),
+        ])
+        .await;
+        let (ai_base, ai_requests) = spawn_scrim_upstream(StatusCode::OK, json!({})).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+        let invalid_ids = vec![
+            json!(0),
+            json!(-1),
+            json!(1.5),
+            json!(2_147_483_648_i64),
+            json!("abc"),
+            json!("1.2"),
+        ];
+
+        for invalid_id in &invalid_ids {
+            let response = app
+                .clone()
+                .oneshot(authenticated_request(
+                    Method::POST,
+                    "/api/scrim/teams/7/substitute",
+                    &token,
+                    Some(json!({
+                        "participant_id": invalid_id,
+                        "window": { "day": "fri", "from": 1200, "to": 1320 }
+                    })),
+                ))
+                .await
+                .expect("invalid substitute response");
+            assert_eq!(response.status(), StatusCode::BAD_REQUEST, "{invalid_id}");
+        }
+
+        for invalid_id in &invalid_ids {
+            let response = app
+                .clone()
+                .oneshot(authenticated_request(
+                    Method::PATCH,
+                    "/api/scrim/participants/123",
+                    &token,
+                    Some(json!({ "team_id": invalid_id })),
+                ))
+                .await
+                .expect("invalid participant patch response");
+            assert_eq!(response.status(), StatusCode::BAD_REQUEST, "{invalid_id}");
+        }
+
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn legacy_scrims_match_ids_still_converts_numeric_ids() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/matches/88/match-ids",
+                StatusCode::OK,
+                json!({ "ok": true }),
+            )
+            .expect_body(json!({ "match_ids": ["12345"] }))])
+            .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrims/matches/88/match-ids",
+                &token,
+                Some(json!({ "match_id": 12345 })),
+            ))
+            .await
+            .expect("legacy numeric match id response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(turnier_requests.lock().expect("turnier requests").len(), 1);
+    }
+
+    #[tokio::test]
+    async fn legacy_scrims_planning_maps_deadline_to_deadline_at_and_requires_it() {
+        let expected = valid_planning_payload();
+        let legacy_payload = json!({
+            "template": "training",
+            "deadline": "2026-08-01T18:00:00Z",
+            "slots": [
+                { "day": "fri", "from": 1170, "to": 1290 },
+                { "day": "sat", "from": 960, "to": 1080 }
+            ],
+            "matches": [
+                { "slots": null, "team_a_id": "1", "team_b_id": null },
+                {
+                    "slots": [
+                        { "day": "sun", "from": 1200, "to": 1320 },
+                        { "day": "sun", "from": 1350, "to": 1410 }
+                    ],
+                    "team_a_id": "2",
+                    "team_b_id": "3"
+                }
+            ]
+        });
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/match-request-batches",
+                StatusCode::OK,
+                json!({ "ok": true }),
+            )
+            .expect_body(expected.clone())])
+            .await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrims/match-requests",
+                &token,
+                Some(legacy_payload),
+            ))
+            .await
+            .expect("legacy planning response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrims/match-requests",
+                &token,
+                Some(json!({
+                    "template": "training",
+                    "slots": [
+                        { "day": "fri", "from": 1170, "to": 1290 },
+                        { "day": "sat", "from": 960, "to": 1080 }
+                    ],
+                    "matches": [{ "team_a_id": "1", "team_b_id": null, "slots": null }]
+                })),
+            ))
+            .await
+            .expect("legacy missing deadline response");
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].body, expected);
+        assert!(requests[0].body.get("deadline_at").is_some());
+        assert!(requests[0].body.get("deadline").is_none());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn legacy_scrims_summary_maps_match_request_id_to_status_preview() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/match-requests/77/status-preview",
+                StatusCode::OK,
+                json!({ "id": "77", "status": "draft" }),
+            )])
+            .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrims/match-requests/77/summary",
+                &token,
+                None,
+            ))
+            .await
+            .expect("legacy summary response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            to_json(response).await,
+            json!({ "id": "77", "status": "draft" })
+        );
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].method, Method::GET);
+        assert_eq!(
+            requests[0].path_and_query,
+            "/internal/turnier/v1/scrims/match-requests/77/status-preview"
+        );
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_enforces_login_and_active_coach() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ok": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (db, state, _token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        sqlx::query("DELETE FROM coaching.coaches WHERE discord_user_id = 940901")
+            .execute(db.pool())
+            .await
+            .expect("remove coach");
+        let app = router(state.clone());
+
+        let response = app
+            .clone()
+            .oneshot(request(Method::GET, "/api/scrim/command-center", None))
+            .await
+            .expect("anonymous response");
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+        let token = state
+            .auth
+            .create_session_jwt("940902", "not_coach", "user", Some("Not Coach"), None)
+            .expect("user session");
+        let response = app
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                &token,
+                None,
+            ))
+            .await
+            .expect("non coach response");
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+        let response = router(state)
+            .oneshot(admin_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                None,
+            ))
+            .await
+            .expect("caddy admin scrim response");
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_self_service_allows_non_coach_numeric_user_only() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/me",
+                StatusCode::OK,
+                json!({ "participant": null, "team": null, "next_match": null }),
+            )])
+            .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, _coach_token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let token = state
+            .auth
+            .create_session_jwt("940902", "normal_user", "user", Some("Normal User"), None)
+            .expect("user session");
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/me",
+                &token,
+                None,
+            ))
+            .await
+            .expect("self service response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            to_json(response).await,
+            json!({
+                "participant": null,
+                "team": null,
+                "members": [],
+                "next_match": null
+            })
+        );
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].actor_discord_id.as_deref(), Some("940902"));
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_pool_filters_participant_status_from_command_center() {
+        let (turnier_base, turnier_requests) = spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+            Method::GET,
+            "/internal/turnier/v1/scrims/command-center",
+            StatusCode::OK,
+            json!({
+                "participants": [
+                    { "id": "201", "display_name": "New Player", "status": "new", "source": "web_form" },
+                    { "id": "202", "display_name": "Assigned Player", "status": "assigned", "source": "web_form" }
+                ],
+                "teams": [],
+                "matches": [],
+                "match_request_batches": [],
+                "lagebild_refs": []
+            }),
+        )])
+        .await;
+        let (ai_base, ai_requests) = spawn_scrim_upstream(StatusCode::OK, json!({})).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/pool?status=new",
+                &token,
+                None,
+            ))
+            .await
+            .expect("filtered pool response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_json(response).await;
+        assert_eq!(body.as_array().map(Vec::len), Some(1));
+        assert_eq!(body[0]["id"], 201);
+        assert_eq!(body[0]["status"], "new");
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/pool?status=new%21",
+                &token,
+                None,
+            ))
+            .await
+            .expect("invalid pool query response");
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 1);
+        assert_eq!(
+            requests[0].path_and_query,
+            "/internal/turnier/v1/scrims/command-center?status=new"
+        );
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_lagebild_routes_use_ai_upstream_with_actor_headers() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "turnier": true })).await;
+        let (ai_base, ai_requests) = spawn_scrim_upstream_routes(vec![
+            MockScrimRoute::new(
+                Method::POST,
+                "/internal/dl-bots/v1/scrim/lagebilder/7/refresh",
+                StatusCode::OK,
+                json!({ "refreshed": true }),
+            )
+            .expect_body(json!({})),
+            MockScrimRoute::new(
+                Method::POST,
+                "/internal/dl-bots/v1/scrim/lagebilder/7/corrections",
+                StatusCode::OK,
+                json!({ "corrected": true }),
+            )
+            .expect_body(json!({ "message": "Bitte Teamform korrigieren" })),
+        ])
+        .await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        let refresh = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams/7/lagebild/refresh",
+                &token,
+                Some(json!({})),
+            ))
+            .await
+            .expect("refresh response");
+        assert_eq!(refresh.status(), StatusCode::OK);
+
+        let correction = app
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams/7/lagebild/corrections",
+                &token,
+                Some(json!({ "message": "Bitte Teamform korrigieren" })),
+            ))
+            .await
+            .expect("correction response");
+        assert_eq!(correction.status(), StatusCode::OK);
+
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        let requests = ai_requests.lock().expect("ai requests");
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[0].method, Method::POST);
+        assert_eq!(
+            requests[0].path_and_query,
+            "/internal/dl-bots/v1/scrim/lagebilder/7/refresh"
+        );
+        assert_eq!(
+            requests[1].path_and_query,
+            "/internal/dl-bots/v1/scrim/lagebilder/7/corrections"
+        );
+        for request in requests.iter() {
+            assert_eq!(request.internal_token.as_deref(), Some("ai-token"));
+            assert_eq!(request.actor_discord_id.as_deref(), Some("940901"));
+            assert_eq!(
+                request.actor_display_name.as_deref(),
+                Some("Scrim BFF Coach")
+            );
+            assert!(request
+                .request_id
+                .as_deref()
+                .is_some_and(|value| value.starts_with("scrim_bff:v1:")));
+            assert!(request
+                .idempotency_key
+                .as_deref()
+                .is_some_and(|value| value.starts_with("scrim_bff:v1:")));
+        }
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_lagebild_security_blocks_spoofing_admin_origin_and_non_coach() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "turnier": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state.clone());
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams/7/lagebild/corrections",
+                &token,
+                Some(json!({ "message": "ok", "extra": true })),
+            ))
+            .await
+            .expect("unknown field response");
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let mut admin_origin = authenticated_request(
+            Method::POST,
+            "/api/scrim/teams/7/lagebild/refresh",
+            &token,
+            Some(json!({})),
+        );
+        admin_origin.headers_mut().insert(
+            "Host",
+            HeaderValue::from_static("admin.deutsche-deadlock-community.de"),
+        );
+        admin_origin.headers_mut().insert(
+            "Origin",
+            HeaderValue::from_static("https://admin.deutsche-deadlock-community.de"),
+        );
+        let response = app
+            .clone()
+            .oneshot(admin_origin)
+            .await
+            .expect("admin origin ai response");
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+        let non_coach_token = state
+            .auth
+            .create_session_jwt("940912", "viewer", "user", Some("Viewer"), None)
+            .expect("non coach session");
+        let response = app
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams/7/lagebild/refresh",
+                &non_coach_token,
+                Some(json!({})),
+            ))
+            .await
+            .expect("non coach ai response");
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_lagebild_preserves_ai_501_message_error() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "turnier": true })).await;
+        let (ai_base, ai_requests) = spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+            Method::POST,
+            "/internal/dl-bots/v1/scrim/lagebilder/7/refresh",
+            StatusCode::NOT_IMPLEMENTED,
+            json!({ "message": "lagebild refresh disabled" }),
+        )])
+        .await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+
+        let response = router(state)
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/teams/7/lagebild/refresh",
+                &token,
+                Some(json!({})),
+            ))
+            .await
+            .expect("ai error response");
+
+        assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
+        let body = to_json(response).await;
+        assert_eq!(body["detail"], "lagebild refresh disabled");
+        assert!(body["request_id"].as_str().is_some());
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert_eq!(ai_requests.lock().expect("ai requests").len(), 1);
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_turnier_501_mutation_reaches_upstream_and_preserves_capability() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream_routes(vec![MockScrimRoute::new(
+                Method::POST,
+                "/internal/turnier/v1/scrims/match-requests/77/release",
+                StatusCode::NOT_IMPLEMENTED,
+                json!({
+                    "detail": "release not available",
+                    "available": false,
+                    "verified": true
+                }),
+            )])
+            .await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        let response = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::POST,
+                "/api/scrim/match-requests/77/release",
+                &token,
+                Some(json!({ "unexpected_future_field": "kept for upstream" })),
+            ))
+            .await
+            .expect("release 501 response");
+
+        assert_eq!(response.status(), StatusCode::NOT_IMPLEMENTED);
+        let body = to_json(response).await;
+        assert_eq!(body["detail"], "release not available");
+        assert!(body["request_id"].as_str().is_some());
+        assert_eq!(body["capability"]["available"], false);
+        assert_eq!(body["capability"]["verified"], true);
+
+        let spoofed = authenticated_request(
+            Method::POST,
+            "/api/scrim/match-requests/77/release",
+            &token,
+            Some(json!({ "actor": { "id": "evil" } })),
+        );
+        let response = app
+            .clone()
+            .oneshot(spoofed)
+            .await
+            .expect("spoofing response");
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let mut missing_origin = authenticated_request(
+            Method::POST,
+            "/api/scrim/match-requests/77/release",
+            &token,
+            Some(json!({ "reason": "ok" })),
+        );
+        missing_origin.headers_mut().remove("Origin");
+        let response = app
+            .oneshot(missing_origin)
+            .await
+            .expect("missing origin response");
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let requests = turnier_requests.lock().expect("turnier requests");
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].method, Method::POST);
+        assert_eq!(
+            requests[0].path_and_query,
+            "/internal/turnier/v1/scrims/match-requests/77/release"
+        );
+        assert_eq!(
+            requests[0].body,
+            json!({ "unexpected_future_field": "kept for upstream" })
+        );
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn scrim_proxy_adapts_website_compatibility_responses() {
+        let read_model = turnier_scrim_read_model();
+        let me_payload = json!({
+            "participant": read_model["participants"][0].clone(),
+            "team": read_model["teams"][0].clone(),
+            "next_match": read_model["matches"][0].clone()
+        });
+        let (turnier_base, _turnier_requests) = spawn_scrim_upstream_routes(vec![
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/me",
+                StatusCode::OK,
+                me_payload,
+            ),
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/teams",
+                StatusCode::OK,
+                read_model["teams"].clone(),
+            ),
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/teams/101/board",
+                StatusCode::OK,
+                json!({ "team": read_model["teams"][0].clone() }),
+            ),
+            MockScrimRoute::new(
+                Method::GET,
+                "/internal/turnier/v1/scrims/command-center",
+                StatusCode::OK,
+                read_model.clone(),
+            ),
+        ])
+        .await;
+        let (ai_base, _ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Proxy).await;
+        let app = router(state);
+
+        let me = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/me",
+                &token,
+                None,
+            ))
+            .await
+            .expect("me response");
+        let me = to_json(me).await;
+        assert_eq!(me["participant"]["id"], 201);
+        assert_eq!(me["participant"]["availability_confirmed"], false);
+        assert_eq!(
+            me["participant"]["availability_slots"]["mon"]["status"],
+            "unknown"
+        );
+        assert_eq!(me["team"]["id"], 101);
+        assert_eq!(me["team"]["coach_discord_id"], "222222222222222222");
+        assert_eq!(me["team"]["discord_role_id"], "444444444444444444");
+        assert!(me["team"].get("members").is_none());
+        assert_eq!(me["members"].as_array().map(Vec::len), Some(3));
+        assert_eq!(me["members"][0]["participant_id"], 201);
+        assert_eq!(me["members"][0]["role"], "Captain");
+        assert_eq!(me["members"][2]["is_bench"], true);
+        assert_eq!(me["next_match"]["id"], 301);
+        assert_eq!(me["next_match"]["opponent_team_name"], "Team Beta");
+
+        let pool = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/pool",
+                &token,
+                None,
+            ))
+            .await
+            .expect("pool response");
+        let pool = to_json(pool).await;
+        assert!(pool.is_array());
+        assert_eq!(pool.as_array().map(Vec::len), Some(3));
+        assert_eq!(pool[0]["id"], 201);
+        assert_eq!(pool[0]["discord_linked"], true);
+        assert_eq!(pool[0]["team"]["id"], 101);
+        assert_eq!(pool[0]["role"], "Captain");
+        assert_eq!(pool[0]["is_captain"], true);
+        assert_eq!(pool[0]["notes"], "Shotcaller");
+        assert_eq!(pool[0]["availability_confirmed"], false);
+        assert_eq!(pool[0]["availability_slots"]["sun"]["status"], "unknown");
+        assert_eq!(pool[1]["id"], 202);
+        assert_eq!(pool[1]["discord_linked"], false);
+        assert_eq!(pool[1]["availability_confirmed"], true);
+        assert_eq!(pool[1]["availability_slots"]["mon"]["from"], 1140);
+        assert_eq!(pool[1]["availability_slots"]["wed"]["status"], "unknown");
+
+        let teams = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/teams",
+                &token,
+                None,
+            ))
+            .await
+            .expect("teams response");
+        let teams = to_json(teams).await;
+        assert!(teams.is_array());
+        assert_eq!(teams[0]["id"], 101);
+        assert_eq!(teams[0]["coach_discord_id"], "222222222222222222");
+        assert_eq!(teams[0]["discord_channel_id"], "555555555555555555");
+        assert!(teams[0].get("members").is_none());
+
+        let board = app
+            .clone()
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/teams/101/board",
+                &token,
+                None,
+            ))
+            .await
+            .expect("board response");
+        let board = to_json(board).await;
+        assert_eq!(board["team"]["id"], 101);
+        assert!(board["team"].get("members").is_none());
+        assert_eq!(board["members"].as_array().map(Vec::len), Some(3));
+        assert_eq!(board["members"][0]["participant_id"], 201);
+        assert_eq!(board["members"][0]["roles"], "Carry");
+        assert_eq!(board["members"][0]["discord_linked"], true);
+        assert_eq!(board["members"][0]["availability_confirmed"], false);
+        assert_eq!(
+            board["members"][0]["availability"]["sun"]["status"],
+            "unknown"
+        );
+        assert_eq!(board["members"][0]["notes"], "Shotcaller");
+        assert_eq!(board["members"][1]["participant_id"], 202);
+        assert_eq!(board["members"][1]["availability_confirmed"], true);
+        assert_eq!(
+            board["members"][1]["availability"]["wed"]["status"],
+            "unknown"
+        );
+        assert_eq!(board["overlap"]["mon"]["available"], 1);
+        assert_eq!(board["overlap"]["mon"]["unknown"], 1);
+        assert_eq!(board["overlap"]["mon"]["unknown_ids"], json!([201]));
+        assert_eq!(board["overlap"]["mon"]["window_from"], 1140);
+        assert_eq!(board["overlap"]["mon"]["window_to"], 1320);
+        assert_eq!(board["overlap"]["mon"]["full_squad"], false);
+        assert_eq!(board["overlap"]["tue"]["unavailable_ids"], json!([202]));
+        assert_eq!(board["overlap"]["tue"]["unknown_ids"], json!([201]));
+        assert_eq!(board["overlap"]["wed"]["unknown"], 2);
+        assert_eq!(board["overlap"]["wed"]["window_from"], Value::Null);
+
+        let legacy = app
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrims",
+                &token,
+                None,
+            ))
+            .await
+            .expect("legacy overview response");
+        assert_eq!(
+            to_json(legacy).await,
+            json!({
+                "teams": read_model["teams"].clone(),
+                "matches": read_model["matches"].clone(),
+                "match_request_summaries": read_model["match_request_batches"].clone(),
+                "lagebilder": read_model["lagebild_refs"].clone(),
+                "suggested_block": null
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn scrim_maintenance_mode_returns_503_without_upstream_call() {
+        let (turnier_base, turnier_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "turnier": true })).await;
+        let (ai_base, ai_requests) =
+            spawn_scrim_upstream(StatusCode::OK, json!({ "ai": true })).await;
+        let (_db, state, token) =
+            proxy_test_state(turnier_base, ai_base, ScrimBackendMode::Maintenance).await;
+        let app = router(state);
+
+        let response = app
+            .clone()
+            .oneshot(request(Method::GET, "/api/scrim/command-center", None))
+            .await
+            .expect("anonymous maintenance response");
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+        let response = app
+            .oneshot(authenticated_request(
+                Method::GET,
+                "/api/scrim/command-center",
+                &token,
+                None,
+            ))
+            .await
+            .expect("maintenance response");
+
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert!(turnier_requests
+            .lock()
+            .expect("turnier requests")
+            .is_empty());
+        assert!(ai_requests.lock().expect("ai requests").is_empty());
+    }
+
+    #[tokio::test]
+    async fn legacy_scrim_mutations_share_origin_and_json_protection() {
+        let (_db, state) = test_state().await;
+        let token = state
+            .auth
+            .create_session_jwt("940910", "legacy_user", "user", Some("Legacy User"), None)
+            .expect("session");
+        let app = router(state);
+
+        let mut missing_origin = authenticated_request(
+            Method::POST,
+            "/api/scrim/signup",
+            &token,
+            Some(json!({ "rank": "Initiate" })),
+        );
+        missing_origin.headers_mut().remove("Origin");
+        let response = app
+            .clone()
+            .oneshot(missing_origin)
+            .await
+            .expect("missing origin legacy response");
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let mut wrong_content_type = authenticated_request(
+            Method::POST,
+            "/api/scrim/signup",
+            &token,
+            Some(json!({ "rank": "Initiate" })),
+        );
+        wrong_content_type
+            .headers_mut()
+            .insert("content-type", HeaderValue::from_static("text/plain"));
+        let response = app
+            .oneshot(wrong_content_type)
+            .await
+            .expect("content type legacy response");
+        assert_eq!(response.status(), StatusCode::UNSUPPORTED_MEDIA_TYPE);
+    }
+
+    #[test]
+    fn scrim_proxy_config_fails_closed_for_unknown_mode_public_base_or_missing_token() {
+        assert!(ScrimBackendMode::from_env_value(Some("mystery".into())).is_err());
+
+        let mut cfg = crate::config::Config::from_env();
+        cfg.scrim_backend_mode = ScrimBackendMode::Proxy;
+        cfg.scrim_turnier_base = "https://turnier.example".into();
+        cfg.scrim_turnier_token = Some("turnier-token".into());
+        cfg.scrim_ai_base = "http://127.0.0.1:8770".into();
+        cfg.scrim_ai_token = Some("ai-token".into());
+        assert!(cfg.validate_startup().is_err());
+
+        cfg.scrim_turnier_base = "http://127.0.0.1:8900".into();
+        cfg.scrim_ai_base = "https://ai.example".into();
+        assert!(cfg.validate_startup().is_err());
+
+        cfg.scrim_ai_base = "http://127.0.0.1:8770".into();
+        cfg.scrim_turnier_token = None;
+        assert!(cfg.validate_startup().is_err());
+
+        cfg.scrim_turnier_token = Some("turnier-token".into());
+        cfg.scrim_ai_token = None;
+        assert!(cfg.validate_startup().is_err());
+
+        cfg.scrim_ai_token = Some("ai-token".into());
+        assert!(cfg.validate_startup().is_ok());
+    }
+
+    #[test]
+    fn scrim_proxy_modules_do_not_depend_on_legacy_sql_or_discord_effects() {
+        for (path, source) in [
+            (
+                "src/routes/scrim_proxy.rs",
+                include_str!("routes/scrim_proxy.rs"),
+            ),
+            ("src/scrim_upstream.rs", include_str!("scrim_upstream.rs")),
+        ] {
+            for banned in [
+                "sqlx::",
+                "scrim.",
+                "discord_broker",
+                "DiscordRoleBroker",
+                "send_rich_message",
+                "create_role",
+            ] {
+                assert!(
+                    !source.contains(banned),
+                    "{path} must not contain legacy side-effect dependency {banned}"
+                );
+            }
+        }
+    }
 
     struct DeadlockTags;
     impl crate::video::YoutubeClient for DeadlockTags {
@@ -594,6 +2977,64 @@ mod tests {
             .await
             .expect("anonymous admin response");
         assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn cors_allows_only_configured_same_site_origins() {
+        let (_db, state) = test_state().await;
+        let app = router(state);
+
+        let allowed = Request::builder()
+            .method(Method::OPTIONS)
+            .uri("/api/scrim/command-center")
+            .header("Host", "deutsche-deadlock-community.de")
+            .header("Origin", "https://deutsche-deadlock-community.de")
+            .header("Access-Control-Request-Method", "GET")
+            .body(Body::empty())
+            .expect("allowed cors request");
+        let response = app
+            .clone()
+            .oneshot(allowed)
+            .await
+            .expect("allowed cors response");
+        assert_eq!(
+            response
+                .headers()
+                .get("access-control-allow-origin")
+                .and_then(|value| value.to_str().ok()),
+            Some("https://deutsche-deadlock-community.de")
+        );
+
+        let evil = Request::builder()
+            .method(Method::OPTIONS)
+            .uri("/api/scrim/command-center")
+            .header("Host", "deutsche-deadlock-community.de")
+            .header("Origin", "https://evil.example")
+            .header("Access-Control-Request-Method", "GET")
+            .body(Body::empty())
+            .expect("evil cors request");
+        let response = app.clone().oneshot(evil).await.expect("evil cors response");
+        assert!(response
+            .headers()
+            .get("access-control-allow-origin")
+            .is_none());
+
+        let admin = Request::builder()
+            .method(Method::OPTIONS)
+            .uri("/api/admin/videos/channels/1")
+            .header("Host", "admin.deutsche-deadlock-community.de")
+            .header("Origin", "https://admin.deutsche-deadlock-community.de")
+            .header("Access-Control-Request-Method", "DELETE")
+            .body(Body::empty())
+            .expect("admin cors request");
+        let response = app.oneshot(admin).await.expect("admin cors response");
+        assert_eq!(
+            response
+                .headers()
+                .get("access-control-allow-origin")
+                .and_then(|value| value.to_str().ok()),
+            Some("https://admin.deutsche-deadlock-community.de")
+        );
     }
 
     #[tokio::test]
@@ -2478,6 +4919,8 @@ mod tests {
             .timeout(timeout)
             .build()
             .expect("http client");
+        cfg.validate_startup().expect("test config validation");
+        let scrim_http = scrim_http_client(&cfg).expect("scrim http client");
         let discord_role_broker =
             Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg).expect("broker client"));
         let discord_role_connections =
@@ -2488,6 +4931,7 @@ mod tests {
                 cfg,
                 pool: db.pool().clone(),
                 http,
+                scrim_http,
                 discord_role_broker,
                 discord_role_connections,
                 auth,
@@ -2518,6 +4962,7 @@ mod tests {
             .method(method)
             .uri(uri)
             .header("X-Internal-Token", "test-secret-xyz")
+            .header("Host", "deutsche-deadlock-community.de")
             .header("content-type", "application/json");
         let bytes = body.map(|v| v.to_string()).unwrap_or_default();
         let mut req = builder.body(Body::from(bytes)).expect("request");
@@ -2534,6 +4979,7 @@ mod tests {
             .uri(uri)
             .header("X-Admin-Validated", "1")
             .header("X-Admin-User", "platform-admin")
+            .header("Host", "admin.deutsche-deadlock-community.de")
             .header("content-type", "application/json");
         let bytes = body.map(|v| v.to_string()).unwrap_or_default();
         let mut req = builder.body(Body::from(bytes)).expect("request");
@@ -2554,6 +5000,8 @@ mod tests {
             .method(method)
             .uri(uri)
             .header("Cookie", format!("ddc_session={token}"))
+            .header("Host", "deutsche-deadlock-community.de")
+            .header("Origin", "https://deutsche-deadlock-community.de")
             .header("content-type", "application/json");
         let bytes = body.map(|v| v.to_string()).unwrap_or_default();
         let mut req = builder.body(Body::from(bytes)).expect("request");

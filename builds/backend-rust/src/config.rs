@@ -1,4 +1,31 @@
-use std::env;
+use std::{env, net::IpAddr};
+
+use anyhow::{bail, Context};
+use url::Url;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ScrimBackendMode {
+    Legacy,
+    Proxy,
+    Maintenance,
+}
+
+impl ScrimBackendMode {
+    pub(crate) fn from_env_value(value: Option<String>) -> anyhow::Result<Self> {
+        match value
+            .as_deref()
+            .unwrap_or("legacy")
+            .trim()
+            .to_ascii_lowercase()
+            .as_str()
+        {
+            "" | "legacy" => Ok(Self::Legacy),
+            "proxy" => Ok(Self::Proxy),
+            "maintenance" => Ok(Self::Maintenance),
+            value => bail!("unknown SCRIM_BACKEND_MODE: {value}"),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Config {
@@ -35,10 +62,23 @@ pub struct Config {
     pub discord_role_connection_sync_worker_enabled: bool,
     pub discord_role_connection_sync_interval_seconds: u64,
     pub db_master_key_v1: Option<String>,
+    pub scrim_backend_mode: ScrimBackendMode,
+    pub scrim_turnier_base: String,
+    pub scrim_turnier_token: Option<String>,
+    pub scrim_ai_base: String,
+    pub scrim_ai_token: Option<String>,
+    pub scrim_upstream_timeout_ms: u64,
 }
 
 impl Config {
+    #[cfg(test)]
     pub fn from_env() -> Self {
+        Self::try_from_env().expect("valid environment configuration")
+    }
+
+    pub fn try_from_env() -> anyhow::Result<Self> {
+        let scrim_backend_mode =
+            ScrimBackendMode::from_env_value(env::var("SCRIM_BACKEND_MODE").ok())?;
         Self {
             host: env_or("WEBSITE_BACKEND_HOST", "127.0.0.1"),
             port: env::var("WEBSITE_BACKEND_PORT")
@@ -152,7 +192,47 @@ impl Config {
             .filter(|v| *v > 0)
             .unwrap_or(30),
             db_master_key_v1: first_env(&["DB_MASTER_KEY_V1"]),
+            scrim_backend_mode,
+            scrim_turnier_base: env_or("TURNIER_INTERNAL_API_BASE_URL", "http://127.0.0.1:8900"),
+            scrim_turnier_token: first_env(&["TURNIER_INTERNAL_API_TOKEN"]),
+            scrim_ai_base: env_or(
+                "DL_SCRIM_LAGEBILD_INTERNAL_BASE_URL",
+                "http://127.0.0.1:8770",
+            ),
+            scrim_ai_token: first_env(&["DL_SCRIM_LAGEBILD_INTERNAL_TOKEN"]),
+            scrim_upstream_timeout_ms: env::var("SCRIM_UPSTREAM_TIMEOUT_MS")
+                .ok()
+                .and_then(|v| v.trim().parse().ok())
+                .filter(|v| *v > 0)
+                .unwrap_or(3_000),
         }
+        .tap_validate()
+    }
+
+    fn tap_validate(self) -> anyhow::Result<Self> {
+        self.validate_startup()?;
+        Ok(self)
+    }
+
+    pub fn validate_startup(&self) -> anyhow::Result<()> {
+        if self.scrim_backend_mode == ScrimBackendMode::Proxy {
+            self.validate_scrim_proxy()?;
+        }
+        Ok(())
+    }
+
+    pub fn validate_scrim_proxy(&self) -> anyhow::Result<()> {
+        validate_loopback_http_origin("TURNIER_INTERNAL_API_BASE_URL", &self.scrim_turnier_base)?;
+        validate_loopback_http_origin("DL_SCRIM_LAGEBILD_INTERNAL_BASE_URL", &self.scrim_ai_base)?;
+        require_token(
+            "TURNIER_INTERNAL_API_TOKEN",
+            self.scrim_turnier_token.as_deref(),
+        )?;
+        require_token(
+            "DL_SCRIM_LAGEBILD_INTERNAL_TOKEN",
+            self.scrim_ai_token.as_deref(),
+        )?;
+        Ok(())
     }
 
     pub fn scrim_substitute_sweep_interval_seconds(&self) -> u64 {
@@ -170,6 +250,43 @@ impl Config {
             .filter(|v| *v > 0)
             .unwrap_or(1_520_842_755_037_855_975)
     }
+}
+
+fn validate_loopback_http_origin(name: &str, value: &str) -> anyhow::Result<()> {
+    let url = Url::parse(value).with_context(|| format!("{name} is not a valid URL"))?;
+    if url.scheme() != "http" {
+        bail!("{name} must use http for loopback-only internal traffic");
+    }
+    if !url.username().is_empty() || url.password().is_some() {
+        bail!("{name} must not include credentials");
+    }
+    if url.query().is_some() || url.fragment().is_some() || !matches!(url.path(), "" | "/") {
+        bail!("{name} must be an origin without path, query, or fragment");
+    }
+    let host = url
+        .host_str()
+        .ok_or_else(|| anyhow::anyhow!("{name} must include a host"))?;
+    if host.eq_ignore_ascii_case("localhost") {
+        return Ok(());
+    }
+    let ip: IpAddr = host
+        .parse()
+        .with_context(|| format!("{name} host must be localhost or a loopback IP"))?;
+    if !ip.is_loopback() {
+        bail!("{name} host must be loopback");
+    }
+    Ok(())
+}
+
+fn require_token(name: &str, value: Option<&str>) -> anyhow::Result<()> {
+    if value
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .is_none()
+    {
+        bail!("{name} is required in SCRIM_BACKEND_MODE=proxy");
+    }
+    Ok(())
 }
 
 pub fn first_env(names: &[&str]) -> Option<String> {
@@ -201,5 +318,22 @@ fn is_truthy(value: &str, default: bool) -> bool {
         "1" | "true" | "yes" | "on" => true,
         "0" | "false" | "no" | "off" => false,
         _ => default,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ScrimBackendMode;
+
+    #[test]
+    fn scrim_backend_mode_defaults_to_legacy_when_unset_or_empty() {
+        assert_eq!(
+            ScrimBackendMode::from_env_value(None).expect("unset mode"),
+            ScrimBackendMode::Legacy
+        );
+        assert_eq!(
+            ScrimBackendMode::from_env_value(Some("  ".into())).expect("empty mode"),
+            ScrimBackendMode::Legacy
+        );
     }
 }

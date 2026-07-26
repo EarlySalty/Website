@@ -9,6 +9,7 @@ mod http;
 mod ids;
 mod routes;
 mod rows;
+mod scrim_upstream;
 mod video;
 
 use anyhow::Context;
@@ -22,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
-    let cfg = Config::from_env();
+    let cfg = Config::try_from_env().context("Konfiguration lesen")?;
     let state = app::AppState::new(cfg.clone())
         .await
         .context("Website-Backend initialisieren")?;

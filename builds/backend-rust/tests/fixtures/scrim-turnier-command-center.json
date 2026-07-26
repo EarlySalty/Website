@@ -1,0 +1,31 @@
+{
+  "participants": [
+    {
+      "id": "201",
+      "display_name": "Missing Vote"
+    }
+  ],
+  "teams": [
+    {
+      "id": "101"
+    }
+  ],
+  "matches": [
+    {
+      "id": "301",
+      "status": "scheduled"
+    }
+  ],
+  "match_request_batches": [
+    {
+      "id": "401",
+      "missing_response_count": 1
+    }
+  ],
+  "lagebild_refs": [
+    {
+      "id": "501",
+      "team_id": "101"
+    }
+  ]
+}
