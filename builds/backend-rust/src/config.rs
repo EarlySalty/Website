@@ -199,7 +199,7 @@ impl Config {
                 "DL_SCRIM_LAGEBILD_INTERNAL_BASE_URL",
                 "http://127.0.0.1:8770",
             ),
-            scrim_ai_token: first_env(&["DL_SCRIM_LAGEBILD_INTERNAL_TOKEN"]),
+            scrim_ai_token: first_env(&["TURNIER_INTERNAL_API_TOKEN"]),
             scrim_upstream_timeout_ms: env::var("SCRIM_UPSTREAM_TIMEOUT_MS")
                 .ok()
                 .and_then(|v| v.trim().parse().ok())
@@ -228,10 +228,7 @@ impl Config {
             "TURNIER_INTERNAL_API_TOKEN",
             self.scrim_turnier_token.as_deref(),
         )?;
-        require_token(
-            "DL_SCRIM_LAGEBILD_INTERNAL_TOKEN",
-            self.scrim_ai_token.as_deref(),
-        )?;
+        require_token("TURNIER_INTERNAL_API_TOKEN", self.scrim_ai_token.as_deref())?;
         Ok(())
     }
 
@@ -323,7 +320,8 @@ fn is_truthy(value: &str, default: bool) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::ScrimBackendMode;
+    use super::{Config, ScrimBackendMode};
+    use serial_test::serial;
 
     #[test]
     fn scrim_backend_mode_defaults_to_legacy_when_unset_or_empty() {
@@ -335,5 +333,28 @@ mod tests {
             ScrimBackendMode::from_env_value(Some("  ".into())).expect("empty mode"),
             ScrimBackendMode::Legacy
         );
+    }
+
+    #[test]
+    #[serial]
+    fn lagebild_token_uses_turnier_internal_api_token() {
+        let previous_mode = std::env::var_os("SCRIM_BACKEND_MODE");
+        let previous_token = std::env::var_os("TURNIER_INTERNAL_API_TOKEN");
+        std::env::set_var("SCRIM_BACKEND_MODE", "legacy");
+        std::env::set_var("TURNIER_INTERNAL_API_TOKEN", "shared-test-token");
+
+        let config = Config::try_from_env();
+
+        match previous_mode {
+            Some(value) => std::env::set_var("SCRIM_BACKEND_MODE", value),
+            None => std::env::remove_var("SCRIM_BACKEND_MODE"),
+        }
+        match previous_token {
+            Some(value) => std::env::set_var("TURNIER_INTERNAL_API_TOKEN", value),
+            None => std::env::remove_var("TURNIER_INTERNAL_API_TOKEN"),
+        }
+
+        let config = config.expect("valid legacy configuration");
+        assert!(config.scrim_ai_token.as_deref() == Some("shared-test-token"));
     }
 }
