@@ -20,5 +20,8 @@
     }
   },
   "include": ["src"],
+  // Tests laufen ueber `node --test` (Node strippt die Typen selbst) und brauchen node:test.
+  // Der Produktions-Typecheck laesst sie aus, damit dafuer kein @types/node noetig ist.
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
