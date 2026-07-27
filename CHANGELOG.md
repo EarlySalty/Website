@@ -1,3 +1,7 @@
+## #68 — Scrim-Seiten sprechen mit dem Turnierdienst
+
+**Ausgangslage:** Die Scrim-Seiten liefen noch gegen das alte Website-Backend, während der Turnierdienst bereits alle Funktionen bereithielt. **Änderung:** Die Umschaltung ist erfolgt; alle Scrim-Aufrufe gehen jetzt an den Turnierdienst. **Aktuelles Verhalten:** Team- und Kaderverwaltung, Terminabfragen und Ersatzsuche verhalten sich wie gewohnt; scheitert der Discord-Versand, wird das jetzt angezeigt, statt als Erfolg durchzugehen.
+
 ## #67 — Scrim-Zentrale bekommt eine sichere Backend-Grenze
 
 **Ausgangslage:** Die Website griff für Scrim-Verwaltung selbst auf Fachdaten zu; ein schrittweiser Umzug hätte dadurch doppelte Schreibwege und uneinheitliche Antworten erzeugt. **Änderung:** Eine abgesicherte Backend-Grenze leitet Scrim-Aufrufe an die zuständigen Dienste weiter, schützt Identität und Wiederholungen serverseitig und hält die bestehenden Team-, Pool- und Verfügbarkeitsseiten kompatibel. **Aktuelles Verhalten:** Standardmäßig bleibt der bisherige Pfad aktiv; der neue Proxy kann kontrolliert zugeschaltet werden und meldet noch nicht verfügbare Aktionen eindeutig statt sie vorzutäuschen.
