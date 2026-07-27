@@ -122,15 +122,20 @@ export function resolveAttention(data: ScrimCommandCenter): ResolvedAttention[] 
 /** Anstehende Spiele, frueheste zuerst. Terminlose landen hinten statt zu verschwinden. */
 export function upcomingMatches(data: ScrimCommandCenter): OperationalMatch[] {
   return data.operational_matches
-    .filter(match => !CLOSED_MATCH_STATUS.has(match.status.toLowerCase()))
+    .filter(match => !CLOSED_MATCH_STATUS.has(statusKey(match.status)))
     .slice()
     .sort((a, b) => compareOptionalDate(a.scheduled_at, b.scheduled_at))
+}
+
+/** Das Backend darf Teilantworten ohne Status liefern; ohne Status gilt ein Vorgang als offen. */
+function statusKey(status: string | null | undefined): string {
+  return typeof status === 'string' ? status.toLowerCase() : ''
 }
 
 /** Offene Abfragen, dringendste Deadline zuerst. */
 export function openBatches(data: ScrimCommandCenter): MatchRequestBatch[] {
   return data.match_request_batches
-    .filter(batch => !CLOSED_BATCH_STATUS.has(batch.status.toLowerCase()))
+    .filter(batch => !CLOSED_BATCH_STATUS.has(statusKey(batch.status)))
     .slice()
     .sort((a, b) => compareOptionalDate(a.deadline_at, b.deadline_at))
 }

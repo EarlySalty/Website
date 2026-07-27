@@ -143,3 +143,19 @@ test('openBatches sortiert nach Deadline und blendet geschlossene Abfragen aus',
     ['1', '2'],
   )
 })
+
+test('Teilantworten ohne Status stuerzen nicht ab und gelten als offen', () => {
+  // Der Backend-Vertrag erlaubt Batches nur mit id und missing_response_count.
+  // Vorher rief der Filter status.toLowerCase() auf und warf einen TypeError.
+  const data = fixture({
+    match_request_batches: [
+      { id: '9', missing_response_count: 2 } as never,
+    ],
+    operational_matches: [
+      { id: '8' } as never,
+    ],
+  })
+
+  assert.deepEqual(openBatches(data).map(batch => batch.id), ['9'])
+  assert.deepEqual(upcomingMatches(data).map(match => match.id), ['8'])
+})

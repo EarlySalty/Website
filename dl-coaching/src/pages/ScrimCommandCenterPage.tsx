@@ -233,7 +233,7 @@ function MatchCard({ match }: { match: OperationalMatch }) {
 }
 
 function LagebildCard({ snapshot, teamName }: { snapshot: LagebildRef; teamName?: string }) {
-  const failed = Boolean(snapshot.error) || snapshot.status.toLowerCase().includes('error')
+  const failed = Boolean(snapshot.error) || (snapshot.status ?? '').toLowerCase().includes('error')
   return (
     <div className="card space-y-1.5 p-4">
       <span className="font-display text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
