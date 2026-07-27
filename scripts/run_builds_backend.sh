@@ -45,6 +45,12 @@ unset INFISICAL_SERVICE_TOKEN
 # Anfrage sieht -> ohne diese Zeile baut das Backend die URL ohne /coaching-Praefix
 # und der Broker landet auf einem 404. Die bei Discord registrierte URI bleibt
 # unveraendert (/callback/discord); das hier ist nur die Rueckleitung an diesen Dienst.
+# Scrim-Funktionen laufen ueber den Turnierdienst statt ueber das alte Website-Backend.
+# Die beiden Basis-URLs haben in config.rs passende Loopback-Defaults (8900 turnier-bot,
+# 8770 dl-bot-Broker); die Tokens kommen aus Infisical. Zurueck auf den alten Weg:
+# diese Zeile auf "legacy" setzen und das Backend neu starten.
+export SCRIM_BACKEND_MODE=proxy
+
 export AUTH_PUBLIC_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/callback"
 export DISCORD_ROLE_CONNECTION_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/linked-role/callback"
 
