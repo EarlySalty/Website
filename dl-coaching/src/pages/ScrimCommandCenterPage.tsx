@@ -176,7 +176,7 @@ function AttentionCard({ entry }: { entry: ResolvedAttention }) {
       </p>
       {entry.batch && (
         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          {entry.batch.requests.length} {COPY.requests} · {COPY.createdBy} {entry.batch.created_by_display_name}
+          {entry.batch.requests?.length ?? 0} {COPY.requests} · {COPY.createdBy} {entry.batch.created_by_display_name}
         </p>
       )}
       {link && entry.match?.team_a && (
@@ -197,7 +197,7 @@ function BatchRow({ batch }: { batch: MatchRequestBatch }) {
           {templateLabel(batch.template)}
         </span>
         <p className="stat-label mt-1">
-          {batch.requests.length} {COPY.requests} · {COPY.createdBy} {batch.created_by_display_name}
+          {batch.requests?.length ?? 0} {COPY.requests} · {COPY.createdBy} {batch.created_by_display_name}
         </p>
       </div>
       <div className="text-right">
@@ -257,11 +257,13 @@ function matchTitle(match: OperationalMatch): string {
   return `${a} vs ${b}`
 }
 
-function templateLabel(template: string): string {
+function templateLabel(template: string | null | undefined): string {
+  if (!template) return ''
   return TEMPLATE_LABEL[template] ?? template
 }
 
-function formatDateTime(value: string): string {
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString('de-DE', {
@@ -273,7 +275,8 @@ function formatDateTime(value: string): string {
   })
 }
 
-function isPast(value: string): boolean {
+function isPast(value: string | null | undefined): boolean {
+  if (!value) return false
   const date = new Date(value)
   return !Number.isNaN(date.getTime()) && date.getTime() < Date.now()
 }
