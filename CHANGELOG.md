@@ -1,3 +1,7 @@
+## #69 — Lagebild-Karten zeigen das Lagebild
+
+**Ausgangslage:** Unter „Lagebilder" stand pro Karte nur ein Zeitstempel und der technische Modellname. Das eigentliche Lagebild war nirgends zu lesen. **Änderung:** Jede Karte zeigt jetzt den vollständigen Lagebildtext, den der Turnierdienst neuerdings mitliefert. **Aktuelles Verhalten:** Jede Karte ist lesbar. Ist der Lauf fehlgeschlagen, steht der Fehler an der Stelle des Textes.
+
 ## #68 — Scrim-Seiten sprechen mit dem Turnierdienst
 
 **Ausgangslage:** Die Scrim-Seiten liefen noch gegen das alte Website-Backend, während der Turnierdienst bereits alle Funktionen bereithielt. **Änderung:** Die Umschaltung ist erfolgt; alle Scrim-Aufrufe gehen jetzt an den Turnierdienst. **Aktuelles Verhalten:** Team- und Kaderverwaltung, Terminabfragen und Ersatzsuche verhalten sich wie gewohnt; scheitert der Discord-Versand, wird das jetzt angezeigt, statt als Erfolg durchzugehen.

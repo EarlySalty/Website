@@ -147,7 +147,7 @@ export default function ScrimCommandCenterPage() {
         {data.lagebild_refs.length === 0 ? (
           <EmptyState title={COPY.lagebilderEmpty} copy={COPY.lagebilderEmptyCopy} />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             {data.lagebild_refs.map(ref => (
               <LagebildCard key={ref.id} snapshot={ref} teamName={teamName.get(String(ref.team_id))} />
             ))}
@@ -234,15 +234,22 @@ function MatchCard({ match }: { match: OperationalMatch }) {
 
 function LagebildCard({ snapshot, teamName }: { snapshot: LagebildRef; teamName?: string }) {
   const failed = Boolean(snapshot.error) || (snapshot.status ?? '').toLowerCase().includes('error')
+  const text = (snapshot.lagebild_text ?? '').trim()
   return (
     <div className="card space-y-1.5 p-4">
       <span className="font-display text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
         {teamName ?? `Team ${snapshot.team_id}`}
       </span>
       <p className="stat-label">{formatDateTime(snapshot.generated_at)}</p>
-      <p className="text-xs" style={{ color: failed ? 'var(--red)' : 'var(--text-muted)' }}>
-        {failed ? snapshot.error || snapshot.status : snapshot.model || snapshot.status}
-      </p>
+      {failed ? (
+        <p className="text-xs" style={{ color: 'var(--red)' }}>
+          {snapshot.error || snapshot.status}
+        </p>
+      ) : (
+        <p className="whitespace-pre-line text-xs" style={{ color: 'var(--text-secondary)' }}>
+          {text || snapshot.status}
+        </p>
+      )}
     </div>
   )
 }
