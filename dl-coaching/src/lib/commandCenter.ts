@@ -54,6 +54,7 @@ export interface LagebildRef {
   team_id: string
   generated_at: string
   status: string
+  lagebild_text?: string | null
   model?: string | null
   error?: string | null
 }
