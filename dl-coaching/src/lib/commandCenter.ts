@@ -148,3 +148,47 @@ function compareOptionalDate(a: string | null | undefined, b: string | null | un
   if (!b) return -1
   return a.localeCompare(b)
 }
+
+export type LagebildEvidence = { label: string; url?: string }
+export type LagebildParts = { body: string; evidences: LagebildEvidence[] }
+
+const EVIDENCE_HEADING = 'Evidenzen:'
+const MARKDOWN_LINK = /^\[(.+)\]\((.+)\)$/
+
+/**
+ * Trennt den Fliesstext einer Lagebild-Karte von den angehaengten Belegen.
+ * Das Backend liefert die Belege als Markdown; roh ausgegeben stehen zehn
+ * Discord-URLs in der Karte und verdecken die eigentliche Lage.
+ */
+export function splitLagebildText(text: string): LagebildParts {
+  const lines = text.split('\n')
+  const headingIndex = lines.findIndex(line => line.trim() === EVIDENCE_HEADING)
+  if (headingIndex < 0) {
+    return { body: text.trim(), evidences: [] }
+  }
+  const evidences = lines
+    .slice(headingIndex + 1)
+    .map(line => line.trim())
+    .filter(line => line.startsWith('- '))
+    .map(line => parseEvidence(line.slice(2).trim()))
+  return { body: lines.slice(0, headingIndex).join('\n').trim(), evidences }
+}
+
+function parseEvidence(entry: string): LagebildEvidence {
+  const match = MARKDOWN_LINK.exec(entry)
+  if (!match) {
+    return { label: entry }
+  }
+  const [, label, url] = match
+  return isHttpUrl(url) ? { label, url } : { label }
+}
+
+/** Nur http und https sind Klickziele; alles andere bleibt reiner Text. */
+function isHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}

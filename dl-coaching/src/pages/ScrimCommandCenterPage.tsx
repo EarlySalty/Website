@@ -7,6 +7,7 @@ import { CoachOnly, EmptyState, PageSpinner, SectionHead } from '@/components/ui
 import {
   openBatches,
   resolveAttention,
+  splitLagebildText,
   upcomingMatches,
   type AttentionKind,
   type LagebildRef,
@@ -31,6 +32,7 @@ const COPY = {
   lagebilder: 'Lagebilder',
   lagebilderEmpty: 'Noch keine Lagebilder',
   lagebilderEmptyCopy: 'Für die Teams wurde bisher kein Lagebild erzeugt.',
+  evidences: 'Belege',
   unavailableTitle: 'Die Scrim-Lage ist noch nicht freigeschaltet',
   unavailableCopy:
     'Dieser Bildschirm liest aus dem Turnier-Dienst. Solange die Website noch auf dem alten Scrim-Backend läuft, gibt es diese Übersicht nicht. Der Scrim-Pool und die Team-Boards funktionieren normal weiter.',
@@ -234,7 +236,7 @@ function MatchCard({ match }: { match: OperationalMatch }) {
 
 function LagebildCard({ snapshot, teamName }: { snapshot: LagebildRef; teamName?: string }) {
   const failed = Boolean(snapshot.error) || (snapshot.status ?? '').toLowerCase().includes('error')
-  const text = (snapshot.lagebild_text ?? '').trim()
+  const { body, evidences } = splitLagebildText(snapshot.lagebild_text ?? '')
   return (
     <div className="card space-y-1.5 p-4">
       <span className="font-display text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -246,12 +248,50 @@ function LagebildCard({ snapshot, teamName }: { snapshot: LagebildRef; teamName?
           {snapshot.error || snapshot.status}
         </p>
       ) : (
-        <p className="whitespace-pre-line text-xs" style={{ color: 'var(--text-secondary)' }}>
-          {text || snapshot.status}
-        </p>
+        <>
+          <p className="whitespace-pre-line text-xs" style={{ color: 'var(--text-secondary)' }}>
+            {body || snapshot.status}
+          </p>
+          {evidences.length > 0 && (
+            <div className="space-y-1 pt-1">
+              <p className="stat-label">{COPY.evidences}</p>
+              <div className="flex flex-wrap gap-1">
+                {evidences.map((evidence, index) =>
+                  evidence.url ? (
+                    <a
+                      key={`${evidence.label}-${index}`}
+                      href={evidence.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-sm px-1.5 py-0.5 text-xs underline decoration-dotted"
+                      style={{ color: 'var(--amber)' }}
+                      title={evidence.label}
+                    >
+                      {evidenceChip(evidence.label, index)}
+                    </a>
+                  ) : (
+                    <span
+                      key={`${evidence.label}-${index}`}
+                      className="rounded-sm px-1.5 py-0.5 text-xs"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      {evidence.label}
+                    </span>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
+}
+
+/** Zehn volle Labels sprengen die Karte; der Zeitstempel reicht zum Wiederfinden. */
+function evidenceChip(label: string, index: number): string {
+  const timestamp = label.match(/\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/)
+  return timestamp ? timestamp[0] : `Beleg ${index + 1}`
 }
 
 function entryId(entry: ResolvedAttention): string {

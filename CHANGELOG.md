@@ -1,3 +1,7 @@
+## #70 — Belege in Lagebild-Karten sind Links statt Textwüste
+
+**Ausgangslage:** Unter jeder Lagebild-Karte standen bis zu zehn Discord-Verweise als roher Text mit vollständiger URL. Die Karte war dreimal so lang wie das Lagebild und der Text darüber ging unter. **Änderung:** Die Belege stehen jetzt als kurze anklickbare Marken unter dem Lagebild, beschriftet mit dem Zeitpunkt der Nachricht. **Aktuelles Verhalten:** Das Lagebild steht wieder oben und ist am Stück lesbar; ein Klick auf eine Marke öffnet die Nachricht in Discord.
+
 ## #69 — Lagebild-Karten zeigen das Lagebild
 
 **Ausgangslage:** Unter „Lagebilder" stand pro Karte nur ein Zeitstempel und der technische Modellname. Das eigentliche Lagebild war nirgends zu lesen. **Änderung:** Jede Karte zeigt jetzt den vollständigen Lagebildtext, den der Turnierdienst neuerdings mitliefert. **Aktuelles Verhalten:** Jede Karte ist lesbar. Ist der Lauf fehlgeschlagen, steht der Fehler an der Stelle des Textes.
