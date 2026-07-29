@@ -1,6 +1,6 @@
 ## #70 — Belege in Lagebild-Karten sind Links statt Textwüste
 
-**Ausgangslage:** Unter jeder Lagebild-Karte standen bis zu zehn Discord-Verweise als roher Text mit vollständiger URL. Die Karte war dreimal so lang wie das Lagebild und der Text darüber ging unter. **Änderung:** Die Belege stehen jetzt als kurze anklickbare Marken unter dem Lagebild, beschriftet mit dem Zeitpunkt der Nachricht. **Aktuelles Verhalten:** Das Lagebild steht wieder oben und ist am Stück lesbar; ein Klick auf eine Marke öffnet die Nachricht in Discord.
+**Ausgangslage:** Unter jeder Lagebild-Karte standen bis zu zehn Discord-Verweise als roher Text mit vollständiger URL. Die Karte war dreimal so lang wie das Lagebild und der Text darüber ging unter. **Änderung:** Die Belege stehen jetzt als kurze anklickbare Marken unter dem Lagebild, beschriftet mit dem Zeitpunkt der Nachricht. **Aktuelles Verhalten:** Das Lagebild steht wieder oben und ist am Stück lesbar; ein Klick auf eine Marke öffnet die Nachricht in Discord. Belege ohne Zeitpunkt, etwa eine Terminabfrage, tragen weiterhin ihren Namen.
 
 ## #69 — Lagebild-Karten zeigen das Lagebild
 

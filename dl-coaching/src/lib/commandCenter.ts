@@ -154,6 +154,10 @@ export type LagebildParts = { body: string; evidences: LagebildEvidence[] }
 
 const EVIDENCE_HEADING = 'Evidenzen:'
 const MARKDOWN_LINK = /^\[(.+)\]\((.+)\)$/
+/** Das Backend schreibt diese Zeile, wenn es gar keine Referenzen gibt. */
+const EVIDENCE_PLACEHOLDER = 'Keine belastbaren Referenzen vorhanden.'
+const EVIDENCE_TIMESTAMP = /\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/
+const CHIP_MAX_CHARS = 25
 
 /**
  * Trennt den Fliesstext einer Lagebild-Karte von den angehaengten Belegen.
@@ -170,7 +174,9 @@ export function splitLagebildText(text: string): LagebildParts {
     .slice(headingIndex + 1)
     .map(line => line.trim())
     .filter(line => line.startsWith('- '))
-    .map(line => parseEvidence(line.slice(2).trim()))
+    .map(line => line.slice(2).trim())
+    .filter(entry => entry !== EVIDENCE_PLACEHOLDER)
+    .map(parseEvidence)
   return { body: lines.slice(0, headingIndex).join('\n').trim(), evidences }
 }
 
@@ -191,4 +197,15 @@ function isHttpUrl(value: string): boolean {
   } catch {
     return false
   }
+}
+
+/**
+ * Beschriftung einer Beleg-Marke. Chat-Belege tragen ihren Zeitpunkt, alles
+ * andere sein eigenes Label; ein generisches "Beleg 3" waere fuer
+ * Terminabfragen und Reminder eine Verschlechterung gegenueber dem Klartext.
+ */
+export function evidenceChipLabel(label: string): string {
+  const timestamp = EVIDENCE_TIMESTAMP.exec(label)
+  if (timestamp) return timestamp[0]
+  return label.length > CHIP_MAX_CHARS ? `${label.slice(0, CHIP_MAX_CHARS)}\u2026` : label
 }

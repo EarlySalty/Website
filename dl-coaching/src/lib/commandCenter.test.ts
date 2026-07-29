@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  evidenceChipLabel,
   openBatches,
   resolveAttention,
   splitLagebildText,
@@ -195,4 +196,19 @@ test('Kein Beleg behaelt Markdown-Klammern', () => {
 test('Belege mit fremdem Schema behalten nur ihr Label', () => {
   const parts = splitLagebildText('Lage: X\n\nEvidenzen:\n- [Klick](javascript:alert(1))')
   assert.deepEqual(parts.evidences, [{ label: 'Klick' }])
+})
+
+/** Der Platzhalter des Backends ist kein Beleg und gehoert nicht als Marke in die Karte. */
+test('Platzhalter ohne Referenzen zaehlt nicht als Beleg', () => {
+  const parts = splitLagebildText('Lage: X\n\nEvidenzen:\n- Keine belastbaren Referenzen vorhanden.')
+  assert.deepEqual(parts.evidences, [])
+})
+
+test('Marke zeigt den Zeitpunkt, sonst das gekuerzte Label', () => {
+  assert.equal(evidenceChipLabel('Abstimmung im Teamkanal vom 28.07.2026 18:23'), '28.07.2026 18:23')
+  assert.equal(evidenceChipLabel('Terminabfrage 5'), 'Terminabfrage 5')
+  assert.equal(
+    evidenceChipLabel('Reminder 3 Quelle mit einem sehr langen Zusatz dahinter'),
+    'Reminder 3 Quelle mit ein…',
+  )
 })

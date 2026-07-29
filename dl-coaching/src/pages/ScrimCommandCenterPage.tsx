@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { CoachOnly, EmptyState, PageSpinner, SectionHead } from '@/components/ui'
 import {
   openBatches,
+  evidenceChipLabel,
   resolveAttention,
   splitLagebildText,
   upcomingMatches,
@@ -267,7 +268,7 @@ function LagebildCard({ snapshot, teamName }: { snapshot: LagebildRef; teamName?
                       style={{ color: 'var(--amber)' }}
                       title={evidence.label}
                     >
-                      {evidenceChip(evidence.label, index)}
+                      {evidenceChipLabel(evidence.label)}
                     </a>
                   ) : (
                     <span
@@ -288,11 +289,6 @@ function LagebildCard({ snapshot, teamName }: { snapshot: LagebildRef; teamName?
   )
 }
 
-/** Zehn volle Labels sprengen die Karte; der Zeitstempel reicht zum Wiederfinden. */
-function evidenceChip(label: string, index: number): string {
-  const timestamp = label.match(/\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/)
-  return timestamp ? timestamp[0] : `Beleg ${index + 1}`
-}
 
 function entryId(entry: ResolvedAttention): string {
   return entry.batch?.id ?? entry.match?.id ?? 'unbekannt'
