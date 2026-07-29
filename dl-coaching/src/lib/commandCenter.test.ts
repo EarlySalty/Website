@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import {
   openBatches,
   resolveAttention,
+  splitLagebildText,
   upcomingMatches,
   type ScrimCommandCenter,
 } from './commandCenter.ts'
@@ -158,4 +159,40 @@ test('Teilantworten ohne Status stuerzen nicht ab und gelten als offen', () => {
 
   assert.deepEqual(openBatches(data).map(batch => batch.id), ['9'])
   assert.deepEqual(upcomingMatches(data).map(match => match.id), ['8'])
+})
+
+test('Lagebild ohne Evidenzblock bleibt unveraendert', () => {
+  const parts = splitLagebildText('Lage: Das Team stimmt ab.\nPrioritaet: mittel')
+  assert.equal(parts.body, 'Lage: Das Team stimmt ab.\nPrioritaet: mittel')
+  assert.deepEqual(parts.evidences, [])
+})
+
+/** Roh ausgegeben fraßen die Discord-URLs die halbe Karte (live am 2026-07-29). */
+test('Evidenzen werden vom Fliesstext getrennt und als Label plus Link gelesen', () => {
+  const parts = splitLagebildText(
+    [
+      'Lage: Das Team stimmt ab.',
+      '',
+      'Evidenzen:',
+      '- Teamkanal Team 1',
+      '- [Abstimmung im Teamkanal vom 28.07.2026 18:23](https://discord.com/channels/1/2/3)',
+    ].join('\n'),
+  )
+  assert.equal(parts.body, 'Lage: Das Team stimmt ab.')
+  assert.deepEqual(parts.evidences, [
+    { label: 'Teamkanal Team 1' },
+    { label: 'Abstimmung im Teamkanal vom 28.07.2026 18:23', url: 'https://discord.com/channels/1/2/3' },
+  ])
+})
+
+test('Kein Beleg behaelt Markdown-Klammern', () => {
+  const parts = splitLagebildText('Lage: X\n\nEvidenzen:\n- [Beleg](https://example.test/a)')
+  assert.equal(parts.evidences[0]?.label.includes('['), false)
+  assert.equal(parts.evidences[0]?.label.includes(']('), false)
+})
+
+/** Nur http/https werden verlinkt, sonst waere javascript: ein Klickziel. */
+test('Belege mit fremdem Schema behalten nur ihr Label', () => {
+  const parts = splitLagebildText('Lage: X\n\nEvidenzen:\n- [Klick](javascript:alert(1))')
+  assert.deepEqual(parts.evidences, [{ label: 'Klick' }])
 })
