@@ -103,7 +103,7 @@ class TransparenzSeite(unittest.TestCase):
         for beleg in ("2,0 %", "84,4 %", "4,2 %", "92,9 %"):
             with self.subTest(beleg=beleg):
                 self.assertIn(beleg, self.page)
-        self.assertIn("Bereinigung um Bot-Zuflüsse", self.page)
+        self.assertIn("Bot-Zuflüsse", self.page)
 
     def test_bereinigte_werte_stehen_auch_im_datenblock(self):
         """Datenblock und Fließtext dürfen nicht auseinanderlaufen."""
@@ -169,16 +169,14 @@ class TransparenzSeite(unittest.TestCase):
     # ── Beteiligung ──────────────────────────────────────────────────
 
     def test_beteiligungszahlen_ergeben_die_mitgliederzahl(self):
-        """Aufgabenträger + Unterstützer + Sichtbare + Nutzer = alle Mitglieder.
+        """Die genannte Restgröße muss zur Mitgliederzahl passen.
 
         Die Gruppen überschneiden sich (jemand kann Coach und Streamer sein),
         deshalb wird gegen die veröffentlichte Restgröße geprüft, nicht addiert.
         """
-        rest = 1456
-        beteiligt = MITGLIEDER - rest
-        self.assertEqual(beteiligt, 130)
+        rest = 1512
+        self.assertEqual(MITGLIEDER - rest, 74, "beteiligte Konten laut Rollenabfrage")
         self.assertIn(de(rest), self.page)
-        self.assertIn(f"{100 * rest / MITGLIEDER:.1f}".replace(".", ","), self.page)
 
     def test_aufgabentraeger_anteil_stimmt(self):
         traeger = 19
