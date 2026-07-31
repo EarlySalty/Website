@@ -242,6 +242,39 @@ class TransparenzSeite(unittest.TestCase):
 
     # ── Verdrahtung ──────────────────────────────────────────────────
 
+    def test_jede_benutzte_klasse_hat_eine_regel(self):
+        """Seiten-eigene Klassen müssen im Style-Block definiert sein.
+
+        Beim Entfernen eines Abschnitts wurden schon einmal drei fremde
+        Regelblöcke mitgelöscht — das Layout brach zusammen, ohne dass ein
+        Test anschlug, weil alle Texte weiterhin vorhanden waren.
+        """
+        benutzt = set()
+        for quelle in (self.page, self.data):
+            for treffer in re.findall(r'class=\\?["\']([^"\'\\]+)', quelle):
+                benutzt.update(treffer.split())
+        eigene = {c for c in benutzt if c.startswith("tp-")}
+        self.assertGreater(len(eigene), 20, "Klassen wurden nicht erkannt")
+
+        definiert = set(re.findall(r"\.(tp-[a-z0-9-]+)", self.page))
+        fehlend = sorted(eigene - definiert)
+        self.assertFalse(fehlend, f"Klassen ohne CSS-Regel: {fehlend}")
+
+    def test_keine_verwaisten_regeln(self):
+        """Regeln für Klassen, die niemand mehr benutzt, gehören entfernt."""
+        benutzt = set()
+        for quelle in (self.page, self.data):
+            for treffer in re.findall(r'class=\\?["\']([^"\'\\]+)', quelle):
+                benutzt.update(treffer.split())
+        # Zustandsklassen setzt das Skript zur Laufzeit, sie stehen in keinem class=""
+        laufzeit = set(re.findall(r"classList\.(?:add|toggle)\('([^']+)'", self.data))
+        laufzeit |= set(re.findall(r"className = '([^']+)'", self.data))
+        # SVG-Elemente bekommen ihre Klasse über setAttribute im svgEl-Helfer
+        laufzeit |= set(re.findall(r"class: '([^']+)'", self.data))
+        definiert = set(re.findall(r"\.(tp-[a-z0-9-]+)", self.page))
+        verwaist = sorted(definiert - benutzt - laufzeit)
+        self.assertFalse(verwaist, f"CSS ohne Verwendung: {verwaist}")
+
     def test_seite_ist_build_eingang(self):
         self.assertIn("transparenz/index.html", VITE.read_text(encoding="utf-8"))
 
