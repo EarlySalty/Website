@@ -192,6 +192,25 @@ class TransparenzSeite(unittest.TestCase):
                 self.assertEqual(round(MITGLIEDER / anzahl), erwartet)
                 self.assertIn(str(erwartet), self.page)
 
+    def test_keine_unbereinigten_altzahlen_mehr_auf_der_seite(self):
+        """Die Seite sagt zu, alle Mitgliederzahlen seien bereinigt.
+
+        Frühere Fassungen nannten daneben noch Rohwerte — in den Projektkarten,
+        wo es beim Lesen nicht auffällt. Diese Werte dürfen nicht zurückkommen.
+        """
+        verboten = {
+            "623": "Onboarding-Vorgänge unbereinigt",
+            "866": "Voice-Nutzer unbereinigt",
+            "70.541": "Voice-Sitzungen unbereinigt",
+            "30.008": "Voice-Stunden unbereinigt",
+            "27.742": "Mitspieler-Paare unbereinigt",
+            "49.498": "Streamzeit inkl. Nicht-Partner",
+        }
+        for wert, grund in verboten.items():
+            with self.subTest(wert=wert):
+                self.assertNotIn(f">{wert}<", self.page, grund)
+                self.assertNotIn(f"<b>{wert}</b>", self.page, grund)
+
     def test_voice_und_onboarding_beziehen_sich_auf_bereinigte_basis(self):
         """Kapitel 1 und der Beweis-Block müssen dieselbe Zahl nennen.
 

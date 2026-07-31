@@ -393,6 +393,8 @@ buildTable(
     months.map((m) => `<span class="tp-grid-col-label">${monthLabel(m).split(' ')[0]}</span>`).join('')
   }</div>`;
 
+  // Die Zellen sind bewusst nicht einzeln anspringbar — 84 Fokusstopps wären
+  // per Tastatur unbenutzbar. Der Inhalt steht vollständig in der Tabelle darunter.
   const zeilen = WORK_GRID.map(([name, werte]) => {
     const summe = werte.reduce((a, b) => a + b, 0);
     const zellen = werte.map((v, i) => {
@@ -400,7 +402,7 @@ buildTable(
       const titel = v === 0
         ? `${name}, ${monthLong(months[i])}: keine Arbeit`
         : `${name}, ${monthLong(months[i])}: rund ${fmt(v)} Stunden`;
-      return `<span class="tp-grid-cell" style="background:${s.farbe}" title="${titel}" tabindex="0" role="img" aria-label="${titel}"></span>`;
+      return `<span class="tp-grid-cell" style="background:${s.farbe}" title="${titel}"></span>`;
     }).join('');
     return `<div class="tp-grid-row"><span class="tp-grid-row-label">${name}<small>${fmt(summe)} h</small></span>${zellen}</div>`;
   }).join('');
@@ -409,7 +411,17 @@ buildTable(
     stufen.map((s) => `<i style="background:${s.farbe}" title="${s.text}"></i>`).join('')
   }<span>mehr</span></div>`;
 
-  host.innerHTML = kopf + zeilen + legende;
+  host.innerHTML = `<div role="img" aria-label="Raster der Arbeitszeit je Projekt und Monat; die Werte stehen in der Tabelle darunter">${kopf}${zeilen}</div>${legende}`;
+
+  buildTable(
+    'grid',
+    ['Projekt', ...months.map(monthLabel), 'Summe'],
+    WORK_GRID.map(([name, werte]) => [
+      name,
+      ...werte.map((v) => (v === 0 ? '–' : fmt(v))),
+      fmt(werte.reduce((a, b) => a + b, 0)),
+    ]),
+  );
 })();
 
 /* ── Projekt-Ranking ──────────────────────────────────────────── */

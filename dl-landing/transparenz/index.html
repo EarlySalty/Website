@@ -768,7 +768,7 @@
               </p>
               <ul class="tp-facts">
                 <li>Erstellte Sprachkanäle <b>1.849</b></li>
-                <li>Abgeschlossene Onboardings <b>623</b></li>
+                <li>Abgeschlossene Onboardings <b>620</b></li>
                 <li>Datenbank-Umbauten <b>87</b></li>
                 <li>Automatische Tests <b>2.064</b></li>
               </ul>
@@ -853,7 +853,7 @@
             <p class="tp-eyebrow">Kapitel 4</p>
             <h2 class="tp-h2">Der Code dahinter</h2>
             <p class="tp-lede">
-              <strong>6.550 Code-Änderungen</strong> an <strong>289 Tagen</strong>. Das sind
+              <strong>6.550 Code-Änderungen</strong> an <strong>288 Tagen</strong>. Das sind
               rund <strong>912.000 Zeilen</strong> Code, abgesichert durch <strong>7.264 automatische Tests</strong>,
               in <strong>159 Datenbank-Umbauten</strong> gewachsen und in <strong>950 Changelog-Einträgen</strong>
               an euch weitergegeben. Zwölf Dienste laufen dafür dauerhaft auf dem Server.
@@ -961,6 +961,8 @@
               </div>
             </div>
             <div class="tp-grid" data-grid="work"></div>
+            <button class="tp-table-toggle" data-table-for="grid" aria-expanded="false">Als Tabelle anzeigen</button>
+            <div class="tp-table-wrap" data-table="grid"></div>
           </figure>
 
           <div class="tp-burden" data-reveal>
@@ -1304,6 +1306,7 @@
             <ul>
               <li><strong>Stichtag:</strong> 31. Juli 2026. Alle Werte sind Momentaufnahmen dieses Tages.</li>
               <li><strong>Mitglieder, Sprachzeit, Coachings, Turniere, Streams:</strong> direkte Abfragen auf der laufenden Produktionsdatenbank. Nur Summen und Häufigkeiten — keine personenbezogenen Daten, keine Namen, keine IDs.</li>
+              <li><strong>Grundgesamtheit:</strong> Mitglieder-, Voice- und Onboarding-Zahlen beziehen sich auf die 1.586 Konten, die heute auf dem Server sind. Wer den Server verlassen hat, zählt nicht mit — deshalb liegen diese Werte unter den reinen Ereignissummen der Bots.</li>
               <li><strong>Bereinigung um Bot-Zuflüsse:</strong> ausgeschlossen sind 846 Konten — alle mit der Rolle <em>Bot Acc</em> (424) sowie alle Beitritte vom 24., 25. und 28. Oktober 2025, vom 25. November 2025 und vom 21. Februar 2026. Die Regel wurde nicht nach Gefühl gesetzt: geprüft wurde für jeden der 438 Tage mit Beitritten, welcher Anteil dieser Konten je eine Nachricht geschrieben oder einen Sprachkanal betreten hat. Die fünf genannten Tage liegen bei 0,0 bis 4,2 %, jeder andere Tag mit nennenswerten Beitritten bei mindestens 92,9 %. Zwischen beiden Gruppen liegt kein einziger Tag.</li>
               <li><strong>Folge daraus:</strong> alle Mitglieder-, Voice- und Onboarding-Zahlen auf dieser Seite sind bereinigt und damit niedriger als das, was Discord und die Server-Statistik anzeigen. Das ist Absicht.</li>
               <li><strong>Code-Zahlen:</strong> aus dem Versionsverlauf (<code>git log</code>) der sieben Projekte, ausschließlich Hauptzweig. Zwischenstände auf Entwicklungszweigen zählen nicht mit — die tatsächliche Gesamtzahl liegt also höher als die genannte.</li>
@@ -1311,7 +1314,7 @@
               <li><strong>Sprachzeit:</strong> die Aufzeichnung läuft seit November 2025. Alles davor ist nicht erfasst — die tatsächliche Zahl ist höher.</li>
               <li><strong>Rangprüfungen des Steam-Bots:</strong> die Historie wird seit dem 22. Juni 2026 geführt, die verarbeiteten Aufträge dagegen von Anfang an.</li>
               <li><strong>Streams:</strong> erfasst seit dem 9. Januar 2026. Genannt werden ausschließlich die Streams der Partnerkanäle (3.365 Sitzungen, 13.960 Stunden). Der Bot beobachtet daneben weitere Kanäle zur Partnersuche — deren Zeiten sind hier bewusst nicht mitgezählt, weil sie keine Leistung für die Community sind.</li>
-              <li><strong>Twitch-Abos, Bits, Raids:</strong> aus der Streamer-Datenbank, erfasst ab Januar bzw. Februar 2026 und nur für Kanäle, die den Bot angebunden haben. Von 59 aktiven Partnern liefern 36 Abo-Stände, acht davon sind älter als 30 Tage — die genannten 248 Abos sind deshalb eine Untergrenze. Bei den Bits waren 32 der 98 erfassten Ereignisse exakte Doppelungen; genannt ist der bereinigte Stand von 66 Ereignissen und 4.490 Bits.</li>
+              <li><strong>Twitch-Abos, Bits, Raids:</strong> aus der Streamer-Datenbank, erfasst ab Januar bzw. Februar 2026 und nur für Kanäle, die den Bot angebunden haben. Von 59 aktiven Partnern liefern 36 Abo-Stände, acht davon sind älter als 30 Tage — die genannten 248 Abos sind deshalb eine Untergrenze. Bei den Bits waren 32 der 98 erfassten Ereignisse exakte Doppelungen — bereinigt bleiben 66 Ereignisse mit 4.490 Bits von 19 Spendern.</li>
               <li><strong>Rollen und Beteiligung:</strong> live über die Discord-Schnittstelle abgefragt. Gezählt werden Rollen, keine Personen mit Namen. Mehrfachrollen sind bei den Summen nur einmal gewertet, weshalb sich die Gruppen nicht einfach addieren lassen.</li>
               <li><strong>Arbeitszeit:</strong> Schätzung aus den Commit-Zeitstempeln. Commits im Abstand von unter zwei Stunden bilden eine Sitzung; gezählt wird deren Spanne plus 30 Minuten Vorlauf. Nicht enthalten: alles ohne Commit — Konzeption, Fehlersuche, Deployen, Support, Moderation, Absprachen. Die Zahl ist also eine Untergrenze, keine Obergrenze. Zur Gegenprobe: die Methode ergibt 28,6 Stunden pro Woche, die unabhängige Selbsteinschätzung lag bei 20 bis 30.</li>
               <li><strong>Arbeitszeit zum Marktpreis:</strong> die geschätzten Stunden mal 60 bis 80 € — ein üblicher Satz für Entwicklungsarbeit. Rein rechnerisch, es ist nie Geld geflossen.</li>
