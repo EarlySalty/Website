@@ -19,6 +19,7 @@ export default defineConfig({
         helden: 'helden/index.html',
         guideAnfaenger: 'guides/anfaenger/index.html',
         beitreten: 'beitreten/index.html',
+        transparenz: 'transparenz/index.html',
       },
     },
   },
