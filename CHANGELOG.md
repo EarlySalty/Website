@@ -1,3 +1,7 @@
+## #71 — Transparenz-Seite: alle Zahlen der Community offen
+
+**Ausgangslage:** Was hinter dem Server an Arbeit, Technik und Kosten steckt, wusste praktisch niemand — nur dass „die Bots halt laufen". Belege dafür gab es nirgends. **Änderung:** Unter `/transparenz/` steht jetzt eine eigene Seite mit allen Zahlen: Mitglieder, Sprachstunden, Bot-Aufträge, Coachings, Streams, Turniere, Code-Umfang, Arbeitszeiten und laufende Kosten — dazu offengelegt, wie und woraus jede Zahl erhoben wurde und wo die Erfassung Lücken hat. **Aktuelles Verhalten:** Die Seite hängt im Aufzug als Etage 0 und im Footer. Diagramme lassen sich als Tabelle anzeigen; personenbezogene Daten stehen keine drauf.
+
 ## #70 — Belege in Lagebild-Karten sind Links statt Textwüste
 
 **Ausgangslage:** Unter jeder Lagebild-Karte standen bis zu zehn Discord-Verweise als roher Text mit vollständiger URL. Die Karte war dreimal so lang wie das Lagebild und der Text darüber ging unter. **Änderung:** Die Belege stehen jetzt als kurze anklickbare Marken unter dem Lagebild, beschriftet mit dem Zeitpunkt der Nachricht. **Aktuelles Verhalten:** Das Lagebild steht wieder oben und ist am Stück lesbar; ein Klick auf eine Marke öffnet die Nachricht in Discord. Belege ohne Zeitpunkt, etwa eine Terminabfrage, tragen weiterhin ihren Namen.

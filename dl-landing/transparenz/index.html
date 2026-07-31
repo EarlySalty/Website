@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <title>Transparenz | Was hinter der Deutschen Deadlock Community steckt</title>
+  <meta name="description" content="Alle Zahlen offen: Mitglieder, Sprachstunden, Bot-Aufträge, Commits, Kosten. Zwei Jahre Community-Arbeit, nachprüfbar aus Datenbank und Git-Historie." />
+  <link rel="canonical" href="https://deutsche-deadlock-community.de/transparenz/" />
+  <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/transparenz/" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Transparenz | Was hinter der Deutschen Deadlock Community steckt" />
+  <meta property="og:description" content="Alle Zahlen offen: Mitglieder, Sprachstunden, Bot-Aufträge, Commits, Kosten. Nachprüfbar aus Datenbank und Git-Historie." />
+  <meta property="og:url" content="https://deutsche-deadlock-community.de/transparenz/" />
+  <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
+  <meta property="og:locale" content="de_DE" />
+  <meta property="og:site_name" content="Deutsche Deadlock Community" />
+  <meta name="theme-color" content="#0b0b0b" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Transparenz | Deutsche Deadlock Community" />
+  <meta name="twitter:description" content="Alle Zahlen offen: Mitglieder, Sprachstunden, Bot-Aufträge, Commits, Kosten." />
+  <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+  <link rel="icon" type="image/png" href="/brand/logo/favicon-64.png">
+  <link rel="stylesheet" href="/brand/tokens.css" />
+  <link rel="stylesheet" href="/brand/nav.css" />
+  <script src="/brand/nav.js" defer></script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "@id": "https://deutsche-deadlock-community.de/transparenz/#webpage",
+          "name": "Transparenz — Was hinter der Deutschen Deadlock Community steckt",
+          "url": "https://deutsche-deadlock-community.de/transparenz/",
+          "description": "Alle Zahlen der Community offen: Mitglieder, Sprachstunden, Bot-Aufträge, Commits, Kosten.",
+          "inLanguage": "de-DE",
+          "isPartOf": { "@id": "https://deutsche-deadlock-community.de/#website" }
+        }
+      ]
+    }
+  </script>
+
+  <style>
+    /* ══════════════════════════════════════════════════════════════
+       Transparenz-Seite — eigene Bausteine.
+       Basis (Farben, Schriften, Header/Footer) kommt aus tokens.css
+       und site.css. Hier nur, was diese Seite zusätzlich braucht:
+       Kennzahl-Kacheln, Diagramme, Kapitel-Rhythmus.
+       Diagramm-Farben: Gold = Hauptserie, Teal = Vergleichsserie.
+       Nie mehr als zwei Serien pro Diagramm.
+       ══════════════════════════════════════════════════════════════ */
+
+    .tp-main { padding-top: 0; }
+
+    /* ── Kapitel-Rhythmus ───────────────────────────────────────── */
+    .tp-section { padding: clamp(3.5rem, 8vw, 6.5rem) 0; position: relative; }
+    .tp-section + .tp-section { border-top: 1px solid var(--line-soft); }
+    .tp-section--tint { background: linear-gradient(180deg, rgba(201,168,106,0.035), transparent 70%); }
+
+    .tp-eyebrow {
+      display: inline-flex; align-items: center; gap: 0.55rem;
+      font-family: var(--font-body); font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold); margin: 0 0 0.9rem;
+    }
+    .tp-eyebrow::before {
+      content: ''; width: 26px; height: 1px; background: var(--gold-border);
+    }
+    .tp-h2 {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(1.65rem, 3.4vw, 2.5rem); line-height: 1.15;
+      margin: 0 0 0.7rem; color: var(--bone); letter-spacing: -0.01em;
+    }
+    .tp-lede {
+      max-width: 62ch; color: var(--bone-dim);
+      font-size: clamp(1rem, 1.5vw, 1.09rem); line-height: 1.7; margin: 0;
+    }
+    .tp-lede + .tp-lede { margin-top: 0.9rem; }
+    .tp-lede strong { color: var(--bone); font-weight: 600; }
+
+    /* ── Hero ────────────────────────────────────────────────────── */
+    .tp-hero {
+      padding: clamp(5rem, 12vw, 8.5rem) 0 clamp(3rem, 6vw, 4.5rem);
+      position: relative; overflow: hidden;
+    }
+    .tp-hero::after {
+      content: ''; position: absolute; inset: auto 0 0 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-border), transparent);
+    }
+    .tp-hero h1 {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(2.1rem, 6vw, 4rem); line-height: 1.05;
+      letter-spacing: -0.025em; margin: 0 0 1.1rem; max-width: 18ch;
+    }
+    .tp-hero h1 em {
+      font-style: normal; color: var(--gold);
+    }
+    .tp-hero-lede {
+      max-width: 60ch; font-size: clamp(1.02rem, 1.8vw, 1.18rem);
+      line-height: 1.72; color: var(--bone-dim); margin: 0;
+    }
+    .tp-stamp {
+      display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+      margin-top: 1.8rem; padding: 0.55rem 0.95rem;
+      border: 1px solid var(--line-soft); border-radius: 999px;
+      background: rgba(22,22,22,0.6);
+      font-size: 0.79rem; color: var(--bone-faint);
+    }
+    .tp-stamp b { color: var(--bone-dim); font-weight: 600; }
+
+    /* ── Kennzahl-Kacheln ────────────────────────────────────────── */
+    .tp-tiles {
+      display: grid; gap: 1px; margin-top: clamp(2.5rem, 5vw, 3.5rem);
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      background: var(--line-soft);
+      border: 1px solid var(--line-soft); border-radius: 18px; overflow: hidden;
+    }
+    .tp-tile { background: var(--ink-soft); padding: 1.5rem 1.35rem; }
+    .tp-tile-num {
+      font-family: var(--font-display); font-weight: 800;
+      font-size: clamp(1.85rem, 4vw, 2.65rem); line-height: 1;
+      color: var(--gold-bright); letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums; display: block;
+    }
+    .tp-tile-num small {
+      font-size: 0.42em; font-weight: 700; color: var(--gold);
+      letter-spacing: 0.02em; margin-left: 0.2em;
+    }
+    .tp-tile-label {
+      display: block; margin-top: 0.6rem;
+      font-size: 0.88rem; font-weight: 600; color: var(--bone);
+    }
+    .tp-tile-sub {
+      display: block; margin-top: 0.22rem;
+      font-size: 0.79rem; color: var(--bone-faint); line-height: 1.5;
+    }
+
+    /* ── Karten-Raster (Projekte) ────────────────────────────────── */
+    .tp-cards {
+      display: grid; gap: 1.1rem; margin-top: 2.6rem;
+      grid-template-columns: repeat(auto-fit, minmax(288px, 1fr));
+    }
+    .tp-card {
+      background: var(--panel); border: 1px solid var(--line-soft);
+      border-radius: 20px; padding: 1.5rem 1.45rem;
+      display: flex; flex-direction: column; gap: 0.9rem;
+      transition: border-color 0.25s var(--ease), transform 0.25s var(--ease);
+    }
+    .tp-card:hover { border-color: var(--line); transform: translateY(-2px); }
+    .tp-card-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 0.8rem; flex-wrap: wrap;
+    }
+    .tp-card h3 {
+      font-family: var(--font-display); font-size: 1.09rem; font-weight: 700;
+      margin: 0; color: var(--bone);
+    }
+    .tp-card-tag {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--bone-faint);
+      border: 1px solid var(--line-soft); border-radius: 999px;
+      padding: 0.22rem 0.6rem; white-space: nowrap;
+    }
+    .tp-card-tag--live { color: var(--green); border-color: rgba(102,179,155,0.34); }
+    .tp-card-desc { font-size: 0.92rem; color: var(--bone-dim); line-height: 1.62; margin: 0; }
+    .tp-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+    .tp-facts li {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 1rem; padding: 0.45rem 0;
+      border-top: 1px solid rgba(201,168,106,0.09);
+      font-size: 0.87rem; color: var(--bone-dim);
+    }
+    .tp-facts li:first-child { border-top: 0; }
+    .tp-facts b {
+      font-family: var(--font-display); font-weight: 700; color: var(--gold-bright);
+      font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 1.02rem;
+    }
+
+    /* ── Diagramme ───────────────────────────────────────────────── */
+    .tp-figure {
+      margin: 2.4rem 0 0; padding: 1.5rem 1.4rem 1.2rem;
+      background: var(--panel); border: 1px solid var(--line-soft); border-radius: 20px;
+    }
+    .tp-figure-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 1.2rem; flex-wrap: wrap; margin-bottom: 1.4rem;
+    }
+    .tp-figure-title {
+      font-family: var(--font-display); font-size: 1.02rem; font-weight: 700;
+      color: var(--bone); margin: 0 0 0.28rem;
+    }
+    .tp-figure-note { font-size: 0.81rem; color: var(--bone-faint); margin: 0; max-width: 56ch; line-height: 1.55; }
+    .tp-legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.79rem; color: var(--bone-dim); }
+    .tp-legend span { display: inline-flex; align-items: center; gap: 0.42rem; }
+    .tp-legend i { width: 11px; height: 11px; border-radius: 3px; display: block; }
+
+    .tp-chart { position: relative; width: 100%; }
+    .tp-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .tp-chart text { font-family: var(--font-body); fill: var(--bone-faint); }
+    .tp-grid-line { stroke: rgba(201,168,106,0.11); stroke-width: 1; }
+    .tp-axis-label { font-size: 10px; fill: var(--bone-faint); }
+    .tp-bar { transition: opacity 0.18s ease; }
+    .tp-bar-hit { fill: transparent; cursor: pointer; }
+    .tp-chart.is-hovering .tp-bar { opacity: 0.42; }
+    .tp-chart.is-hovering .tp-bar.is-active { opacity: 1; }
+    .tp-value-label {
+      font-family: var(--font-display); font-size: 10.5px; font-weight: 700;
+      fill: var(--bone-dim); font-variant-numeric: tabular-nums;
+    }
+
+    .tp-tooltip {
+      position: absolute; pointer-events: none; opacity: 0;
+      transform: translate(-50%, -100%); transition: opacity 0.12s ease;
+      background: #161616; border: 1px solid var(--line);
+      border-radius: 11px; padding: 0.6rem 0.75rem;
+      box-shadow: 0 14px 34px rgba(0,0,0,0.6); z-index: 10; white-space: nowrap;
+    }
+    .tp-tooltip.is-visible { opacity: 1; }
+    .tp-tooltip-key {
+      font-size: 0.72rem; color: var(--bone-faint); letter-spacing: 0.06em;
+      text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem;
+    }
+    .tp-tooltip-row {
+      display: flex; align-items: center; gap: 0.45rem;
+      font-size: 0.86rem; color: var(--bone);
+    }
+    .tp-tooltip-row + .tp-tooltip-row { margin-top: 0.22rem; }
+    .tp-tooltip-row i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+    .tp-tooltip-row b {
+      font-family: var(--font-display); font-weight: 700;
+      font-variant-numeric: tabular-nums; margin-left: auto; padding-left: 0.6rem;
+    }
+
+    /* ── Rang-Balken (horizontal) ────────────────────────────────── */
+    .tp-ranks { display: grid; gap: 0.85rem; margin-top: 0.4rem; }
+    .tp-rank { display: grid; grid-template-columns: minmax(96px, 132px) 1fr auto; gap: 0.9rem; align-items: center; }
+    .tp-rank-name { font-size: 0.88rem; color: var(--bone-dim); }
+    .tp-rank-track {
+      display: block; height: 9px; background: rgba(201,168,106,0.08);
+      border-radius: 4px; overflow: hidden;
+    }
+    .tp-rank-fill {
+      display: block; height: 100%; border-radius: 4px; background: var(--gold);
+      transform-origin: left; transform: scaleX(0);
+      transition: transform 0.85s var(--ease);
+    }
+    .tp-rank.is-filled .tp-rank-fill { transform: scaleX(1); }
+    .tp-rank-val {
+      font-family: var(--font-display); font-weight: 700; font-size: 0.92rem;
+      color: var(--bone); font-variant-numeric: tabular-nums; min-width: 4.6ch; text-align: right;
+    }
+    .tp-rank-val small { display: block; font-size: 0.68rem; font-weight: 600; color: var(--bone-faint); }
+
+    /* ── Zitat / Betonung ────────────────────────────────────────── */
+    .tp-pull {
+      margin: 2.4rem 0 0; padding: 1.5rem 1.6rem;
+      border-left: 2px solid var(--gold); border-radius: 0 16px 16px 0;
+      background: linear-gradient(90deg, rgba(201,168,106,0.07), transparent 78%);
+    }
+    .tp-pull p {
+      font-family: var(--font-display); font-size: clamp(1.05rem, 2.1vw, 1.32rem);
+      line-height: 1.5; color: var(--bone); margin: 0; font-weight: 600;
+    }
+    .tp-pull cite {
+      display: block; margin-top: 0.7rem; font-style: normal;
+      font-size: 0.83rem; color: var(--bone-faint); font-family: var(--font-body);
+    }
+
+    /* ── Split-Layout ────────────────────────────────────────────── */
+    .tp-split {
+      display: grid; gap: clamp(1.6rem, 4vw, 3rem); align-items: start;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    @media (min-width: 900px) { .tp-split { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); } }
+
+    /* ── Kostenblock ─────────────────────────────────────────────── */
+    .tp-cost {
+      display: grid; gap: 1px; background: var(--line-soft);
+      border: 1px solid var(--line-soft); border-radius: 18px; overflow: hidden;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 2.2rem;
+    }
+    .tp-cost-cell { background: var(--ink-soft); padding: 1.35rem 1.25rem; }
+    .tp-cost-cell dt { font-size: 0.82rem; color: var(--bone-faint); margin: 0 0 0.45rem; }
+    .tp-cost-cell dd {
+      margin: 0; font-family: var(--font-display); font-weight: 800;
+      font-size: 1.55rem; color: var(--bone); font-variant-numeric: tabular-nums;
+    }
+    .tp-cost-cell dd small { display: block; font-size: 0.52em; font-weight: 600; color: var(--bone-faint); margin-top: 0.35rem; letter-spacing: 0; }
+    .tp-cost-cell--hot dd { color: var(--rust-bright); }
+
+    /* ── Hilfe-Boxen (CTA) ───────────────────────────────────────── */
+    .tp-help { display: grid; gap: 1.1rem; margin-top: 2.6rem; grid-template-columns: repeat(auto-fit, minmax(266px, 1fr)); }
+    .tp-help-card {
+      background: var(--panel); border: 1px solid var(--line-soft);
+      border-radius: 20px; padding: 1.5rem 1.4rem;
+      display: flex; flex-direction: column; gap: 0.65rem;
+    }
+    .tp-help-card--accent { border-color: var(--gold-border); background: linear-gradient(160deg, rgba(201,168,106,0.09), var(--panel) 60%); }
+    .tp-help-num {
+      font-family: var(--font-display); font-size: 0.78rem; font-weight: 800;
+      color: var(--gold); letter-spacing: 0.14em;
+    }
+    .tp-help-card h3 { font-family: var(--font-display); font-size: 1.06rem; margin: 0; color: var(--bone); }
+    .tp-help-card p { margin: 0; font-size: 0.9rem; line-height: 1.62; color: var(--bone-dim); }
+    .tp-help-card p + p { margin-top: 0.15rem; }
+
+    /* ── Methodik ────────────────────────────────────────────────── */
+    .tp-method {
+      margin-top: 2.4rem; padding: 1.4rem 1.5rem;
+      border: 1px dashed rgba(201,168,106,0.2); border-radius: 18px;
+      background: rgba(11,11,11,0.4);
+    }
+    .tp-method h3 {
+      font-family: var(--font-display); font-size: 0.94rem; margin: 0 0 0.7rem;
+      color: var(--bone-dim); letter-spacing: 0.02em;
+    }
+    .tp-method ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.45rem; }
+    .tp-method li { font-size: 0.84rem; color: var(--bone-faint); line-height: 1.6; }
+    .tp-method code {
+      font-family: var(--font-mono); font-size: 0.92em;
+      color: var(--bone-dim); background: rgba(201,168,106,0.08);
+      padding: 0.08em 0.4em; border-radius: 5px;
+    }
+
+    /* ── Tabellen-Ansicht (Zugänglichkeit) ───────────────────────── */
+    .tp-table-toggle {
+      margin-top: 1rem; background: none; border: 1px solid var(--line-soft);
+      color: var(--bone-dim); border-radius: 999px; padding: 0.42rem 0.95rem;
+      font-family: var(--font-body); font-size: 0.79rem; cursor: pointer;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+    .tp-table-toggle:hover { border-color: var(--line); color: var(--bone); }
+    .tp-table-wrap { display: none; margin-top: 1.1rem; overflow-x: auto; }
+    .tp-table-wrap.is-open { display: block; }
+    .tp-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    .tp-table-wrap th, .tp-table-wrap td {
+      text-align: left; padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid rgba(201,168,106,0.1); color: var(--bone-dim);
+    }
+    .tp-table-wrap th { color: var(--bone); font-weight: 600; white-space: nowrap; }
+    .tp-table-wrap td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* Einblenden beim Scrollen macht site.js über [data-reveal] + .is-visible —
+       hier nur die Balkenanimation vom Bewegungswunsch ausnehmen. */
+    @media (prefers-reduced-motion: reduce) {
+      .tp-rank-fill { transition: none !important; transform: none !important; }
+    }
+
+    @media (max-width: 620px) {
+      .tp-rank { grid-template-columns: 1fr auto; }
+      .tp-rank-track { grid-column: 1 / -1; order: 3; }
+      .tp-figure { padding: 1.2rem 1rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="sr-only">Zum Inhalt springen</a>
+  <div class="site-shell">
+
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="container">
+        <div class="header-row">
+          <div class="header-left">
+            <a class="brand" href="/" aria-label="Deutsche Deadlock Community">
+              <img src="/brand/logo/logo-192.png" alt="" class="brand-logo" />
+              <img src="/brand/logo/wordmark.svg" alt="" class="brand-wordmark-img" />
+            </a>
+          </div>
+          <div class="header-actions">
+            <span class="header-live" aria-label="Aktuell online im Discord">
+              <span class="header-live-dot" aria-hidden="true"></span>
+              <span class="header-live-text"><span data-stat="online">—</span> online</span>
+            </span>
+            <a class="button button-primary" href="https://discord.gg/Jkzsnfsstg" target="_blank" rel="noopener noreferrer">Beitreten</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="tp-main">
+
+      <!-- ══ HERO ══════════════════════════════════════════════ -->
+      <section class="tp-hero">
+        <div class="container">
+          <p class="tp-eyebrow">Offene Bücher</p>
+          <h1>Was hinter diesem <em>Discord</em> steckt.</h1>
+          <p class="tp-hero-lede">
+            Ein Discord-Server ist ein Chat mit ein paar Kanälen — sagt man. Dieser hier ist
+            eine Software-Landschaft aus sieben Projekten, die rund um die Uhr läuft: sie sortiert
+            Sprachkanäle, prüft Ränge, übersetzt Patchnotes, begleitet Streams und vermittelt Coachings.
+            Damit niemand raten muss, was das an Arbeit und Geld bedeutet, liegen hier alle Zahlen offen.
+            Nicht geschätzt — direkt aus Datenbank und Versionsverlauf gezogen.
+          </p>
+          <p class="tp-stamp">
+            <b>Stand: 31. Juli 2026</b> · Zahlen aus der laufenden Datenbank und der Git-Historie ·
+            Erhebungsweg unten dokumentiert
+          </p>
+
+          <div class="tp-tiles" data-reveal>
+            <div class="tp-tile">
+              <span class="tp-tile-num" data-count="2428">2.428</span>
+              <span class="tp-tile-label">Mitglieder</span>
+              <span class="tp-tile-sub">1.551 davon sind 2026 dazugekommen</span>
+            </div>
+            <div class="tp-tile">
+              <span class="tp-tile-num" data-count="30008">30.008</span>
+              <span class="tp-tile-label">Stunden in Sprachkanälen</span>
+              <span class="tp-tile-sub">3 Jahre und 5 Monate am Stück geredet</span>
+            </div>
+            <div class="tp-tile">
+              <span class="tp-tile-num" data-count="1693100">1.693.100</span>
+              <span class="tp-tile-label">Aufträge vom Steam-Bot</span>
+              <span class="tp-tile-sub">99,96 % ohne Fehler durchgelaufen</span>
+            </div>
+            <div class="tp-tile">
+              <span class="tp-tile-num" data-count="6550">6.550</span>
+              <span class="tp-tile-label">Code-Änderungen</span>
+              <span class="tp-tile-sub">an 289 Tagen, davon 2.064 allein im Juli</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 1 — DIE COMMUNITY ═══════════════════════════════════ -->
+      <section class="tp-section" id="community">
+        <div class="container">
+          <div class="tp-split">
+            <div data-reveal>
+              <p class="tp-eyebrow">Kapitel 1</p>
+              <h2 class="tp-h2">Die Community</h2>
+              <p class="tp-lede">
+                Angefangen hat das im <strong>September 2024</strong> mit einer Handvoll Leuten.
+                Heute sind <strong>2.428 Menschen</strong> hier — echte Accounts, Bots rausgerechnet.
+              </p>
+              <p class="tp-lede">
+                Zwei Monate stechen heraus: <strong>Oktober 2025</strong> mit 477 Beitritten und
+                <strong>Februar 2026</strong> mit 622. Das waren keine Zufälle, sondern die Monate,
+                in denen die Sichtbarkeit stimmte. Dazwischen und danach ist es
+                ruhiger und stetiger — und genau dieses Stetige ist das, was Arbeit macht:
+                Jeder neue Mensch läuft durch dieselbe Maschinerie aus Willkommen, Rollen und Kanälen.
+              </p>
+              <p class="tp-lede">
+                <strong>623 Menschen</strong> haben das Onboarding komplett durchlaufen,
+                <strong>866</strong> waren schon in einem Sprachkanal.
+              </p>
+            </div>
+
+            <figure class="tp-figure" data-reveal>
+              <div class="tp-figure-head">
+                <div>
+                  <h3 class="tp-figure-title">Beitritte pro Monat</h3>
+                  <p class="tp-figure-note">Neue Mitglieder je Monat seit dem ersten Beitritt im September 2024.</p>
+                </div>
+              </div>
+              <div class="tp-chart" data-chart="joins"></div>
+              <button class="tp-table-toggle" data-table-for="joins" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="tp-table-wrap" data-table="joins"></div>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 2 — SPRACHKANÄLE ════════════════════════════════════ -->
+      <section class="tp-section tp-section--tint" id="voice">
+        <div class="container">
+          <div data-reveal>
+            <p class="tp-eyebrow">Kapitel 2</p>
+            <h2 class="tp-h2">Die Sprachkanäle sind das Herz</h2>
+            <p class="tp-lede">
+              Hier passiert die eigentliche Community. <strong>70.541 Sprach-Sitzungen</strong> wurden
+              seit Beginn der Messung aufgezeichnet, zusammen <strong>30.008 Stunden</strong>.
+              Das sind drei Jahre und fünf Monate ununterbrochenes Reden — in gut anderthalb Jahren realer Zeit.
+            </p>
+            <p class="tp-lede">
+              Kein einziger dieser Kanäle wurde von Hand angelegt. <strong>1.849 Kanäle</strong> hat
+              der Bot automatisch erstellt, benannt, sortiert und wieder aufgeräumt, sobald der letzte
+              raus war. Die meistgenutzten heißen "Lane 1", "Neue Spieler Lane" und "Initiate 1" —
+              also genau die Einstiegspunkte, die dafür gedacht waren.
+            </p>
+            <p class="tp-lede">
+              Nebenbei ist daraus eine Karte entstanden, wer mit wem spielt:
+              <strong>27.742 Mitspieler-Paarungen</strong>. Das ist die Grundlage dafür,
+              dass die Suche nach Mitspielern überhaupt funktionieren kann.
+            </p>
+          </div>
+
+          <figure class="tp-figure" data-reveal>
+            <div class="tp-figure-head">
+              <div>
+                <h3 class="tp-figure-title">Sprachzeit pro Monat</h3>
+                <p class="tp-figure-note">
+                  Aufgezeichnete Stunden in Sprachkanälen. Die Aufzeichnung läuft seit November 2025;
+                  frühere Monate fehlen, weil damals noch nicht gemessen wurde.
+                  Die Zahl der Sitzungen steht im Tooltip und in der Tabelle.
+                </p>
+              </div>
+            </div>
+            <div class="tp-chart" data-chart="voice"></div>
+            <button class="tp-table-toggle" data-table-for="voice" aria-expanded="false">Als Tabelle anzeigen</button>
+            <div class="tp-table-wrap" data-table="voice"></div>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ══ 3 — WAS DIE BOTS TUN ════════════════════════════════ -->
+      <section class="tp-section" id="bots">
+        <div class="container">
+          <div data-reveal>
+            <p class="tp-eyebrow">Kapitel 3</p>
+            <h2 class="tp-h2">Sieben Projekte, die niemand sieht</h2>
+            <p class="tp-lede">
+              Kaum jemand weiß, was die Bots eigentlich tun — bis einer ausfällt. Dann kommen
+              am nächsten Morgen die Direktnachrichten. Hier ist, was jedes Projekt bisher geleistet hat.
+            </p>
+          </div>
+
+          <div class="tp-cards" data-reveal>
+
+            <article class="tp-card">
+              <div class="tp-card-head">
+                <h3>Steam-Bot</h3>
+                <span class="tp-card-tag tp-card-tag--live">läuft</span>
+              </div>
+              <p class="tp-card-desc">
+                Verknüpft Discord mit Steam, liest den Deadlock-Rang aus und hält die Rollen
+                automatisch aktuell. Ohne ihn müsste jede Rangänderung von Hand eingetragen werden.
+              </p>
+              <ul class="tp-facts">
+                <li>Verarbeitete Aufträge <b>1.693.100</b></li>
+                <li>Davon fehlerfrei <b>99,96 %</b></li>
+                <li>Rang-Prüfungen <b>17.573</b></li>
+                <li>Verknüpfte Accounts <b>534</b></li>
+              </ul>
+            </article>
+
+            <article class="tp-card">
+              <div class="tp-card-head">
+                <h3>Patchnotes-Bot</h3>
+                <span class="tp-card-tag tp-card-tag--live">läuft</span>
+              </div>
+              <p class="tp-card-desc">
+                Holt jeden Valve-Patch, zerlegt ihn in einzelne Änderungen, ordnet sie Helden und
+                Items zu und postet sie auf Deutsch — meist bevor irgendwo sonst etwas steht.
+              </p>
+              <ul class="tp-facts">
+                <li>Ausgewertete Patches <b>343</b></li>
+                <li>Einzelne Änderungen <b>32.545</b></li>
+                <li>Ausgewertete Quellen <b>5.280</b></li>
+                <li>Erfasste Spielobjekte <b>905</b></li>
+              </ul>
+            </article>
+
+            <article class="tp-card">
+              <div class="tp-card-head">
+                <h3>Twitch-Bot</h3>
+                <span class="tp-card-tag tp-card-tag--live">läuft</span>
+              </div>
+              <p class="tp-card-desc">
+                Begleitet die Streamer-Partner: meldet Live-Gänge, wertet Streams aus, organisiert
+                Raids und sammelt Clips. Das größte Projekt gemessen am Code.
+              </p>
+              <ul class="tp-facts">
+                <li>Streamer-Partner <b>62</b></li>
+                <li>Begleitete Streams <b>9.213</b></li>
+                <li>Erfasste Streamzeit <b>49.498 h</b></li>
+                <li>Vermittelte Raids <b>1.347</b></li>
+              </ul>
+            </article>
+
+            <article class="tp-card">
+              <div class="tp-card-head">
+                <h3>Discord-Bots</h3>
+                <span class="tp-card-tag tp-card-tag--live">läuft</span>
+              </div>
+              <p class="tp-card-desc">
+                Das Herzstück: Sprachkanäle, Router, Onboarding, Rollen, Moderation, Coaching-Vermittlung,
+                Scrim-Verwaltung. Der Bot, der den Server überhaupt erst zum Server macht.
+              </p>
+              <ul class="tp-facts">
+                <li>Erstellte Sprachkanäle <b>1.849</b></li>
+                <li>Abgeschlossene Onboardings <b>623</b></li>
+                <li>Datenbank-Umbauten <b>87</b></li>
+                <li>Automatische Tests <b>2.064</b></li>
+              </ul>
+            </article>
+
+            <article class="tp-card">
+              <div class="tp-card-head">
+                <h3>Coaching</h3>
+                <span class="tp-card-tag tp-card-tag--live">läuft</span>
+              </div>
+              <p class="tp-card-desc">
+                Von der Anfrage über die Zuteilung zum Coach bis zur eigenen Voice-Lane und der
+                Rückmeldung danach. Alles kostenlos, die Coaches machen es freiwillig.
+              </p>
+              <ul class="tp-facts">
+                <li>Vermittelte Coachings <b>70</b></li>
+                <li>Davon abgeschlossen <b>62</b></li>
+                <li>Aktive Coaches <b>10</b></li>
+                <li>Stärkster Monat <b>Juni 2026</b></li>
+              </ul>
+            </article>
+
+            <article class="tp-card">
+              <div class="tp-card-head">
+                <h3>Turniere &amp; Scrims</h3>
+                <span class="tp-card-tag">im Aufbau</span>
+              </div>
+              <p class="tp-card-desc">
+                Anmeldung, Teams, Gruppen, Bracket, Check-in, Ergebnismeldung, Caster-Zuteilung.
+                Steht technisch — was fehlt, sind Leute für Planung und Durchführung.
+              </p>
+              <ul class="tp-facts">
+                <li>Durchgeführte Turniere <b>4</b></li>
+                <li>Angetretene Teams <b>21</b></li>
+                <li>Gespielte Matches <b>25</b></li>
+                <li>Scrim-Teilnehmer <b>64</b></li>
+              </ul>
+            </article>
+
+            <article class="tp-card">
+              <div class="tp-card-head">
+                <h3>Website</h3>
+                <span class="tp-card-tag tp-card-tag--live">läuft</span>
+              </div>
+              <p class="tp-card-desc">
+                Startseite, Coaching, Streamer-Übersicht, Helden, Guides, Tierlist, Aktivitäts-Tracker.
+                Die Seite, auf der du gerade bist, gehört auch dazu.
+              </p>
+              <ul class="tp-facts">
+                <li>Code-Änderungen <b>325</b></li>
+                <li>Davon im Juli <b>213</b></li>
+                <li>Tierlist-Auswertungen <b>90</b></li>
+                <li>Helden-Datenpunkte <b>3.420</b></li>
+              </ul>
+            </article>
+
+            <article class="tp-card">
+              <div class="tp-card-head">
+                <h3>Deadlock-Brain</h3>
+                <span class="tp-card-tag">im Aufbau</span>
+              </div>
+              <p class="tp-card-desc">
+                Das Wissensgedächtnis dahinter: Patch-Historie, Helden-Werte, Item-Daten, Quellen
+                aus zehn verschiedenen Kanälen. Speist Patchnotes, Tierlist und FAQ-Bot.
+              </p>
+              <ul class="tp-facts">
+                <li>Patch-Ereignisse <b>32.545</b></li>
+                <li>Objekt-Momentaufnahmen <b>26.292</b></li>
+                <li>Helden-Werte <b>19.697</b></li>
+                <li>Datenquellen <b>10</b></li>
+              </ul>
+            </article>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 4 — DER CODE ════════════════════════════════════════ -->
+      <section class="tp-section tp-section--tint" id="code">
+        <div class="container">
+          <div data-reveal>
+            <p class="tp-eyebrow">Kapitel 4</p>
+            <h2 class="tp-h2">Der Code dahinter</h2>
+            <p class="tp-lede">
+              <strong>6.550 Code-Änderungen</strong> an <strong>289 Tagen</strong>. Das sind
+              rund <strong>912.000 Zeilen</strong> Code, abgesichert durch <strong>7.264 automatische Tests</strong>,
+              in <strong>159 Datenbank-Umbauten</strong> gewachsen und in <strong>950 Changelog-Einträgen</strong>
+              an euch weitergegeben. Zwölf Dienste laufen dafür dauerhaft auf dem Server.
+            </p>
+            <p class="tp-lede">
+              Der Juni und Juli 2026 sehen im Diagramm aus wie ein Ausbruch — sie sind einer.
+              In diesen zwei Monaten fielen <strong>3.813 der 6.550 Änderungen</strong> an, also
+              mehr als die Hälfte der gesamten Historie. Der Grund steht weiter unten
+              im Kostenkapitel: In diesen Monaten war Kapazität da, weil sie gekauft wurde.
+            </p>
+          </div>
+
+          <figure class="tp-figure" data-reveal>
+            <div class="tp-figure-head">
+              <div>
+                <h3 class="tp-figure-title">Code-Änderungen pro Monat</h3>
+                <p class="tp-figure-note">
+                  Alle sieben Projekte zusammen, nur ausgelieferte Arbeit (Hauptzweig).
+                  Zwischenstände auf Entwicklungszweigen sind nicht mitgezählt.
+                </p>
+              </div>
+            </div>
+            <div class="tp-chart" data-chart="commits"></div>
+            <button class="tp-table-toggle" data-table-for="commits" aria-expanded="false">Als Tabelle anzeigen</button>
+            <div class="tp-table-wrap" data-table="commits"></div>
+          </figure>
+
+          <div class="tp-split" style="margin-top: 2.4rem;">
+            <figure class="tp-figure" style="margin-top:0" data-reveal>
+              <div class="tp-figure-head">
+                <div>
+                  <h3 class="tp-figure-title">Verteilung auf die Projekte</h3>
+                  <p class="tp-figure-note">Code-Änderungen gesamt je Projekt, Juli-Anteil darunter.</p>
+                </div>
+              </div>
+              <div class="tp-ranks" data-ranks="repos"></div>
+            </figure>
+
+            <figure class="tp-figure" style="margin-top:0" data-reveal>
+              <div class="tp-figure-head">
+                <div>
+                  <h3 class="tp-figure-title">Zu welcher Uhrzeit gearbeitet wird</h3>
+                  <p class="tp-figure-note">
+                    Code-Änderungen nach Tageszeit. <strong style="color:var(--bone-dim)">30,9 %</strong>
+                    entstehen zwischen Mitternacht und sechs Uhr morgens — das ist die Zeit,
+                    die nach allem anderen übrig bleibt.
+                  </p>
+                </div>
+              </div>
+              <div class="tp-chart" data-chart="hours"></div>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 5 — WER DAS BAUT ════════════════════════════════════ -->
+      <section class="tp-section" id="wer">
+        <div class="container">
+          <div data-reveal>
+            <p class="tp-eyebrow">Kapitel 5</p>
+            <h2 class="tp-h2">Wer das eigentlich baut</h2>
+            <p class="tp-lede">
+              Das hier ist der unangenehme Teil, aber er gehört dazu, wenn man von Transparenz redet.
+            </p>
+            <p class="tp-lede">
+              Von den 6.550 Code-Änderungen stammen <strong>13 von anderen Menschen</strong>.
+              Dreizehn. Das sind <strong>0,2 Prozent</strong>. Der Rest kommt von einer Person,
+              teils direkt, teils über KI-Werkzeuge, die dabei angeleitet und deren Ergebnisse
+              geprüft werden müssen — was ebenfalls Arbeit ist, nur eine andere.
+            </p>
+            <p class="tp-lede">
+              Das ist ausdrücklich kein Vorwurf an irgendwen. Es ist eine Feststellung darüber,
+              wie fragil die Sache ist: Fällt diese eine Person aus, steht alles hier still.
+              Kein Rang wird mehr vergeben, keine Patchnotes kommen an, keine Sprachkanäle
+              werden mehr aufgeräumt.
+            </p>
+          </div>
+
+          <div class="tp-pull" data-reveal>
+            <p>
+              Unterstützung habe ich oft gesucht. Viele sagen zu, die wenigsten machen es dann.
+              Das ist kein Vorwurf an die Community — nur eine ehrliche Beschreibung der Lage.
+            </p>
+            <cite>EarlySalty</cite>
+          </div>
+
+          <div class="tp-tiles" data-reveal style="margin-top: 2.4rem;">
+            <div class="tp-tile">
+              <span class="tp-tile-num">13</span>
+              <span class="tp-tile-label">Beiträge von anderen</span>
+              <span class="tp-tile-sub">von 6.550 insgesamt — 0,2 %</span>
+            </div>
+            <div class="tp-tile">
+              <span class="tp-tile-num">20<small>–30 h</small></span>
+              <span class="tp-tile-label">pro Woche</span>
+              <span class="tp-tile-sub">nur für Wartung und Anpassungen</span>
+            </div>
+            <div class="tp-tile">
+              <span class="tp-tile-num">12</span>
+              <span class="tp-tile-label">Dienste rund um die Uhr</span>
+              <span class="tp-tile-sub">jeder Ausfall landet als DM im Postfach</span>
+            </div>
+            <div class="tp-tile">
+              <span class="tp-tile-num">1</span>
+              <span class="tp-tile-label">Person im Bereitschaftsdienst</span>
+              <span class="tp-tile-sub">ohne Vertretung, ohne Urlaub</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 6 — KOSTEN ══════════════════════════════════════════ -->
+      <section class="tp-section tp-section--tint" id="kosten">
+        <div class="container">
+          <div data-reveal>
+            <p class="tp-eyebrow">Kapitel 6</p>
+            <h2 class="tp-h2">Was das kostet</h2>
+            <p class="tp-lede">
+              Bezahlt wird das komplett privat. Server, Domains, Werkzeuge — im normalen Monat
+              sind das <strong>50 bis 100 €</strong>. Niemand verdient hier Geld, es fließt nur in eine Richtung.
+            </p>
+            <p class="tp-lede">
+              Im Juli 2026 waren es <strong>über 400 €</strong>: zwei aufgestockte Entwicklungs-Abos,
+              gekauft, um endlich einmal wirklich zu modernisieren statt nur zu flicken. Das Diagramm
+              oben zeigt genau diesen Monat als höchsten Balken der gesamten Historie.
+              So sieht der Zusammenhang zwischen Budget und Fortschritt konkret aus — und deshalb
+              ist er auch nicht wiederholbar.
+            </p>
+            <p class="tp-lede">
+              Der naheliegende Ausweg wäre, dauerhaft aufzustocken. Dann läge man bei
+              <strong>230 bis 250 € im Monat</strong>, allein für diesen Server. Das ist privat nicht tragbar.
+              Und jemanden einstellen, der programmieren kann, kostet ein Vielfaches davon.
+            </p>
+          </div>
+
+          <dl class="tp-cost" data-reveal>
+            <div class="tp-cost-cell">
+              <dt>Normaler Monat</dt>
+              <dd>50–100 €<small>Server, Domains, Werkzeuge</small></dd>
+            </div>
+            <div class="tp-cost-cell tp-cost-cell--hot">
+              <dt>Juli 2026</dt>
+              <dd>über 400 €<small>zwei aufgestockte Abos für die Modernisierung</small></dd>
+            </div>
+            <div class="tp-cost-cell">
+              <dt>Dauerhaft nötig</dt>
+              <dd>230–250 €<small>pro Monat, um so weiterarbeiten zu können</small></dd>
+            </div>
+            <div class="tp-cost-cell">
+              <dt>Bisher finanziert durch</dt>
+              <dd>1 Person<small>keine Einnahmen, keine Werbung, keine Sponsoren</small></dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- ══ 7 — WAS WIR BRAUCHEN ════════════════════════════════ -->
+      <section class="tp-section" id="hilfe">
+        <div class="container">
+          <div data-reveal>
+            <p class="tp-eyebrow">Kapitel 7</p>
+            <h2 class="tp-h2">Was wir brauchen</h2>
+            <p class="tp-lede">
+              Es gibt genug Ideen für die nächsten zwei Jahre: eine überarbeitete Website,
+              Coachings mit nachlesbaren Lektionen und echter Terminplanung, neue Funktionen
+              für die Streamer, regelmäßige Turniere mit Preisgeld, eine Dokumentation, die
+              erklärt, wie das alles gedacht ist.
+            </p>
+            <p class="tp-lede">
+              Woran es scheitert, ist nie die Idee. Es sind immer dieselben zwei Dinge.
+            </p>
+          </div>
+
+          <div class="tp-help" data-reveal>
+            <article class="tp-help-card tp-help-card--accent">
+              <span class="tp-help-num">01</span>
+              <h3>Leute, die mitbauen</h3>
+              <p>
+                Programmieren — Rust, TypeScript, Python. Am besten ein Projekt, auf das man sich
+                festlegt, statt überall ein bisschen. Es gibt Tests, Changelogs und eine
+                dokumentierte Struktur; man landet nicht im Chaos.
+              </p>
+              <p>Wichtig ist nur eines: verbindlich. Lieber eine kleine Sache, die wirklich fertig wird.</p>
+            </article>
+
+            <article class="tp-help-card">
+              <span class="tp-help-num">02</span>
+              <h3>Hilfe bei den Kosten</h3>
+              <p>
+                Einmalig oder monatlich, jeder Betrag hilft. Das Geld geht in Server, Werkzeuge und
+                Entwicklungszeit — und irgendwann in Preisgelder für Turniere und in eine
+                Anerkennung für die Coaches, die das bisher komplett freiwillig machen.
+              </p>
+              <p>Reich wird davon niemand. Es geht darum, dass es weitergeht.</p>
+            </article>
+
+            <article class="tp-help-card">
+              <span class="tp-help-num">03</span>
+              <h3>Turniere organisieren</h3>
+              <p>
+                Die Technik steht. Was fehlt, sind Menschen für Planung, Durchführung und dafür,
+                genug Teams an den Start zu bekommen. Casten ist dabei nicht das Problem —
+                die Organisation davor ist es.
+              </p>
+            </article>
+
+            <article class="tp-help-card">
+              <span class="tp-help-num">04</span>
+              <h3>Streamer gewinnen</h3>
+              <p>
+                Wer ohnehin viel auf Twitch unterwegs ist, kann helfen, neue Partner zu finden
+                und einzubinden. 62 sind es aktuell — die
+                <a href="/streamer/" style="color:var(--gold)">Streamer-Übersicht</a> zeigt, wer dabei ist.
+              </p>
+            </article>
+          </div>
+
+          <div class="tp-pull" data-reveal style="margin-top:2.4rem">
+            <p>
+              Wo wir keine Unterstützung brauchen: Discord-Moderation. Da läuft alles.
+            </p>
+          </div>
+
+          <div style="margin-top:2.6rem; display:flex; gap:0.9rem; flex-wrap:wrap;" data-reveal>
+            <a class="button button-primary" href="https://discord.gg/Jkzsnfsstg" target="_blank" rel="noopener noreferrer">Auf Discord melden</a>
+            <a class="button button-secondary" href="/coaching/">Coaching ansehen</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ METHODIK ════════════════════════════════════════════ -->
+      <section class="tp-section" id="methodik">
+        <div class="container">
+          <div data-reveal>
+            <p class="tp-eyebrow">Kleingedrucktes</p>
+            <h2 class="tp-h2">Wie die Zahlen entstanden sind</h2>
+            <p class="tp-lede">
+              Transparenz heißt auch offenlegen, wie gemessen wurde — sonst ist es nur eine
+              schönere Behauptung.
+            </p>
+          </div>
+
+          <div class="tp-method" data-reveal>
+            <h3>Erhebung</h3>
+            <ul>
+              <li><strong>Stichtag:</strong> 31. Juli 2026. Alle Werte sind Momentaufnahmen dieses Tages.</li>
+              <li><strong>Mitglieder, Sprachzeit, Coachings, Turniere, Streams:</strong> direkte Abfragen auf der laufenden Produktionsdatenbank. Nur Summen und Häufigkeiten — keine personenbezogenen Daten, keine Namen, keine IDs.</li>
+              <li><strong>Code-Zahlen:</strong> aus dem Versionsverlauf (<code>git log</code>) der sieben Projekte, ausschließlich Hauptzweig. Zwischenstände auf Entwicklungszweigen zählen nicht mit — die tatsächliche Gesamtzahl liegt also höher als die genannte.</li>
+              <li><strong>Codezeilen:</strong> ohne fremde Bibliotheken, Build-Artefakte, Sperrdateien und generierte Dateien. Gezählt wird, was von Hand entstanden ist.</li>
+              <li><strong>Sprachzeit:</strong> die Aufzeichnung läuft seit November 2025. Alles davor ist nicht erfasst — die tatsächliche Zahl ist höher.</li>
+              <li><strong>Rangprüfungen des Steam-Bots:</strong> die Historie wird seit dem 22. Juni 2026 geführt, die verarbeiteten Aufträge dagegen von Anfang an.</li>
+              <li><strong>Streams:</strong> erfasst seit dem 9. Januar 2026, ausschließlich Partner-Kanäle.</li>
+              <li><strong>Kosten:</strong> Selbstauskunft, keine Datenbankzahl. Zusammengesetzt aus Serverbetrieb, Domains und Entwicklungswerkzeugen.</li>
+            </ul>
+          </div>
+
+          <div class="tp-method" data-reveal style="margin-top:1.2rem">
+            <h3>Was hier bewusst nicht steht</h3>
+            <ul>
+              <li>Keine Angaben zu einzelnen Personen — weder wer wie lange in Voice war, noch wer wie viel schreibt.</li>
+              <li>Keine Klarnamen, keine Discord-IDs, keine Steam-IDs.</li>
+              <li>Keine Zahlen aus Bereichen, in denen die Erfassung noch zu jung für belastbare Aussagen ist.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <section>
+            <h3>Deutsche Deadlock Community</h3>
+            <p class="mt-md">
+              Die aktivste deutsche Community für Deadlock-Spieler, Coaches und Streamer.
+            </p>
+            <p class="mt-lg muted" style="font-size: 0.82rem;">Betrieben von EarlySalty</p>
+          </section>
+          <section>
+            <h3>Navigation</h3>
+            <nav class="footer-links mt-md" aria-label="Footer-Navigation">
+              <a href="/">Start</a>
+              <a href="/mitspieler/">Mitspieler</a>
+              <a href="/coaching/">Coaching</a>
+              <a href="/streamer/">Streamer</a>
+              <a href="/transparenz/">Transparenz</a>
+            </nav>
+          </section>
+          <section>
+            <h3>Plattformen</h3>
+            <nav class="footer-links mt-md" aria-label="Community-Plattformen">
+              <a href="/turnier/">Turnierplattform</a>
+              <a href="/aktivitaet/">Aktivitäts-Tracker</a>
+              <a href="/builds/">Builds &amp; Items</a>
+            </nav>
+          </section>
+          <section>
+            <h3>Recht &amp; Links</h3>
+            <nav class="footer-links mt-md" aria-label="Rechtliches">
+              <a href="https://discord.gg/Jkzsnfsstg" target="_blank" rel="noopener noreferrer">Discord</a>
+              <a href="/twitch/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
+              <a href="/twitch/datenschutz" target="_blank" rel="noopener noreferrer">Datenschutz</a>
+              <a href="/twitch/agb" target="_blank" rel="noopener noreferrer">AGB</a>
+            </nav>
+          </section>
+        </div>
+        <div class="footer-bottom">© <span data-current-year></span> EarlySalty</div>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/site.js"></script>
+  <script type="module" src="./transparenz.js"></script>
+</body>
+</html>

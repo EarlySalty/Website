@@ -11,6 +11,8 @@
     { label: 'Helden', href: '/helden/', floor: 'H' },
     { label: 'Streamer', href: '/streamer/', floor: 'S' },
     { label: 'Beitreten', href: '/beitreten/', floor: 'B' },
+    // Maschinenraum ganz unten: die Zahlen hinter der Community.
+    { label: 'Transparenz', href: '/transparenz/', floor: '0' },
   ]
 
   const script = document.currentScript
