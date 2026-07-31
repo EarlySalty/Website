@@ -87,7 +87,8 @@ class TransparenzSeite(unittest.TestCase):
         joins = dict(js_array("JOINS", self.data))
         top = max(joins.values())
         self.assertEqual(top, joins["2026-02"])
-        self.assertIn(f"<strong>{top} Beitritte</strong>", self.page)
+        self.assertIn(str(top), self.page)
+        self.assertIn("Februar 2026 als stärkster", self.page)
 
     def test_bereinigung_ist_rechnerisch_schluessig(self):
         """Roh minus Bot-Zufluss muss die veröffentlichte Zahl ergeben."""
@@ -185,11 +186,31 @@ class TransparenzSeite(unittest.TestCase):
         self.assertIn(f'<span class="tp-role-count">{traeger}</span>', self.page)
 
     def test_betreuungsverhaeltnis_ist_gerechnet(self):
-        """'83 Mitglieder je Aufgabenträger' muss aus den Zahlen folgen."""
-        for anzahl, erwartet in ((19, 83), (6, 264), (2, 793)):
+        """Die Verhältniszahlen müssen zu den Rollenzahlen der Karten passen."""
+        for anzahl, erwartet in ((19, 83), (6, 264), (4, 396)):
             with self.subTest(anzahl=anzahl):
                 self.assertEqual(round(MITGLIEDER / anzahl), erwartet)
                 self.assertIn(str(erwartet), self.page)
+
+    def test_voice_und_onboarding_beziehen_sich_auf_bereinigte_basis(self):
+        """Kapitel 1 und der Beweis-Block müssen dieselbe Zahl nennen.
+
+        Beide beschreiben dieselbe Grundgesamtheit — die 1.586 heutigen
+        Mitglieder. Zwei verschiedene Werte dafür wären ein Widerspruch
+        auf einer Seite, die mit Nachrechenbarkeit wirbt.
+        """
+        in_voice, onboarding = 684, 402
+        self.assertEqual(self.page.count(f"<strong>{in_voice}</strong>"), 1)
+        self.assertIn(f"<dd>{in_voice}</dd>", self.page)
+        self.assertIn(f"<strong>{onboarding}</strong>", self.page)
+        anteil = round(100 * in_voice / MITGLIEDER)
+        self.assertIn(f"{anteil} von hundert", self.page)
+
+    def test_beitrittsspanne_deckt_die_daten(self):
+        """Eine genannte Spanne muss alle Monate des genannten Zeitraums enthalten."""
+        joins = dict(js_array("JOINS", self.data))
+        ab_august = [v for k, v in joins.items() if k >= "2025-08"]
+        self.assertIn(f"{min(ab_august)} und {max(ab_august)} Beitritten", self.page)
 
     def test_rechtliche_verantwortung_wird_benannt(self):
         for pflicht in ("Impressumspflicht", "DSGVO", "Haftung"):
