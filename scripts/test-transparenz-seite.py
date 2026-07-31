@@ -23,9 +23,13 @@ NAV = ROOT / "dl-brand" / "nav.js"
 # Die Kennzahlen, die auf der Seite als Aussage stehen. Quelle: Erhebung 31.07.2026.
 COMMITS_GESAMT = 6550
 COMMITS_JULI = 2064
-VOICE_STUNDEN = 30008
-MITGLIEDER = 2428
+VOICE_STUNDEN = 29973
+MITGLIEDER = 1586          # bereinigt; Discord zeigt 2.428
+MITGLIEDER_ROH = 2428
+BOT_ZUFLUSS = 842          # ausgeschlossene Konten, die noch auf dem Server sind
 STEAM_AUFTRAEGE = 1693100
+ARBEITSSTUNDEN = 1377
+ARBEITSSPANNE_TAGE = 337   # 29.08.2025 bis 31.07.2026
 
 
 def de(n: int) -> str:
@@ -74,11 +78,36 @@ class TransparenzSeite(unittest.TestCase):
         self.assertEqual(sum(total for _, total, _ in repos), COMMITS_GESAMT)
         self.assertEqual(sum(juli for _, _, juli in repos), COMMITS_JULI)
 
-    def test_beitritte_2026_stimmen_mit_dem_verlauf(self):
-        """Die Kachel nennt die Beitritte des laufenden Jahres."""
+    def test_beitrittsverlauf_ergibt_die_mitgliederzahl(self):
+        """Die Monatswerte müssen den bereinigten Bestand ergeben."""
         joins = js_array("JOINS", self.data)
-        summe_2026 = sum(v for k, v in joins if k.startswith("2026"))
-        self.assertIn(de(summe_2026), self.page)
+        self.assertEqual(sum(v for _, v in joins), MITGLIEDER)
+
+    def test_staerkster_monat_wird_korrekt_genannt(self):
+        joins = dict(js_array("JOINS", self.data))
+        top = max(joins.values())
+        self.assertEqual(top, joins["2026-02"])
+        self.assertIn(f"<strong>{top} Beitritte</strong>", self.page)
+
+    def test_bereinigung_ist_rechnerisch_schluessig(self):
+        """Roh minus Bot-Zufluss muss die veröffentlichte Zahl ergeben."""
+        self.assertEqual(MITGLIEDER_ROH - BOT_ZUFLUSS, MITGLIEDER)
+        for wert in (de(MITGLIEDER_ROH), de(BOT_ZUFLUSS), de(MITGLIEDER)):
+            with self.subTest(wert=wert):
+                self.assertIn(wert, self.page)
+
+    def test_bereinigung_ist_begruendet_statt_behauptet(self):
+        """Eine kleinere Zahl als Discord braucht eine nachvollziehbare Regel."""
+        self.assertIn("Bot Acc", self.page)
+        for beleg in ("2,0 %", "84,4 %", "4,2 %", "92,9 %"):
+            with self.subTest(beleg=beleg):
+                self.assertIn(beleg, self.page)
+        self.assertIn("Bereinigung um Bot-Zuflüsse", self.page)
+
+    def test_bereinigte_werte_stehen_auch_im_datenblock(self):
+        """Datenblock und Fließtext dürfen nicht auseinanderlaufen."""
+        self.assertIn("846", self.data)
+        self.assertIn("424", self.data)
 
     def test_sprachstunden_summe_passt_zur_kachel(self):
         """Die aufgezeichneten Monate dürfen die Gesamtzahl nicht überschreiten."""
@@ -94,10 +123,84 @@ class TransparenzSeite(unittest.TestCase):
         self.assertIn(f"{anteil:.1f}".replace(".", ","), self.page)
 
     def test_kennzahlen_stehen_im_hero(self):
-        for wert in (MITGLIEDER, VOICE_STUNDEN, STEAM_AUFTRAEGE, COMMITS_GESAMT):
+        for wert in (MITGLIEDER, VOICE_STUNDEN, STEAM_AUFTRAEGE, ARBEITSSTUNDEN):
             with self.subTest(wert=wert):
                 self.assertIn(f'data-count="{wert}"', self.page)
                 self.assertIn(de(wert), self.page)
+
+    # ── Arbeitszeit-Schätzung ────────────────────────────────────────
+
+    def test_arbeitszeit_summe_entspricht_dem_verlauf(self):
+        work = js_array("WORK_MONTHS", self.data)
+        self.assertEqual(sum(v for _, v in work), ARBEITSSTUNDEN)
+
+    def test_arbeitszeit_raster_passt_zum_verlauf(self):
+        """Projektaufteilung und Monatssumme müssen dieselbe Gesamtzahl ergeben."""
+        work = dict(js_array("WORK_MONTHS", self.data))
+        grid = js_array("WORK_GRID", self.data)
+        monate = [k for k, _ in js_array("WORK_MONTHS", self.data)]
+        for reihe in grid:
+            self.assertEqual(len(reihe[1]), len(monate), f"{reihe[0]} hat falsche Spaltenzahl")
+        for i, monat in enumerate(monate):
+            spalte = sum(reihe[1][i] for reihe in grid)
+            # Rundung je Zelle darf die Monatssumme um höchstens die Zeilenzahl verfehlen
+            self.assertAlmostEqual(spalte, work[monat], delta=len(grid),
+                                   msg=f"{monat}: Raster {spalte} vs Verlauf {work[monat]}")
+
+    def test_wochenschnitt_ist_hergeleitet(self):
+        """Der genannte Schnitt muss zu Stundenzahl und Zeitraum passen."""
+        schnitt = ARBEITSSTUNDEN / (ARBEITSSPANNE_TAGE / 7)
+        self.assertIn(f"{schnitt:.1f}".replace(".", ","), self.page)
+
+    def test_vollzeitaequivalent_stimmt(self):
+        """'8,6 Monate Vollzeit' muss aus den Stunden folgen (160 h je Monat)."""
+        self.assertAlmostEqual(ARBEITSSTUNDEN / 160, 8.6, delta=0.05)
+        self.assertIn("8,6 Monate Vollzeit", self.page)
+
+    def test_marktwert_ist_nachrechenbar(self):
+        """Die genannte Spanne muss Stunden mal Stundensatz sein."""
+        for satz, erwartet in ((60, "83.000"), (80, "110.000")):
+            with self.subTest(satz=satz):
+                self.assertAlmostEqual(ARBEITSSTUNDEN * satz,
+                                       int(erwartet.replace(".", "")), delta=2000)
+                self.assertIn(erwartet, self.page)
+
+    # ── Beteiligung ──────────────────────────────────────────────────
+
+    def test_beteiligungszahlen_ergeben_die_mitgliederzahl(self):
+        """Aufgabenträger + Unterstützer + Sichtbare + Nutzer = alle Mitglieder.
+
+        Die Gruppen überschneiden sich (jemand kann Coach und Streamer sein),
+        deshalb wird gegen die veröffentlichte Restgröße geprüft, nicht addiert.
+        """
+        rest = 1456
+        beteiligt = MITGLIEDER - rest
+        self.assertEqual(beteiligt, 130)
+        self.assertIn(de(rest), self.page)
+        self.assertIn(f"{100 * rest / MITGLIEDER:.1f}".replace(".", ","), self.page)
+
+    def test_aufgabentraeger_anteil_stimmt(self):
+        traeger = 19
+        self.assertIn(f"{100 * traeger / MITGLIEDER:.1f}".replace(".", ","), self.page)
+        self.assertIn(f'<span class="tp-role-count">{traeger}</span>', self.page)
+
+    def test_betreuungsverhaeltnis_ist_gerechnet(self):
+        """'83 Mitglieder je Aufgabenträger' muss aus den Zahlen folgen."""
+        for anzahl, erwartet in ((19, 83), (6, 264), (2, 793)):
+            with self.subTest(anzahl=anzahl):
+                self.assertEqual(round(MITGLIEDER / anzahl), erwartet)
+                self.assertIn(str(erwartet), self.page)
+
+    def test_rechtliche_verantwortung_wird_benannt(self):
+        for pflicht in ("Impressumspflicht", "DSGVO", "Haftung"):
+            with self.subTest(pflicht=pflicht):
+                self.assertIn(pflicht, self.page)
+
+    def test_belastung_ist_belegt_nicht_behauptet(self):
+        """Die harten Aussagen zur Belastung brauchen konkrete Zahlen."""
+        for beleg in ("78", "288 von 337", "84", "57"):
+            with self.subTest(beleg=beleg):
+                self.assertIn(beleg, self.page)
 
     # ── Verdrahtung ──────────────────────────────────────────────────
 
