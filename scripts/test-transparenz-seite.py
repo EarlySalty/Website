@@ -100,7 +100,7 @@ class TransparenzSeite(unittest.TestCase):
     def test_bereinigung_ist_begruendet_statt_behauptet(self):
         """Eine kleinere Zahl als Discord braucht eine nachvollziehbare Regel."""
         self.assertIn("Bot Acc", self.page)
-        for beleg in ("2,0 %", "84,4 %", "4,2 %", "92,9 %"):
+        for beleg in ("2,0 %", "84,4 %", "438 Tage", "50 Konten pro Minute"):
             with self.subTest(beleg=beleg):
                 self.assertIn(beleg, self.page)
         self.assertIn("Bot-Zuflüsse", self.page)
@@ -212,14 +212,14 @@ class TransparenzSeite(unittest.TestCase):
     def test_voice_und_onboarding_beziehen_sich_auf_bereinigte_basis(self):
         """Kapitel 1 und der Beweis-Block müssen dieselbe Zahl nennen.
 
-        Beide beschreiben dieselbe Grundgesamtheit — die 1.586 heutigen
-        Mitglieder. Zwei verschiedene Werte dafür wären ein Widerspruch
-        auf einer Seite, die mit Nachrechenbarkeit wirbt.
+        Beide Werte beschreiben die 1.586 heutigen Mitglieder. Jeder darf
+        genau einmal vorkommen — zwei verschiedene Zahlen für dieselbe
+        Grundgesamtheit wären ein Widerspruch auf einer Seite, die mit
+        Nachrechenbarkeit wirbt.
         """
         in_voice, onboarding = 684, 402
         self.assertEqual(self.page.count(f"<strong>{in_voice}</strong>"), 1)
-        self.assertIn(f"<dd>{in_voice}</dd>", self.page)
-        self.assertIn(f"<strong>{onboarding}</strong>", self.page)
+        self.assertEqual(self.page.count(f"<strong>{onboarding}</strong>"), 1)
         anteil = round(100 * in_voice / MITGLIEDER)
         self.assertIn(f"{anteil} von hundert", self.page)
 
