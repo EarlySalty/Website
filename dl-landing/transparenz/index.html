@@ -253,6 +253,140 @@
     }
     .tp-rank-val small { display: block; font-size: 0.68rem; font-weight: 600; color: var(--bone-faint); }
 
+    /* ── Beweisführung (Gegenüberstellung zweier Gruppen) ────────── */
+    .tp-proof {
+      margin-top: 2.6rem; padding: 1.7rem 1.6rem;
+      border: 1px solid var(--line-soft); border-radius: 22px;
+      background: linear-gradient(160deg, rgba(201,168,106,0.05), rgba(11,11,11,0.4) 62%);
+    }
+    .tp-proof-title {
+      font-family: var(--font-display); font-size: 1.12rem; font-weight: 700;
+      margin: 0 0 0.6rem; color: var(--bone);
+    }
+    .tp-proof-lede { margin: 0 0 1.5rem; font-size: 0.94rem; line-height: 1.65; color: var(--bone-dim); max-width: 70ch; }
+    .tp-proof-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .tp-proof-col {
+      border: 1px solid var(--line-soft); border-radius: 16px;
+      padding: 1.15rem 1.15rem 0.9rem; background: rgba(11,11,11,0.5);
+    }
+    .tp-proof-col--bad { border-color: rgba(173,73,50,0.34); background: rgba(173,73,50,0.05); }
+    .tp-proof-tag {
+      display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.13em;
+      text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.9rem;
+    }
+    .tp-proof-col--bad .tp-proof-tag { color: var(--rust-bright); }
+    .tp-proof-col dl { margin: 0; display: grid; gap: 0.1rem; }
+    .tp-proof-col dl > div {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 1rem; padding: 0.5rem 0; border-top: 1px solid rgba(201,168,106,0.09);
+    }
+    .tp-proof-col dl > div:first-child { border-top: 0; }
+    .tp-proof-col dt { font-size: 0.86rem; color: var(--bone-dim); margin: 0; }
+    .tp-proof-col dd {
+      margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem;
+      color: var(--bone); font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+    .tp-proof-col--bad dd { color: var(--rust-bright); }
+    .tp-proof-note {
+      margin: 1.3rem 0 0; font-size: 0.87rem; line-height: 1.65;
+      color: var(--bone-faint); max-width: 78ch;
+    }
+    .tp-proof-note em { color: var(--bone-dim); font-style: normal; font-weight: 600; }
+
+    /* ── Arbeitszeit-Raster (Projekt × Monat) ────────────────────── */
+    /* Breite gedeckelt: über die volle Containerbreite würden die Zellen
+       zu großen Kacheln und das Raster dominierte die halbe Seite. */
+    .tp-grid { margin-top: 0.4rem; max-width: 720px; }
+    .tp-grid-row {
+      display: grid; grid-template-columns: 128px repeat(12, 1fr);
+      gap: 3px; align-items: center; margin-bottom: 3px;
+    }
+    .tp-grid-row--head { margin-bottom: 7px; }
+    .tp-grid-col-label {
+      font-size: 0.64rem; color: var(--bone-faint); text-align: center;
+      letter-spacing: 0.02em;
+    }
+    .tp-grid-row-label {
+      font-size: 0.82rem; color: var(--bone-dim); padding-right: 0.6rem;
+      line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .tp-grid-row-label small {
+      display: block; font-size: 0.7rem; color: var(--bone-faint);
+      font-variant-numeric: tabular-nums;
+    }
+    .tp-grid-cell {
+      display: block; aspect-ratio: 1 / 1; border-radius: 3px;
+      transition: outline-color 0.15s ease; outline: 2px solid transparent; outline-offset: 1px;
+    }
+    .tp-grid-cell:hover, .tp-grid-cell:focus-visible { outline-color: var(--gold-border); }
+    .tp-grid-legend {
+      display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+      margin-top: 0.9rem; font-size: 0.72rem; color: var(--bone-faint);
+    }
+    .tp-grid-legend i { width: 13px; height: 13px; border-radius: 3px; display: block; }
+    .tp-grid-legend span:first-child { margin-right: 3px; }
+    .tp-grid-legend span:last-child { margin-left: 3px; }
+    @media (max-width: 780px) {
+      .tp-grid { overflow-x: auto; }
+      .tp-grid-row { grid-template-columns: 108px repeat(12, minmax(19px, 1fr)); min-width: 480px; }
+    }
+
+    /* ── Beteiligungs-Karten ─────────────────────────────────────── */
+    .tp-roles {
+      display: grid; gap: 1.1rem; margin-top: 2.6rem;
+      grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+    }
+    .tp-role-card {
+      background: var(--panel); border: 1px solid var(--line-soft);
+      border-radius: 20px; padding: 1.5rem 1.4rem;
+      display: flex; flex-direction: column;
+    }
+    .tp-role-card--work { border-color: var(--gold-border); background: linear-gradient(165deg, rgba(201,168,106,0.1), var(--panel) 58%); }
+    .tp-role-card--support { border-color: rgba(102,179,155,0.3); background: linear-gradient(165deg, rgba(102,179,155,0.08), var(--panel) 58%); }
+    .tp-role-card--rest { background: rgba(11,11,11,0.42); }
+    .tp-role-count {
+      font-family: var(--font-display); font-weight: 800; line-height: 1;
+      font-size: clamp(2rem, 4.2vw, 2.8rem); color: var(--gold-bright);
+      font-variant-numeric: tabular-nums;
+    }
+    .tp-role-card--support .tp-role-count { color: var(--green); }
+    .tp-role-card--rest .tp-role-count { color: var(--bone-dim); }
+    .tp-role-card h3 {
+      font-family: var(--font-display); font-size: 1.02rem; font-weight: 700;
+      margin: 0.6rem 0 0.55rem; color: var(--bone);
+    }
+    .tp-role-card p { margin: 0; font-size: 0.89rem; line-height: 1.62; color: var(--bone-dim); }
+    .tp-role-card p strong { color: var(--bone); font-weight: 600; }
+    .tp-role-list { list-style: none; margin: 1.1rem 0 0; padding: 0; display: grid; gap: 0.15rem; }
+    .tp-role-list li {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 0.9rem;
+      padding: 0.42rem 0; border-top: 1px solid rgba(201,168,106,0.1);
+      font-size: 0.85rem; color: var(--bone-dim);
+    }
+    .tp-role-list b {
+      font-family: var(--font-display); font-weight: 700; color: var(--bone);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Belastungs-Kacheln (Zitat mit Zahl) ─────────────────────── */
+    .tp-burden {
+      display: grid; gap: 1px; margin-top: 2.4rem;
+      grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+      background: var(--line-soft); border: 1px solid var(--line-soft);
+      border-radius: 18px; overflow: hidden;
+    }
+    .tp-burden-cell { background: var(--ink-soft); padding: 1.4rem 1.3rem; }
+    .tp-burden-num {
+      font-family: var(--font-display); font-weight: 800; line-height: 1;
+      font-size: clamp(1.7rem, 3.4vw, 2.3rem); color: var(--gold-bright);
+      font-variant-numeric: tabular-nums; display: block;
+    }
+    .tp-burden-num small { font-size: 0.44em; color: var(--gold); margin-left: 0.15em; }
+    .tp-burden-cell p {
+      margin: 0.65rem 0 0; font-size: 0.86rem; line-height: 1.55; color: var(--bone-dim);
+    }
+    .tp-burden-cell p strong { color: var(--bone); font-weight: 600; }
+
     /* ── Zitat / Betonung ────────────────────────────────────────── */
     .tp-pull {
       margin: 2.4rem 0 0; padding: 1.5rem 1.6rem;
@@ -401,12 +535,12 @@
 
           <div class="tp-tiles" data-reveal>
             <div class="tp-tile">
-              <span class="tp-tile-num" data-count="2428">2.428</span>
-              <span class="tp-tile-label">Mitglieder</span>
-              <span class="tp-tile-sub">1.551 davon sind 2026 dazugekommen</span>
+              <span class="tp-tile-num" data-count="1586">1.586</span>
+              <span class="tp-tile-label">echte Mitglieder</span>
+              <span class="tp-tile-sub">Discord zeigt 2.428 — 842 davon sind Bot-Zuflüsse</span>
             </div>
             <div class="tp-tile">
-              <span class="tp-tile-num" data-count="30008">30.008</span>
+              <span class="tp-tile-num" data-count="29973">29.973</span>
               <span class="tp-tile-label">Stunden in Sprachkanälen</span>
               <span class="tp-tile-sub">3 Jahre und 5 Monate am Stück geredet</span>
             </div>
@@ -416,9 +550,9 @@
               <span class="tp-tile-sub">99,96 % ohne Fehler durchgelaufen</span>
             </div>
             <div class="tp-tile">
-              <span class="tp-tile-num" data-count="6550">6.550</span>
-              <span class="tp-tile-label">Code-Änderungen</span>
-              <span class="tp-tile-sub">an 289 Tagen, davon 2.064 allein im Juli</span>
+              <span class="tp-tile-num" data-count="1377">1.377</span>
+              <span class="tp-tile-label">Stunden Arbeit</span>
+              <span class="tp-tile-sub">8,6 Monate Vollzeit — in elf Kalendermonaten</span>
             </div>
           </div>
         </div>
@@ -433,18 +567,24 @@
               <h2 class="tp-h2">Die Community</h2>
               <p class="tp-lede">
                 Angefangen hat das im <strong>September 2024</strong> mit einer Handvoll Leuten.
-                Heute sind <strong>2.428 Menschen</strong> hier — echte Accounts, Bots rausgerechnet.
+                Heute sind <strong>1.586 Menschen</strong> hier.
               </p>
               <p class="tp-lede">
-                Zwei Monate stechen heraus: <strong>Oktober 2025</strong> mit 477 Beitritten und
-                <strong>Februar 2026</strong> mit 622. Das waren keine Zufälle, sondern die Monate,
-                in denen die Sichtbarkeit stimmte. Dazwischen und danach ist es
-                ruhiger und stetiger — und genau dieses Stetige ist das, was Arbeit macht:
-                Jeder neue Mensch läuft durch dieselbe Maschinerie aus Willkommen, Rollen und Kanälen.
+                Discord zeigt eine größere Zahl an: 2.428. Die stimmt auch — sie zählt nur
+                mit, was gar nicht erst ein Mensch war. <strong>842 dieser Konten</strong>
+                sind an fünf Tagen hereingeschwemmt worden, teils
+                <strong>50 Stück pro Minute</strong>. Wir rechnen sie hier raus, obwohl die
+                größere Zahl besser aussähe. Wie das geprüft wurde, steht weiter unten.
               </p>
               <p class="tp-lede">
-                <strong>623 Menschen</strong> haben das Onboarding komplett durchlaufen,
-                <strong>866</strong> waren schon in einem Sprachkanal.
+                Was bleibt, ist ein stetiges Wachstum ohne Ausreißer: <strong>298 Beitritte</strong>
+                im stärksten Monat (Februar 2026), sonst zwischen 20 und 150. Und genau
+                dieses Stetige ist das, was Arbeit macht — jeder neue Mensch läuft durch
+                dieselbe Maschinerie aus Willkommen, Rollen und Kanälen.
+              </p>
+              <p class="tp-lede">
+                <strong>453 Menschen</strong> haben das Onboarding komplett durchlaufen,
+                <strong>855</strong> waren schon in einem Sprachkanal — das ist über die Hälfte.
               </p>
             </div>
 
@@ -452,13 +592,55 @@
               <div class="tp-figure-head">
                 <div>
                   <h3 class="tp-figure-title">Beitritte pro Monat</h3>
-                  <p class="tp-figure-note">Neue Mitglieder je Monat seit dem ersten Beitritt im September 2024.</p>
+                  <p class="tp-figure-note">
+                    Mitglieder, die heute noch auf dem Server sind, nach Beitrittsmonat.
+                    Die Bot-Zuflüsse vom Oktober 2025, November 2025 und Februar 2026 sind
+                    herausgerechnet — ohne sie stünden hier 472, 142 und 608.
+                  </p>
                 </div>
               </div>
               <div class="tp-chart" data-chart="joins"></div>
               <button class="tp-table-toggle" data-table-for="joins" aria-expanded="false">Als Tabelle anzeigen</button>
               <div class="tp-table-wrap" data-table="joins"></div>
             </figure>
+          </div>
+
+          <!-- Beweisführung zur Bereinigung -->
+          <div class="tp-proof" data-reveal>
+            <h3 class="tp-proof-title">Woran man einen Bot-Zufluss erkennt</h3>
+            <p class="tp-proof-lede">
+              Eine kleinere Mitgliederzahl zu veröffentlichen als die, die Discord anzeigt,
+              muss man begründen. Also die Gegenüberstellung: einmal die fünf Tage, an denen
+              die Kurve senkrecht stand, einmal alle anderen 433 Tage.
+            </p>
+
+            <div class="tp-proof-grid">
+              <div class="tp-proof-col tp-proof-col--bad">
+                <span class="tp-proof-tag">5 auffällige Tage</span>
+                <dl>
+                  <div><dt>Konten</dt><dd>842</dd></div>
+                  <div><dt>haben je etwas getan</dt><dd>2,0 %</dd></div>
+                  <div><dt>schnellster Zulauf</dt><dd>50 / Minute</dd></div>
+                  <div><dt>waren in Voice</dt><dd>10</dd></div>
+                </dl>
+              </div>
+              <div class="tp-proof-col">
+                <span class="tp-proof-tag">alle übrigen 433 Tage</span>
+                <dl>
+                  <div><dt>Konten</dt><dd>1.586</dd></div>
+                  <div><dt>haben je etwas getan</dt><dd>84,4 %</dd></div>
+                  <div><dt>schnellster Zulauf</dt><dd>4 / Minute</dd></div>
+                  <div><dt>waren in Voice</dt><dd>845</dd></div>
+                </dl>
+              </div>
+            </div>
+
+            <p class="tp-proof-note">
+              Dazwischen liegt nichts. Kein einziger Tag landet im Graubereich: entweder unter
+              4,2 % Aktivität oder über 92,9 %. Zusätzlich trugen 424 dieser Konten bereits die
+              Rolle <em>Bot Acc</em> — von Hand vergeben, lange bevor diese Seite entstand.
+              Alle 424 fallen in dieselben Tage.
+            </p>
           </div>
         </div>
       </section>
@@ -470,8 +652,8 @@
             <p class="tp-eyebrow">Kapitel 2</p>
             <h2 class="tp-h2">Die Sprachkanäle sind das Herz</h2>
             <p class="tp-lede">
-              Hier passiert die eigentliche Community. <strong>70.541 Sprach-Sitzungen</strong> wurden
-              seit Beginn der Messung aufgezeichnet, zusammen <strong>30.008 Stunden</strong>.
+              Hier passiert die eigentliche Community. <strong>70.383 Sprach-Sitzungen</strong> wurden
+              seit Beginn der Messung aufgezeichnet, zusammen <strong>29.973 Stunden</strong>.
               Das sind drei Jahre und fünf Monate ununterbrochenes Reden — in gut anderthalb Jahren realer Zeit.
             </p>
             <p class="tp-lede">
@@ -482,7 +664,7 @@
             </p>
             <p class="tp-lede">
               Nebenbei ist daraus eine Karte entstanden, wer mit wem spielt:
-              <strong>27.742 Mitspieler-Paarungen</strong>. Das ist die Grundlage dafür,
+              <strong>27.641 Mitspieler-Paarungen</strong>. Das ist die Grundlage dafür,
               dass die Suche nach Mitspielern überhaupt funktionieren kann.
             </p>
           </div>
@@ -564,9 +746,9 @@
               </p>
               <ul class="tp-facts">
                 <li>Streamer-Partner <b>62</b></li>
-                <li>Begleitete Streams <b>9.213</b></li>
-                <li>Erfasste Streamzeit <b>49.498 h</b></li>
-                <li>Vermittelte Raids <b>1.347</b></li>
+                <li>Begleitete Partner-Streams <b>3.365</b></li>
+                <li>Streamzeit der Partner <b>13.960 h</b></li>
+                <li>Erfolgreiche Raids <b>1.223</b></li>
               </ul>
             </article>
 
@@ -722,11 +904,93 @@
         </div>
       </section>
 
-      <!-- ══ 5 — WER DAS BAUT ════════════════════════════════════ -->
-      <section class="tp-section" id="wer">
+      <!-- ══ 5 — DIE ZEIT ════════════════════════════════════════ -->
+      <section class="tp-section" id="zeit">
         <div class="container">
           <div data-reveal>
             <p class="tp-eyebrow">Kapitel 5</p>
+            <h2 class="tp-h2">Was das an Zeit gekostet hat</h2>
+            <p class="tp-lede">
+              Commits zählen ist einfach. Interessanter ist, wie viel Lebenszeit dahintersteckt.
+              Aus den Zeitstempeln lässt sich das rekonstruieren: Aufeinanderfolgende Commits
+              gehören zu einer Sitzung, eine Pause über zwei Stunden beendet sie. Aufaddiert
+              ergibt das <strong>1.377 Stunden</strong> in elf Monaten.
+            </p>
+            <p class="tp-lede">
+              Das sind <strong>172 volle Arbeitstage</strong> oder <strong>8,6 Monate Vollzeit</strong> —
+              in einem Zeitraum von elf Kalendermonaten. Nebenbei. Ohne Bezahlung.
+            </p>
+            <p class="tp-lede">
+              Und die Schätzung ist die vorsichtige Variante: Alles, was keinen Commit erzeugt,
+              fehlt darin. Nachdenken, Lesen, Testen, Deployen, Fehlersuche um drei Uhr nachts,
+              Support in Direktnachrichten, Moderation, Absprachen. Realistisch ist die echte Zahl
+              deutlich höher — sie ist nur nicht belegbar, deshalb steht sie hier nicht.
+            </p>
+          </div>
+
+          <figure class="tp-figure" data-reveal>
+            <div class="tp-figure-head">
+              <div>
+                <h3 class="tp-figure-title">Geschätzte Arbeitszeit pro Monat</h3>
+                <p class="tp-figure-note">
+                  Im Schnitt 28,6 Stunden pro Woche über den gesamten Zeitraum. Im Juli 2026
+                  waren es 317 Stunden — das entspricht 72 Stunden pro Woche, also fast zwei
+                  vollen Arbeitswochen in jeder Woche.
+                </p>
+              </div>
+            </div>
+            <div class="tp-chart" data-chart="work"></div>
+            <button class="tp-table-toggle" data-table-for="work" aria-expanded="false">Als Tabelle anzeigen</button>
+            <div class="tp-table-wrap" data-table="work"></div>
+          </figure>
+
+          <figure class="tp-figure" data-reveal>
+            <div class="tp-figure-head">
+              <div>
+                <h3 class="tp-figure-title">Woran wann gearbeitet wurde</h3>
+                <p class="tp-figure-note">
+                  Dieselbe Schätzung, aufgeteilt nach Projekt. Gut zu sehen: Ab Februar 2026
+                  laufen dauerhaft vier bis sieben Projekte parallel. Kein Projekt löst ein
+                  anderes ab — es kommt immer nur etwas dazu.
+                </p>
+              </div>
+            </div>
+            <div class="tp-grid" data-grid="work"></div>
+          </figure>
+
+          <div class="tp-burden" data-reveal>
+            <div class="tp-burden-cell">
+              <span class="tp-burden-num">78</span>
+              <p><strong>Tage am Stück</strong> ohne einen einzigen freien Tag, bis zum 11. April 2026.</p>
+            </div>
+            <div class="tp-burden-cell">
+              <span class="tp-burden-num">85<small>%</small></span>
+              <p>aller Kalendertage wurde gearbeitet — <strong>288 von 337</strong>.</p>
+            </div>
+            <div class="tp-burden-cell">
+              <span class="tp-burden-num">84<small>/96</small></span>
+              <p><strong>Wochenendtage</strong> gearbeitet. Dazu sechs Feiertage, darunter der zweite Weihnachtstag.</p>
+            </div>
+            <div class="tp-burden-cell">
+              <span class="tp-burden-num">57</span>
+              <p>Arbeitssitzungen liefen <strong>über Mitternacht hinaus</strong>. Die längste zog sich über 68 Stunden.</p>
+            </div>
+          </div>
+
+          <div class="tp-pull" data-reveal>
+            <p>
+              Die längste Pause in elf Monaten waren sieben Tage, zwischen dem 14. und 22. Dezember.
+              Es gab genau sechs Unterbrechungen von mehr als drei Tagen.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 6 — WER DAS BAUT ════════════════════════════════════ -->
+      <section class="tp-section" id="wer">
+        <div class="container">
+          <div data-reveal>
+            <p class="tp-eyebrow">Kapitel 6</p>
             <h2 class="tp-h2">Wer das eigentlich baut</h2>
             <p class="tp-lede">
               Das hier ist der unangenehme Teil, aber er gehört dazu, wenn man von Transparenz redet.
@@ -760,9 +1024,9 @@
               <span class="tp-tile-sub">von 6.550 insgesamt — 0,2 %</span>
             </div>
             <div class="tp-tile">
-              <span class="tp-tile-num">20<small>–30 h</small></span>
-              <span class="tp-tile-label">pro Woche</span>
-              <span class="tp-tile-sub">nur für Wartung und Anpassungen</span>
+              <span class="tp-tile-num">28,6<small>h</small></span>
+              <span class="tp-tile-label">pro Woche im Schnitt</span>
+              <span class="tp-tile-sub">neben allem anderen, elf Monate lang</span>
             </div>
             <div class="tp-tile">
               <span class="tp-tile-num">12</span>
@@ -782,7 +1046,7 @@
       <section class="tp-section tp-section--tint" id="kosten">
         <div class="container">
           <div data-reveal>
-            <p class="tp-eyebrow">Kapitel 6</p>
+            <p class="tp-eyebrow">Kapitel 7</p>
             <h2 class="tp-h2">Was das kostet</h2>
             <p class="tp-lede">
               Bezahlt wird das komplett privat. Server, Domains, Werkzeuge — im normalen Monat
@@ -798,7 +1062,14 @@
             <p class="tp-lede">
               Der naheliegende Ausweg wäre, dauerhaft aufzustocken. Dann läge man bei
               <strong>230 bis 250 € im Monat</strong>, allein für diesen Server. Das ist privat nicht tragbar.
-              Und jemanden einstellen, der programmieren kann, kostet ein Vielfaches davon.
+            </p>
+            <p class="tp-lede">
+              Bleibt die Frage, was die eigentliche Arbeit wert ist. Die 1.377 Stunden aus
+              Kapitel 5 zu einem üblichen Satz für Entwicklungsarbeit gerechnet — 60 bis 80 €
+              die Stunde — ergeben <strong>83.000 bis 110.000 €</strong>. So viel hätte es
+              gekostet, das hier zu beauftragen statt selbst zu machen. Diese Summe ist nie
+              geflossen; sie steht hier nur, damit die Größenordnung klar ist. Bezahlt wurde
+              sie in Feierabenden und Wochenenden.
             </p>
           </div>
 
@@ -819,15 +1090,129 @@
               <dt>Bisher finanziert durch</dt>
               <dd>1 Person<small>keine Einnahmen, keine Werbung, keine Sponsoren</small></dd>
             </div>
+            <div class="tp-cost-cell">
+              <dt>Arbeitszeit zum Marktpreis</dt>
+              <dd>83–110 T€<small>1.377 Stunden, wenn man sie beauftragt hätte</small></dd>
+            </div>
           </dl>
         </div>
       </section>
 
-      <!-- ══ 7 — WAS WIR BRAUCHEN ════════════════════════════════ -->
+      <!-- ══ 8 — WER SICH BETEILIGT ══════════════════════════════ -->
+      <section class="tp-section" id="beteiligung">
+        <div class="container">
+          <div data-reveal>
+            <p class="tp-eyebrow">Kapitel 8</p>
+            <h2 class="tp-h2">Wer sich beteiligt</h2>
+            <p class="tp-lede">
+              Ein Server ist kein Selbstläufer. Ein paar Leute halten ihn am Laufen, viele
+              nutzen ihn — und beides ist völlig in Ordnung. Genau dafür ist eine Community da.
+              Trotzdem gehört die Verteilung sichtbar gemacht, weil sie erklärt, warum an
+              manchen Stellen nichts vorangeht.
+            </p>
+          </div>
+
+          <div class="tp-roles" data-reveal>
+            <div class="tp-role-card tp-role-card--work">
+              <span class="tp-role-count">19</span>
+              <h3>tragen eine Aufgabe</h3>
+              <p>
+                Moderation, Coaching, Turnier-Casting, Serverbetrieb, Entwicklung.
+                Das sind <strong>1,2 %</strong> der Mitglieder.
+              </p>
+              <ul class="tp-role-list">
+                <li><span>Moderation</span><b>6</b></li>
+                <li><span>Coaches</span><b>8</b></li>
+                <li><span>Turnier-Caster</span><b>5</b></li>
+                <li><span>Serverbetrieb &amp; Entwicklung</span><b>4</b></li>
+              </ul>
+            </div>
+
+            <div class="tp-role-card tp-role-card--support">
+              <span class="tp-role-count">23</span>
+              <h3>unterstützen den Server</h3>
+              <p>
+                Über Server-Boosts oder einen VIP-Status. Danke dafür — das ist bisher
+                alles, was auf der Einnahmeseite steht.
+              </p>
+              <ul class="tp-role-list">
+                <li><span>Server-Booster</span><b>7</b></li>
+                <li><span>VIP</span><b>18</b></li>
+                <li><span>zahlende Unterstützer</span><b>0</b></li>
+                <li><span>Twitch-Abos beim Betreiber</span><b>9</b></li>
+              </ul>
+            </div>
+
+            <div class="tp-role-card">
+              <span class="tp-role-count">104</span>
+              <h3>streamen oder erstellen Inhalte</h3>
+              <p>
+                Streamer und Content Creator, die die Community nach außen sichtbar machen.
+                62 davon sind offizielle Streamer-Partner.
+              </p>
+              <ul class="tp-role-list">
+                <li><span>Streamer</span><b>47</b></li>
+                <li><span>Content Creator</span><b>69</b></li>
+              </ul>
+            </div>
+
+            <div class="tp-role-card tp-role-card--rest">
+              <span class="tp-role-count">1.456</span>
+              <h3>nutzen den Server</h3>
+              <p>
+                <strong>91,8 %</strong> — spielen, reden, holen sich Coaching, lesen Patchnotes.
+                Das ist kein Vorwurf, sondern der Normalfall und der Sinn der Sache.
+                Es erklärt nur, warum ein Ausfall an einer Stelle sofort alles anhält.
+              </p>
+            </div>
+          </div>
+
+          <div class="tp-pull" data-reveal>
+            <p>
+              Rechnerisch kommen auf jeden, der eine Aufgabe trägt, 83 Mitglieder.
+              Bei Moderation und Entwicklung sind es 264 beziehungsweise 793.
+            </p>
+          </div>
+
+          <div data-reveal style="margin-top:2.6rem">
+            <h3 class="tp-figure-title" style="font-size:1.1rem;margin-bottom:0.7rem">Was die Streamer davon haben</h3>
+            <p class="tp-lede" style="font-size:0.97rem">
+              Der Twitch-Bot arbeitet für die Partner, nicht für den eigenen Kanal. Was dabei
+              seit Januar 2026 zusammengekommen ist: <strong>1.223 erfolgreiche Raids</strong>,
+              mit denen 2.973 Zuschauer an andere Kanäle weitergereicht wurden,
+              <strong>441 neue Follower</strong> und <strong>720 verschenkte Abos</strong> von
+              48 Schenkenden. Über die angebundenen Partnerkanäle laufen mindestens
+              <strong>248 Twitch-Abos</strong> — die tatsächliche Zahl liegt höher,
+              weil nicht jeder Kanal angebunden ist.
+            </p>
+            <p class="tp-lede" style="font-size:0.97rem">
+              Beim Kanal, aus dem der ganze Betrieb bezahlt wird, sind es <strong>neun</strong>.
+              Das ist keine Klage, sondern eine Einordnung: Die Technik verteilt Reichweite
+              nach außen, nicht nach innen. Genau so war sie gedacht — es muss nur jemand
+              übrig bleiben, der sie betreibt.
+            </p>
+          </div>
+
+          <div class="tp-method" data-reveal style="margin-top:2.4rem">
+            <h3>Wer haftet — und zwar allein</h3>
+            <ul>
+              <li>Impressumspflicht, Datenschutzerklärung und Auskunftsanfragen nach DSGVO für Server, Bots, Websites und Datenbanken.</li>
+              <li>Verantwortung für alles, was auf dem Server veröffentlicht wird, sobald es gemeldet ist.</li>
+              <li>Verträge und Zahlungen: Server, Domains, Werkzeuge, Dienste — alle auf eine Privatperson.</li>
+              <li>Betriebssicherheit: Zugangsdaten, Backups, Sicherheitslücken, Ausfälle.</li>
+            </ul>
+            <ul style="margin-top:0.7rem">
+              <li><strong>Anzahl der Personen, die diese Verantwortung tragen: eine.</strong> Moderation und Coaching helfen im Alltag — die Haftung teilt das nicht.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ 9 — WAS WIR BRAUCHEN ════════════════════════════════ -->
       <section class="tp-section" id="hilfe">
         <div class="container">
           <div data-reveal>
-            <p class="tp-eyebrow">Kapitel 7</p>
+            <p class="tp-eyebrow">Kapitel 9</p>
             <h2 class="tp-h2">Was wir brauchen</h2>
             <p class="tp-lede">
               Es gibt genug Ideen für die nächsten zwei Jahre: eine überarbeitete Website,
@@ -914,11 +1299,17 @@
             <ul>
               <li><strong>Stichtag:</strong> 31. Juli 2026. Alle Werte sind Momentaufnahmen dieses Tages.</li>
               <li><strong>Mitglieder, Sprachzeit, Coachings, Turniere, Streams:</strong> direkte Abfragen auf der laufenden Produktionsdatenbank. Nur Summen und Häufigkeiten — keine personenbezogenen Daten, keine Namen, keine IDs.</li>
+              <li><strong>Bereinigung um Bot-Zuflüsse:</strong> ausgeschlossen sind 846 Konten — alle mit der Rolle <em>Bot Acc</em> (424) sowie alle Beitritte vom 24., 25. und 28. Oktober 2025, vom 25. November 2025 und vom 21. Februar 2026. Die Regel wurde nicht nach Gefühl gesetzt: geprüft wurde für jeden der 438 Tage mit Beitritten, welcher Anteil dieser Konten je eine Nachricht geschrieben oder einen Sprachkanal betreten hat. Die fünf genannten Tage liegen bei 0,0 bis 4,2 %, jeder andere Tag mit nennenswerten Beitritten bei mindestens 92,9 %. Zwischen beiden Gruppen liegt kein einziger Tag.</li>
+              <li><strong>Folge daraus:</strong> alle Mitglieder-, Voice- und Onboarding-Zahlen auf dieser Seite sind bereinigt und damit niedriger als das, was Discord und die Server-Statistik anzeigen. Das ist Absicht.</li>
               <li><strong>Code-Zahlen:</strong> aus dem Versionsverlauf (<code>git log</code>) der sieben Projekte, ausschließlich Hauptzweig. Zwischenstände auf Entwicklungszweigen zählen nicht mit — die tatsächliche Gesamtzahl liegt also höher als die genannte.</li>
               <li><strong>Codezeilen:</strong> ohne fremde Bibliotheken, Build-Artefakte, Sperrdateien und generierte Dateien. Gezählt wird, was von Hand entstanden ist.</li>
               <li><strong>Sprachzeit:</strong> die Aufzeichnung läuft seit November 2025. Alles davor ist nicht erfasst — die tatsächliche Zahl ist höher.</li>
               <li><strong>Rangprüfungen des Steam-Bots:</strong> die Historie wird seit dem 22. Juni 2026 geführt, die verarbeiteten Aufträge dagegen von Anfang an.</li>
-              <li><strong>Streams:</strong> erfasst seit dem 9. Januar 2026, ausschließlich Partner-Kanäle.</li>
+              <li><strong>Streams:</strong> erfasst seit dem 9. Januar 2026. Genannt werden ausschließlich die Streams der Partnerkanäle (3.365 Sitzungen, 13.960 Stunden). Der Bot beobachtet daneben weitere Kanäle zur Partnersuche — deren Zeiten sind hier bewusst nicht mitgezählt, weil sie keine Leistung für die Community sind.</li>
+              <li><strong>Twitch-Abos, Bits, Raids:</strong> aus der Streamer-Datenbank, erfasst ab Januar bzw. Februar 2026 und nur für Kanäle, die den Bot angebunden haben. Von 59 aktiven Partnern liefern 36 Abo-Stände, acht davon sind älter als 30 Tage — die genannten 248 Abos sind deshalb eine Untergrenze. Bei den Bits waren 32 der 98 erfassten Ereignisse exakte Doppelungen; genannt ist der bereinigte Stand von 66 Ereignissen und 4.490 Bits.</li>
+              <li><strong>Rollen und Beteiligung:</strong> live über die Discord-Schnittstelle abgefragt. Gezählt werden Rollen, keine Personen mit Namen. Mehrfachrollen sind bei den Summen nur einmal gewertet, weshalb sich die Gruppen nicht einfach addieren lassen.</li>
+              <li><strong>Arbeitszeit:</strong> Schätzung aus den Commit-Zeitstempeln. Commits im Abstand von unter zwei Stunden bilden eine Sitzung; gezählt wird deren Spanne plus 30 Minuten Vorlauf. Nicht enthalten: alles ohne Commit — Konzeption, Fehlersuche, Deployen, Support, Moderation, Absprachen. Die Zahl ist also eine Untergrenze, keine Obergrenze. Zur Gegenprobe: die Methode ergibt 28,6 Stunden pro Woche, die unabhängige Selbsteinschätzung lag bei 20 bis 30.</li>
+              <li><strong>Arbeitszeit zum Marktpreis:</strong> die geschätzten Stunden mal 60 bis 80 € — ein üblicher Satz für Entwicklungsarbeit. Rein rechnerisch, es ist nie Geld geflossen.</li>
               <li><strong>Kosten:</strong> Selbstauskunft, keine Datenbankzahl. Zusammengesetzt aus Serverbetrieb, Domains und Entwicklungswerkzeugen.</li>
             </ul>
           </div>
