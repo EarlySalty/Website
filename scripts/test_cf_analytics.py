@@ -1,5 +1,5 @@
 """Prüft, dass Cloudflare Web Analytics auf allen ausgelieferten Seiten aktiv
-ist und die Caddy-CSP den Beacon nicht blockt.
+ist.
 
 Lauf: python3 -m pytest scripts/test_cf_analytics.py -v
 
@@ -8,8 +8,10 @@ aktiver Beacon-Tag je Seite, mit dem Token aus der Referenzseite.
 
 Die Prüfung der gebauten Artefakte setzt einen vorherigen Build voraus
 (`npm run build` je Anwendung); nur ein komplett ungebauter Checkout wird
-übersprungen. Die CSP-Prüfung liest das Caddy-Repo, Pfad überschreibbar per
-Umgebungsvariable `CADDYFILE`.
+übersprungen.
+
+Nicht hier: ob die CSP den Beacon durchlässt. Das steht im Caddy-Repo und wird
+an der echten HTTP-Antwort geprüft — `scripts/check-beacon-live.sh`.
 
 Deckung: nur Seiten aus diesem Repo. `/streamer`, `/twitch/onboarding` und
 `/twitch/faq` kommen aus `Deadlock-Twitch-Bot/website`, `/turnier` aus
@@ -21,17 +23,13 @@ Bewusst ohne Beacon: Admin-Oberflächen (`/builds/admin`), der interne
 Statusreport `cutover-report/` (`/report`), Overlay, Pause-Loop und die
 Demo-Dashboards.
 """
-import os
 import re
 from pathlib import Path
 
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-CADDYFILE = Path(os.environ.get("CADDYFILE", "/home/naniadm/Documents/Caddy/conf/Caddyfile"))
-
 BEACON_HOST = "https://static.cloudflareinsights.com"
-RUM_HOST = "https://cloudflareinsights.com"
 
 # Referenzseite: der Token steht in jeder ausgelieferten Seite, hier wird
 # geprüft, dass überall derselbe steht.
@@ -210,84 +208,3 @@ def _sri_regex() -> re.Pattern:
 )
 def test_sri_regel(tag, gemeldet):
     assert bool(_sri_regex().search(tag)) is gemeldet, tag
-
-
-# --- CSP ------------------------------------------------------------------
-
-def _direktiven(csp_zeile: str) -> dict[str, list[str]]:
-    roh = csp_zeile.split('"')[1] if '"' in csp_zeile else csp_zeile
-    werte = {}
-    for teil in roh.split(";"):
-        teil = teil.strip()
-        if not teil:
-            continue
-        name, *quellen = teil.split()
-        werte[name.lower()] = quellen
-    return werte
-
-
-def _csp_der_route(matcher: str) -> dict[str, list[str]]:
-    zeilen = CADDYFILE.read_text(encoding="utf-8").splitlines()
-    start = next(i for i, z in enumerate(zeilen) if z.strip().startswith(matcher))
-    # `@demo` definiert den Matcher und setzt die CSP erst im handle-Block.
-    treffer = [z for z in zeilen[start : start + 20] if "Content-Security-Policy" in z]
-    assert treffer, f"kein CSP-Header zu {matcher} gefunden"
-    return _direktiven(treffer[0])
-
-
-def _erlaubt(quellen: list[str], host: str) -> bool:
-    """Wildcards wie `https:` oder `*` erlauben den Host ebenfalls — sonst
-    besteht eine viel zu weite CSP den Sperrtest."""
-    return host in quellen or "https:" in quellen or "*" in quellen
-
-
-CSP_MIT_BEACON = ["@non_demo_embed", "@coaching_paths", "@patch_paths", "@turnier_paths"]
-CSP_OHNE_BEACON = ["@overlay_embed", "@pause_loop_page", "@demo_public", "@demo"]
-
-
-@pytest.mark.parametrize("matcher", CSP_MIT_BEACON)
-def test_csp_erlaubt_beacon(matcher):
-    if not CADDYFILE.exists():
-        pytest.skip("Caddy-Repo liegt auf diesem Rechner nicht")
-    csp = _csp_der_route(matcher)
-    assert "script-src" in csp, f"{matcher}: keine script-src-Direktive"
-    assert "connect-src" in csp, f"{matcher}: keine connect-src-Direktive"
-    assert BEACON_HOST in csp["script-src"], f"{matcher}: script-src blockt den Beacon"
-    assert RUM_HOST in csp["connect-src"], f"{matcher}: connect-src blockt den RUM-Upload"
-
-
-@pytest.mark.parametrize("matcher", CSP_OHNE_BEACON)
-def test_csp_ohne_beacon_bleibt_eng(matcher):
-    if not CADDYFILE.exists():
-        pytest.skip("Caddy-Repo liegt auf diesem Rechner nicht")
-    csp = _csp_der_route(matcher)
-    quellen = csp.get("script-src", csp.get("default-src", []))
-    assert not _erlaubt(quellen, BEACON_HOST), (
-        f"{matcher} hat keinen Beacon, die CSP sollte ihn auch nicht erlauben"
-    )
-
-
-@pytest.mark.parametrize("wurzel", ["dl-activity/dist", "builds/frontend/dist-ddl"])
-def test_route_mit_inline_csp_erlaubt_beacon(wurzel):
-    """`/aktivitaet` und `/videos` tragen ihre CSP inline in der Route."""
-    if not CADDYFILE.exists():
-        pytest.skip("Caddy-Repo liegt auf diesem Rechner nicht")
-    inhalt = CADDYFILE.read_text(encoding="utf-8")
-    stellen = [m.start() for m in re.finditer(re.escape(wurzel), inhalt)]
-    assert stellen, f"{wurzel} kommt im Caddyfile nicht vor"
-
-    # Ein Wurzelpfad steht mehrfach (Asset-Handler ohne CSP, HTML-Handler mit);
-    # die CSP steht mal vor, mal hinter der Wurzelangabe.
-    kandidaten = [
-        _direktiven(z)
-        for pos in stellen
-        for z in inhalt[max(0, pos - 800) : pos + 800].splitlines()
-        if "Content-Security-Policy" in z
-    ]
-    assert kandidaten, f"keine CSP in der Naehe von {wurzel}"
-    passend = [
-        c
-        for c in kandidaten
-        if BEACON_HOST in c.get("script-src", []) and RUM_HOST in c.get("connect-src", [])
-    ]
-    assert passend, f"CSP der Route zu {wurzel} blockt Beacon oder RUM-Upload"
