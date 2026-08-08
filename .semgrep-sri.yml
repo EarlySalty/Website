@@ -10,10 +10,11 @@ rules:
     # fester integrity-Hash wuerde das Skript frueher oder spaeter blockieren.
     # Das Skript laeuft im Seitenkontext und hat damit Zugriff auf das DOM —
     # die Ausnahme ist ein bewusstes Zugestaendnis, kein risikofreier Fall.
-    # Gemeldet wird, sobald ein echtes src-Attribut (nicht data-src) auf einen
-    # anderen externen Host als den Beacon zeigt — auch bei doppeltem src.
+    # Gemeldet wird, sobald ein echtes src-Attribut (nicht data-src) auf etwas
+    # anderes zeigt als exakt die https-URL des Beacons — also auch bei einem
+    # anderen Pfad auf demselben Host, bei http und bei doppeltem src.
     pattern-regex: >-
-      (?i)<script\b(?=[^>]*(?<![-\w])src\s*=\s*["'](?:https?:)?//(?!static\.cloudflareinsights\.com/))(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
+      (?i)<script\b(?=[^>]*(?<![-\w])src\s*=\s*["'](?!https://static\.cloudflareinsights\.com/beacon\.min\.js["'])(?:https?:)?//)(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
 
   - id: html.external-stylesheet-missing-sri
     languages: [generic]
