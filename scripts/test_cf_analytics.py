@@ -2,6 +2,16 @@
 Seiten steht und die Caddy-CSP den Beacon nicht blockt.
 
 Lauf: python3 -m pytest scripts/test_cf_analytics.py -v
+
+Die Prüfung der gebauten Artefakte setzt einen vorherigen Build voraus
+(`npm run build` je Anwendung); fehlt ein `dist`, wird der Fall übersprungen
+statt rot gemeldet. Gleiches gilt für die CSP-Prüfung, wenn das Caddy-Repo auf
+dem Rechner nicht liegt.
+
+Bewusst ohne Beacon und deshalb nicht in den Listen:
+- Admin-Oberflächen (`/builds/admin`) — eigene Klicks wären sonst Besuche.
+- `cutover-report/` (`/report` auf earlysalty.com) — interner Statusreport auf
+  einer noindex-Domain, nicht Teil der Besucherzahlen.
 """
 import re
 from pathlib import Path
@@ -77,7 +87,8 @@ def test_build_artefakte_haben_snippet(muster):
     # Admin-Oberflaechen bleiben bewusst ohne Beacon, sonst zaehlen eigene
     # Verwaltungsklicks als Besuche.
     treffer = [p for p in REPO.glob(muster) if "/admin/" not in p.as_posix()]
-    assert treffer, f"kein Build-Artefakt fuer {muster} — erst npm run build"
+    if not treffer:
+        pytest.skip(f"kein Build-Artefakt fuer {muster} — erst npm run build")
     fehlend = [
         str(p.relative_to(REPO))
         for p in treffer
@@ -93,8 +104,34 @@ def test_hero_seiten_haben_snippet():
     assert not fehlend, f"Beacon fehlt in: {fehlend}"
 
 
+def test_sri_ausnahme_gilt_nur_fuer_den_echten_beacon_host():
+    """Die SRI-Regel darf nur den Cloudflare-Beacon durchlassen."""
+    regel = (REPO / ".semgrep-sri.yml").read_text(encoding="utf-8")
+    muster = next(
+        z.strip()
+        for z in regel.splitlines()
+        if z.strip().startswith("(?i)<script")
+    )
+    rx = re.compile(muster)
+
+    beacon = (
+        "<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js'"
+        " data-cf-beacon='{\"token\": \"x\"}'></script>"
+    )
+    fremd = "<script src='https://evil.example/x.js'></script>"
+    getarnt = "<script src='https://static.cloudflareinsights.com.evil.example/x.js'></script>"
+    attribut_trick = "<script src='https://evil.example/x.js' data-note='static.cloudflareinsights.com'></script>"
+
+    assert not rx.search(beacon), "Beacon wird faelschlich als Verstoss gemeldet"
+    assert rx.search(fremd), "fremdes Skript ohne SRI wird nicht gemeldet"
+    assert rx.search(getarnt), "getarnter Host umgeht die SRI-Pflicht"
+    assert rx.search(attribut_trick), "Attribut-Trick umgeht die SRI-Pflicht"
+
+
 @pytest.mark.parametrize("matcher", CSP_ROUTEN)
 def test_csp_erlaubt_beacon(matcher):
+    if not CADDYFILE.exists():
+        pytest.skip("Caddy-Repo liegt auf diesem Rechner nicht")
     zeilen = CADDYFILE.read_text(encoding="utf-8").splitlines()
     start = next(i for i, z in enumerate(zeilen) if z.strip().startswith(matcher))
     csp = next(

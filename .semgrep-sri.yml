@@ -5,12 +5,13 @@ rules:
       include: ["*.html", "**/*.html"]
     message: External scripts require integrity and crossorigin attributes.
     severity: ERROR
-    # Ausnahme static.cloudflareinsights.com: Cloudflare tauscht beacon.min.js
-    # unangekuendigt aus, ein fester integrity-Hash wuerde das Analytics-Skript
-    # frueher oder spaeter blockieren. Das Skript laeuft ohne Cookies und ohne
-    # Zugriff auf Seiteninhalte.
+    # Ausnahme nur fuer den Cloudflare-Beacon, und nur wenn er wirklich der
+    # src-Host ist: Cloudflare tauscht beacon.min.js unangekuendigt aus, ein
+    # fester integrity-Hash wuerde das Skript frueher oder spaeter blockieren.
+    # Das Skript laeuft im Seitenkontext und hat damit Zugriff auf das DOM —
+    # die Ausnahme ist ein bewusstes Zugestaendnis, kein risikofreier Fall.
     pattern-regex: >-
-      (?i)<script\b(?![^>]*\bstatic\.cloudflareinsights\.com\b)(?=[^>]*\bsrc\s*=\s*["'](?:https?:)?//)(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
+      (?i)<script\b(?![^>]*\bsrc\s*=\s*["'](?:https?:)?//static\.cloudflareinsights\.com/)(?=[^>]*\bsrc\s*=\s*["'](?:https?:)?//)(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
 
   - id: html.external-stylesheet-missing-sri
     languages: [generic]
