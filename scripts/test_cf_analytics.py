@@ -8,6 +8,12 @@ Die Prüfung der gebauten Artefakte setzt einen vorherigen Build voraus
 statt rot gemeldet. Gleiches gilt für die CSP-Prüfung, wenn das Caddy-Repo auf
 dem Rechner nicht liegt.
 
+Deckung: dieser Test prüft nur die Seiten, die aus diesem Repo ausgeliefert
+werden. `/streamer`, `/twitch/onboarding` und `/twitch/faq` kommen aus
+`Deadlock-Twitch-Bot/website`, `/turnier` aus `Deadlock-Turniere/frontend`,
+`/dokus` aus `Deadlock-Docs/public` — dort steht der Beacon jeweils in der
+eigenen Quelle. `dl-landing/streamer/index.html` ist nicht die Live-Route.
+
 Bewusst ohne Beacon und deshalb nicht in den Listen:
 - Admin-Oberflächen (`/builds/admin`) — eigene Klicks wären sonst Besuche.
 - `cutover-report/` (`/report` auf earlysalty.com) — interner Statusreport auf
@@ -97,6 +103,11 @@ def test_build_artefakte_haben_snippet(muster):
     # Verwaltungsklicks als Besuche.
     treffer = [p for p in REPO.glob(muster) if "/admin/" not in p.as_posix()]
     if not treffer:
+        # Nur ein komplett ungebauter Checkout darf uebersprungen werden; fehlt
+        # ein einzelnes dist, waehrend andere existieren, ist das ein Befund.
+        andere = [g for g in DIST_GLOBS if g != muster and any(REPO.glob(g))]
+        if andere:
+            pytest.fail(f"{muster} fehlt, andere dist-Verzeichnisse existieren — Build unvollstaendig")
         pytest.skip(f"kein Build-Artefakt fuer {muster} — erst npm run build")
     fehlend = [
         str(p.relative_to(REPO))

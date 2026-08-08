@@ -33,13 +33,24 @@ def inject(path: Path) -> str:
     return "ok"
 
 
+# Seiten, die bewusst ohne Beacon bleiben: Admin-Oberflaechen und der interne
+# Statusreport. Bei einer Verzeichniseingabe werden sie uebersprungen, sonst
+# zaehlen eigene Verwaltungsklicks als Besuche.
+AUSGENOMMEN = ("/admin/", "/cutover-report/", "/.superpowers/", "/node_modules/")
+
+
+def ausgenommen(p: Path) -> bool:
+    return any(teil in p.as_posix() for teil in AUSGENOMMEN)
+
+
 def main(argv: list[str]) -> int:
     targets: list[Path] = []
     for arg in argv:
         p = Path(arg)
         if p.is_dir():
-            targets.extend(sorted(p.rglob("*.html")))
+            targets.extend(t for t in sorted(p.rglob("*.html")) if not ausgenommen(t))
         else:
+            # Eine einzeln benannte Datei ist eine bewusste Entscheidung.
             targets.append(p)
 
     counts = {"ok": 0, "skip": 0, "no-body": 0}
