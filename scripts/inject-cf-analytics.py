@@ -8,7 +8,6 @@ import re
 import sys
 from pathlib import Path
 
-MARKER = "static.cloudflareinsights.com"
 # Der Beacon-Token steht ohnehin in jeder ausgelieferten Seite. Er wird aus der
 # Referenzseite gelesen, damit er nur an einer Stelle im Repo gepflegt wird.
 REFERENZ = Path(__file__).resolve().parent.parent / "dl-landing/index.html"
@@ -19,11 +18,18 @@ SNIPPET = (
     f"data-cf-beacon='{{\"token\": \"{TOKEN}\"}}'></script>"
     "<!-- End Cloudflare Web Analytics -->\n"
 )
+# Als "schon vorhanden" zaehlt nur ein echter Beacon-Tag mit passendem Token —
+# ein Kommentar oder eine fremde URL mit demselben Host reicht nicht.
+BEACON_TAG = re.compile(
+    r"<script\b[^>]*\bsrc\s*=\s*[\"']https://static\.cloudflareinsights\.com/beacon\.min\.js[\"']"
+    r"[^>]*\bdata-cf-beacon\s*=\s*'[^']*\"token\":\s*\"" + TOKEN + r"\"",
+    re.IGNORECASE,
+)
 
 
 def inject(path: Path) -> str:
     text = path.read_text(encoding="utf-8")
-    if MARKER in text:
+    if BEACON_TAG.search(text):
         return "skip"
     idx = text.rfind("</body>")
     if idx == -1:
@@ -44,6 +50,10 @@ def ausgenommen(p: Path) -> bool:
 
 
 def main(argv: list[str]) -> int:
+    if not argv:
+        print(__doc__, file=sys.stderr)
+        return 2
+
     targets: list[Path] = []
     for arg in argv:
         p = Path(arg)

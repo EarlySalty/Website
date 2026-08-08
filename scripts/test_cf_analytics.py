@@ -19,7 +19,9 @@ Bewusst ohne Beacon und deshalb nicht in den Listen:
 - `cutover-report/` (`/report` auf earlysalty.com) — interner Statusreport auf
   einer noindex-Domain, nicht Teil der Besucherzahlen.
 """
+import importlib.util
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -176,3 +178,46 @@ def test_csp_erlaubt_beacon(matcher):
     connect_teil = next(t for t in csp.split("; ") if t.lstrip().startswith("connect-src"))
     assert BEACON_HOST in script_teil, f"{matcher}: script-src blockt den Beacon"
     assert RUM_HOST in connect_teil, f"{matcher}: connect-src blockt den RUM-Upload"
+
+
+# --- Verhalten des Injektionsskripts selbst -------------------------------
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+_spec = importlib.util.spec_from_file_location(
+    "inject_cf_analytics", Path(__file__).resolve().parent / "inject-cf-analytics.py"
+)
+injector = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(injector)
+
+
+def test_injektor_faellt_nicht_auf_blossen_hostnamen_herein(tmp_path):
+    seite = tmp_path / "index.html"
+    seite.write_text(
+        "<html><body><!-- static.cloudflareinsights.com war mal geplant -->\n</body></html>",
+        encoding="utf-8",
+    )
+    assert injector.inject(seite) == "ok"
+    assert snippet_vorhanden(seite.read_text(encoding="utf-8"))
+
+
+def test_injektor_ist_idempotent(tmp_path):
+    seite = tmp_path / "index.html"
+    seite.write_text("<html><body>\n</body></html>", encoding="utf-8")
+    assert injector.inject(seite) == "ok"
+    assert injector.inject(seite) == "skip"
+    assert seite.read_text(encoding="utf-8").count("beacon.min.js") == 1
+
+
+def test_injektor_ohne_ziel_meldet_fehler(capsys):
+    assert injector.main([]) == 2
+
+
+def test_injektor_ueberspringt_ausgenommene_pfade(tmp_path):
+    admin = tmp_path / "admin"
+    admin.mkdir()
+    (admin / "index.html").write_text("<html><body>\n</body></html>", encoding="utf-8")
+    (tmp_path / "index.html").write_text("<html><body>\n</body></html>", encoding="utf-8")
+
+    assert injector.main([str(tmp_path)]) == 0
+    assert not snippet_vorhanden((admin / "index.html").read_text(encoding="utf-8"))
+    assert snippet_vorhanden((tmp_path / "index.html").read_text(encoding="utf-8"))
