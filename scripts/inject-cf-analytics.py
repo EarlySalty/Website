@@ -49,7 +49,9 @@ def main(argv: list[str]) -> int:
         if result != "skip":
             print(f"{result}: {t}")
     print(f"\neingefügt={counts['ok']} bereits={counts['skip']} ohne-body={counts['no-body']}")
-    return 0
+    # Ausgelassene Seiten sind ein Fehlschlag, sonst wertet eine Automatisierung
+    # sie als erledigt.
+    return 1 if counts["no-body"] else 0
 
 
 if __name__ == "__main__":

@@ -71,8 +71,17 @@ CSP_ROUTEN = [
 ]
 
 
+# Ein loser Substring-Treffer wuerde auch ein Kommentar erfuellen — geprueft
+# wird der vollstaendige Script-Tag mit Beacon-src und passendem Token.
+BEACON_TAG = re.compile(
+    r"<script\b[^>]*\bsrc\s*=\s*[\"']https://static\.cloudflareinsights\.com/beacon\.min\.js[\"']"
+    r"[^>]*\bdata-cf-beacon\s*=\s*'[^']*\"token\":\s*\"" + TOKEN + r"\"",
+    re.IGNORECASE,
+)
+
+
 def snippet_vorhanden(text: str) -> bool:
-    return BEACON_HOST in text and TOKEN in text
+    return BEACON_TAG.search(text) is not None
 
 
 @pytest.mark.parametrize("rel", QUELLEN)
@@ -121,11 +130,26 @@ def test_sri_ausnahme_gilt_nur_fuer_den_echten_beacon_host():
     fremd = "<script src='https://evil.example/x.js'></script>"
     getarnt = "<script src='https://static.cloudflareinsights.com.evil.example/x.js'></script>"
     attribut_trick = "<script src='https://evil.example/x.js' data-note='static.cloudflareinsights.com'></script>"
+    data_src_trick = (
+        "<script data-src='https://static.cloudflareinsights.com/beacon.min.js'"
+        " src='https://evil.example/x.js'></script>"
+    )
+    doppeltes_src = (
+        "<script src='https://evil.example/x.js'"
+        " src='https://static.cloudflareinsights.com/beacon.min.js'></script>"
+    )
+    mit_sri = (
+        "<script src='https://cdn.example/x.js' integrity='sha384-abc'"
+        " crossorigin='anonymous'></script>"
+    )
 
     assert not rx.search(beacon), "Beacon wird faelschlich als Verstoss gemeldet"
+    assert not rx.search(mit_sri), "korrekt abgesichertes Skript wird gemeldet"
     assert rx.search(fremd), "fremdes Skript ohne SRI wird nicht gemeldet"
     assert rx.search(getarnt), "getarnter Host umgeht die SRI-Pflicht"
     assert rx.search(attribut_trick), "Attribut-Trick umgeht die SRI-Pflicht"
+    assert rx.search(data_src_trick), "data-src umgeht die SRI-Pflicht"
+    assert rx.search(doppeltes_src), "doppeltes src umgeht die SRI-Pflicht"
 
 
 @pytest.mark.parametrize("matcher", CSP_ROUTEN)
