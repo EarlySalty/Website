@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""Fügt das Cloudflare-Web-Analytics-Snippet idempotent vor </body> ein.
+
+Aufruf: inject-cf-analytics.py <datei-oder-verzeichnis> ...
+Verzeichnisse werden rekursiv nach *.html durchsucht.
+"""
+import re
+import sys
+from pathlib import Path
+
+MARKER = "static.cloudflareinsights.com"
+# Der Beacon-Token steht ohnehin in jeder ausgelieferten Seite. Er wird aus der
+# Referenzseite gelesen, damit er nur an einer Stelle im Repo gepflegt wird.
+REFERENZ = Path(__file__).resolve().parent.parent / "dl-landing/index.html"
+TOKEN = re.search(r'"token":\s*"([0-9a-f]{32})"', REFERENZ.read_text(encoding="utf-8")).group(1)
+SNIPPET = (
+    "  <!-- Cloudflare Web Analytics -->"
+    "<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' "
+    f"data-cf-beacon='{{\"token\": \"{TOKEN}\"}}'></script>"
+    "<!-- End Cloudflare Web Analytics -->\n"
+)
+
+
+def inject(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    if MARKER in text:
+        return "skip"
+    idx = text.rfind("</body>")
+    if idx == -1:
+        return "no-body"
+    line_start = text.rfind("\n", 0, idx) + 1
+    path.write_text(text[:line_start] + SNIPPET + text[line_start:], encoding="utf-8")
+    return "ok"
+
+
+def main(argv: list[str]) -> int:
+    targets: list[Path] = []
+    for arg in argv:
+        p = Path(arg)
+        if p.is_dir():
+            targets.extend(sorted(p.rglob("*.html")))
+        else:
+            targets.append(p)
+
+    counts = {"ok": 0, "skip": 0, "no-body": 0}
+    for t in targets:
+        result = inject(t)
+        counts[result] += 1
+        if result != "skip":
+            print(f"{result}: {t}")
+    print(f"\neingefügt={counts['ok']} bereits={counts['skip']} ohne-body={counts['no-body']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
