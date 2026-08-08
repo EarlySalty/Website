@@ -146,6 +146,23 @@ def test_ausgenommene_seite_hat_gar_keinen_beacon(rel):
          " data-cf-beacon='{\"token\": \"TOKEN\"'></script>", False),
         # Token als Praefix eines laengeren Query-Wertes zaehlt nicht.
         ("<script src='https://static.cloudflareinsights.com/beacon.min.js?token=TOKENxy'></script>", False),
+        # Der Token muss im src stehen, nicht irgendwo sonst im Tag.
+        ("<script src='https://static.cloudflareinsights.com/beacon.min.js'"
+         " data-note='?token=TOKEN'></script>", False),
+        # Nicht ausfuehrbare Typen laden kein Skript.
+        ("<script type='application/json'"
+         " src='https://static.cloudflareinsights.com/beacon.min.js'"
+         " data-cf-beacon='{\"token\": \"TOKEN\"}'></script>", False),
+        # Innerhalb eines template-Elements passiert nichts.
+        ("<template><script src='https://static.cloudflareinsights.com/beacon.min.js'"
+         " data-cf-beacon='{\"token\": \"TOKEN\"}'></script></template>", False),
+        # Unquotiertes src laedt der Browser genauso.
+        ("<script src=https://static.cloudflareinsights.com/beacon.min.js"
+         " data-cf-beacon='{\"token\": \"TOKEN\"}'></script>", True),
+        # Beim doppelten src gilt das erste — hier der fremde Host.
+        ("<script src='https://evil.example/x.js'"
+         " src='https://static.cloudflareinsights.com/beacon.min.js'"
+         " data-cf-beacon='{\"token\": \"TOKEN\"}'></script>", False),
         ("<html><body>nichts</body></html>", False),
     ],
 )
@@ -221,6 +238,17 @@ RUM = "https://cloudflareinsights.com"
         (["connect-src 'self' https://cloudflareinsights.com"], VERBINDUNG, RUM, True),
         # Der Beacon-Host ist nicht der RUM-Host.
         (["connect-src https://static.cloudflareinsights.com"], VERBINDUNG, RUM, False),
+        # Eine Wildcard deckt Unterdomains ab, nicht den nackten Host.
+        (["connect-src *.cloudflareinsights.com"], VERBINDUNG, RUM, False),
+        (["script-src *.cloudflareinsights.com"], SKRIPT, BEACON, True),
+        # Wiederholte Direktiven ignoriert der Browser; die erste gilt.
+        (["script-src 'self'; script-src https://static.cloudflareinsights.com"],
+         SKRIPT, BEACON, False),
+        # 'none' neben echten Quellen ist wirkungslos.
+        (["script-src 'none' https://static.cloudflareinsights.com"], SKRIPT, BEACON, True),
+        # strict-dynamic setzt Host-Quellen ausser Kraft.
+        (["script-src 'strict-dynamic' https://static.cloudflareinsights.com"],
+         SKRIPT, BEACON, False),
     ],
 )
 def test_csp_auswertung(header, kette, host, erwartet):

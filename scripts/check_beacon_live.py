@@ -68,7 +68,8 @@ def csp_quellen(header_werte, kette):
         direktiven = {}
         for teil in wert.split(";"):
             felder = teil.split()
-            if felder:
+            # Wiederholte Direktiven ignoriert der Browser; die erste gilt.
+            if felder and felder[0].lower() not in direktiven:
                 direktiven[felder[0].lower()] = [f.lower() for f in felder[1:]]
         for name in kette:
             if name in direktiven:
@@ -79,6 +80,17 @@ def csp_quellen(header_werte, kette):
     return ergebnis
 
 
+def _quelle_passt(quelle, host_ohne_schema):
+    if quelle in ("*", "https:", host_ohne_schema):
+        return True
+    if quelle.startswith("https://"):
+        return quelle[len("https://"):].rstrip("/") == host_ohne_schema
+    # `*.beispiel.de` deckt Unterdomains ab, nicht den nackten Host selbst.
+    if quelle.startswith("*."):
+        return host_ohne_schema.endswith("." + quelle[2:])
+    return False
+
+
 def erlaubt(header_werte, kette, host):
     """Jede gesetzte Policy muss den Host zulassen — mehrere CSP-Header wirken
     kumulativ, die strengste gewinnt."""
@@ -86,14 +98,15 @@ def erlaubt(header_werte, kette, host):
     for quellen in csp_quellen(header_werte, kette):
         if quellen is None:
             continue
-        if "'none'" in quellen:
+        # `'strict-dynamic'` setzt Host-Quellen ausser Kraft: ein vom Parser
+        # eingefügtes Tag lädt dann nur mit Nonce oder Hash. Das kann dieser
+        # Check nicht beurteilen, also gilt es als nicht durchgelassen.
+        if "'strict-dynamic'" in quellen:
             return False
-        treffer = any(
-            q in ("*", "https:", host, host_ohne_schema, f"*.{host_ohne_schema}")
-            or (q.startswith("*.") and host_ohne_schema.endswith(q[1:]))
-            for q in quellen
-        )
-        if not treffer:
+        echte_quellen = [q for q in quellen if q != "'none'"]
+        if not echte_quellen:
+            return False
+        if not any(_quelle_passt(q, host_ohne_schema) for q in echte_quellen):
             return False
     return True
 
@@ -115,10 +128,10 @@ def pruefe(basis, route, token):
     if not beacon_aktiv(koerper, token):
         return False, "kein aktiver Beacon mit dem erwarteten Token"
     if not erlaubt(csp, ["script-src-elem", "script-src", "default-src"], BEACON_HOST):
-        return False, "CSP laesst das Beacon-Skript nicht zu"
+        return False, "CSP lässt das Beacon-Skript nicht zu"
     if not erlaubt(csp, ["connect-src", "default-src"], RUM_HOST):
-        return False, "CSP laesst den RUM-Upload nicht zu"
-    return True, "Beacon ausgeliefert, CSP durchlaessig"
+        return False, "CSP lässt den RUM-Upload nicht zu"
+    return True, "Beacon ausgeliefert, CSP durchlässig"
 
 
 def main():
