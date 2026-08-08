@@ -14,7 +14,7 @@ rules:
     # anderes zeigt als exakt die https-URL des Beacons — also auch bei einem
     # anderen Pfad auf demselben Host, bei http und bei doppeltem src.
     pattern-regex: >-
-      (?i)<script\b(?=[^>]*(?<![-\w])src\s*=\s*["'](?!https://static\.cloudflareinsights\.com/beacon\.min\.js["'])(?:https?:)?//)(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
+      (?i)<script\b(?=[^>]*(?<![-\w])src\s*=\s*["'](?!(?-i:https://static\.cloudflareinsights\.com/beacon\.min\.js)(?:\?[^"']*)?["'])(?:https?:)?//)(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
 
   - id: html.external-stylesheet-missing-sri
     languages: [generic]
