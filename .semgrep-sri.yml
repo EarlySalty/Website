@@ -5,8 +5,18 @@ rules:
       include: ["*.html", "**/*.html"]
     message: External scripts require integrity and crossorigin attributes.
     severity: ERROR
+    # Ausnahme nur fuer den Cloudflare-Beacon, und nur wenn er wirklich der
+    # src-Host ist: Cloudflare tauscht beacon.min.js unangekuendigt aus, ein
+    # fester integrity-Hash wuerde das Skript frueher oder spaeter blockieren.
+    # Das Skript laeuft im Seitenkontext und hat damit Zugriff auf das DOM —
+    # die Ausnahme ist ein bewusstes Zugestaendnis, kein risikofreier Fall.
+    # Gemeldet wird, sobald ein echtes src-Attribut (nicht data-src) auf etwas
+    # anderes zeigt als exakt die https-URL des Beacons — also auch bei einem
+    # anderen Pfad auf demselben Host, bei http und bei doppeltem src. Der
+    # Wert wird in beiden Schreibweisen geprueft, mit und ohne
+    # Anfuehrungszeichen: der Browser laedt auch ein unquotiertes src.
     pattern-regex: >-
-      (?i)<script\b(?=[^>]*\bsrc\s*=\s*["'](?:https?:)?//)(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
+      (?i)<script\b(?=[^>]*(?<![-\w])src\s*=\s*(?:["'](?!(?-i:https://static\.cloudflareinsights\.com/beacon\.min\.js)(?:\?[^"']*)?["'])(?:https?:)?//|(?!["'])(?!(?-i:https://static\.cloudflareinsights\.com/beacon\.min\.js)(?:\?[^\s>]*)?(?=[\s>]))(?:https?:)?//))(?!(?=[^>]*\bintegrity\s*=)(?=[^>]*\bcrossorigin\s*=))[^>]*>
 
   - id: html.external-stylesheet-missing-sri
     languages: [generic]
