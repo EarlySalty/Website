@@ -28,7 +28,10 @@ from beacon import (  # noqa: E402
 STANDARD_BASIS = "https://deutsche-deadlock-community.de"
 
 # Öffentliche Routen mit Beacon. Bewusst draussen: /builds/admin, /report,
-# /twitch/overlay, /twitch/pause-loop und die Demo-Dashboards.
+# /twitch/overlay, /twitch/pause-loop und die Demo-Dashboards. Ebenfalls
+# draussen: /dokus — der Korpus dort verbietet per Vertrag jedes Skript und
+# jedes externe Asset, damit die Seiten offline lesbar und quellenrein
+# bleiben; das ist mehr wert als die Besucherzahl.
 ROUTEN = [
     "/",
     "/beitreten",
@@ -47,7 +50,6 @@ ROUTEN = [
     "/streamer",
     "/twitch/faq",
     "/twitch/onboarding",
-    "/dokus",
     "/new/",
     "/new/audit/",
 ]

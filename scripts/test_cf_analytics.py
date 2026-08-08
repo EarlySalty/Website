@@ -15,13 +15,14 @@ an der echten HTTP-Antwort geprüft — `scripts/check_beacon_live.py`.
 
 Deckung: nur Seiten aus diesem Repo. `/streamer`, `/twitch/onboarding` und
 `/twitch/faq` werden aus `Deadlock-Twitch-Bot/website` ausgeliefert, `/turnier`
-aus `Deadlock-Turniere/frontend`, `/dokus` aus `Deadlock-Docs/public`; diese
-Routen prüft allein der Live-Check, hier kann darüber nichts stehen.
-`dl-landing/streamer/index.html` ist nicht die Live-Route.
+aus `Deadlock-Turniere/frontend`; diese Routen prüft allein der Live-Check,
+hier kann darüber nichts stehen. `dl-landing/streamer/index.html` ist nicht
+die Live-Route.
 
 Bewusst ohne Beacon: Admin-Oberflächen (`/builds/admin`), der interne
-Statusreport `cutover-report/` (`/report`), Overlay, Pause-Loop und die
-Demo-Dashboards.
+Statusreport `cutover-report/` (`/report`), Overlay, Pause-Loop, die
+Demo-Dashboards und `/dokus` (dessen Korpus-Vertrag verbietet Skripte und
+externe Assets).
 """
 import re
 import sys
