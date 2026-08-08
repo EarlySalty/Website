@@ -11,66 +11,33 @@ Die Prüfung der gebauten Artefakte setzt einen vorherigen Build voraus
 übersprungen.
 
 Nicht hier: ob die CSP den Beacon durchlässt. Das steht im Caddy-Repo und wird
-an der echten HTTP-Antwort geprüft — `scripts/check-beacon-live.sh`.
+an der echten HTTP-Antwort geprüft — `scripts/check_beacon_live.py`.
 
 Deckung: nur Seiten aus diesem Repo. `/streamer`, `/twitch/onboarding` und
-`/twitch/faq` kommen aus `Deadlock-Twitch-Bot/website`, `/turnier` aus
-`Deadlock-Turniere/frontend`, `/dokus` aus `Deadlock-Docs/public` — dort steht
-der Beacon in der eigenen Quelle. `dl-landing/streamer/index.html` ist nicht
-die Live-Route.
+`/twitch/faq` werden aus `Deadlock-Twitch-Bot/website` ausgeliefert, `/turnier`
+aus `Deadlock-Turniere/frontend`, `/dokus` aus `Deadlock-Docs/public`; diese
+Routen prüft allein der Live-Check, hier kann darüber nichts stehen.
+`dl-landing/streamer/index.html` ist nicht die Live-Route.
 
 Bewusst ohne Beacon: Admin-Oberflächen (`/builds/admin`), der interne
 Statusreport `cutover-report/` (`/report`), Overlay, Pause-Loop und die
 Demo-Dashboards.
 """
 import re
+import sys
 from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parent.parent
-BEACON_HOST = "https://static.cloudflareinsights.com"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from beacon import REPO, aktive_beacons, token_aus_referenz  # noqa: E402
+from beacon import beacon_aktiv as _beacon_aktiv  # noqa: E402
 
-# Referenzseite: der Token steht in jeder ausgelieferten Seite, hier wird
-# geprüft, dass überall derselbe steht.
-TOKEN = re.search(
-    r'"token":\s*"([0-9a-f]{32})"',
-    (REPO / "dl-landing/index.html").read_text(encoding="utf-8"),
-).group(1)
-
-# Ein Beacon-Tag, unabhängig von Token und Attributfolge. `(?<![-\w])src`
-# schliesst `data-src` und Konsorten aus; der Pfad wird case-sensitiv geprüft,
-# weil URL-Pfade es sind.
-BEACON_TAG = re.compile(
-    r"<script\b[^>]*(?<![-\w])src\s*=\s*[\"']"
-    r"(?-i:https://static\.cloudflareinsights\.com/beacon\.min\.js)"
-    r"(?:\?[^\"']*)?[\"'][^>]*>",
-    re.IGNORECASE,
-)
-KOMMENTAR = re.compile(r"<!--.*?-->", re.DOTALL)
-
-
-def aktive_beacons(text: str) -> list[str]:
-    """Beacon-Tags ausserhalb von HTML-Kommentaren — ein auskommentierter Tag
-    lädt nichts und zählt deshalb nicht."""
-    ohne_kommentare = KOMMENTAR.sub(lambda m: " " * len(m.group(0)), text)
-    return BEACON_TAG.findall(ohne_kommentare)
+TOKEN = token_aus_referenz()
 
 
 def beacon_aktiv(text: str) -> bool:
-    """Genau ein aktiver Beacon, und zwar mit dem aktuellen Token. Der Token
-    zählt nur im dafür vorgesehenen Attribut, nicht irgendwo im Tag."""
-    treffer = aktive_beacons(text)
-    if len(treffer) != 1:
-        return False
-    tag = treffer[0]
-    im_attribut = re.search(
-        r"data-cf-beacon\s*=\s*(['\"])(?P<wert>.*?)\1", tag, re.IGNORECASE | re.DOTALL
-    )
-    if im_attribut:
-        return bool(re.search(r'"token"\s*:\s*"' + TOKEN + r'"', im_attribut.group("wert")))
-    # Cloudflare erlaubt den Token auch als Query-Parameter am src.
-    return bool(re.search(r"[?&]token=" + TOKEN + r"\b", tag))
+    return _beacon_aktiv(text, TOKEN)
 
 
 # --- ausgelieferte Seiten -------------------------------------------------
@@ -171,6 +138,14 @@ def test_ausgenommene_seite_hat_gar_keinen_beacon(rel):
         # data-src laedt nichts.
         ("<script data-src='https://static.cloudflareinsights.com/beacon.min.js'"
          " data-cf-beacon='{\"token\": \"TOKEN\"}'></script>", False),
+        # Ein anders benanntes Attribut konfiguriert nichts.
+        ("<script src='https://static.cloudflareinsights.com/beacon.min.js'"
+         " x-data-cf-beacon='{\"token\": \"TOKEN\"}'></script>", False),
+        # Cloudflare liest den Wert als JSON; kaputtes JSON konfiguriert nichts.
+        ("<script src='https://static.cloudflareinsights.com/beacon.min.js'"
+         " data-cf-beacon='{\"token\": \"TOKEN\"'></script>", False),
+        # Token als Praefix eines laengeren Query-Wertes zaehlt nicht.
+        ("<script src='https://static.cloudflareinsights.com/beacon.min.js?token=TOKENxy'></script>", False),
         ("<html><body>nichts</body></html>", False),
     ],
 )
@@ -204,7 +179,49 @@ def _sri_regex() -> re.Pattern:
          " src='https://evil.example/x.js'></script>", True),
         ("<script src='https://evil.example/x.js'"
          " src='https://static.cloudflareinsights.com/beacon.min.js'></script>", True),
+        # Unquotiertes src laedt der Browser genauso.
+        ("<script src=https://static.cloudflareinsights.com/beacon.min.js></script>", False),
+        ("<script src=https://evil.example/x.js></script>", True),
+        ("<script src=https://evil.example/x.js"
+         " src='https://static.cloudflareinsights.com/beacon.min.js'></script>", True),
+        ("<script src=https://static.cloudflareinsights.com/beacon.min.js.evil/x.js></script>", True),
     ],
 )
 def test_sri_regel(tag, gemeldet):
     assert bool(_sri_regex().search(tag)) is gemeldet, tag
+
+
+# --- CSP-Auswertung des Live-Checks ---------------------------------------
+
+from check_beacon_live import erlaubt  # noqa: E402
+
+SKRIPT = ["script-src-elem", "script-src", "default-src"]
+VERBINDUNG = ["connect-src", "default-src"]
+BEACON = "https://static.cloudflareinsights.com"
+RUM = "https://cloudflareinsights.com"
+
+
+@pytest.mark.parametrize(
+    "header,kette,host,erwartet",
+    [
+        ([], SKRIPT, BEACON, True),
+        (["script-src 'self' https://static.cloudflareinsights.com"], SKRIPT, BEACON, True),
+        (["script-src 'self'"], SKRIPT, BEACON, False),
+        # Ohne script-src greift default-src.
+        (["default-src 'self'"], SKRIPT, BEACON, False),
+        (["default-src 'self' https://static.cloudflareinsights.com"], SKRIPT, BEACON, True),
+        # script-src-elem schlaegt script-src fuer Tags.
+        (["script-src https://static.cloudflareinsights.com; script-src-elem 'self'"],
+         SKRIPT, BEACON, False),
+        # Zwei Policies wirken kumulativ, die strengste gewinnt.
+        (["script-src https://static.cloudflareinsights.com", "script-src 'self'"],
+         SKRIPT, BEACON, False),
+        (["default-src *"], VERBINDUNG, RUM, True),
+        (["connect-src 'none'"], VERBINDUNG, RUM, False),
+        (["connect-src 'self' https://cloudflareinsights.com"], VERBINDUNG, RUM, True),
+        # Der Beacon-Host ist nicht der RUM-Host.
+        (["connect-src https://static.cloudflareinsights.com"], VERBINDUNG, RUM, False),
+    ],
+)
+def test_csp_auswertung(header, kette, host, erwartet):
+    assert erlaubt(header, kette, host) is erwartet

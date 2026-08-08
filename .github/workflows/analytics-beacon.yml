@@ -1,0 +1,45 @@
+name: "📈 Analytics-Beacon"
+
+# Eigener Workflow, damit die Beacon-Pruefung bei jedem Push und Pull Request
+# laeuft, ohne die bestehenden Lint-Jobs mitzuziehen.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  analytics-beacon:
+    name: "📈 Analytics-Beacon"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+
+      - name: Install pytest
+        run: pip install pytest==9.1.1
+
+      # Baut die Vite-Projekte, damit die Suite auch die ausgelieferten
+      # Artefakte prueft und nicht nur die Quellen.
+      - name: Build Vite-Projekte
+        run: |
+          for projekt in dl-landing dl-activity dl-patch dl-tierlist dl-coaching; do
+            (cd "$projekt" && npm ci && npm run build)
+          done
+
+      # Der Live-Check gegen die echten HTTP-Antworten laeuft nicht in CI:
+      # er braucht die ausgelieferte Seite samt CSP aus dem Caddy-Repo.
+      - name: Beacon-Suite
+        run: python3 -m pytest scripts/test_cf_analytics.py -v
