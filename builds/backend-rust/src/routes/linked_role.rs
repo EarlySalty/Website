@@ -343,7 +343,10 @@ pub async fn sync_user(
     let providers = match body.get("provider").and_then(Value::as_str) {
         Some(raw) => vec![LinkedRoleProvider::parse(raw)
             .ok_or_else(|| AppError::bad_request(MSG_UNKNOWN_PROVIDER))?],
-        None => LinkedRoleProvider::ALL.to_vec(),
+        // Ohne Angabe nur Steam: bestehende Aufrufer (Discord-Bot beim Steam-Link)
+        // haben nie Creator-Arbeit bestellt, und ein Fehler auf der Creator-Seite
+        // wuerde sie zu einem Retry eines schon erledigten Steam-Pushes treiben.
+        None => vec![LinkedRoleProvider::Steam],
     };
 
     if body

@@ -784,6 +784,9 @@ pub fn spawn_sync_worker(state: AppState) {
     }
     tokio::spawn(async move {
         let interval = Duration::from_secs(state.cfg.discord_role_connection_sync_interval_seconds);
+        // Gezaehlt werden Durchlaeufe, nicht Sekunden: ein Durchlauf dauert
+        // interval plus Verarbeitung, der reale Abstand liegt also etwas ueber
+        // dem konfigurierten Wert. Fuer einen Abgleich im Stundenraster reicht das.
         let ticks_per_reconcile = (state.cfg.discord_role_connection_creator_reconcile_seconds
             / interval.as_secs().max(1))
         .max(1);
@@ -869,6 +872,7 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
             sqlx::query(
                 "UPDATE core.discord_role_connection_sync_state \
                     SET pending=TRUE, locked_at=NULL, last_error=$3, \
+                        attempts=attempts + 1, \
                         next_attempt_at=now() + interval '1 hour', updated_at=now() \
                   WHERE discord_id=$1 AND provider=$2",
             )
@@ -1104,40 +1108,82 @@ where
     }
 }
 
+/// SQL, das das Creator-Profil aus der Twitch-Datenbank holt.
+///
+/// Quelle sind die drei Tabellen, die dort wirklich gepflegt werden (Stand
+/// 2026-08-13, gezaehlt gegen die Live-Datenbank): `twitch_streamer_identities`
+/// (896 Zeilen, 52 davon mit `discord_user_id`), `twitch_raid_auth` (64) und
+/// `twitch_partners` (65, davon 61 nicht departnered). Die frueher naheliegende
+/// `streamer_dim` hat 0 Zeilen und wird von keinem Dienst beschrieben — sie haette
+/// jedem Creator dauerhaft "nicht verknuepft" gemeldet.
+///
+/// Alle drei Schluesselspalten sind TEXT, deshalb wird die Discord-ID als String
+/// gebunden. `updated_at` ist dort ebenfalls TEXT; die Sortierung ist damit
+/// lexikografisch, was bei ISO-Zeitstempeln der Zeitsortierung entspricht.
+pub const CREATOR_PROFILE_SQL: &str = "SELECT ident.twitch_login, \
+            COALESCE(part.status = 'active' \
+                     AND part.departnered_at IS NULL \
+                     AND part.admin_archived_at IS NULL, FALSE) AS is_partner, \
+            COALESCE(auth.twitch_user_id IS NOT NULL \
+                     AND COALESCE(auth.needs_reauth, FALSE) = FALSE, FALSE) AS twitch_oauth \
+       FROM public.twitch_streamer_identities AS ident \
+       LEFT JOIN public.twitch_raid_auth AS auth \
+              ON auth.twitch_user_id = ident.twitch_user_id \
+       LEFT JOIN public.twitch_partners AS part \
+              ON part.twitch_user_id = ident.twitch_user_id \
+      WHERE ident.discord_user_id = $1 \
+      ORDER BY twitch_oauth DESC, is_partner DESC, ident.updated_at DESC NULLS LAST \
+      LIMIT 1";
+
 pub async fn load_creator_profile(state: &AppState, discord_id: i64) -> AppResult<CreatorProfile> {
     let Some(pool) = state.twitch_pool.as_ref() else {
         return Err(AppError::service_unavailable(
             MSG_CREATOR_SOURCE_UNAVAILABLE,
         ));
     };
-    let row = sqlx::query(
-        "SELECT dim.twitch_login, \
-                COALESCE(dim.is_partner, FALSE) AS is_partner, \
-                COALESCE(auth.twitch_user_id IS NOT NULL \
-                         AND COALESCE(auth.needs_reauth, FALSE) = FALSE, FALSE) AS twitch_oauth \
-           FROM public.streamer_dim AS dim \
-           LEFT JOIN public.twitch_raid_auth AS auth \
-                  ON auth.twitch_user_id = dim.twitch_user_id \
-          WHERE dim.discord_user_id = $1 \
-            AND dim.archived_at IS NULL \
-          ORDER BY twitch_oauth DESC, dim.updated_at DESC NULLS LAST \
-          LIMIT 1",
+    let row = sqlx::query(CREATOR_PROFILE_SQL)
+        .bind(discord_id.to_string())
+        .fetch_optional(pool)
+        .await?;
+    let Some(row) = row else {
+        // "Kein Streamer-Eintrag" und "Eintrag da, nichts autorisiert" sehen von
+        // aussen gleich aus (beides Metadata "0"). Ohne diese Zeile ist eine tote
+        // Quelle im Betrieb nicht von einem unverknuepften User zu unterscheiden.
+        tracing::info!(
+            discord_id,
+            "Creator-Profil: keine Zeile in twitch_streamer_identities zu dieser Discord-ID"
+        );
+        return Ok(CreatorProfile::default());
+    };
+    Ok(CreatorProfile {
+        twitch_oauth: row.get("twitch_oauth"),
+        creator_approved: row.get("is_partner"),
+        // Leerer Login gilt als kein Login: der Payload filtert ihn ohnehin
+        // weg, und der Redirect soll dieselbe Entscheidung treffen.
+        twitch_login: row
+            .get::<Option<String>, _>("twitch_login")
+            .map(|login| login.trim().to_string())
+            .filter(|login| !login.is_empty()),
+    })
+}
+
+/// Zaehlt die Creator-Quelle einmal beim Start durch: Zeilen mit
+/// `discord_user_id` in `twitch_streamer_identities`. Ist das 0, kann der
+/// Creator-Provider niemandem eine Rolle geben, egal wie richtig der Code ist —
+/// genau der stille Ausfall, den eine tote Quelle erzeugt.
+pub async fn creator_source_health(state: &AppState) -> AppResult<i64> {
+    let Some(pool) = state.twitch_pool.as_ref() else {
+        return Err(AppError::service_unavailable(
+            MSG_CREATOR_SOURCE_UNAVAILABLE,
+        ));
+    };
+    let linked: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM public.twitch_streamer_identities \
+          WHERE COALESCE(discord_user_id, '') <> ''",
     )
-    .bind(discord_id.to_string())
-    .fetch_optional(pool)
+    .fetch_one(pool)
     .await?;
-    Ok(
-        row.map_or_else(CreatorProfile::default, |row| CreatorProfile {
-            twitch_oauth: row.get("twitch_oauth"),
-            creator_approved: row.get("is_partner"),
-            // Leerer Login gilt als kein Login: der Payload filtert ihn ohnehin
-            // weg, und der Redirect soll dieselbe Entscheidung treffen.
-            twitch_login: row
-                .get::<Option<String>, _>("twitch_login")
-                .map(|login| login.trim().to_string())
-                .filter(|login| !login.is_empty()),
-        }),
-    )
+    Ok(linked)
 }
 
 pub fn build_user_role_connection_payload(
@@ -1461,11 +1507,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn creator_profil_liest_streamer_dim_und_raid_auth() {
-        // Die Creator-Quelle liegt in einer fremden Datenbank; hier steht ein
-        // Minimal-Abbild ihres Schemas (twitch_analytics_schema.sql: alle drei
-        // Spalten TEXT bzw. BOOLEAN), damit Spaltennamen und Bindungstypen
-        // wirklich geprueft sind und nicht nur zur Laufzeit auffallen.
+    async fn creator_profil_liest_identitaeten_partner_und_raid_auth() {
+        // Was dieser Test leistet und was nicht: er prueft die Query-Logik gegen
+        // ein Abbild der Live-Spalten (alle Schluessel TEXT, updated_at TEXT) —
+        // also Spaltennamen, Bindungstypen und die drei Uebergaenge
+        // "keine Zeile" / "Zeile ohne Autorisierung" / "autorisiert". Ob die
+        // Tabellen in der echten Twitch-Datenbank gefuellt sind, kann er nicht
+        // beantworten; dafuer gibt es creator_source_health() beim Start.
         let role_client = Arc::new(MockRoleConnectionClient::new("940540"));
         let db = dl_central_db::testing::test_pool()
             .await
@@ -1479,14 +1527,20 @@ mod tests {
             role_client as DynDiscordRoleConnectionClient,
             Some(db.pool().clone()),
         );
+        // Die Wegwerf-Datenbank gehoert diesem Testlauf allein (test_pool legt sie
+        // pro Lauf an), deshalb duerfen hier fremde Tabellennamen entstehen.
         for statement in [
-            "CREATE TABLE IF NOT EXISTS public.streamer_dim (\
-                 twitch_login TEXT PRIMARY KEY, twitch_user_id TEXT, discord_user_id TEXT, \
-                 is_partner BOOLEAN DEFAULT FALSE, archived_at TIMESTAMPTZ, \
-                 updated_at TIMESTAMPTZ DEFAULT now())",
+            "CREATE TABLE IF NOT EXISTS public.twitch_streamer_identities (\
+                 twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, discord_user_id TEXT, \
+                 discord_display_name TEXT, is_on_discord INTEGER, created_at TEXT, \
+                 updated_at TEXT)",
             "CREATE TABLE IF NOT EXISTS public.twitch_raid_auth (\
-                 twitch_user_id TEXT PRIMARY KEY, needs_reauth BOOLEAN DEFAULT FALSE)",
-            "TRUNCATE public.streamer_dim, public.twitch_raid_auth",
+                 twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, needs_reauth BOOLEAN)",
+            "CREATE TABLE IF NOT EXISTS public.twitch_partners (\
+                 twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, status TEXT, \
+                 departnered_at TEXT, admin_archived_at TEXT)",
+            "TRUNCATE public.twitch_streamer_identities, public.twitch_raid_auth, \
+                      public.twitch_partners",
         ] {
             sqlx::query(statement)
                 .execute(&state.pool)
@@ -1500,16 +1554,21 @@ mod tests {
         assert!(!leer.twitch_oauth);
         assert!(!leer.creator_approved);
         assert_eq!(leer.twitch_login, None);
+        assert_eq!(
+            creator_source_health(&state).await.expect("health"),
+            0,
+            "leere Quelle muss beim Start als 0 sichtbar sein"
+        );
 
         sqlx::query(
-            "INSERT INTO public.streamer_dim \
-                 (twitch_login, twitch_user_id, discord_user_id, is_partner, updated_at) \
-             VALUES ('nani', '4242', $1, TRUE, now())",
+            "INSERT INTO public.twitch_streamer_identities \
+                 (twitch_user_id, twitch_login, discord_user_id, updated_at) \
+             VALUES ('4242', 'nani', $1, '2026-08-13T10:00:00Z')",
         )
         .bind(940_540_i64.to_string())
         .execute(&state.pool)
         .await
-        .expect("streamer zeile");
+        .expect("identitaet");
 
         let ohne_auth = load_creator_profile(&state, 940_540)
             .await
@@ -1518,18 +1577,45 @@ mod tests {
             !ohne_auth.twitch_oauth,
             "ohne Zeile in twitch_raid_auth ist unsere App nicht autorisiert"
         );
-        assert!(ohne_auth.creator_approved);
-        assert_eq!(ohne_auth.twitch_login.as_deref(), Some("nani"));
-
-        sqlx::query("INSERT INTO public.twitch_raid_auth (twitch_user_id, needs_reauth) VALUES ('4242', FALSE)")
-            .execute(&state.pool)
-            .await
-            .expect("raid auth");
         assert!(
-            load_creator_profile(&state, 940_540)
+            !ohne_auth.creator_approved,
+            "ohne Partner-Zeile gibt es keine Freigabe"
+        );
+        assert_eq!(ohne_auth.twitch_login.as_deref(), Some("nani"));
+        assert_eq!(creator_source_health(&state).await.expect("health"), 1);
+
+        sqlx::query(
+            "INSERT INTO public.twitch_partners (twitch_user_id, twitch_login, status) \
+             VALUES ('4242', 'nani', 'active')",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("partner");
+        sqlx::query(
+            "INSERT INTO public.twitch_raid_auth (twitch_user_id, twitch_login, needs_reauth) \
+             VALUES ('4242', 'nani', FALSE)",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("raid auth");
+        let voll = load_creator_profile(&state, 940_540)
+            .await
+            .expect("profil vollstaendig");
+        assert!(voll.twitch_oauth);
+        assert!(voll.creator_approved);
+
+        sqlx::query(
+            "UPDATE public.twitch_partners SET status='departnered' WHERE twitch_user_id='4242'",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("departnered");
+        assert!(
+            !load_creator_profile(&state, 940_540)
                 .await
-                .expect("profil mit raid-auth")
-                .twitch_oauth
+                .expect("profil departnered")
+                .creator_approved,
+            "nur status='active' zaehlt als Freigabe"
         );
 
         sqlx::query(
@@ -1546,10 +1632,13 @@ mod tests {
             "needs_reauth zaehlt als nicht autorisiert"
         );
 
-        sqlx::query("UPDATE public.streamer_dim SET twitch_login='' WHERE twitch_user_id='4242'")
-            .execute(&state.pool)
-            .await
-            .expect("leerer login");
+        sqlx::query(
+            "UPDATE public.twitch_streamer_identities SET twitch_login='' \
+              WHERE twitch_user_id='4242'",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("leerer login");
         assert_eq!(
             load_creator_profile(&state, 940_540)
                 .await

@@ -67,6 +67,7 @@ impl AppState {
                 auth,
             }),
         };
+        report_creator_source_health(&state).await;
         crate::discord_role_connection::spawn_sync_worker(state.clone());
         if state.cfg.scrim_backend_mode == ScrimBackendMode::Legacy {
             crate::routes::scrim::spawn_substitute_sweep_worker(state.clone());
@@ -496,6 +497,24 @@ fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
     }
 }
 
+/// Meldet beim Start, wie viele Streamer-Identitaeten eine Discord-Verknuepfung
+/// tragen. Eine leere Quelle ist der stille Totalausfall des Creator-Providers:
+/// jeder Push schreibt "0", jeder Callback landet auf der Info-Seite, und nichts
+/// davon sieht nach einem Fehler aus.
+async fn report_creator_source_health(state: &AppState) {
+    if !state.cfg.discord_creator_app.is_configured() || state.twitch_pool.is_none() {
+        return;
+    }
+    match crate::discord_role_connection::creator_source_health(state).await {
+        Ok(0) => tracing::error!(
+            "Creator-Quelle leer: keine Zeile in twitch_streamer_identities hat eine \
+             discord_user_id. Der Creator-Provider kann niemandem eine Rolle geben."
+        ),
+        Ok(count) => tracing::info!(verknuepfte_streamer = count, "Creator-Quelle erreichbar"),
+        Err(err) => tracing::error!(?err, "Creator-Quelle nicht lesbar"),
+    }
+}
+
 /// Prueft beim Start, ob Migration 2026081301 aus `dl-central-db` (anderes Repo)
 /// vollstaendig eingespielt ist: Spalte `provider` **und** ein Unique-Index auf
 /// `(discord_id, provider)` auf beiden Tabellen — genau das setzt jedes
@@ -532,6 +551,7 @@ async fn ensure_role_connection_schema(pool: &PgPool) -> anyhow::Result<()> {
                JOIN pg_class cls ON cls.oid = idx.indrelid \
                JOIN pg_namespace nsp ON nsp.oid = cls.relnamespace \
               WHERE nsp.nspname='core' AND cls.relname=$1 AND idx.indisunique \
+                AND idx.indisvalid AND idx.indpred IS NULL \
                 AND (SELECT array_agg(att.attname::text ORDER BY att.attname) \
                        FROM pg_attribute att \
                       WHERE att.attrelid = cls.oid \
