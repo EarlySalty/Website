@@ -246,14 +246,15 @@ pub(crate) fn follow_up_url(
         (
             LinkedRoleProvider::Creator,
             discord_role_connection::LinkedRoleProfile::Creator(creator),
-        ) if creator.twitch_login.is_some() => {
-            // Discord und Twitch sind verknuepft, es fehlt nur die
-            // Autorisierung unserer Twitch-Anwendung.
+        ) if creator.creator_approved => {
+            // Freigegebener Partner: es fehlt nur die Autorisierung unserer
+            // Twitch-Anwendung, und das Gate des Twitch-Bots laesst ihn durch.
             state.cfg.linked_role_twitch_auth_url.clone()
         }
-        // Ohne Eintrag im Creator-Programm hilft der Partner-Flow des
-        // Twitch-Bots nicht: dessen Gate laesst nur eingetragene Partner durch
-        // und schickt alle anderen zurueck in den Login. Deshalb hier die
+        // Wer nicht als aktiver Partner gefuehrt wird, kommt durch dieses Gate
+        // nicht: es laesst nur eingetragene Partner durch und schickt alle
+        // anderen zurueck in den Login. Auch ein vorhandener twitch_login hilft
+        // da nicht — entscheidend ist die Freigabe. Deshalb hier die
         // Streamer-Seite, die den Weg ins Programm erklaert.
         (LinkedRoleProvider::Creator, _) => state.cfg.linked_role_creator_info_url.clone(),
     }

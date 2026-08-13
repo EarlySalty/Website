@@ -773,7 +773,7 @@ pub async fn enqueue_sync(
          VALUES ($1, $3, TRUE, $2, 0, now(), NULL, now()) \
          ON CONFLICT (discord_id, provider) DO UPDATE SET \
              pending=TRUE, reason=EXCLUDED.reason, attempts=0, next_attempt_at=now(), \
-             last_error=NULL, updated_at=now()",
+             locked_at=NULL, last_error=NULL, updated_at=now()",
     )
     .bind(discord_id)
     .bind(reason)
@@ -924,7 +924,11 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
             .bind(&raw_provider)
             .bind(format!("unknown_provider:{raw_provider}"))
             .execute(&state.pool)
-            .await?;
+            .await
+            .map(|_| ())
+            .unwrap_or_else(|err| {
+                tracing::warn!(?err, discord_id, "Parken der Zeile fehlgeschlagen");
+            });
             continue;
         };
         match push_for_user(state, provider, discord_id).await {
@@ -1764,7 +1768,7 @@ mod tests {
             state.cfg.linked_role_creator_info_url
         );
 
-        let mit_login = LinkedRoleProfile::Creator(CreatorProfile {
+        let freigegeben = LinkedRoleProfile::Creator(CreatorProfile {
             twitch_oauth: false,
             creator_approved: true,
             twitch_login: Some("nani".into()),
@@ -1773,9 +1777,29 @@ mod tests {
             crate::routes::linked_role::follow_up_url(
                 &state,
                 LinkedRoleProvider::Creator,
-                &mit_login
+                &freigegeben
             ),
             state.cfg.linked_role_twitch_auth_url
+        );
+
+        // Der Fall, der die beiden Creator-Zweige trennt: ein Login ist bekannt
+        // (der Streamer ist dem Twitch-Bot aufgefallen), aber er ist nicht als
+        // aktiver Partner freigegeben. Das Gate des Twitch-Bots wuerde ihn
+        // abweisen, also fuehrt der Weg auf die Streamer-Seite, nicht in die
+        // Autorisierung.
+        let login_ohne_freigabe = LinkedRoleProfile::Creator(CreatorProfile {
+            twitch_oauth: false,
+            creator_approved: false,
+            twitch_login: Some("nani".into()),
+        });
+        assert_eq!(
+            crate::routes::linked_role::follow_up_url(
+                &state,
+                LinkedRoleProvider::Creator,
+                &login_ohne_freigabe
+            ),
+            state.cfg.linked_role_creator_info_url,
+            "ohne Partner-Freigabe darf ein bekannter Login nicht in den Twitch-Flow fuehren"
         );
 
         let steam = LinkedRoleProfile::Steam(RoleConnectionProfile {

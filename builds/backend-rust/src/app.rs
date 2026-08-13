@@ -479,7 +479,10 @@ fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
         .acquire_timeout(std::time::Duration::from_secs(5))
         .after_connect(|conn, _meta| {
             Box::pin(async move {
-                sqlx::query("SET default_transaction_read_only = on")
+                // Statement-Timeout, weil dieser Pool waehrend einer offenen
+                // zentralen Transaktion befragt wird: eine haengende Query wuerde
+                // dort sonst unbegrenzt eine Verbindung mit gehaltener Lock binden.
+                sqlx::query("SET default_transaction_read_only = on; SET statement_timeout = '5s'")
                     .execute(conn)
                     .await?;
                 Ok(())
