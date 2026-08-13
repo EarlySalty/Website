@@ -49,6 +49,19 @@ Die beiden oeffentlichen Routen brauchen einen Caddy-Block (`@linked_roles` in
 `Caddy/hosts/v50671/Caddyfile`). Der muss **vor** dem Backend live sein, sonst
 laeuft Discords Callback in einen 404.
 
+#### Deploy-Reihenfolge (nicht vertauschbar)
+
+1. Caddy-Block installieren und reloaden.
+2. `dl-central-migrate` auf der zentralen DB laufen lassen (Migration
+   `2026081301_discord_role_connection_provider` aus `Deadlock-Bots`).
+3. Erst danach das neue Binary tauschen und den Dienst neu starten.
+
+Das Backend prueft die `provider`-Spalte beim Start und bricht ab, wenn sie
+fehlt — bewusst, weil es ohne sie stumm falsche Zeilen schreiben wuerde. In die
+andere Richtung gilt: nach der Migration laeuft das **alte** Binary nicht mehr
+(SQLSTATE 42P10 auf `ON CONFLICT`). Ein Rollback per Binary-Swap allein reicht
+also nicht; der Rueckweg steht im Kopf der Migrationsdatei.
+
 `scripts/run_builds_backend.sh` loads Infisical secrets first, then starts
 `builds/backend-rust/target/release/ddc-website-backend`. For the
 Rust backend, `DEADLOCK_CENTRAL_DSN` must be exported by Infisical; the wrapper

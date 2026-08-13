@@ -195,40 +195,7 @@ impl Config {
                 "DISCORD_TOKEN",
                 "BOT_TOKEN",
             ]),
-            // Steam-App: eigene Variablen zuerst, danach die alten generischen
-            // Namen — solange die dedizierte App noch nicht hinterlegt ist,
-            // laeuft der Steam-Provider unveraendert auf der alten Application.
-            discord_steam_app: DiscordLinkedRoleApp {
-                client_id: first_env(&[
-                    "DISCORD_STEAM_CLIENT_ID",
-                    "DISCORD_STEAM_APP_ID",
-                    "DISCORD_OAUTH_CLIENT_ID",
-                    "DISCORD_CLIENT_ID",
-                ]),
-                client_secret: first_env(&[
-                    "DISCORD_STEAM_CLIENT_SECRET",
-                    "DISCORD_OAUTH_CLIENT_SECRET",
-                    "DISCORD_CLIENT_SECRET",
-                ]),
-                application_id: first_env(&[
-                    "DISCORD_STEAM_APP_ID",
-                    "DISCORD_STEAM_CLIENT_ID",
-                    "DISCORD_APPLICATION_ID",
-                    "DISCORD_OAUTH_CLIENT_ID",
-                    "DISCORD_CLIENT_ID",
-                ]),
-                bot_token: first_env(&[
-                    "DISCORD_STEAM_BOT_TOKEN",
-                    "DISCORD_ROLE_CONNECTION_BOT_TOKEN",
-                    "DISCORD_BOT_TOKEN",
-                    "DISCORD_TOKEN",
-                    "BOT_TOKEN",
-                ]),
-                callback_url: first_env(&[
-                    "DISCORD_STEAM_CALLBACK_URL",
-                    "DISCORD_ROLE_CONNECTION_CALLBACK_URL",
-                ]),
-            },
+            discord_steam_app: steam_app_from_env(),
             // Creator-App: bewusst ohne Fallback. Fehlen die Werte, meldet der
             // Provider "nicht konfiguriert" statt versehentlich die Steam-App zu
             // benutzen.
@@ -377,6 +344,55 @@ fn require_token(name: &str, value: Option<&str>) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Zugangsdaten der Steam-Application: entweder ganz aus den eigenen
+/// `DISCORD_STEAM_*`-Variablen oder ganz aus der alten Master-Application.
+///
+/// Keine Mischung pro Feld. Wer beim Anlegen der dedizierten App nur die
+/// Application-ID hinterlegt, bekaeme sonst die Client-ID der neuen App mit dem
+/// Secret der alten: jeder Token-Tausch scheitert dann mit `invalid_client`, und
+/// die bereits live laufende Steam-Verknuepfung ist tot. Lieber laut unvollstaendig
+/// ("nicht konfiguriert") als leise falsch.
+fn steam_app_from_env() -> DiscordLinkedRoleApp {
+    steam_app_with(first_env)
+}
+
+fn steam_app_with(lookup: impl Fn(&[&str]) -> Option<String>) -> DiscordLinkedRoleApp {
+    const OWN: [&str; 5] = [
+        "DISCORD_STEAM_CLIENT_ID",
+        "DISCORD_STEAM_APP_ID",
+        "DISCORD_STEAM_CLIENT_SECRET",
+        "DISCORD_STEAM_BOT_TOKEN",
+        "DISCORD_STEAM_CALLBACK_URL",
+    ];
+    if OWN.iter().any(|name| lookup(&[name]).is_some()) {
+        return DiscordLinkedRoleApp {
+            client_id: lookup(&["DISCORD_STEAM_CLIENT_ID", "DISCORD_STEAM_APP_ID"]),
+            client_secret: lookup(&["DISCORD_STEAM_CLIENT_SECRET"]),
+            application_id: lookup(&["DISCORD_STEAM_APP_ID", "DISCORD_STEAM_CLIENT_ID"]),
+            bot_token: lookup(&["DISCORD_STEAM_BOT_TOKEN"]),
+            callback_url: lookup(&["DISCORD_STEAM_CALLBACK_URL"]),
+        };
+    }
+    // Solange keine eigene App hinterlegt ist, laeuft der Steam-Provider
+    // unveraendert auf der alten Application weiter.
+    DiscordLinkedRoleApp {
+        client_id: lookup(&["DISCORD_OAUTH_CLIENT_ID", "DISCORD_CLIENT_ID"]),
+        client_secret: lookup(&["DISCORD_OAUTH_CLIENT_SECRET", "DISCORD_CLIENT_SECRET"]),
+        application_id: lookup(&[
+            "DISCORD_APPLICATION_ID",
+            "DISCORD_OAUTH_CLIENT_ID",
+            "DISCORD_CLIENT_ID",
+        ]),
+        bot_token: lookup(&[
+            "DISCORD_ROLE_CONNECTION_BOT_TOKEN",
+            "DISCORD_BOT_TOKEN",
+            "DISCORD_TOKEN",
+            "BOT_TOKEN",
+        ]),
+        callback_url: lookup(&["DISCORD_ROLE_CONNECTION_CALLBACK_URL"]),
+    }
+}
+
 pub fn first_env(names: &[&str]) -> Option<String> {
     for name in names {
         if let Ok(value) = env::var(name) {
@@ -411,8 +427,70 @@ fn is_truthy(value: &str, default: bool) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{Config, ScrimBackendMode};
+    use super::{steam_app_with, Config, ScrimBackendMode};
     use serial_test::serial;
+
+    /// Nachschlag aus einer festen Tabelle statt aus der Prozess-Umgebung — die
+    /// Tests laufen parallel, und `set_var` waere ein Rennen mit allen anderen.
+    fn lookup_from<'a>(pairs: &'a [(&'a str, &'a str)]) -> impl Fn(&[&str]) -> Option<String> + 'a {
+        move |names: &[&str]| {
+            names.iter().find_map(|name| {
+                pairs
+                    .iter()
+                    .find(|(key, _)| key == name)
+                    .map(|(_, value)| (*value).to_string())
+            })
+        }
+    }
+
+    #[test]
+    fn steam_app_mischt_die_eigene_app_nie_mit_der_master_app() {
+        // Der gefaehrliche Zwischenzustand: die eigene Application ist angelegt,
+        // aber noch nicht vollstaendig hinterlegt. Wuerde das Secret dabei aus der
+        // Master-App kommen, waere die Kombination Client-ID neu + Secret alt —
+        // jeder Token-Tausch scheitert mit invalid_client, und die live laufende
+        // Steam-Verknuepfung ist tot. Also lieber unvollstaendig.
+        let halb = steam_app_with(lookup_from(&[
+            ("DISCORD_STEAM_APP_ID", "neu-1"),
+            ("DISCORD_OAUTH_CLIENT_ID", "alt-1"),
+            ("DISCORD_OAUTH_CLIENT_SECRET", "alt-secret"),
+            ("DISCORD_TOKEN", "alt-bot"),
+        ]));
+        assert_eq!(halb.client_id.as_deref(), Some("neu-1"));
+        assert_eq!(
+            halb.client_secret, None,
+            "das Secret der Master-App darf nicht zur neuen Client-ID gemischt werden"
+        );
+        assert!(
+            !halb.is_configured(),
+            "unvollstaendig muss unvollstaendig bleiben"
+        );
+
+        // Ohne jede eigene Variable bleibt der live laufende Steam-Flow auf der
+        // alten Application.
+        let master = steam_app_with(lookup_from(&[
+            ("DISCORD_OAUTH_CLIENT_ID", "alt-1"),
+            ("DISCORD_OAUTH_CLIENT_SECRET", "alt-secret"),
+            ("DISCORD_TOKEN", "alt-bot"),
+        ]));
+        assert_eq!(master.client_id.as_deref(), Some("alt-1"));
+        assert_eq!(master.client_secret.as_deref(), Some("alt-secret"));
+        assert_eq!(master.bot_token.as_deref(), Some("alt-bot"));
+        assert!(master.can_register_metadata());
+
+        // Vollstaendig eigene App: kein Wert kommt mehr von der Master-App.
+        let eigen = steam_app_with(lookup_from(&[
+            ("DISCORD_STEAM_CLIENT_ID", "neu-1"),
+            ("DISCORD_STEAM_APP_ID", "neu-1"),
+            ("DISCORD_STEAM_CLIENT_SECRET", "neu-secret"),
+            ("DISCORD_STEAM_BOT_TOKEN", "neu-bot"),
+            ("DISCORD_OAUTH_CLIENT_SECRET", "alt-secret"),
+            ("DISCORD_TOKEN", "alt-bot"),
+        ]));
+        assert_eq!(eigen.client_secret.as_deref(), Some("neu-secret"));
+        assert_eq!(eigen.bot_token.as_deref(), Some("neu-bot"));
+        assert!(eigen.can_register_metadata());
+    }
 
     #[test]
     fn scrim_backend_mode_defaults_to_legacy_when_unset_or_empty() {

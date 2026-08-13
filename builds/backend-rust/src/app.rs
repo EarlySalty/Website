@@ -482,8 +482,17 @@ fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
                 // Statement-Timeout, weil dieser Pool waehrend einer offenen
                 // zentralen Transaktion befragt wird: eine haengende Query wuerde
                 // dort sonst unbegrenzt eine Verbindung mit gehaltener Lock binden.
-                sqlx::query("SET default_transaction_read_only = on; SET statement_timeout = '5s'")
-                    .execute(conn)
+                //
+                // Zwei getrennte Statements, nicht eines mit Semikolon: sqlx::query
+                // geht auch ohne Bindings durch das Extended-Protocol, und Postgres
+                // lehnt zwei Befehle in einem Prepared Statement mit 42601 ab. Das
+                // wuerde jede Verbindung dieses Pools scheitern lassen, also den
+                // ganzen Creator-Provider.
+                sqlx::query("SET default_transaction_read_only = on")
+                    .execute(&mut *conn)
+                    .await?;
+                sqlx::query("SET statement_timeout = '5s'")
+                    .execute(&mut *conn)
                     .await?;
                 Ok(())
             })
@@ -5036,6 +5045,45 @@ mod tests {
 
     async fn test_state() -> (dl_central_db::TestDb, AppState) {
         test_state_with(|_| {}, std::time::Duration::from_secs(20)).await
+    }
+
+    #[tokio::test]
+    async fn twitch_pool_gibt_verbindungen_heraus_und_ist_nur_lesend() {
+        // Der after_connect-Hook laeuft nur bei einer echten Verbindung, und der
+        // Pool ist lazy: ein Fehler darin faellt beim Start nirgends auf, macht aber
+        // jede Verbindung unbrauchbar und damit den ganzen Creator-Provider tot.
+        // Deshalb hier eine echte Query gegen die Test-Postgres, statt den Pool nur
+        // anzulegen. Die uebrigen Creator-Tests injizieren den Pool direkt und
+        // umgehen connect_twitch_pool komplett.
+        // Keine Wegwerf-DB: dieser Test schreibt nichts, er stellt nur eine
+        // Verbindung her und liest zwei Session-Einstellungen.
+        let dsn = std::env::var("CENTRAL_TEST_DSN")
+            .or_else(|_| std::env::var("DATABASE_URL"))
+            .expect("CENTRAL_TEST_DSN oder DATABASE_URL muss auf die Test-Postgres zeigen");
+        let mut cfg = Config::from_env();
+        cfg.twitch_analytics_dsn = Some(dsn);
+        let pool = connect_twitch_pool(&cfg).expect("twitch pool");
+
+        let eins: i32 = sqlx::query_scalar("SELECT 1")
+            .fetch_one(&pool)
+            .await
+            .expect("der after_connect-Hook muss durchlaufen, sonst gibt der Pool nichts heraus");
+        assert_eq!(eins, 1);
+
+        let read_only: String = sqlx::query_scalar("SHOW transaction_read_only")
+            .fetch_one(&pool)
+            .await
+            .expect("read-only-Schalter");
+        assert_eq!(read_only, "on", "der Pool darf nicht schreiben duerfen");
+
+        let timeout: String = sqlx::query_scalar("SHOW statement_timeout")
+            .fetch_one(&pool)
+            .await
+            .expect("statement_timeout");
+        assert_eq!(
+            timeout, "5s",
+            "ohne Timeout kann eine haengende Fremd-DB die zentrale Lock halten"
+        );
     }
 
     async fn creator_test_state() -> (dl_central_db::TestDb, AppState) {

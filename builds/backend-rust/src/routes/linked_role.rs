@@ -321,6 +321,19 @@ pub async fn register_metadata(
     if let Some(err) = first_error {
         return Err(err);
     }
+    if registered.is_empty() {
+        // Kein Provider konfiguriert: vor den zwei Applications gab dieser Endpunkt
+        // hier ein 503, und dabei bleibt es. Ein Admin, der nach dem Deploy die
+        // Metadata registriert und auf "ok" schaut, darf keinen Erfolg lesen,
+        // wenn Discord nichts bekommen hat.
+        tracing::error!(
+            uebersprungen = %serde_json::Value::Array(skipped.clone()),
+            "Metadata-Registrierung hat keinen Provider erreicht"
+        );
+        return Err(AppError::service_unavailable(
+            discord_role_connection::MSG_NOT_CONFIGURED,
+        ));
+    }
     // `records` ist der alte Vertrag dieses Endpunkts (die Liste der registrierten
     // Metadata-Felder) und bleibt erhalten; bei zwei Providern traegt es Steam.
     let legacy_records = registered

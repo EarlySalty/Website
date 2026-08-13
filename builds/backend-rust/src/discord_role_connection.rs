@@ -849,7 +849,16 @@ pub async fn enqueue_creator_reconcile(state: &AppState) -> AppResult<u64> {
 /// Wie lange eine beanspruchte Sync-Zeile hoechstens beansprucht bleiben darf.
 /// Ein Push dauert Sekunden; laenger heisst, der Prozess ist mitten im Lauf
 /// gestorben (Deploy-Restart) und die Zeile muss zurueck in die Queue.
-const SYNC_CLAIM_TIMEOUT_MINUTES: i32 = 15;
+///
+/// Grosszuegig gewaehlt, weil der Reaper nicht wissen kann, ob eine Zeile gerade
+/// in einem langsamen Batch steckt (Discord-429 plus Token-Refresh). Holt er sie
+/// zu frueh zurueck, laeuft derselbe Push doppelt — die Advisory-Lock verhindert
+/// zwar falschen Zustand, aber nicht die verschwendeten Aufrufe.
+const SYNC_CLAIM_TIMEOUT_MINUTES: i32 = 60;
+
+/// Nach so vielen Stunden hoert der Worker auf, eine Zeile mit unbekanntem
+/// Provider erneut einzustellen. Sie behaelt ihren `last_error`.
+const UNKNOWN_PROVIDER_MAX_ATTEMPTS: i32 = 6;
 
 /// Holt verwaiste Anspruechte zurueck: `pending=FALSE` plus altes `locked_at`
 /// entsteht nur, wenn ein Lauf zwischen Claim und Abschluss abgebrochen ist.
@@ -913,9 +922,15 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
             );
             // Nicht einfach weiterlaufen: das Claim-UPDATE hat pending schon auf
             // FALSE gesetzt, die Anforderung waere sonst still verschwunden.
+            //
+            // Aber auch nicht endlos: der Zweig ist nur erreichbar, wenn jemand den
+            // CHECK der Migration erweitert und dieses Binary noch nicht kennt.
+            // Nach UNKNOWN_PROVIDER_MAX_ATTEMPTS Stunden bleibt die Zeile mit ihrem
+            // Grund liegen, statt den Batch-Platz jede Stunde erneut zu belegen.
+            let park_pending = attempts + 1 < UNKNOWN_PROVIDER_MAX_ATTEMPTS;
             sqlx::query(
                 "UPDATE core.discord_role_connection_sync_state \
-                    SET pending=TRUE, locked_at=NULL, last_error=$3, \
+                    SET pending=$4, locked_at=NULL, last_error=$3, \
                         attempts=attempts + 1, \
                         next_attempt_at=now() + interval '1 hour', updated_at=now() \
                   WHERE discord_id=$1 AND provider=$2",
@@ -923,6 +938,7 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
             .bind(discord_id)
             .bind(&raw_provider)
             .bind(format!("unknown_provider:{raw_provider}"))
+            .bind(park_pending)
             .execute(&state.pool)
             .await
             .map(|_| ())
@@ -1173,6 +1189,13 @@ where
 /// freigegeben, die geblockt oder technisch pausiert sind (token_error,
 /// bot_banned, admin_non_partner). Die frueher naheliegende `streamer_dim` hat 0
 /// Zeilen und wird von keinem Dienst beschrieben.
+///
+/// Die Spaltentypen sind Annahmen ueber eine fremde Datenbank: `is_partner_active`
+/// als INTEGER, `needs_reauth` als BOOLEAN. Ein Typwechsel dort gibt einen
+/// Laufzeitfehler, keinen Compile-Fehler — deshalb faehrt `creator_source_health`
+/// genau diese Abfrage einmal beim Start gegen die echte Quelle und loggt das
+/// Ergebnis. Der Test unten baut sich das Schema selbst nach und kann das nicht
+/// leisten.
 ///
 /// Alle Schluesselspalten sind TEXT, deshalb wird die Discord-ID als String
 /// gebunden. `updated_at` ist dort ebenfalls TEXT und dient nur als Tie-Break,
@@ -2382,6 +2405,39 @@ mod tests {
         assert_eq!(records[0][1].key, "rang");
         assert_eq!(records[1][0].key, "twitch_oauth");
         assert_eq!(records[1][1].key, "creator_approved");
+    }
+
+    #[tokio::test]
+    async fn metadata_registrierung_ohne_konfigurierte_app_antwortet_503() {
+        // Ein Admin, der nach dem Deploy die Metadata registriert, darf kein "ok"
+        // lesen, wenn Discord nichts bekommen hat. Vor den zwei Applications gab
+        // dieser Endpunkt hier ein 503, und dabei bleibt es.
+        let role_client = Arc::new(MockRoleConnectionClient::new("940504"));
+        let mut cfg = test_cfg();
+        cfg.discord_steam_app = crate::config::DiscordLinkedRoleApp::default();
+        cfg.discord_creator_app = crate::config::DiscordLinkedRoleApp::default();
+        let (_db, state) = test_state_with_cfg(role_client.clone(), cfg).await;
+        let app = router(state);
+        let request = request(
+            Method::POST,
+            "/api/admin/discord-role-connections/metadata",
+            None,
+        )
+        .header("X-Admin-Validated", "1")
+        .header("X-Admin-User", "admin")
+        .body(Body::empty())
+        .expect("request");
+        let response = app.oneshot(with_peer(request)).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert!(
+            role_client
+                .registered
+                .lock()
+                .expect("registered")
+                .is_empty(),
+            "ohne Config darf kein Provider bei Discord landen"
+        );
     }
 
     async fn test_state(
