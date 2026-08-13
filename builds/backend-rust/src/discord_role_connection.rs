@@ -651,6 +651,11 @@ pub async fn push_for_user_with_profile(
         return Ok((RoleConnectionPushOutcome::CryptoUnavailable, None));
     };
 
+    // Preis dieser Reihenfolge: fuer Creator laeuft hier eine Abfrage gegen eine
+    // fremde Datenbank, waehrend die zentrale Transaktion offen ist und die Lock
+    // haelt. Faellt Twitch aus, haengt diese Verbindung bis zum Timeout in
+    // `idle in transaction`. Das ist der Preis dafuer, dass kein Refresh-Token
+    // verloren geht — bei zwei Pool-Verbindungen und wenigen Creatorn tragbar.
     // Vor dem Refresh lesen, aber nach den Kurzschluessen und unter der Lock:
     // ein Fehler hier verwirft die Transaktion, und laege der Refresh davor,
     // waere der bei Discord schon rotierte Refresh-Token weg. Die Twitch-Datenbank
@@ -816,6 +821,10 @@ pub fn spawn_sync_worker(state: AppState) {
 /// Quelldaten in der Twitch-Datenbank, aus der keine zentrale Funktion die
 /// Queue fuellen kann. Ohne diesen Abgleich friert `creator_approved` auf dem
 /// Stand vom Verknuepfen ein und eine spaetere Freigabe erreicht die Rolle nie.
+/// Der Sweep stellt jede Runde alle aktiven Creator-Tokens ein, auch ohne
+/// Aenderung: bei 61 Partnern sind das rund 24 Discord-PUTs pro Creator und Tag,
+/// weit unter jedem Rate-Limit. Waechst die Zahl deutlich, gehoert hier ein
+/// Filter auf tatsaechliche Aenderungen hin.
 pub async fn enqueue_creator_reconcile(state: &AppState) -> AppResult<u64> {
     if state.twitch_pool.is_none() {
         return Ok(0);
@@ -837,7 +846,42 @@ pub async fn enqueue_creator_reconcile(state: &AppState) -> AppResult<u64> {
     Ok(result.rows_affected())
 }
 
+/// Wie lange eine beanspruchte Sync-Zeile hoechstens beansprucht bleiben darf.
+/// Ein Push dauert Sekunden; laenger heisst, der Prozess ist mitten im Lauf
+/// gestorben (Deploy-Restart) und die Zeile muss zurueck in die Queue.
+const SYNC_CLAIM_TIMEOUT_MINUTES: i32 = 15;
+
+/// Holt verwaiste Anspruechte zurueck: `pending=FALSE` plus altes `locked_at`
+/// entsteht nur, wenn ein Lauf zwischen Claim und Abschluss abgebrochen ist.
+/// Ohne diesen Schritt findet weder der Worker (verlangt `pending=TRUE`) noch der
+/// Creator-Sweep (verlangt `locked_at IS NULL`) die Zeile je wieder — der
+/// betroffene User bekaeme nie mehr ein Update.
+pub async fn reclaim_stale_sync_claims(pool: &PgPool) -> AppResult<u64> {
+    let result = sqlx::query(
+        "UPDATE core.discord_role_connection_sync_state \
+            SET pending=TRUE, locked_at=NULL, next_attempt_at=now(), updated_at=now() \
+          WHERE pending=FALSE \
+            AND locked_at IS NOT NULL \
+            AND locked_at < now() - make_interval(mins => $1)",
+    )
+    .bind(SYNC_CLAIM_TIMEOUT_MINUTES)
+    .execute(pool)
+    .await?;
+    Ok(result.rows_affected())
+}
+
 pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usize> {
+    match reclaim_stale_sync_claims(&state.pool).await {
+        Ok(0) => {}
+        Ok(count) => tracing::warn!(
+            count,
+            "verwaiste Linked-Role-Sync-Anspruechte zurueckgeholt — ein Lauf wurde abgebrochen"
+        ),
+        Err(err) => tracing::warn!(
+            ?err,
+            "Zurueckholen verwaister Sync-Anspruechte fehlgeschlagen"
+        ),
+    }
     let rows = sqlx::query(
         "UPDATE core.discord_role_connection_sync_state AS sync \
             SET pending=FALSE, locked_at=now(), updated_at=now() \
@@ -1177,6 +1221,13 @@ pub async fn creator_source_health(state: &AppState) -> AppResult<i64> {
             MSG_CREATOR_SOURCE_UNAVAILABLE,
         ));
     };
+    // Erst das Produktiv-SQL selbst gegen eine ID ohne Treffer laufen lassen: das
+    // beruehrt alle drei Tabellen und jede Spalte, die der Push braucht. Ein
+    // umbenanntes Feld faellt damit beim Start auf und nicht erst als 503 im Log.
+    sqlx::query(CREATOR_PROFILE_SQL)
+        .bind("0")
+        .fetch_optional(pool)
+        .await?;
     let linked: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM public.twitch_streamer_identities \
           WHERE COALESCE(discord_user_id, '') <> ''",
@@ -1646,6 +1697,94 @@ mod tests {
                 .twitch_login,
             None,
             "leerer Login gilt als kein Login — sonst entscheidet der Redirect anders als der Payload"
+        );
+    }
+
+    #[tokio::test]
+    async fn steam_callback_ohne_verknuepfung_fuehrt_in_den_verknuepfungs_flow() {
+        // Aenderung am bereits live laufenden Steam-Flow: wer nach dem OAuth noch
+        // keinen Steam-Link hat, landet nicht mehr auf next_path, sondern im
+        // Kanal mit der Anleitung. Der andere Steam-Test seedet vorher einen
+        // verifizierten Link und deckt diesen Zweig deshalb nicht ab.
+        let role_client = Arc::new(MockRoleConnectionClient::new("940550"));
+        let (_db, state) = test_state(role_client).await;
+        let role_state = state
+            .auth
+            .create_pre_auth_jwt("state-940550", "/done")
+            .expect("role state");
+        let response = router(state.clone())
+            .oneshot(with_peer(
+                request(
+                    Method::GET,
+                    "/auth/discord/steam/callback?state=state-940550&code=oauth-code",
+                    None,
+                )
+                .header(
+                    header::COOKIE,
+                    format!("ddc_role_connection_state={role_state}"),
+                )
+                .body(Body::empty())
+                .expect("request"),
+            ))
+            .await
+            .expect("callback response");
+
+        assert_eq!(response.status(), StatusCode::FOUND);
+        assert_eq!(
+            response
+                .headers()
+                .get(header::LOCATION)
+                .and_then(|value| value.to_str().ok()),
+            Some(state.cfg.linked_role_steam_link_url.as_str()),
+            "ohne Steam-Link geht es in die Anleitung, nicht zurueck auf next_path"
+        );
+    }
+
+    #[tokio::test]
+    async fn verwaiste_sync_anspruechte_kommen_zurueck_in_die_queue() {
+        // Stirbt der Prozess zwischen Claim und Abschluss, steht die Zeile auf
+        // pending=FALSE mit gesetztem locked_at. Ohne Reaper findet sie weder der
+        // Worker noch der Creator-Sweep je wieder.
+        let role_client = Arc::new(MockRoleConnectionClient::new("940560"));
+        let (_db, state) = test_state(role_client).await;
+        auth::upsert_meta_user(&state, 940_560, "stale_user", "Stale User", None)
+            .await
+            .expect("meta user");
+        sqlx::query(
+            "INSERT INTO core.discord_role_connection_sync_state \
+                 (discord_id, provider, pending, reason, attempts, next_attempt_at, \
+                  locked_at, updated_at) \
+             VALUES ($1, 'creator', FALSE, 'creator_reconcile', 0, now(), \
+                     now() - interval '2 hours', now())",
+        )
+        .bind(940_560_i64)
+        .execute(&state.pool)
+        .await
+        .expect("verwaiste zeile");
+
+        assert_eq!(
+            reclaim_stale_sync_claims(&state.pool)
+                .await
+                .expect("reclaim"),
+            1
+        );
+        let (pending, locked): (bool, Option<chrono::DateTime<Utc>>) = sqlx::query_as(
+            "SELECT pending, locked_at FROM core.discord_role_connection_sync_state \
+              WHERE discord_id=$1 AND provider='creator'",
+        )
+        .bind(940_560_i64)
+        .fetch_one(&state.pool)
+        .await
+        .expect("zeile");
+        assert!(pending, "die Zeile muss wieder ausstehen");
+        assert!(locked.is_none(), "der Anspruch muss geloescht sein");
+
+        assert_eq!(
+            reclaim_stale_sync_claims(&state.pool)
+                .await
+                .expect("zweiter reclaim"),
+            0,
+            "frische Anspruechte bleiben unangetastet"
         );
     }
 

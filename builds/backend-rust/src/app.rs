@@ -455,9 +455,10 @@ fn scrim_router(mode: ScrimBackendMode) -> Router<AppState> {
 /// Legt den nur-lesenden Twitch-Pool fuer das Creator-Linked-Role-Profil an.
 ///
 /// Lazy, damit eine beim Start kurz nicht erreichbare Twitch-Datenbank nicht bis
-/// zum naechsten Neustart als "nicht vorhanden" haengen bleibt. Nur-lesend ist
-/// hier keine Behauptung: jede Verbindung setzt
-/// `default_transaction_read_only`, ein Schreibversuch scheitert an Postgres.
+/// zum naechsten Neustart als "nicht vorhanden" haengen bleibt. Jede Verbindung
+/// setzt `default_transaction_read_only`; das faengt versehentliche Schreibzugriffe
+/// ab, ist aber ein Session-Schalter und keine Rechtegrenze — die gaebe erst ein
+/// eigener DB-User ohne Schreibrecht.
 fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
     let Some(dsn) = cfg.twitch_analytics_dsn.as_deref() else {
         // Ohne diese Meldung liesse sich die Creator-Haelfte deployen und taete
@@ -547,21 +548,21 @@ async fn ensure_role_connection_schema(pool: &PgPool) -> anyhow::Result<()> {
 
         let unique: Option<i32> = sqlx::query_scalar(
             "SELECT 1 \
-               FROM pg_index idx \
-               JOIN pg_class cls ON cls.oid = idx.indrelid \
+               FROM pg_constraint con \
+               JOIN pg_class cls ON cls.oid = con.conrelid \
                JOIN pg_namespace nsp ON nsp.oid = cls.relnamespace \
-              WHERE nsp.nspname='core' AND cls.relname=$1 AND idx.indisunique \
-                AND idx.indisvalid AND idx.indpred IS NULL \
+              WHERE nsp.nspname='core' AND cls.relname=$1 \
+                AND con.contype IN ('p','u') \
                 AND (SELECT array_agg(att.attname::text ORDER BY att.attname) \
                        FROM pg_attribute att \
                       WHERE att.attrelid = cls.oid \
-                        AND att.attnum = ANY (idx.indkey)) \
+                        AND att.attnum = ANY (con.conkey)) \
                     = ARRAY['discord_id','provider']",
         )
         .bind(table)
         .fetch_optional(pool)
         .await
-        .with_context(|| format!("Index-Pruefung von core.{table} fehlgeschlagen"))?;
+        .with_context(|| format!("Schluessel-Pruefung von core.{table} fehlgeschlagen"))?;
         if unique.is_none() {
             anyhow::bail!(
                 "core.{table} hat keinen Unique-Index auf (discord_id, provider) — Migration \

@@ -286,33 +286,38 @@ pub async fn register_metadata(
     // DISCORD_CREATOR_CLIENT_ID sah sonst wie ein Erfolg aus, obwohl nichts
     // registriert wurde.
     let mut skipped = Vec::new();
-    let mut failed = Vec::new();
+    // Jeder Provider wird versucht, damit ein Fehler beim zweiten den ersten nicht
+    // verdeckt — nach aussen bleibt ein Teilfehlschlag aber ein Fehler, wie beim
+    // Sync-Endpunkt. Was gelungen ist, steht im Log.
+    let mut first_error = None;
     for provider in LinkedRoleProvider::ALL {
         if !provider.app(&state.cfg).is_configured() {
             skipped.push(json!({ "provider": provider.as_str(), "reason": "not_configured" }));
             continue;
         }
-        // Ein Fehler beim zweiten Provider darf den ersten nicht unsichtbar
-        // machen: sonst ist Steam registriert, der Aufrufer sieht nur 503.
         match discord_role_connection::register_metadata(&state, provider).await {
             Ok(records) => {
                 registered.push(json!({ "provider": provider.as_str(), "records": records }))
             }
             Err(err) => {
                 tracing::warn!(
-                    ?err,
                     provider = provider.as_str(),
+                    bereits_registriert = %serde_json::Value::Array(registered.clone()),
                     "Metadata-Registrierung fehlgeschlagen"
                 );
-                failed.push(json!({ "provider": provider.as_str() }));
+                if first_error.is_none() {
+                    first_error = Some(err);
+                }
             }
         }
     }
+    if let Some(err) = first_error {
+        return Err(err);
+    }
     Ok(Json(json!({
-        "ok": failed.is_empty(),
+        "ok": true,
         "registered": registered,
         "skipped": skipped,
-        "failed": failed,
     })))
 }
 
@@ -398,12 +403,17 @@ pub async fn sync_user(
     if let Some(err) = first_error {
         return Err(err);
     }
-    // `outcome` ist der alte Vertrag dieses Endpunkts (ein String, Steam-Ergebnis)
-    // und bleibt fuer bestehende Aufrufer erhalten.
-    let legacy_outcome = outcomes
-        .get(LinkedRoleProvider::Steam.as_str())
-        .cloned()
-        .unwrap_or_else(|| Value::String("skipped".to_string()));
+    // `outcome` ist der alte Vertrag dieses Endpunkts (ein String). Bei genau einem
+    // angefragten Provider traegt es dessen Ergebnis, sonst das von Steam — nie
+    // "skipped", wenn tatsaechlich gepusht wurde.
+    let legacy_outcome = if outcomes.len() == 1 {
+        outcomes.values().next().cloned().unwrap_or(Value::Null)
+    } else {
+        outcomes
+            .get(LinkedRoleProvider::Steam.as_str())
+            .cloned()
+            .unwrap_or(Value::Null)
+    };
     Ok(Json(
         json!({ "ok": true, "outcome": legacy_outcome, "outcomes": outcomes }),
     ))
