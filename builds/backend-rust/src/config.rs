@@ -27,6 +27,54 @@ impl ScrimBackendMode {
     }
 }
 
+/// Eine Discord-Application, die als Linked-Role-Provider auftritt.
+///
+/// Es gibt zwei davon: die Steam-App (Steam-Verknuepfung und Deadlock-Rang) und
+/// die Creator-App (Twitch-Autorisierung im Creator-Programm). Beide haben
+/// eigene Client-Credentials, ein eigenes Bot-Token und einen eigenen Callback.
+///
+/// `Debug` ist von Hand geschrieben: Secret und Bot-Token erscheinen nur als
+/// vorhanden oder fehlend. Ein `?app` oder `?cfg` in einem kuenftigen
+/// `tracing!`-Aufruf wuerde sie sonst ins Log schreiben.
+#[derive(Clone, Default)]
+pub struct DiscordLinkedRoleApp {
+    pub client_id: Option<String>,
+    pub client_secret: Option<String>,
+    pub application_id: Option<String>,
+    pub bot_token: Option<String>,
+    pub callback_url: Option<String>,
+}
+
+impl std::fmt::Debug for DiscordLinkedRoleApp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DiscordLinkedRoleApp")
+            .field("client_id", &self.client_id)
+            .field(
+                "client_secret",
+                &self.client_secret.as_ref().map(|_| "<redacted>"),
+            )
+            .field("application_id", &self.application_id)
+            .field("bot_token", &self.bot_token.as_ref().map(|_| "<redacted>"))
+            .field("callback_url", &self.callback_url)
+            .finish()
+    }
+}
+
+impl DiscordLinkedRoleApp {
+    /// Reicht fuer den OAuth-Flow: Login, Callback, Token-Tausch.
+    pub fn is_configured(&self) -> bool {
+        self.client_id.is_some() && self.client_secret.is_some() && self.application_id.is_some()
+    }
+
+    /// Reicht zusaetzlich fuer die Metadata-Registrierung — die laeuft mit dem
+    /// Bot-Token der App. Ohne diese Unterscheidung meldet der Sammel-Endpunkt
+    /// eine App ohne Bot-Token als "konfiguriert" und scheitert dann mit 503,
+    /// obwohl schlicht ein Wert fehlt.
+    pub fn can_register_metadata(&self) -> bool {
+        self.is_configured() && self.bot_token.is_some()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Config {
     pub host: String,
@@ -53,14 +101,21 @@ pub struct Config {
     pub auth_session_secret: Option<String>,
     pub discord_api_base: String,
     pub discord_oauth_authorize_base: String,
-    pub discord_oauth_client_id: Option<String>,
-    pub discord_oauth_client_secret: Option<String>,
-    pub discord_application_id: Option<String>,
+    /// Bot-Token des Hauptbots — von der Video-Ingest-Pipeline genutzt.
     pub discord_bot_token: Option<String>,
-    pub discord_role_connection_callback_url: Option<String>,
+    pub discord_steam_app: DiscordLinkedRoleApp,
+    pub discord_creator_app: DiscordLinkedRoleApp,
+    pub linked_role_steam_link_url: String,
+    pub linked_role_twitch_auth_url: String,
+    pub linked_role_creator_info_url: String,
+    pub twitch_analytics_dsn: Option<String>,
     pub discord_role_connection_cookie_name: String,
     pub discord_role_connection_sync_worker_enabled: bool,
     pub discord_role_connection_sync_interval_seconds: u64,
+    /// Abstand, in dem der Worker die aktiven Creator-Tokens von selbst zum
+    /// Abgleich einstellt. Fuer Creator gibt es keinen DB-Trigger, weil die
+    /// Quelldaten in der Twitch-Datenbank liegen.
+    pub discord_role_connection_creator_reconcile_seconds: u64,
     pub db_master_key_v1: Option<String>,
     pub scrim_backend_mode: ScrimBackendMode,
     pub scrim_turnier_base: String,
@@ -153,26 +208,41 @@ impl Config {
                 "DISCORD_AUTHORIZE_BASE",
             ])
             .unwrap_or_else(|| "https://discord.com/oauth2/authorize".to_string()),
-            discord_oauth_client_id: first_env(&["DISCORD_OAUTH_CLIENT_ID", "DISCORD_CLIENT_ID"]),
-            discord_oauth_client_secret: first_env(&[
-                "DISCORD_OAUTH_CLIENT_SECRET",
-                "DISCORD_CLIENT_SECRET",
-            ]),
-            discord_application_id: first_env(&[
-                "DISCORD_APPLICATION_ID",
-                "DISCORD_OAUTH_CLIENT_ID",
-                "DISCORD_CLIENT_ID",
-            ]),
             discord_bot_token: first_env(&[
                 "DISCORD_ROLE_CONNECTION_BOT_TOKEN",
                 "DISCORD_BOT_TOKEN",
                 "DISCORD_TOKEN",
                 "BOT_TOKEN",
             ]),
-            discord_role_connection_callback_url: env::var("DISCORD_ROLE_CONNECTION_CALLBACK_URL")
-                .ok()
-                .map(|v| v.trim().to_string())
-                .filter(|v| !v.is_empty()),
+            discord_steam_app: steam_app_from_env(),
+            // Creator-App: bewusst ohne Fallback. Fehlen die Werte, meldet der
+            // Provider "nicht konfiguriert" statt versehentlich die Steam-App zu
+            // benutzen.
+            discord_creator_app: DiscordLinkedRoleApp {
+                client_id: first_env(&["DISCORD_CREATOR_CLIENT_ID", "DISCORD_CREATOR_APP_ID"]),
+                client_secret: first_env(&["DISCORD_CREATOR_CLIENT_SECRET"]),
+                application_id: first_env(&["DISCORD_CREATOR_APP_ID", "DISCORD_CREATOR_CLIENT_ID"]),
+                bot_token: first_env(&["DISCORD_CREATOR_BOT_TOKEN"]),
+                callback_url: first_env(&["DISCORD_CREATOR_CALLBACK_URL"]),
+            },
+            linked_role_steam_link_url: env_or(
+                "LINKED_ROLE_STEAM_LINK_URL",
+                "https://discord.com/channels/1289721245281292288/1398021105339334666",
+            ),
+            linked_role_twitch_auth_url: env_or(
+                "LINKED_ROLE_TWITCH_AUTH_URL",
+                "https://deutsche-deadlock-community.de/twitch/raid/auth",
+            ),
+            // Wer im Creator-Programm noch gar nicht auftaucht, kann den
+            // Partner-Flow des Twitch-Bots nicht betreten: dessen Login-Gate
+            // laesst nur eingetragene Partner durch und schickt alle anderen
+            // im Kreis. Deshalb geht dieser Fall auf die Streamer-Seite, die
+            // den Weg ins Programm erklaert.
+            linked_role_creator_info_url: env_or(
+                "LINKED_ROLE_CREATOR_INFO_URL",
+                "https://deutsche-deadlock-community.de/streamer",
+            ),
+            twitch_analytics_dsn: first_env(&["TWITCH_ANALYTICS_DSN"]),
             discord_role_connection_cookie_name: env_or(
                 "DISCORD_ROLE_CONNECTION_STATE_COOKIE_NAME",
                 "ddc_role_connection_state",
@@ -191,6 +261,13 @@ impl Config {
             .and_then(|v| v.trim().parse().ok())
             .filter(|v| *v > 0)
             .unwrap_or(30),
+            discord_role_connection_creator_reconcile_seconds: env::var(
+                "DISCORD_ROLE_CONNECTION_CREATOR_RECONCILE_SECONDS",
+            )
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(3600),
             db_master_key_v1: first_env(&["DB_MASTER_KEY_V1"]),
             scrim_backend_mode,
             scrim_turnier_base: env_or("TURNIER_INTERNAL_API_BASE_URL", "http://127.0.0.1:8900"),
@@ -286,6 +363,64 @@ fn require_token(name: &str, value: Option<&str>) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Zugangsdaten der Steam-Application: entweder ganz aus den eigenen
+/// `DISCORD_STEAM_*`-Variablen oder ganz aus der alten Master-Application.
+///
+/// Keine Mischung pro Feld. Wer beim Anlegen der dedizierten App nur die
+/// Application-ID hinterlegt, bekaeme sonst die Client-ID der neuen App mit dem
+/// Secret der alten: jeder Token-Tausch scheitert dann mit `invalid_client`, und
+/// die bereits live laufende Steam-Verknuepfung ist tot. Lieber laut unvollstaendig
+/// ("nicht konfiguriert") als leise falsch.
+fn steam_app_from_env() -> DiscordLinkedRoleApp {
+    steam_app_with(first_env)
+}
+
+fn steam_app_with(lookup: impl Fn(&[&str]) -> Option<String>) -> DiscordLinkedRoleApp {
+    // Nur Identitaets-Variablen loesen den Wechsel aus. Die Callback-URL gehoert
+    // nicht dazu: sie sagt nichts darueber, welche Application gemeint ist, wird
+    // aber vom Startskript immer gesetzt — als Ausloeser wuerde sie die Steam-App
+    // auf eine leere "eigene App" umschalten und den live laufenden Flow toeten.
+    const IDENTITY: [&str; 4] = [
+        "DISCORD_STEAM_CLIENT_ID",
+        "DISCORD_STEAM_APP_ID",
+        "DISCORD_STEAM_CLIENT_SECRET",
+        "DISCORD_STEAM_BOT_TOKEN",
+    ];
+    // Die Callback-URL steht ausserhalb der Fallunterscheidung: sie haengt an der
+    // oeffentlichen Route, nicht an den Zugangsdaten.
+    let callback_url = lookup(&[
+        "DISCORD_STEAM_CALLBACK_URL",
+        "DISCORD_ROLE_CONNECTION_CALLBACK_URL",
+    ]);
+    if IDENTITY.iter().any(|name| lookup(&[name]).is_some()) {
+        return DiscordLinkedRoleApp {
+            client_id: lookup(&["DISCORD_STEAM_CLIENT_ID", "DISCORD_STEAM_APP_ID"]),
+            client_secret: lookup(&["DISCORD_STEAM_CLIENT_SECRET"]),
+            application_id: lookup(&["DISCORD_STEAM_APP_ID", "DISCORD_STEAM_CLIENT_ID"]),
+            bot_token: lookup(&["DISCORD_STEAM_BOT_TOKEN"]),
+            callback_url,
+        };
+    }
+    // Solange keine eigene App hinterlegt ist, laeuft der Steam-Provider
+    // unveraendert auf der alten Application weiter.
+    DiscordLinkedRoleApp {
+        client_id: lookup(&["DISCORD_OAUTH_CLIENT_ID", "DISCORD_CLIENT_ID"]),
+        client_secret: lookup(&["DISCORD_OAUTH_CLIENT_SECRET", "DISCORD_CLIENT_SECRET"]),
+        application_id: lookup(&[
+            "DISCORD_APPLICATION_ID",
+            "DISCORD_OAUTH_CLIENT_ID",
+            "DISCORD_CLIENT_ID",
+        ]),
+        bot_token: lookup(&[
+            "DISCORD_ROLE_CONNECTION_BOT_TOKEN",
+            "DISCORD_BOT_TOKEN",
+            "DISCORD_TOKEN",
+            "BOT_TOKEN",
+        ]),
+        callback_url,
+    }
+}
+
 pub fn first_env(names: &[&str]) -> Option<String> {
     for name in names {
         if let Ok(value) = env::var(name) {
@@ -320,8 +455,92 @@ fn is_truthy(value: &str, default: bool) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{Config, ScrimBackendMode};
+    use super::{steam_app_with, Config, ScrimBackendMode};
     use serial_test::serial;
+
+    /// Nachschlag aus einer festen Tabelle statt aus der Prozess-Umgebung — die
+    /// Tests laufen parallel, und `set_var` waere ein Rennen mit allen anderen.
+    fn lookup_from<'a>(pairs: &'a [(&'a str, &'a str)]) -> impl Fn(&[&str]) -> Option<String> + 'a {
+        move |names: &[&str]| {
+            names.iter().find_map(|name| {
+                pairs
+                    .iter()
+                    .find(|(key, _)| key == name)
+                    .map(|(_, value)| (*value).to_string())
+            })
+        }
+    }
+
+    #[test]
+    fn steam_app_mischt_die_eigene_app_nie_mit_der_master_app() {
+        // Der gefaehrliche Zwischenzustand: die eigene Application ist angelegt,
+        // aber noch nicht vollstaendig hinterlegt. Wuerde das Secret dabei aus der
+        // Master-App kommen, waere die Kombination Client-ID neu + Secret alt —
+        // jeder Token-Tausch scheitert mit invalid_client, und die live laufende
+        // Steam-Verknuepfung ist tot. Also lieber unvollstaendig.
+        let halb = steam_app_with(lookup_from(&[
+            ("DISCORD_STEAM_APP_ID", "neu-1"),
+            ("DISCORD_OAUTH_CLIENT_ID", "alt-1"),
+            ("DISCORD_OAUTH_CLIENT_SECRET", "alt-secret"),
+            ("DISCORD_TOKEN", "alt-bot"),
+        ]));
+        assert_eq!(halb.client_id.as_deref(), Some("neu-1"));
+        assert_eq!(
+            halb.client_secret, None,
+            "das Secret der Master-App darf nicht zur neuen Client-ID gemischt werden"
+        );
+        assert!(
+            !halb.is_configured(),
+            "unvollstaendig muss unvollstaendig bleiben"
+        );
+
+        // Ohne jede eigene Variable bleibt der live laufende Steam-Flow auf der
+        // alten Application.
+        let master = steam_app_with(lookup_from(&[
+            ("DISCORD_OAUTH_CLIENT_ID", "alt-1"),
+            ("DISCORD_OAUTH_CLIENT_SECRET", "alt-secret"),
+            ("DISCORD_TOKEN", "alt-bot"),
+        ]));
+        assert_eq!(master.client_id.as_deref(), Some("alt-1"));
+        assert_eq!(master.client_secret.as_deref(), Some("alt-secret"));
+        assert_eq!(master.bot_token.as_deref(), Some("alt-bot"));
+        assert!(master.can_register_metadata());
+
+        // Die Belegung, die das Startskript heute erzeugt: nur die Callback-URL.
+        // Sie darf den Wechsel nicht ausloesen, sonst waere die Steam-App leer und
+        // der live laufende Flow nach dem Restart tot — 503 im Login, NotConfigured
+        // in jedem Push, und kein Dienst sieht dabei ungesund aus.
+        let nur_callback = steam_app_with(lookup_from(&[
+            ("DISCORD_STEAM_CALLBACK_URL", "https://example.test/steam"),
+            ("DISCORD_OAUTH_CLIENT_ID", "alt-1"),
+            ("DISCORD_OAUTH_CLIENT_SECRET", "alt-secret"),
+            ("DISCORD_TOKEN", "alt-bot"),
+        ]));
+        assert_eq!(nur_callback.client_id.as_deref(), Some("alt-1"));
+        assert_eq!(nur_callback.client_secret.as_deref(), Some("alt-secret"));
+        assert_eq!(
+            nur_callback.callback_url.as_deref(),
+            Some("https://example.test/steam"),
+            "die Callback-URL wirkt in beiden Zweigen"
+        );
+        assert!(
+            nur_callback.can_register_metadata(),
+            "eine gesetzte Callback-URL darf die Master-App nicht entwerten"
+        );
+
+        // Vollstaendig eigene App: kein Wert kommt mehr von der Master-App.
+        let eigen = steam_app_with(lookup_from(&[
+            ("DISCORD_STEAM_CLIENT_ID", "neu-1"),
+            ("DISCORD_STEAM_APP_ID", "neu-1"),
+            ("DISCORD_STEAM_CLIENT_SECRET", "neu-secret"),
+            ("DISCORD_STEAM_BOT_TOKEN", "neu-bot"),
+            ("DISCORD_OAUTH_CLIENT_SECRET", "alt-secret"),
+            ("DISCORD_TOKEN", "alt-bot"),
+        ]));
+        assert_eq!(eigen.client_secret.as_deref(), Some("neu-secret"));
+        assert_eq!(eigen.bot_token.as_deref(), Some("neu-bot"));
+        assert!(eigen.can_register_metadata());
+    }
 
     #[test]
     fn scrim_backend_mode_defaults_to_legacy_when_unset_or_empty() {

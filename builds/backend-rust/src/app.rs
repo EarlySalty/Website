@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use anyhow::Context;
+
 use axum::{
     http::{header, Method},
     routing::{delete, get, patch, post, put},
@@ -30,6 +32,11 @@ pub struct AppInner {
     pub scrim_http: Client,
     pub discord_role_broker: DynDiscordRoleBroker,
     pub discord_role_connections: DynDiscordRoleConnectionClient,
+    /// Pool auf die Twitch-Datenbank, per `default_transaction_read_only` auf
+    /// Lesen festgelegt. Quelle fuer das Creator-Linked-Role-Profil; ohne
+    /// `TWITCH_ANALYTICS_DSN` bleibt er leer und der Creator-Provider meldet
+    /// "nicht abrufbar".
+    pub twitch_pool: Option<PgPool>,
     pub auth: Auth,
 }
 
@@ -45,6 +52,8 @@ impl AppState {
         let discord_role_broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg)?);
         let discord_role_connections =
             Arc::new(ReqwestDiscordRoleConnectionClient::from_config(&cfg)?);
+        ensure_role_connection_schema(&pool).await?;
+        let twitch_pool = connect_twitch_pool(&cfg);
         let auth = Auth::new(cfg.clone());
         let state = Self {
             inner: Arc::new(AppInner {
@@ -54,9 +63,17 @@ impl AppState {
                 scrim_http,
                 discord_role_broker,
                 discord_role_connections,
+                twitch_pool,
                 auth,
             }),
         };
+        // Nicht awaiten: der Pool ist lazy, eine nicht erreichbare Twitch-DB
+        // kostet hier bis zu acquire_timeout, und der Steam-Provider soll darauf
+        // nicht warten. Die Meldung kommt Sekunden nach dem Start ins Journal.
+        {
+            let state = state.clone();
+            tokio::spawn(async move { report_creator_source_health(&state).await });
+        }
         crate::discord_role_connection::spawn_sync_worker(state.clone());
         if state.cfg.scrim_backend_mode == ScrimBackendMode::Legacy {
             crate::routes::scrim::spawn_substitute_sweep_worker(state.clone());
@@ -87,6 +104,7 @@ impl AppState {
                 scrim_http,
                 discord_role_broker,
                 discord_role_connections,
+                twitch_pool: None,
                 auth,
             }),
         }
@@ -98,6 +116,23 @@ impl AppState {
         cfg: Config,
         discord_role_broker: DynDiscordRoleBroker,
         discord_role_connections: DynDiscordRoleConnectionClient,
+    ) -> Self {
+        Self::for_test_pool_with_clients_and_twitch(
+            pool,
+            cfg,
+            discord_role_broker,
+            discord_role_connections,
+            None,
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test_pool_with_clients_and_twitch(
+        pool: PgPool,
+        cfg: Config,
+        discord_role_broker: DynDiscordRoleBroker,
+        discord_role_connections: DynDiscordRoleConnectionClient,
+        twitch_pool: Option<PgPool>,
     ) -> Self {
         let http = Client::builder()
             .timeout(std::time::Duration::from_secs(20))
@@ -113,6 +148,7 @@ impl AppState {
                 scrim_http,
                 discord_role_broker,
                 discord_role_connections,
+                twitch_pool,
                 auth,
             }),
         }
@@ -184,12 +220,21 @@ pub fn router(state: AppState) -> Router {
             get(routes::auth::discord_callback),
         )
         .route(
+            "/linked-role/{provider}",
+            get(routes::linked_role::linked_role_login_for),
+        )
+        .route(
+            "/auth/discord/{provider}/callback",
+            get(routes::linked_role::linked_role_callback_for),
+        )
+        // Die Master-Application zeigt im Dev-Portal auf diese beiden Adressen.
+        .route(
             "/api/auth/discord/linked-role/login",
-            get(routes::linked_role::linked_role_login),
+            get(routes::linked_role::legacy_steam_login),
         )
         .route(
             "/api/auth/discord/linked-role/callback",
-            get(routes::linked_role::linked_role_callback),
+            get(routes::linked_role::legacy_steam_callback),
         )
         .route("/api/auth/me", get(routes::auth::me))
         .route("/api/auth/logout", post(routes::auth::logout))
@@ -269,6 +314,10 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/admin/users/{user_id}/role",
             put(routes::meta::update_user_role),
+        )
+        .route(
+            "/api/admin/discord-role-connections/metadata/{provider}",
+            post(routes::linked_role::register_metadata_for),
         )
         .route(
             "/api/admin/discord-role-connections/metadata",
@@ -407,6 +456,141 @@ fn scrim_router(mode: ScrimBackendMode) -> Router<AppState> {
         ScrimBackendMode::Legacy => legacy_scrim_router(),
         ScrimBackendMode::Proxy | ScrimBackendMode::Maintenance => routes::scrim_proxy::router(),
     }
+}
+
+/// Legt den nur-lesenden Twitch-Pool fuer das Creator-Linked-Role-Profil an.
+///
+/// Lazy, damit eine beim Start kurz nicht erreichbare Twitch-Datenbank nicht bis
+/// zum naechsten Neustart als "nicht vorhanden" haengen bleibt. Jede Verbindung
+/// setzt `default_transaction_read_only`; das faengt versehentliche Schreibzugriffe
+/// ab, ist aber ein Session-Schalter und keine Rechtegrenze — die gaebe erst ein
+/// eigener DB-User ohne Schreibrecht.
+fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
+    let Some(dsn) = cfg.twitch_analytics_dsn.as_deref() else {
+        // Ohne diese Meldung liesse sich die Creator-Haelfte deployen und taete
+        // dauerhaft nichts: der Reconcile-Sweep gibt still 0 zurueck, und nur
+        // vereinzelte Callback-Warnungen wuerden es verraten.
+        if cfg.discord_creator_app.is_configured() {
+            tracing::error!(
+                "TWITCH_ANALYTICS_DSN fehlt, die Creator-Application ist aber konfiguriert — \
+                 der Creator-Provider kann kein Profil lesen und bleibt wirkungslos."
+            );
+        } else {
+            tracing::info!("TWITCH_ANALYTICS_DSN nicht gesetzt — Creator-Linked-Role ist inaktiv.");
+        }
+        return None;
+    };
+    match sqlx::postgres::PgPoolOptions::new()
+        .max_connections(2)
+        .acquire_timeout(std::time::Duration::from_secs(5))
+        .after_connect(|conn, _meta| {
+            Box::pin(async move {
+                // Statement-Timeout, weil dieser Pool waehrend einer offenen
+                // zentralen Transaktion befragt wird: eine haengende Query wuerde
+                // dort sonst unbegrenzt eine Verbindung mit gehaltener Lock binden.
+                //
+                // Zwei getrennte Statements, nicht eines mit Semikolon: sqlx::query
+                // geht auch ohne Bindings durch das Extended-Protocol, und Postgres
+                // lehnt zwei Befehle in einem Prepared Statement mit 42601 ab. Das
+                // wuerde jede Verbindung dieses Pools scheitern lassen, also den
+                // ganzen Creator-Provider.
+                sqlx::query("SET default_transaction_read_only = on")
+                    .execute(&mut *conn)
+                    .await?;
+                sqlx::query("SET statement_timeout = '5s'")
+                    .execute(&mut *conn)
+                    .await?;
+                Ok(())
+            })
+        })
+        .connect_lazy(dsn)
+    {
+        Ok(pool) => Some(pool),
+        Err(err) => {
+            tracing::warn!(
+                ?err,
+                "Twitch-DSN fuer den Creator-Provider nicht verwendbar"
+            );
+            None
+        }
+    }
+}
+
+/// Meldet beim Start, wie viele Streamer-Identitaeten eine Discord-Verknuepfung
+/// tragen. Eine leere Quelle ist der stille Totalausfall des Creator-Providers:
+/// jeder Push schreibt "0", jeder Callback landet auf der Info-Seite, und nichts
+/// davon sieht nach einem Fehler aus.
+async fn report_creator_source_health(state: &AppState) {
+    if !state.cfg.discord_creator_app.is_configured() || state.twitch_pool.is_none() {
+        return;
+    }
+    match crate::discord_role_connection::creator_source_health(state).await {
+        Ok(0) => tracing::error!(
+            "Creator-Quelle leer: keine Zeile in twitch_streamer_identities hat eine \
+             discord_user_id. Der Creator-Provider kann niemandem eine Rolle geben."
+        ),
+        Ok(count) => tracing::info!(verknuepfte_streamer = count, "Creator-Quelle erreichbar"),
+        Err(err) => tracing::error!(?err, "Creator-Quelle nicht lesbar"),
+    }
+}
+
+/// Prueft beim Start, ob Migration 2026081301 aus
+/// `Deadlock-Bots/rust/crates/dl-central-db/migrations/` (anderes Repo)
+/// vollstaendig eingespielt ist: Spalte `provider` **und** ein Unique-Index auf
+/// `(discord_id, provider)` auf beiden Tabellen — genau das setzt jedes
+/// `ON CONFLICT (discord_id, provider)` voraus.
+///
+/// Fehlt etwas davon, bricht der Start ab. Weiterlaufen hiesse: die bereits
+/// live laufende Steam-Verknuepfung scheitert bei jedem Callback still, waehrend
+/// der Dienst gesund aussieht. Ein Dienst, der nicht startet, ist im Deploy
+/// sofort sichtbar — und der Weg zurueck ist genau ein Migrationslauf.
+async fn ensure_role_connection_schema(pool: &PgPool) -> anyhow::Result<()> {
+    for table in [
+        "discord_role_connection_tokens",
+        "discord_role_connection_sync_state",
+    ] {
+        let column: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 FROM information_schema.columns \
+              WHERE table_schema='core' AND table_name=$1 AND column_name='provider'",
+        )
+        .bind(table)
+        .fetch_optional(pool)
+        .await
+        .with_context(|| format!("Schema-Pruefung von core.{table} fehlgeschlagen"))?;
+        if column.is_none() {
+            anyhow::bail!(
+                "core.{table}.provider fehlt — Migration 2026081301 aus dl-central-db ist \
+                 nicht eingespielt. Erst `dl-central-migrate` laufen lassen, dann diesen \
+                 Dienst starten."
+            );
+        }
+
+        let unique: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 \
+               FROM pg_constraint con \
+               JOIN pg_class cls ON cls.oid = con.conrelid \
+               JOIN pg_namespace nsp ON nsp.oid = cls.relnamespace \
+              WHERE nsp.nspname='core' AND cls.relname=$1 \
+                AND con.contype IN ('p','u') \
+                AND (SELECT array_agg(att.attname::text ORDER BY att.attname) \
+                       FROM pg_attribute att \
+                      WHERE att.attrelid = cls.oid \
+                        AND att.attnum = ANY (con.conkey)) \
+                    = ARRAY['discord_id','provider']",
+        )
+        .bind(table)
+        .fetch_optional(pool)
+        .await
+        .with_context(|| format!("Schluessel-Pruefung von core.{table} fehlgeschlagen"))?;
+        if unique.is_none() {
+            anyhow::bail!(
+                "core.{table} hat keinen Unique-Index auf (discord_id, provider) — Migration \
+                 2026081301 ist nur halb eingespielt. Jedes ON CONFLICT (discord_id, provider) \
+                 wuerde zur Laufzeit scheitern."
+            );
+        }
+    }
+    Ok(())
 }
 
 fn scrim_http_client(cfg: &Config) -> anyhow::Result<Client> {
@@ -4870,6 +5054,51 @@ mod tests {
         test_state_with(|_| {}, std::time::Duration::from_secs(20)).await
     }
 
+    #[tokio::test]
+    async fn twitch_pool_gibt_verbindungen_heraus_und_ist_nur_lesend() {
+        // Der after_connect-Hook laeuft nur bei einer echten Verbindung, und der
+        // Pool ist lazy: ein Fehler darin faellt beim Start nirgends auf, macht aber
+        // jede Verbindung unbrauchbar und damit den ganzen Creator-Provider tot.
+        // Deshalb hier eine echte Query gegen die Test-Postgres, statt den Pool nur
+        // anzulegen. Die uebrigen Creator-Tests injizieren den Pool direkt und
+        // umgehen connect_twitch_pool komplett.
+        // Keine Wegwerf-DB: dieser Test schreibt nichts, er stellt nur eine
+        // Verbindung her und liest zwei Session-Einstellungen.
+        let dsn = std::env::var("CENTRAL_TEST_DSN")
+            .or_else(|_| std::env::var("DATABASE_URL"))
+            .expect("CENTRAL_TEST_DSN oder DATABASE_URL muss auf die Test-Postgres zeigen");
+        // Derselbe Schutz, den test_pool() mitbringt: nie gegen die
+        // Produktionsdatenbank verbinden, auch nicht lesend.
+        assert!(
+            !dsn.trim_end_matches('/').ends_with("/deadlock"),
+            "der Test-DSN zeigt auf die Produktionsdatenbank"
+        );
+        let mut cfg = Config::from_env();
+        cfg.twitch_analytics_dsn = Some(dsn);
+        let pool = connect_twitch_pool(&cfg).expect("twitch pool");
+
+        let eins: i32 = sqlx::query_scalar("SELECT 1")
+            .fetch_one(&pool)
+            .await
+            .expect("der after_connect-Hook muss durchlaufen, sonst gibt der Pool nichts heraus");
+        assert_eq!(eins, 1);
+
+        let read_only: String = sqlx::query_scalar("SHOW transaction_read_only")
+            .fetch_one(&pool)
+            .await
+            .expect("read-only-Schalter");
+        assert_eq!(read_only, "on", "der Pool darf nicht schreiben duerfen");
+
+        let timeout: String = sqlx::query_scalar("SHOW statement_timeout")
+            .fetch_one(&pool)
+            .await
+            .expect("statement_timeout");
+        assert_eq!(
+            timeout, "5s",
+            "ohne Timeout kann eine haengende Fremd-DB die zentrale Lock halten"
+        );
+    }
+
     async fn creator_test_state() -> (dl_central_db::TestDb, AppState) {
         let discord_api_base = spawn_creator_role_api().await;
         test_state_with(
@@ -4934,6 +5163,7 @@ mod tests {
                 scrim_http,
                 discord_role_broker,
                 discord_role_connections,
+                twitch_pool: None,
                 auth,
             }),
         };
