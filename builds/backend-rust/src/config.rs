@@ -42,8 +42,17 @@ pub struct DiscordLinkedRoleApp {
 }
 
 impl DiscordLinkedRoleApp {
+    /// Reicht fuer den OAuth-Flow: Login, Callback, Token-Tausch.
     pub fn is_configured(&self) -> bool {
         self.client_id.is_some() && self.client_secret.is_some() && self.application_id.is_some()
+    }
+
+    /// Reicht zusaetzlich fuer die Metadata-Registrierung — die laeuft mit dem
+    /// Bot-Token der App. Ohne diese Unterscheidung meldet der Sammel-Endpunkt
+    /// eine App ohne Bot-Token als "konfiguriert" und scheitert dann mit 503,
+    /// obwohl schlicht ein Wert fehlt.
+    pub fn can_register_metadata(&self) -> bool {
+        self.is_configured() && self.bot_token.is_some()
     }
 }
 

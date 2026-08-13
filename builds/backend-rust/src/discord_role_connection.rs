@@ -34,7 +34,7 @@ pub const METADATA_RANG_NAME: &str = "Deadlock-Rang";
 pub const METADATA_RANG_DESCRIPTION: &str = "Verifizierter Rang aus den verknüpften Steam-Daten";
 pub const METADATA_TWITCH_OAUTH_NAME: &str = "Twitch verbunden";
 pub const METADATA_TWITCH_OAUTH_DESCRIPTION: &str =
-    "Twitch wurde fuer das Deadlock Creator Program autorisiert";
+    "Twitch wurde für das Deadlock Creator Program autorisiert";
 pub const METADATA_CREATOR_APPROVED_NAME: &str = "Creator bestätigt";
 pub const METADATA_CREATOR_APPROVED_DESCRIPTION: &str =
     "Creator ist im Deadlock Creator Program freigeschaltet";
@@ -1096,8 +1096,10 @@ where
 ///
 /// `twitch_oauth` heisst: der Streamer hat **unsere** Twitch-Anwendung
 /// autorisiert (Zeile in `twitch_raid_auth`, kein Re-Auth faellig).
-/// `creator_approved` kommt aus `streamer_dim.is_partner` und bleibt damit
-/// vollstaendig in der Hand der bestehenden Partner-Logik.
+/// `creator_approved` spiegelt `is_partner_active` aus dem View
+/// `twitch_partners_all_state` — die kanonische Partner-Definition des
+/// Twitch-Bots. Hier wird nichts freigegeben, was dort nicht schon freigegeben
+/// ist; welche Bedingungen dazugehoeren, steht bei `CREATOR_PROFILE_SQL`.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CreatorProfile {
     pub twitch_oauth: bool,
@@ -1154,26 +1156,32 @@ where
 
 /// SQL, das das Creator-Profil aus der Twitch-Datenbank holt.
 ///
-/// Quelle sind die drei Tabellen, die dort wirklich gepflegt werden (Stand
-/// 2026-08-13, gezaehlt gegen die Live-Datenbank): `twitch_streamer_identities`
-/// (896 Zeilen, 52 davon mit `discord_user_id`), `twitch_raid_auth` (64) und
-/// `twitch_partners` (65, davon 61 nicht departnered). Die frueher naheliegende
-/// `streamer_dim` hat 0 Zeilen und wird von keinem Dienst beschrieben — sie haette
-/// jedem Creator dauerhaft "nicht verknuepft" gemeldet.
+/// Quellen sind die drei Stellen, die dort wirklich gepflegt werden (gezaehlt am
+/// 2026-08-13 gegen die Live-Datenbank): `twitch_streamer_identities` (896 Zeilen,
+/// 52 mit `discord_user_id`), `twitch_raid_auth` (64, davon 56 ohne
+/// `needs_reauth`) und der View `twitch_partners_all_state` (54 mit
+/// `is_partner_active=1`).
 ///
-/// Alle drei Schluesselspalten sind TEXT, deshalb wird die Discord-ID als String
-/// gebunden. `updated_at` ist dort ebenfalls TEXT; die Sortierung ist damit
-/// lexikografisch, was bei ISO-Zeitstempeln der Zeitsortierung entspricht.
+/// `is_partner_active` ist die kanonische Partner-Definition des Twitch-Bots und
+/// bewusst nicht selbst nachgebaut: sie schliesst zusaetzlich
+/// `manual_partner_opt_out` und `technical_pause_reason` ein. Die naheliegende
+/// Kurzform `status='active'` haette am 2026-08-13 sieben Streamer als Creator
+/// freigegeben, die geblockt oder technisch pausiert sind (token_error,
+/// bot_banned, admin_non_partner). Die frueher naheliegende `streamer_dim` hat 0
+/// Zeilen und wird von keinem Dienst beschrieben.
+///
+/// Alle Schluesselspalten sind TEXT, deshalb wird die Discord-ID als String
+/// gebunden. `updated_at` ist dort ebenfalls TEXT und dient nur als Tie-Break,
+/// wenn eine Discord-ID mehrere Identitaeten hat; die Sortierung ist damit
+/// lexikografisch und bei gemischten Zeitformaten nicht exakt.
 pub const CREATOR_PROFILE_SQL: &str = "SELECT ident.twitch_login, \
-            COALESCE(part.status = 'active' \
-                     AND part.departnered_at IS NULL \
-                     AND part.admin_archived_at IS NULL, FALSE) AS is_partner, \
+            COALESCE(part.is_partner_active = 1, FALSE) AS is_partner, \
             COALESCE(auth.twitch_user_id IS NOT NULL \
                      AND COALESCE(auth.needs_reauth, FALSE) = FALSE, FALSE) AS twitch_oauth \
        FROM public.twitch_streamer_identities AS ident \
        LEFT JOIN public.twitch_raid_auth AS auth \
               ON auth.twitch_user_id = ident.twitch_user_id \
-       LEFT JOIN public.twitch_partners AS part \
+       LEFT JOIN public.twitch_partners_all_state AS part \
               ON part.twitch_user_id = ident.twitch_user_id \
       WHERE ident.discord_user_id = $1 \
       ORDER BY twitch_oauth DESC, is_partner DESC, ident.updated_at DESC NULLS LAST \
@@ -1589,7 +1597,19 @@ mod tests {
                  twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, needs_reauth BOOLEAN)",
             "CREATE TABLE IF NOT EXISTS public.twitch_partners (\
                  twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, status TEXT, \
-                 departnered_at TEXT, admin_archived_at TEXT)",
+                 departnered_at TEXT, admin_archived_at TEXT, \
+                 manual_partner_opt_out INTEGER, technical_pause_reason TEXT)",
+            // Nachbau der kanonischen Definition aus dem Twitch-Bot
+            // (20260623150000_drop_manual_verified_columns.sql): dieselbe
+            // CASE-Bedingung, damit der Test die Block-Faelle sieht. Dass der
+            // echte View so aussieht, prueft creator_source_health() beim Start.
+            "CREATE OR REPLACE VIEW public.twitch_partners_all_state AS \
+             SELECT p.twitch_user_id, p.twitch_login, p.status, \
+                    CASE WHEN p.status = 'active' \
+                          AND COALESCE(p.manual_partner_opt_out, 0) = 0 \
+                          AND COALESCE(p.technical_pause_reason, '') = '' \
+                          AND p.admin_archived_at IS NULL THEN 1 ELSE 0 END AS is_partner_active \
+               FROM public.twitch_partners p",
             "TRUNCATE public.twitch_streamer_identities, public.twitch_raid_auth, \
                       public.twitch_partners",
         ] {
@@ -1669,6 +1689,31 @@ mod tests {
             "nur status='active' zaehlt als Freigabe"
         );
 
+        // Der Block-Pfad des Twitch-Bots laesst status='active' stehen und setzt
+        // nur diese zwei Felder. Genau daran haette eine selbst gebaute
+        // Partner-Regel sieben geblockte Streamer als Creator durchgelassen.
+        for (pause, opt_out, fall) in [
+            ("'blocked'", "0", "geblockt"),
+            ("NULL", "1", "admin_non_partner"),
+        ] {
+            sqlx::query(&format!(
+                "UPDATE public.twitch_partners \
+                    SET status='active', departnered_at=NULL, admin_archived_at=NULL, \
+                        technical_pause_reason={pause}, manual_partner_opt_out={opt_out} \
+                  WHERE twitch_user_id='4242'"
+            ))
+            .execute(&state.pool)
+            .await
+            .expect("block-fall");
+            assert!(
+                !load_creator_profile(&state, 940_540)
+                    .await
+                    .expect("profil block-fall")
+                    .creator_approved,
+                "{fall} darf keine Creator-Freigabe bekommen"
+            );
+        }
+
         sqlx::query(
             "UPDATE public.twitch_raid_auth SET needs_reauth=TRUE WHERE twitch_user_id='4242'",
         )
@@ -1697,6 +1742,49 @@ mod tests {
                 .twitch_login,
             None,
             "leerer Login gilt als kein Login — sonst entscheidet der Redirect anders als der Payload"
+        );
+    }
+
+    #[tokio::test]
+    async fn folgeziel_je_creator_zustand() {
+        // Die drei Ausgaenge des Creator-Callbacks: gar nicht im Programm →
+        // Info-Seite (nicht in den Partner-Flow, dessen Gate schickt
+        // Nicht-Partner im Kreis), im Programm aber App nicht autorisiert →
+        // Twitch-Autorisierung, Steam ohne Link → Anleitung im Kanal.
+        let role_client = Arc::new(MockRoleConnectionClient::new("940570"));
+        let (_db, state) = test_state(role_client).await;
+
+        let ohne_login = LinkedRoleProfile::Creator(CreatorProfile::default());
+        assert_eq!(
+            crate::routes::linked_role::follow_up_url(
+                &state,
+                LinkedRoleProvider::Creator,
+                &ohne_login
+            ),
+            state.cfg.linked_role_creator_info_url
+        );
+
+        let mit_login = LinkedRoleProfile::Creator(CreatorProfile {
+            twitch_oauth: false,
+            creator_approved: true,
+            twitch_login: Some("nani".into()),
+        });
+        assert_eq!(
+            crate::routes::linked_role::follow_up_url(
+                &state,
+                LinkedRoleProvider::Creator,
+                &mit_login
+            ),
+            state.cfg.linked_role_twitch_auth_url
+        );
+
+        let steam = LinkedRoleProfile::Steam(RoleConnectionProfile {
+            steam_linked: false,
+            rank: 0,
+        });
+        assert_eq!(
+            crate::routes::linked_role::follow_up_url(&state, LinkedRoleProvider::Steam, &steam),
+            state.cfg.linked_role_steam_link_url
         );
     }
 

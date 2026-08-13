@@ -236,7 +236,7 @@ async fn finish_callback(
     }
 }
 
-fn follow_up_url(
+pub(crate) fn follow_up_url(
     state: &AppState,
     provider: LinkedRoleProvider,
     profile: &discord_role_connection::LinkedRoleProfile,
@@ -291,8 +291,14 @@ pub async fn register_metadata(
     // Sync-Endpunkt. Was gelungen ist, steht im Log.
     let mut first_error = None;
     for provider in LinkedRoleProvider::ALL {
-        if !provider.app(&state.cfg).is_configured() {
-            skipped.push(json!({ "provider": provider.as_str(), "reason": "not_configured" }));
+        let app = provider.app(&state.cfg);
+        if !app.can_register_metadata() {
+            let reason = if app.is_configured() {
+                "bot_token_fehlt"
+            } else {
+                "not_configured"
+            };
+            skipped.push(json!({ "provider": provider.as_str(), "reason": reason }));
             continue;
         }
         match discord_role_connection::register_metadata(&state, provider).await {
@@ -314,8 +320,17 @@ pub async fn register_metadata(
     if let Some(err) = first_error {
         return Err(err);
     }
+    // `records` ist der alte Vertrag dieses Endpunkts (die Liste der registrierten
+    // Metadata-Felder) und bleibt erhalten; bei zwei Providern traegt es Steam.
+    let legacy_records = registered
+        .iter()
+        .find(|entry| entry.get("provider").and_then(Value::as_str) == Some("steam"))
+        .or_else(|| registered.first())
+        .and_then(|entry| entry.get("records").cloned())
+        .unwrap_or_else(|| Value::Array(Vec::new()));
     Ok(Json(json!({
         "ok": true,
+        "records": legacy_records,
         "registered": registered,
         "skipped": skipped,
     })))
