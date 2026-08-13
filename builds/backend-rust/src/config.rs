@@ -78,12 +78,16 @@ pub struct Config {
     pub discord_steam_app: DiscordLinkedRoleApp,
     pub discord_creator_app: DiscordLinkedRoleApp,
     pub linked_role_steam_link_url: String,
-    pub linked_role_twitch_link_url: String,
     pub linked_role_twitch_auth_url: String,
+    pub linked_role_creator_info_url: String,
     pub twitch_analytics_dsn: Option<String>,
     pub discord_role_connection_cookie_name: String,
     pub discord_role_connection_sync_worker_enabled: bool,
     pub discord_role_connection_sync_interval_seconds: u64,
+    /// Abstand, in dem der Worker die aktiven Creator-Tokens von selbst zum
+    /// Abgleich einstellt. Fuer Creator gibt es keinen DB-Trigger, weil die
+    /// Quelldaten in der Twitch-Datenbank liegen.
+    pub discord_role_connection_creator_reconcile_seconds: u64,
     pub db_master_key_v1: Option<String>,
     pub scrim_backend_mode: ScrimBackendMode,
     pub scrim_turnier_base: String,
@@ -230,15 +234,18 @@ impl Config {
                 "LINKED_ROLE_STEAM_LINK_URL",
                 "https://discord.com/channels/1289721245281292288/1398021105339334666",
             ),
-            // Discord-zu-Twitch-Verknuepfung (bestehender Partner-Flow des
-            // Twitch-Bots) und danach die Autorisierung unserer Twitch-App.
-            linked_role_twitch_link_url: env_or(
-                "LINKED_ROLE_TWITCH_LINK_URL",
-                "https://deutsche-deadlock-community.de/twitch/auth/discord/link",
-            ),
             linked_role_twitch_auth_url: env_or(
                 "LINKED_ROLE_TWITCH_AUTH_URL",
                 "https://deutsche-deadlock-community.de/twitch/raid/auth",
+            ),
+            // Wer im Creator-Programm noch gar nicht auftaucht, kann den
+            // Partner-Flow des Twitch-Bots nicht betreten: dessen Login-Gate
+            // laesst nur eingetragene Partner durch und schickt alle anderen
+            // im Kreis. Deshalb geht dieser Fall auf die Streamer-Seite, die
+            // den Weg ins Programm erklaert.
+            linked_role_creator_info_url: env_or(
+                "LINKED_ROLE_CREATOR_INFO_URL",
+                "https://deutsche-deadlock-community.de/streamer",
             ),
             twitch_analytics_dsn: first_env(&["TWITCH_ANALYTICS_DSN"]),
             discord_role_connection_cookie_name: env_or(
@@ -259,6 +266,13 @@ impl Config {
             .and_then(|v| v.trim().parse().ok())
             .filter(|v| *v > 0)
             .unwrap_or(30),
+            discord_role_connection_creator_reconcile_seconds: env::var(
+                "DISCORD_ROLE_CONNECTION_CREATOR_RECONCILE_SECONDS",
+            )
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .filter(|v| *v > 0)
+            .unwrap_or(3600),
             db_master_key_v1: first_env(&["DB_MASTER_KEY_V1"]),
             scrim_backend_mode,
             scrim_turnier_base: env_or("TURNIER_INTERNAL_API_BASE_URL", "http://127.0.0.1:8900"),

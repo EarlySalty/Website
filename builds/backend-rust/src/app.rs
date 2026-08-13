@@ -30,9 +30,10 @@ pub struct AppInner {
     pub scrim_http: Client,
     pub discord_role_broker: DynDiscordRoleBroker,
     pub discord_role_connections: DynDiscordRoleConnectionClient,
-    /// Nur-lesender Pool auf die Twitch-Datenbank. Quelle fuer das
-    /// Creator-Linked-Role-Profil; ohne `TWITCH_ANALYTICS_DSN` bleibt er leer und
-    /// der Creator-Provider meldet "nicht abrufbar".
+    /// Pool auf die Twitch-Datenbank, per `default_transaction_read_only` auf
+    /// Lesen festgelegt. Quelle fuer das Creator-Linked-Role-Profil; ohne
+    /// `TWITCH_ANALYTICS_DSN` bleibt er leer und der Creator-Provider meldet
+    /// "nicht abrufbar".
     pub twitch_pool: Option<PgPool>,
     pub auth: Auth,
 }
@@ -49,7 +50,8 @@ impl AppState {
         let discord_role_broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg)?);
         let discord_role_connections =
             Arc::new(ReqwestDiscordRoleConnectionClient::from_config(&cfg)?);
-        let twitch_pool = connect_twitch_pool(&cfg).await;
+        warn_if_role_connection_provider_missing(&pool).await;
+        let twitch_pool = connect_twitch_pool(&cfg);
         let auth = Auth::new(cfg.clone());
         let state = Self {
             inner: Arc::new(AppInner {
@@ -106,6 +108,23 @@ impl AppState {
         discord_role_broker: DynDiscordRoleBroker,
         discord_role_connections: DynDiscordRoleConnectionClient,
     ) -> Self {
+        Self::for_test_pool_with_clients_and_twitch(
+            pool,
+            cfg,
+            discord_role_broker,
+            discord_role_connections,
+            None,
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test_pool_with_clients_and_twitch(
+        pool: PgPool,
+        cfg: Config,
+        discord_role_broker: DynDiscordRoleBroker,
+        discord_role_connections: DynDiscordRoleConnectionClient,
+        twitch_pool: Option<PgPool>,
+    ) -> Self {
         let http = Client::builder()
             .timeout(std::time::Duration::from_secs(20))
             .build()
@@ -120,7 +139,7 @@ impl AppState {
                 scrim_http,
                 discord_role_broker,
                 discord_role_connections,
-                twitch_pool: None,
+                twitch_pool,
                 auth,
             }),
         }
@@ -430,27 +449,63 @@ fn scrim_router(mode: ScrimBackendMode) -> Router<AppState> {
     }
 }
 
-/// Verbindet den nur-lesenden Twitch-Pool fuer das Creator-Linked-Role-Profil.
+/// Legt den nur-lesenden Twitch-Pool fuer das Creator-Linked-Role-Profil an.
 ///
-/// Ein Fehler hier darf den Start nicht verhindern: die Website laeuft ohne
-/// Twitch-Datenbank vollstaendig weiter, nur der Creator-Provider antwortet dann
-/// mit einer Nicht-verfuegbar-Meldung.
-async fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
+/// Lazy, damit eine beim Start kurz nicht erreichbare Twitch-Datenbank nicht bis
+/// zum naechsten Neustart als "nicht vorhanden" haengen bleibt. Nur-lesend ist
+/// hier keine Behauptung: jede Verbindung setzt
+/// `default_transaction_read_only`, ein Schreibversuch scheitert an Postgres.
+fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
     let dsn = cfg.twitch_analytics_dsn.as_deref()?;
     match sqlx::postgres::PgPoolOptions::new()
         .max_connections(2)
         .acquire_timeout(std::time::Duration::from_secs(5))
-        .connect(dsn)
-        .await
+        .after_connect(|conn, _meta| {
+            Box::pin(async move {
+                sqlx::query("SET default_transaction_read_only = on")
+                    .execute(conn)
+                    .await?;
+                Ok(())
+            })
+        })
+        .connect_lazy(dsn)
     {
         Ok(pool) => Some(pool),
         Err(err) => {
             tracing::warn!(
                 ?err,
-                "Twitch-Datenbank fuer den Creator-Provider nicht verbunden"
+                "Twitch-DSN fuer den Creator-Provider nicht verwendbar"
             );
             None
         }
+    }
+}
+
+/// Prueft beim Start, ob Migration 2026081301 aus `dl-central-db` (anderes Repo)
+/// eingespielt ist. Ohne die Spalte `provider` scheitert jeder Linked-Role-Pfad,
+/// auch die bereits laufende Steam-Verknuepfung — das soll einmal laut im Log
+/// stehen und nicht erst bei jedem Callback einzeln auffallen.
+async fn warn_if_role_connection_provider_missing(pool: &PgPool) {
+    let present: Option<i32> = sqlx::query_scalar(
+        "SELECT 1 FROM information_schema.columns \
+          WHERE table_schema='core' AND table_name='discord_role_connection_tokens' \
+            AND column_name='provider'",
+    )
+    .fetch_optional(pool)
+    .await
+    .unwrap_or_else(|err| {
+        tracing::warn!(
+            ?err,
+            "Schema-Pruefung der Linked-Role-Tabellen fehlgeschlagen"
+        );
+        None
+    });
+    if present.is_none() {
+        tracing::error!(
+            "core.discord_role_connection_tokens.provider fehlt — Migration 2026081301 \
+             aus dl-central-db ist nicht eingespielt. Bis dahin scheitert jede \
+             Linked-Role-Verknuepfung, auch die bestehende Steam-Verknuepfung."
+        );
     }
 }
 

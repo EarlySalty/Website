@@ -238,7 +238,11 @@ fn follow_up_url(
             // Autorisierung unserer Twitch-Anwendung.
             state.cfg.linked_role_twitch_auth_url.clone()
         }
-        (LinkedRoleProvider::Creator, _) => state.cfg.linked_role_twitch_link_url.clone(),
+        // Ohne Eintrag im Creator-Programm hilft der Partner-Flow des
+        // Twitch-Bots nicht: dessen Gate laesst nur eingetragene Partner durch
+        // und schickt alle anderen zurueck in den Login. Deshalb hier die
+        // Streamer-Seite, die den Weg ins Programm erklaert.
+        (LinkedRoleProvider::Creator, _) => state.cfg.linked_role_creator_info_url.clone(),
     }
 }
 
@@ -265,14 +269,21 @@ pub async fn register_metadata(
 ) -> AppResult<Json<Value>> {
     auth::require_admin_user(&state, &headers, Some(peer)).await?;
     let mut registered = Vec::new();
+    // Uebersprungene Provider werden mitgeliefert: ein Tippfehler in
+    // DISCORD_CREATOR_CLIENT_ID sah sonst wie ein Erfolg aus, obwohl nichts
+    // registriert wurde.
+    let mut skipped = Vec::new();
     for provider in LinkedRoleProvider::ALL {
         if !provider.app(&state.cfg).is_configured() {
+            skipped.push(provider.as_str());
             continue;
         }
         let records = discord_role_connection::register_metadata(&state, provider).await?;
         registered.push(json!({ "provider": provider.as_str(), "records": records }));
     }
-    Ok(Json(json!({ "ok": true, "registered": registered })))
+    Ok(Json(
+        json!({ "ok": true, "registered": registered, "skipped": skipped }),
+    ))
 }
 
 pub async fn sync_user(
@@ -321,15 +332,29 @@ pub async fn sync_user(
         return Ok(Json(json!({ "ok": true, "outcome": "enqueued" })));
     }
 
+    // Ein Fehler bei einem Provider darf den anderen nicht verschlucken: sonst
+    // sieht der Aufrufer nur 503, wiederholt den Aufruf und pusht den bereits
+    // erledigten Provider ein zweites Mal.
     let mut outcomes = serde_json::Map::new();
+    let mut failed = false;
     for provider in providers {
-        let outcome = discord_role_connection::push_for_user(&state, provider, discord_id).await?;
-        outcomes.insert(
-            provider.as_str().to_string(),
-            Value::String(outcome.as_str().to_string()),
-        );
+        let value = match discord_role_connection::push_for_user(&state, provider, discord_id).await
+        {
+            Ok(outcome) => Value::String(outcome.as_str().to_string()),
+            Err(err) => {
+                failed = true;
+                tracing::warn!(
+                    ?err,
+                    discord_id,
+                    provider = provider.as_str(),
+                    "Linked-Role-Push ueber den internen Endpunkt fehlgeschlagen"
+                );
+                Value::String("error".to_string())
+            }
+        };
+        outcomes.insert(provider.as_str().to_string(), value);
     }
-    Ok(Json(json!({ "ok": true, "outcomes": outcomes })))
+    Ok(Json(json!({ "ok": !failed, "outcomes": outcomes })))
 }
 
 fn parse_provider(raw: &str) -> AppResult<LinkedRoleProvider> {

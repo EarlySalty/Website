@@ -36,7 +36,8 @@ pub const METADATA_TWITCH_OAUTH_DESCRIPTION: &str =
 pub const METADATA_CREATOR_APPROVED_NAME: &str = "Creator bestätigt";
 pub const METADATA_CREATOR_APPROVED_DESCRIPTION: &str =
     "Creator ist im Deadlock Creator Program freigeschaltet";
-pub const MSG_NOT_CONFIGURED: &str = "Steam-Verknüpfung ist serverseitig nicht konfiguriert.";
+// Gilt fuer beide Provider — deshalb ohne "Steam" im Text.
+pub const MSG_NOT_CONFIGURED: &str = "Diese Verknüpfung ist serverseitig nicht konfiguriert.";
 pub const MSG_CREATOR_SOURCE_UNAVAILABLE: &str =
     "Creator-Daten sind gerade nicht abrufbar — versuch es später nochmal.";
 pub const MSG_RELINK_REQUIRED: &str = "Discord-Verknüpfung abgelaufen — bitte neu verknüpfen.";
@@ -616,11 +617,6 @@ pub async fn push_for_user(
     ) else {
         return Ok(RoleConnectionPushOutcome::NotConfigured);
     };
-    // Das Provider-Profil kommt je Provider aus einer anderen Datenquelle und
-    // wird vor der Schreib-Transaktion geladen (Creator liegt in der
-    // Twitch-Datenbank, nicht in der zentralen).
-    let profile = load_linked_role_profile(state, provider, discord_id).await?;
-
     let mut tx = state.pool.begin().await?;
     acquire_role_connection_lock(&mut tx, provider, discord_id).await?;
 
@@ -711,6 +707,13 @@ pub async fn push_for_user(
         }
     }
 
+    // Das Profil wird erst hier gelesen, innerhalb der gehaltenen Advisory-Lock
+    // und nach den Kurzschluessen oben: liest man vorher, kann ein paralleler
+    // Push (Trigger plus manueller Sync) das aeltere Profil zuletzt an Discord
+    // schreiben, und Zeilen ohne Token wuerden die Fremd-Datenbank umsonst
+    // befragen. Steam liest in derselben Transaktion, Creator aus der
+    // Twitch-Datenbank — beides unter derselben Lock.
+    let profile = load_linked_role_profile_in(state, &mut *tx, provider, discord_id).await?;
     let payload = build_user_role_connection_payload(&profile);
     match state
         .discord_role_connections
@@ -764,13 +767,53 @@ pub fn spawn_sync_worker(state: AppState) {
     }
     tokio::spawn(async move {
         let interval = Duration::from_secs(state.cfg.discord_role_connection_sync_interval_seconds);
+        let ticks_per_reconcile = (state.cfg.discord_role_connection_creator_reconcile_seconds
+            / interval.as_secs().max(1))
+        .max(1);
+        let mut tick = 0u64;
         loop {
+            if tick % ticks_per_reconcile == 0 {
+                match enqueue_creator_reconcile(&state).await {
+                    Ok(0) => {}
+                    Ok(count) => tracing::info!(
+                        count,
+                        "Creator-Linked-Roles zum Abgleich in die Queue gestellt"
+                    ),
+                    Err(err) => tracing::warn!(?err, "Creator-Reconcile fehlgeschlagen"),
+                }
+            }
+            tick = tick.wrapping_add(1);
             if let Err(err) = process_pending_sync(&state, 10).await {
                 tracing::warn!(?err, "Linked-Role-Sync-Worker fehlgeschlagen");
             }
             tokio::time::sleep(interval).await;
         }
     });
+}
+
+/// Stellt aktive Creator-Tokens in die Sync-Queue, deren Zeile nicht schon
+/// aussteht. Steam hat dafuer einen DB-Trigger; fuer Creator liegen die
+/// Quelldaten in der Twitch-Datenbank, aus der keine zentrale Funktion die
+/// Queue fuellen kann. Ohne diesen Abgleich friert `creator_approved` auf dem
+/// Stand vom Verknuepfen ein und eine spaetere Freigabe erreicht die Rolle nie.
+pub async fn enqueue_creator_reconcile(state: &AppState) -> AppResult<u64> {
+    if state.twitch_pool.is_none() {
+        return Ok(0);
+    }
+    let result = sqlx::query(
+        "INSERT INTO core.discord_role_connection_sync_state \
+         (discord_id, provider, pending, reason, attempts, next_attempt_at, last_error, updated_at) \
+         SELECT tok.discord_id, 'creator', TRUE, 'creator_reconcile', 0, now(), NULL, now() \
+           FROM core.discord_role_connection_tokens AS tok \
+          WHERE tok.provider = 'creator' AND tok.active \
+         ON CONFLICT (discord_id, provider) DO UPDATE SET \
+             pending=TRUE, reason=EXCLUDED.reason, attempts=0, next_attempt_at=now(), \
+             last_error=NULL, updated_at=now() \
+          WHERE core.discord_role_connection_sync_state.pending = FALSE",
+    )
+    .execute(&state.pool)
+    .await?;
+    Ok(result.rows_affected())
 }
 
 pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usize> {
@@ -896,7 +939,10 @@ async fn acquire_role_connection_lock(
 
 fn role_connection_lock_key(provider: LinkedRoleProvider, discord_id: i64) -> i64 {
     // Beide Provider derselben Discord-ID duerfen parallel laufen, deshalb geht
-    // der Provider in den Schluessel ein.
+    // der Provider in den Schluessel ein. Der Schluesselraum ist ein i64 und
+    // damit nicht kollisionsfrei: theoretisch trifft Steam(id ^ 2^40) auf
+    // Creator(id). Folge waere nur, dass zwei fremde Pushes sich serialisieren
+    // — kein falscher Zustand, deshalb bleibt es bei der billigen Variante.
     let provider_bit = match provider {
         LinkedRoleProvider::Steam => 0,
         LinkedRoleProvider::Creator => 1 << 40,
@@ -1002,9 +1048,24 @@ pub async fn load_linked_role_profile(
     provider: LinkedRoleProvider,
     discord_id: i64,
 ) -> AppResult<LinkedRoleProfile> {
+    load_linked_role_profile_in(state, &state.pool, provider, discord_id).await
+}
+
+/// Wie `load_linked_role_profile`, liest die Steam-Seite aber ueber den
+/// uebergebenen Executor — damit der Push das Profil in derselben
+/// Transaktion lesen kann, in der er die Advisory-Lock haelt.
+async fn load_linked_role_profile_in<'e, E>(
+    state: &AppState,
+    executor: E,
+    provider: LinkedRoleProvider,
+    discord_id: i64,
+) -> AppResult<LinkedRoleProfile>
+where
+    E: Executor<'e, Database = Postgres>,
+{
     match provider {
         LinkedRoleProvider::Steam => Ok(LinkedRoleProfile::Steam(
-            load_role_connection_profile(&state.pool, discord_id).await?,
+            load_role_connection_profile(executor, discord_id).await?,
         )),
         LinkedRoleProvider::Creator => Ok(LinkedRoleProfile::Creator(
             load_creator_profile(state, discord_id).await?,
@@ -1363,8 +1424,68 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn creator_reconcile_stellt_aktive_tokens_ein_und_wiederholt_nicht() {
+        // Der Sweep ist der einzige Produzent fuer Creator-Sync-Zeilen: ohne ihn
+        // friert creator_approved auf dem Stand vom Verknuepfen ein.
+        let role_client = Arc::new(MockRoleConnectionClient::new("940530"));
+        let db = dl_central_db::testing::test_pool()
+            .await
+            .expect("central test pool");
+        let cfg = test_cfg();
+        let broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg).expect("broker"));
+        let state = AppState::for_test_pool_with_clients_and_twitch(
+            db.pool().clone(),
+            cfg,
+            broker,
+            role_client as DynDiscordRoleConnectionClient,
+            Some(db.pool().clone()),
+        );
+        auth::upsert_meta_user(&state, 940530, "creator_user", "Creator User", None)
+            .await
+            .expect("meta user");
+        store_oauth_tokens(
+            &state,
+            LinkedRoleProvider::Creator,
+            940530,
+            &OAuthTokenResponse {
+                access_token: "creator-access".into(),
+                refresh_token: "creator-refresh".into(),
+                token_type: Some("Bearer".into()),
+                expires_in: Some(3600),
+                scope: Some(LINKED_ROLE_SCOPE.into()),
+            },
+        )
+        .await
+        .expect("creator token");
+
+        assert_eq!(
+            enqueue_creator_reconcile(&state).await.expect("sweep"),
+            1,
+            "aktives Creator-Token muss in die Queue"
+        );
+        let (pending, reason): (bool, String) = sqlx::query_as(
+            "SELECT pending, reason FROM core.discord_role_connection_sync_state \
+              WHERE discord_id=$1 AND provider='creator'",
+        )
+        .bind(940530_i64)
+        .fetch_one(&state.pool)
+        .await
+        .expect("sync row");
+        assert!(pending);
+        assert_eq!(reason, "creator_reconcile");
+
+        assert_eq!(
+            enqueue_creator_reconcile(&state)
+                .await
+                .expect("zweiter lauf"),
+            0,
+            "eine schon ausstehende Zeile darf nicht neu eingestellt werden"
+        );
+    }
+
     #[test]
-    fn provider_lock_keys_do_not_collide() {
+    fn same_discord_id_gets_a_different_lock_key_per_provider() {
         assert_ne!(
             role_connection_lock_key(LinkedRoleProvider::Steam, 4242),
             role_connection_lock_key(LinkedRoleProvider::Creator, 4242)
@@ -1859,12 +1980,13 @@ mod tests {
                 callback_url: None,
             },
             linked_role_steam_link_url: "https://example.test/steam".into(),
-            linked_role_twitch_link_url: "https://example.test/twitch-link".into(),
             linked_role_twitch_auth_url: "https://example.test/twitch-auth".into(),
+            linked_role_creator_info_url: "https://example.test/streamer".into(),
             twitch_analytics_dsn: None,
             discord_role_connection_cookie_name: "ddc_role_connection_state".into(),
             discord_role_connection_sync_worker_enabled: false,
             discord_role_connection_sync_interval_seconds: 30,
+            discord_role_connection_creator_reconcile_seconds: 3600,
             db_master_key_v1: Some("00".repeat(32)),
             discord_oauth_authorize_base: "https://discord.com/oauth2/authorize".into(),
             scrim_backend_mode: crate::config::ScrimBackendMode::Legacy,
