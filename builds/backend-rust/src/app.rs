@@ -67,7 +67,13 @@ impl AppState {
                 auth,
             }),
         };
-        report_creator_source_health(&state).await;
+        // Nicht awaiten: der Pool ist lazy, eine nicht erreichbare Twitch-DB
+        // kostet hier bis zu acquire_timeout, und der Steam-Provider soll darauf
+        // nicht warten. Die Meldung kommt Sekunden nach dem Start ins Journal.
+        {
+            let state = state.clone();
+            tokio::spawn(async move { report_creator_source_health(&state).await });
+        }
         crate::discord_role_connection::spawn_sync_worker(state.clone());
         if state.cfg.scrim_backend_mode == ScrimBackendMode::Legacy {
             crate::routes::scrim::spawn_substitute_sweep_worker(state.clone());
@@ -528,7 +534,8 @@ async fn report_creator_source_health(state: &AppState) {
     }
 }
 
-/// Prueft beim Start, ob Migration 2026081301 aus `dl-central-db` (anderes Repo)
+/// Prueft beim Start, ob Migration 2026081301 aus
+/// `Deadlock-Bots/rust/crates/dl-central-db/migrations/` (anderes Repo)
 /// vollstaendig eingespielt ist: Spalte `provider` **und** ein Unique-Index auf
 /// `(discord_id, provider)` auf beiden Tabellen — genau das setzt jedes
 /// `ON CONFLICT (discord_id, provider)` voraus.
@@ -5060,6 +5067,12 @@ mod tests {
         let dsn = std::env::var("CENTRAL_TEST_DSN")
             .or_else(|_| std::env::var("DATABASE_URL"))
             .expect("CENTRAL_TEST_DSN oder DATABASE_URL muss auf die Test-Postgres zeigen");
+        // Derselbe Schutz, den test_pool() mitbringt: nie gegen die
+        // Produktionsdatenbank verbinden, auch nicht lesend.
+        assert!(
+            !dsn.trim_end_matches('/').ends_with("/deadlock"),
+            "der Test-DSN zeigt auf die Produktionsdatenbank"
+        );
         let mut cfg = Config::from_env();
         cfg.twitch_analytics_dsn = Some(dsn);
         let pool = connect_twitch_pool(&cfg).expect("twitch pool");

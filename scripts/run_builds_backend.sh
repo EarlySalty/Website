@@ -58,10 +58,18 @@ export AUTH_PUBLIC_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching
 # /linked-role/* und /auth/discord/{steam,creator}/callback -> 127.0.0.1:8772).
 # Fehlt der Block dort, laeuft Discords Callback in einen 404.
 # Steam laeuft bis auf Weiteres ueber die Master-Application; im Dev-Portal ist dort
-# nur die Legacy-URI registriert, und Discord prueft die redirect_uri exakt. Sobald
-# die eigene Steam-App Zugangsdaten und die kurze URI eingetragen hat, wird hier auf
-# https://deutsche-deadlock-community.de/auth/discord/steam/callback umgestellt.
-export DISCORD_STEAM_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/linked-role/callback"
+# nur die Legacy-URI registriert, und Discord prueft die redirect_uri exakt gegen die
+# App der client_id. Die Callback-URL muss deshalb der Application folgen, die das
+# Backend tatsaechlich benutzt: liegen eigene Steam-Zugangsdaten in Infisical, ist es
+# die kurze URI der eigenen App, sonst die Legacy-URI der Master-App. Eine feste Zeile
+# waere in genau einem der beiden Faelle immer falsch (invalid_grant beim Token-Tausch).
+if [[ -n "${DISCORD_STEAM_CLIENT_ID:-}${DISCORD_STEAM_APP_ID:-}${DISCORD_STEAM_CLIENT_SECRET:-}${DISCORD_STEAM_BOT_TOKEN:-}" ]]; then
+  export DISCORD_STEAM_CALLBACK_URL="https://deutsche-deadlock-community.de/auth/discord/steam/callback"
+  echo "Linked Roles: eigene Steam-Application aktiv (kurze Callback-URI)." >&2
+else
+  export DISCORD_STEAM_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/linked-role/callback"
+  echo "Linked Roles: Steam laeuft auf der Master-Application (Legacy-Callback-URI)." >&2
+fi
 export DISCORD_CREATOR_CALLBACK_URL="https://deutsche-deadlock-community.de/auth/discord/creator/callback"
 
 if [[ ! -x "$RUST_BACKEND_BIN" ]]; then

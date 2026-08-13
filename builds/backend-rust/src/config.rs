@@ -32,13 +32,32 @@ impl ScrimBackendMode {
 /// Es gibt zwei davon: die Steam-App (Steam-Verknuepfung und Deadlock-Rang) und
 /// die Creator-App (Twitch-Autorisierung im Creator-Programm). Beide haben
 /// eigene Client-Credentials, ein eigenes Bot-Token und einen eigenen Callback.
-#[derive(Clone, Debug, Default)]
+///
+/// `Debug` ist von Hand geschrieben: Secret und Bot-Token erscheinen nur als
+/// vorhanden oder fehlend. Ein `?app` oder `?cfg` in einem kuenftigen
+/// `tracing!`-Aufruf wuerde sie sonst ins Log schreiben.
+#[derive(Clone, Default)]
 pub struct DiscordLinkedRoleApp {
     pub client_id: Option<String>,
     pub client_secret: Option<String>,
     pub application_id: Option<String>,
     pub bot_token: Option<String>,
     pub callback_url: Option<String>,
+}
+
+impl std::fmt::Debug for DiscordLinkedRoleApp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DiscordLinkedRoleApp")
+            .field("client_id", &self.client_id)
+            .field(
+                "client_secret",
+                &self.client_secret.as_ref().map(|_| "<redacted>"),
+            )
+            .field("application_id", &self.application_id)
+            .field("bot_token", &self.bot_token.as_ref().map(|_| "<redacted>"))
+            .field("callback_url", &self.callback_url)
+            .finish()
+    }
 }
 
 impl DiscordLinkedRoleApp {
@@ -357,20 +376,29 @@ fn steam_app_from_env() -> DiscordLinkedRoleApp {
 }
 
 fn steam_app_with(lookup: impl Fn(&[&str]) -> Option<String>) -> DiscordLinkedRoleApp {
-    const OWN: [&str; 5] = [
+    // Nur Identitaets-Variablen loesen den Wechsel aus. Die Callback-URL gehoert
+    // nicht dazu: sie sagt nichts darueber, welche Application gemeint ist, wird
+    // aber vom Startskript immer gesetzt — als Ausloeser wuerde sie die Steam-App
+    // auf eine leere "eigene App" umschalten und den live laufenden Flow toeten.
+    const IDENTITY: [&str; 4] = [
         "DISCORD_STEAM_CLIENT_ID",
         "DISCORD_STEAM_APP_ID",
         "DISCORD_STEAM_CLIENT_SECRET",
         "DISCORD_STEAM_BOT_TOKEN",
-        "DISCORD_STEAM_CALLBACK_URL",
     ];
-    if OWN.iter().any(|name| lookup(&[name]).is_some()) {
+    // Die Callback-URL steht ausserhalb der Fallunterscheidung: sie haengt an der
+    // oeffentlichen Route, nicht an den Zugangsdaten.
+    let callback_url = lookup(&[
+        "DISCORD_STEAM_CALLBACK_URL",
+        "DISCORD_ROLE_CONNECTION_CALLBACK_URL",
+    ]);
+    if IDENTITY.iter().any(|name| lookup(&[name]).is_some()) {
         return DiscordLinkedRoleApp {
             client_id: lookup(&["DISCORD_STEAM_CLIENT_ID", "DISCORD_STEAM_APP_ID"]),
             client_secret: lookup(&["DISCORD_STEAM_CLIENT_SECRET"]),
             application_id: lookup(&["DISCORD_STEAM_APP_ID", "DISCORD_STEAM_CLIENT_ID"]),
             bot_token: lookup(&["DISCORD_STEAM_BOT_TOKEN"]),
-            callback_url: lookup(&["DISCORD_STEAM_CALLBACK_URL"]),
+            callback_url,
         };
     }
     // Solange keine eigene App hinterlegt ist, laeuft der Steam-Provider
@@ -389,7 +417,7 @@ fn steam_app_with(lookup: impl Fn(&[&str]) -> Option<String>) -> DiscordLinkedRo
             "DISCORD_TOKEN",
             "BOT_TOKEN",
         ]),
-        callback_url: lookup(&["DISCORD_ROLE_CONNECTION_CALLBACK_URL"]),
+        callback_url,
     }
 }
 
@@ -477,6 +505,28 @@ mod tests {
         assert_eq!(master.client_secret.as_deref(), Some("alt-secret"));
         assert_eq!(master.bot_token.as_deref(), Some("alt-bot"));
         assert!(master.can_register_metadata());
+
+        // Die Belegung, die das Startskript heute erzeugt: nur die Callback-URL.
+        // Sie darf den Wechsel nicht ausloesen, sonst waere die Steam-App leer und
+        // der live laufende Flow nach dem Restart tot — 503 im Login, NotConfigured
+        // in jedem Push, und kein Dienst sieht dabei ungesund aus.
+        let nur_callback = steam_app_with(lookup_from(&[
+            ("DISCORD_STEAM_CALLBACK_URL", "https://example.test/steam"),
+            ("DISCORD_OAUTH_CLIENT_ID", "alt-1"),
+            ("DISCORD_OAUTH_CLIENT_SECRET", "alt-secret"),
+            ("DISCORD_TOKEN", "alt-bot"),
+        ]));
+        assert_eq!(nur_callback.client_id.as_deref(), Some("alt-1"));
+        assert_eq!(nur_callback.client_secret.as_deref(), Some("alt-secret"));
+        assert_eq!(
+            nur_callback.callback_url.as_deref(),
+            Some("https://example.test/steam"),
+            "die Callback-URL wirkt in beiden Zweigen"
+        );
+        assert!(
+            nur_callback.can_register_metadata(),
+            "eine gesetzte Callback-URL darf die Master-App nicht entwerten"
+        );
 
         // Vollstaendig eigene App: kein Wert kommt mehr von der Master-App.
         let eigen = steam_app_with(lookup_from(&[

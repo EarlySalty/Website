@@ -116,10 +116,22 @@ impl LinkedRoleProvider {
 }
 
 /// Client-Credentials genau einer Discord-Application.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// `Debug` ist von Hand geschrieben und laesst das Secret aus: ein `?credentials`
+/// in einem kuenftigen `tracing!` waere sonst ein Secret im Log.
+#[derive(Clone, PartialEq, Eq)]
 pub struct OAuthAppCredentials {
     pub client_id: String,
     pub client_secret: String,
+}
+
+impl std::fmt::Debug for OAuthAppCredentials {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuthAppCredentials")
+            .field("client_id", &self.client_id)
+            .field("client_secret", &"<redacted>")
+            .finish()
+    }
 }
 
 pub type DynDiscordRoleConnectionClient = Arc<dyn DiscordRoleConnectionClient>;
@@ -795,7 +807,12 @@ pub fn spawn_sync_worker(state: AppState) {
         let ticks_per_reconcile = (state.cfg.discord_role_connection_creator_reconcile_seconds
             / interval.as_secs().max(1))
         .max(1);
-        let mut tick = 0u64;
+        // Bei 0 zu starten heisst: jeder Prozessstart stellt alle aktiven
+        // Creator-Tokens ein. Eine Restart-Serie waere damit eine Serie voller
+        // Discord-PUT-Sweeps. Der erste Sweep kommt deshalb erst nach dem
+        // regulaeren Abstand; der Steam-Trigger und der Reaper decken die Zeit
+        // dazwischen ab.
+        let mut tick = 1u64;
         loop {
             if tick % ticks_per_reconcile == 0 {
                 match enqueue_creator_reconcile(&state).await {
@@ -1197,22 +1214,37 @@ where
 /// Ergebnis. Der Test unten baut sich das Schema selbst nach und kann das nicht
 /// leisten.
 ///
+/// Beide Merkmale werden ueber alle Identitaeten einer Discord-ID aggregiert und
+/// nicht an einer ausgewaehlten Zeile abgelesen. Wer zwei Twitch-Konten hinterlegt
+/// hat — eines autorisiert, das andere als Partner eingetragen — verliert sonst je
+/// nach Sortierung genau das Merkmal der jeweils anderen Zeile. Der Login ist die
+/// Anzeige und kommt weiterhin von einer Zeile: bevorzugt die autorisierte, dann
+/// die des Partners.
+///
 /// Alle Schluesselspalten sind TEXT, deshalb wird die Discord-ID als String
-/// gebunden. `updated_at` ist dort ebenfalls TEXT und dient nur als Tie-Break,
-/// wenn eine Discord-ID mehrere Identitaeten hat; die Sortierung ist damit
-/// lexikografisch und bei gemischten Zeitformaten nicht exakt.
-pub const CREATOR_PROFILE_SQL: &str = "SELECT ident.twitch_login, \
-            COALESCE(part.is_partner_active = 1, FALSE) AS is_partner, \
-            COALESCE(auth.twitch_user_id IS NOT NULL \
-                     AND COALESCE(auth.needs_reauth, FALSE) = FALSE, FALSE) AS twitch_oauth \
-       FROM public.twitch_streamer_identities AS ident \
-       LEFT JOIN public.twitch_raid_auth AS auth \
-              ON auth.twitch_user_id = ident.twitch_user_id \
-       LEFT JOIN public.twitch_partners_all_state AS part \
-              ON part.twitch_user_id = ident.twitch_user_id \
-      WHERE ident.discord_user_id = $1 \
-      ORDER BY twitch_oauth DESC, is_partner DESC, ident.updated_at DESC NULLS LAST \
-      LIMIT 1";
+/// gebunden. `updated_at` ist dort ebenfalls TEXT und dient nur als Tie-Break;
+/// die Sortierung ist damit lexikografisch und bei gemischten Zeitformaten nicht
+/// exakt.
+pub const CREATOR_PROFILE_SQL: &str = "WITH identitaeten AS ( \
+         SELECT ident.twitch_login, \
+                COALESCE(part.is_partner_active = 1, FALSE) AS is_partner, \
+                COALESCE(auth.twitch_user_id IS NOT NULL \
+                         AND COALESCE(auth.needs_reauth, FALSE) = FALSE, FALSE) AS twitch_oauth, \
+                ident.updated_at \
+           FROM public.twitch_streamer_identities AS ident \
+           LEFT JOIN public.twitch_raid_auth AS auth \
+                  ON auth.twitch_user_id = ident.twitch_user_id \
+           LEFT JOIN public.twitch_partners_all_state AS part \
+                  ON part.twitch_user_id = ident.twitch_user_id \
+          WHERE ident.discord_user_id = $1 \
+       ) \
+       SELECT bool_or(is_partner) AS is_partner, \
+              bool_or(twitch_oauth) AS twitch_oauth, \
+              (SELECT twitch_login FROM identitaeten \
+                ORDER BY twitch_oauth DESC, is_partner DESC, updated_at DESC NULLS LAST \
+                LIMIT 1) AS twitch_login \
+         FROM identitaeten \
+        HAVING count(*) > 0";
 
 pub async fn load_creator_profile(state: &AppState, discord_id: i64) -> AppResult<CreatorProfile> {
     let Some(pool) = state.twitch_pool.as_ref() else {
@@ -1613,38 +1645,7 @@ mod tests {
             role_client as DynDiscordRoleConnectionClient,
             Some(db.pool().clone()),
         );
-        // Die Wegwerf-Datenbank gehoert diesem Testlauf allein (test_pool legt sie
-        // pro Lauf an), deshalb duerfen hier fremde Tabellennamen entstehen.
-        for statement in [
-            "CREATE TABLE IF NOT EXISTS public.twitch_streamer_identities (\
-                 twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, discord_user_id TEXT, \
-                 discord_display_name TEXT, is_on_discord INTEGER, created_at TEXT, \
-                 updated_at TEXT)",
-            "CREATE TABLE IF NOT EXISTS public.twitch_raid_auth (\
-                 twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, needs_reauth BOOLEAN)",
-            "CREATE TABLE IF NOT EXISTS public.twitch_partners (\
-                 twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, status TEXT, \
-                 departnered_at TEXT, admin_archived_at TEXT, \
-                 manual_partner_opt_out INTEGER, technical_pause_reason TEXT)",
-            // Nachbau der kanonischen Definition aus dem Twitch-Bot
-            // (20260623150000_drop_manual_verified_columns.sql): dieselbe
-            // CASE-Bedingung, damit der Test die Block-Faelle sieht. Dass der
-            // echte View so aussieht, prueft creator_source_health() beim Start.
-            "CREATE OR REPLACE VIEW public.twitch_partners_all_state AS \
-             SELECT p.twitch_user_id, p.twitch_login, p.status, \
-                    CASE WHEN p.status = 'active' \
-                          AND COALESCE(p.manual_partner_opt_out, 0) = 0 \
-                          AND COALESCE(p.technical_pause_reason, '') = '' \
-                          AND p.admin_archived_at IS NULL THEN 1 ELSE 0 END AS is_partner_active \
-               FROM public.twitch_partners p",
-            "TRUNCATE public.twitch_streamer_identities, public.twitch_raid_auth, \
-                      public.twitch_partners",
-        ] {
-            sqlx::query(statement)
-                .execute(&state.pool)
-                .await
-                .expect("twitch schema abbild");
-        }
+        seed_twitch_schema_abbild(&state.pool).await;
 
         let leer = load_creator_profile(&state, 940_540)
             .await
@@ -2440,6 +2441,171 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn creator_callback_speichert_token_und_pusht_beide_merkmale() {
+        // Der durchgehende Creator-Pfad, den die uebrigen Tests nur in Stuecken
+        // abdecken: Callback -> Token verschluesselt gespeichert -> Profil aus der
+        // Twitch-Quelle gelesen -> PUT an Discord mit beiden Merkmalen -> Redirect.
+        // Ohne diesen Test kann jede Verdrahtung dazwischen reissen, ohne dass ein
+        // Test rot wird.
+        let role_client = Arc::new(MockRoleConnectionClient::new("940560"));
+        let db = dl_central_db::testing::test_pool()
+            .await
+            .expect("central test pool");
+        let cfg = test_cfg();
+        let broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg).expect("broker"));
+        let state = AppState::for_test_pool_with_clients_and_twitch(
+            db.pool().clone(),
+            cfg,
+            broker,
+            role_client.clone() as DynDiscordRoleConnectionClient,
+            Some(db.pool().clone()),
+        );
+        seed_twitch_schema_abbild(&state.pool).await;
+        for statement in [
+            "INSERT INTO public.twitch_streamer_identities \
+                 (twitch_user_id, twitch_login, discord_user_id, updated_at) \
+             VALUES ('7001', 'nani', '940560', '2026-08-13T10:00:00Z')",
+            "INSERT INTO public.twitch_partners (twitch_user_id, twitch_login, status) \
+             VALUES ('7001', 'nani', 'active')",
+            "INSERT INTO public.twitch_raid_auth (twitch_user_id, twitch_login, needs_reauth) \
+             VALUES ('7001', 'nani', FALSE)",
+        ] {
+            sqlx::query(statement)
+                .execute(&state.pool)
+                .await
+                .expect("creator quelle");
+        }
+
+        let role_state = state
+            .auth
+            .create_pre_auth_jwt("state-940560", "/done")
+            .expect("role state");
+        let response = router(state.clone())
+            .oneshot(with_peer(
+                request(
+                    Method::GET,
+                    "/auth/discord/creator/callback?state=state-940560&code=oauth-code",
+                    None,
+                )
+                .header(
+                    header::COOKIE,
+                    // Der Creator-Provider hat seinen eigenen State-Cookie, damit
+                    // zwei parallel gestartete Verknuepfungen sich nicht ueberschreiben.
+                    format!("ddc_role_connection_state_creator={role_state}"),
+                )
+                .body(Body::empty())
+                .expect("request"),
+            ))
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::FOUND);
+        assert_eq!(
+            response
+                .headers()
+                .get(header::LOCATION)
+                .and_then(|value| value.to_str().ok()),
+            Some("/done"),
+            "wer beide Merkmale erfuellt, wird nicht noch in den Twitch-Flow geschickt"
+        );
+        {
+            let updates = role_client.updates.lock().expect("updates");
+            assert_eq!(updates.len(), 1, "genau ein PUT an Discord");
+            assert_eq!(updates[0].0, "access-token");
+            assert_eq!(updates[0].1.metadata["twitch_oauth"], "1");
+            assert_eq!(updates[0].1.metadata["creator_approved"], "1");
+            assert!(
+                !updates[0].1.metadata.contains_key("steam_verknuepft"),
+                "die Creator-App darf keine Steam-Metadaten schreiben"
+            );
+        }
+
+        let (provider, active): (String, bool) = sqlx::query_as(
+            "SELECT provider, active FROM core.discord_role_connection_tokens \
+              WHERE discord_id=$1",
+        )
+        .bind(940_560_i64)
+        .fetch_one(&state.pool)
+        .await
+        .expect("token row");
+        assert_eq!(provider, "creator");
+        assert!(active);
+    }
+
+    #[tokio::test]
+    async fn creator_callback_ohne_autorisierung_fuehrt_in_den_twitch_flow() {
+        // Derselbe Pfad mit fehlender Autorisierung: der Push traegt das ein
+        // (creator_approved=1, twitch_oauth=0) und der User geht weiter zur
+        // Twitch-Autorisierung, statt auf next_path zu landen.
+        let role_client = Arc::new(MockRoleConnectionClient::new("940561"));
+        let db = dl_central_db::testing::test_pool()
+            .await
+            .expect("central test pool");
+        let cfg = test_cfg();
+        let twitch_auth_url = cfg.linked_role_twitch_auth_url.clone();
+        let broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg).expect("broker"));
+        let state = AppState::for_test_pool_with_clients_and_twitch(
+            db.pool().clone(),
+            cfg,
+            broker,
+            role_client.clone() as DynDiscordRoleConnectionClient,
+            Some(db.pool().clone()),
+        );
+        seed_twitch_schema_abbild(&state.pool).await;
+        // Zwei Identitaeten derselben Discord-ID: der Partner-Status haengt an der
+        // einen, und keine ist autorisiert. Wuerde die Query eine Zeile auswaehlen
+        // statt zu aggregieren, koennte die Freigabe hier verloren gehen.
+        for statement in [
+            "INSERT INTO public.twitch_streamer_identities \
+                 (twitch_user_id, twitch_login, discord_user_id, updated_at) \
+             VALUES ('7002', 'zweitkonto', '940561', '2026-08-13T12:00:00Z')",
+            "INSERT INTO public.twitch_streamer_identities \
+                 (twitch_user_id, twitch_login, discord_user_id, updated_at) \
+             VALUES ('7003', 'hauptkonto', '940561', '2026-08-13T09:00:00Z')",
+            "INSERT INTO public.twitch_partners (twitch_user_id, twitch_login, status) \
+             VALUES ('7003', 'hauptkonto', 'active')",
+        ] {
+            sqlx::query(statement)
+                .execute(&state.pool)
+                .await
+                .expect("creator quelle");
+        }
+
+        let role_state = state
+            .auth
+            .create_pre_auth_jwt("state-940561", "/done")
+            .expect("role state");
+        let response = router(state.clone())
+            .oneshot(with_peer(
+                request(
+                    Method::GET,
+                    "/auth/discord/creator/callback?state=state-940561&code=oauth-code",
+                    None,
+                )
+                .header(
+                    header::COOKIE,
+                    format!("ddc_role_connection_state_creator={role_state}"),
+                )
+                .body(Body::empty())
+                .expect("request"),
+            ))
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::FOUND);
+        assert_eq!(
+            response
+                .headers()
+                .get(header::LOCATION)
+                .and_then(|value| value.to_str().ok()),
+            Some(twitch_auth_url.as_str())
+        );
+        let updates = role_client.updates.lock().expect("updates");
+        assert_eq!(updates[0].1.metadata["creator_approved"], "1");
+        assert_eq!(updates[0].1.metadata["twitch_oauth"], "0");
+    }
+
     async fn test_state(
         role_client: Arc<MockRoleConnectionClient>,
     ) -> (dl_central_db::TestDb, AppState) {
@@ -2469,6 +2635,44 @@ mod tests {
             broker,
             role_client as DynDiscordRoleConnectionClient,
         )
+    }
+
+    /// Legt ein Abbild der Live-Spalten der Twitch-Datenbank an (alle Schluessel
+    /// TEXT, `updated_at` TEXT) samt Nachbau des Partner-Views. Zwei Tests
+    /// brauchen es: die Query-Logik und der durchgehende Creator-Callback.
+    async fn seed_twitch_schema_abbild(pool: &sqlx::PgPool) {
+        // Die Wegwerf-Datenbank gehoert diesem Testlauf allein (test_pool legt sie
+        // pro Lauf an), deshalb duerfen hier fremde Tabellennamen entstehen.
+        for statement in [
+            "CREATE TABLE IF NOT EXISTS public.twitch_streamer_identities (\
+             twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, discord_user_id TEXT, \
+             discord_display_name TEXT, is_on_discord INTEGER, created_at TEXT, \
+             updated_at TEXT)",
+            "CREATE TABLE IF NOT EXISTS public.twitch_raid_auth (\
+             twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, needs_reauth BOOLEAN)",
+            "CREATE TABLE IF NOT EXISTS public.twitch_partners (\
+             twitch_user_id TEXT PRIMARY KEY, twitch_login TEXT, status TEXT, \
+             departnered_at TEXT, admin_archived_at TEXT, \
+             manual_partner_opt_out INTEGER, technical_pause_reason TEXT)",
+            // Nachbau der kanonischen Definition aus dem Twitch-Bot
+            // (20260623150000_drop_manual_verified_columns.sql): dieselbe
+            // CASE-Bedingung, damit der Test die Block-Faelle sieht. Dass der
+            // echte View so aussieht, prueft creator_source_health() beim Start.
+            "CREATE OR REPLACE VIEW public.twitch_partners_all_state AS \
+         SELECT p.twitch_user_id, p.twitch_login, p.status, \
+                CASE WHEN p.status = 'active' \
+                      AND COALESCE(p.manual_partner_opt_out, 0) = 0 \
+                      AND COALESCE(p.technical_pause_reason, '') = '' \
+                      AND p.admin_archived_at IS NULL THEN 1 ELSE 0 END AS is_partner_active \
+           FROM public.twitch_partners p",
+            "TRUNCATE public.twitch_streamer_identities, public.twitch_raid_auth, \
+                  public.twitch_partners",
+        ] {
+            sqlx::query(statement)
+                .execute(pool)
+                .await
+                .expect("twitch schema abbild");
+        }
     }
 
     fn test_cfg() -> Config {
