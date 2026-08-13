@@ -21,7 +21,9 @@ pub const LINKED_ROLE_SCOPE: &str = "identify role_connections.write";
 pub const STEAM_CALLBACK_PATH: &str = "/auth/discord/steam/callback";
 pub const CREATOR_CALLBACK_PATH: &str = "/auth/discord/creator/callback";
 pub const FALLBACK_DISPLAY_NAME: &str = "Discord-User";
-pub const PLATFORM_NAME_STEAM: &str = "Deadlock Steam";
+// Steam behaelt den bisherigen Namen: er steht im Discord-Profil jedes bereits
+// verknuepften Users und wuerde sich beim naechsten Push sichtbar umbenennen.
+pub const PLATFORM_NAME_STEAM: &str = "Deadlock Community";
 pub const PLATFORM_NAME_CREATOR: &str = "Deadlock Creator";
 pub const PLATFORM_USERNAME_LINKED: &str = "Steam verknüpft";
 pub const PLATFORM_USERNAME_UNLINKED: &str = "nicht verknüpft";
@@ -610,28 +612,50 @@ pub async fn push_for_user(
     provider: LinkedRoleProvider,
     discord_id: i64,
 ) -> AppResult<RoleConnectionPushOutcome> {
+    push_for_user_with_profile(state, provider, discord_id)
+        .await
+        .map(|(outcome, _)| outcome)
+}
+
+/// Wie `push_for_user`, gibt aber das Profil mit heraus, das gepusht wurde.
+///
+/// Der Callback braucht genau diesen Stand, um zu entscheiden, wohin der User
+/// weitergeleitet wird. Liest er das Profil selbst nochmal, kann er einen
+/// anderen Stand sehen als der Push geschrieben hat — und schickt jemanden in
+/// den Verknuepfungs-Flow, der eine Sekunde vorher fertig verknuepft wurde.
+pub async fn push_for_user_with_profile(
+    state: &AppState,
+    provider: LinkedRoleProvider,
+    discord_id: i64,
+) -> AppResult<(RoleConnectionPushOutcome, Option<LinkedRoleProfile>)> {
     let app = provider.app(&state.cfg);
     let (Some(application_id), Ok(credentials)) = (
         app.application_id.as_deref(),
         provider.credentials(&state.cfg),
     ) else {
-        return Ok(RoleConnectionPushOutcome::NotConfigured);
+        return Ok((RoleConnectionPushOutcome::NotConfigured, None));
     };
     let mut tx = state.pool.begin().await?;
     acquire_role_connection_lock(&mut tx, provider, discord_id).await?;
 
     let Some(stored) = load_stored_token(&mut tx, provider, discord_id).await? else {
         tx.commit().await?;
-        return Ok(RoleConnectionPushOutcome::NoToken);
+        return Ok((RoleConnectionPushOutcome::NoToken, None));
     };
     if !stored.active {
         tx.commit().await?;
-        return Ok(RoleConnectionPushOutcome::InactiveToken);
+        return Ok((RoleConnectionPushOutcome::InactiveToken, None));
     }
     let Ok(crypto) = FieldCrypto::from_config(&state.cfg) else {
         tx.commit().await?;
-        return Ok(RoleConnectionPushOutcome::CryptoUnavailable);
+        return Ok((RoleConnectionPushOutcome::CryptoUnavailable, None));
     };
+
+    // Vor dem Refresh lesen, aber nach den Kurzschluessen und unter der Lock:
+    // ein Fehler hier verwirft die Transaktion, und laege der Refresh davor,
+    // waere der bei Discord schon rotierte Refresh-Token weg. Die Twitch-Datenbank
+    // darf ausfallen, ohne dass jemand seine Verknuepfung verliert.
+    let profile = load_linked_role_profile_in(state, &mut *tx, provider, discord_id).await?;
     let mut token_version = stored.token_version;
     let mut access_token = match crypto.decrypt(
         &stored.access_token,
@@ -649,7 +673,7 @@ pub async fn push_for_user(
             )
             .await?;
             tx.commit().await?;
-            return Ok(RoleConnectionPushOutcome::TokenInvalidated);
+            return Ok((RoleConnectionPushOutcome::TokenInvalidated, Some(profile)));
         }
     };
 
@@ -670,7 +694,7 @@ pub async fn push_for_user(
                 )
                 .await?;
                 tx.commit().await?;
-                return Ok(RoleConnectionPushOutcome::TokenInvalidated);
+                return Ok((RoleConnectionPushOutcome::TokenInvalidated, Some(profile)));
             }
         };
         match state
@@ -696,7 +720,7 @@ pub async fn push_for_user(
                 )
                 .await?;
                 tx.commit().await?;
-                return Ok(RoleConnectionPushOutcome::TokenInvalidated);
+                return Ok((RoleConnectionPushOutcome::TokenInvalidated, Some(profile)));
             }
             Err(err) => {
                 record_push_error(&mut tx, provider, discord_id, format!("refresh:{err:?}"))
@@ -707,13 +731,6 @@ pub async fn push_for_user(
         }
     }
 
-    // Das Profil wird erst hier gelesen, innerhalb der gehaltenen Advisory-Lock
-    // und nach den Kurzschluessen oben: liest man vorher, kann ein paralleler
-    // Push (Trigger plus manueller Sync) das aeltere Profil zuletzt an Discord
-    // schreiben, und Zeilen ohne Token wuerden die Fremd-Datenbank umsonst
-    // befragen. Steam liest in derselben Transaktion, Creator aus der
-    // Twitch-Datenbank — beides unter derselben Lock.
-    let profile = load_linked_role_profile_in(state, &mut *tx, provider, discord_id).await?;
     let payload = build_user_role_connection_payload(&profile);
     match state
         .discord_role_connections
@@ -723,13 +740,13 @@ pub async fn push_for_user(
         Ok(()) => {
             record_push_success(&mut tx, provider, discord_id).await?;
             tx.commit().await?;
-            Ok(RoleConnectionPushOutcome::Pushed)
+            Ok((RoleConnectionPushOutcome::Pushed, Some(profile)))
         }
         Err(err) if err.invalidates_user_token() => {
             mark_token_inactive(&mut tx, provider, discord_id, "push_invalid", token_version)
                 .await?;
             tx.commit().await?;
-            Ok(RoleConnectionPushOutcome::TokenInvalidated)
+            Ok((RoleConnectionPushOutcome::TokenInvalidated, Some(profile)))
         }
         Err(err) => {
             record_push_error(&mut tx, provider, discord_id, format!("push:{err:?}")).await?;
@@ -809,7 +826,8 @@ pub async fn enqueue_creator_reconcile(state: &AppState) -> AppResult<u64> {
          ON CONFLICT (discord_id, provider) DO UPDATE SET \
              pending=TRUE, reason=EXCLUDED.reason, attempts=0, next_attempt_at=now(), \
              last_error=NULL, updated_at=now() \
-          WHERE core.discord_role_connection_sync_state.pending = FALSE",
+          WHERE core.discord_role_connection_sync_state.pending = FALSE \
+            AND core.discord_role_connection_sync_state.locked_at IS NULL",
     )
     .execute(&state.pool)
     .await?;
@@ -844,8 +862,21 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
             tracing::warn!(
                 provider = %raw_provider,
                 discord_id,
-                "Unbekannter Linked-Role-Provider in der Sync-Queue — Zeile wird uebersprungen"
+                "Unbekannter Linked-Role-Provider in der Sync-Queue — Zeile wird geparkt"
             );
+            // Nicht einfach weiterlaufen: das Claim-UPDATE hat pending schon auf
+            // FALSE gesetzt, die Anforderung waere sonst still verschwunden.
+            sqlx::query(
+                "UPDATE core.discord_role_connection_sync_state \
+                    SET pending=TRUE, locked_at=NULL, last_error=$3, \
+                        next_attempt_at=now() + interval '1 hour', updated_at=now() \
+                  WHERE discord_id=$1 AND provider=$2",
+            )
+            .bind(discord_id)
+            .bind(&raw_provider)
+            .bind(format!("unknown_provider:{raw_provider}"))
+            .execute(&state.pool)
+            .await?;
             continue;
         };
         match push_for_user(state, provider, discord_id).await {
@@ -1099,7 +1130,12 @@ pub async fn load_creator_profile(state: &AppState, discord_id: i64) -> AppResul
         row.map_or_else(CreatorProfile::default, |row| CreatorProfile {
             twitch_oauth: row.get("twitch_oauth"),
             creator_approved: row.get("is_partner"),
-            twitch_login: row.get("twitch_login"),
+            // Leerer Login gilt als kein Login: der Payload filtert ihn ohnehin
+            // weg, und der Redirect soll dieselbe Entscheidung treffen.
+            twitch_login: row
+                .get::<Option<String>, _>("twitch_login")
+                .map(|login| login.trim().to_string())
+                .filter(|login| !login.is_empty()),
         }),
     )
 }
@@ -1393,7 +1429,7 @@ mod tests {
         assert_eq!(
             serde_json::to_value(&payload).expect("payload json"),
             json!({
-                "platform_name": "Deadlock Steam",
+                "platform_name": "Deadlock Community",
                 "platform_username": "Steam verknüpft",
                 "metadata": {
                     "rang": "843",
@@ -1421,6 +1457,106 @@ mod tests {
                     "creator_approved": "0"
                 }
             })
+        );
+    }
+
+    #[tokio::test]
+    async fn creator_profil_liest_streamer_dim_und_raid_auth() {
+        // Die Creator-Quelle liegt in einer fremden Datenbank; hier steht ein
+        // Minimal-Abbild ihres Schemas (twitch_analytics_schema.sql: alle drei
+        // Spalten TEXT bzw. BOOLEAN), damit Spaltennamen und Bindungstypen
+        // wirklich geprueft sind und nicht nur zur Laufzeit auffallen.
+        let role_client = Arc::new(MockRoleConnectionClient::new("940540"));
+        let db = dl_central_db::testing::test_pool()
+            .await
+            .expect("central test pool");
+        let cfg = test_cfg();
+        let broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg).expect("broker"));
+        let state = AppState::for_test_pool_with_clients_and_twitch(
+            db.pool().clone(),
+            cfg,
+            broker,
+            role_client as DynDiscordRoleConnectionClient,
+            Some(db.pool().clone()),
+        );
+        for statement in [
+            "CREATE TABLE IF NOT EXISTS public.streamer_dim (\
+                 twitch_login TEXT PRIMARY KEY, twitch_user_id TEXT, discord_user_id TEXT, \
+                 is_partner BOOLEAN DEFAULT FALSE, archived_at TIMESTAMPTZ, \
+                 updated_at TIMESTAMPTZ DEFAULT now())",
+            "CREATE TABLE IF NOT EXISTS public.twitch_raid_auth (\
+                 twitch_user_id TEXT PRIMARY KEY, needs_reauth BOOLEAN DEFAULT FALSE)",
+            "TRUNCATE public.streamer_dim, public.twitch_raid_auth",
+        ] {
+            sqlx::query(statement)
+                .execute(&state.pool)
+                .await
+                .expect("twitch schema abbild");
+        }
+
+        let leer = load_creator_profile(&state, 940_540)
+            .await
+            .expect("profil ohne zeile");
+        assert!(!leer.twitch_oauth);
+        assert!(!leer.creator_approved);
+        assert_eq!(leer.twitch_login, None);
+
+        sqlx::query(
+            "INSERT INTO public.streamer_dim \
+                 (twitch_login, twitch_user_id, discord_user_id, is_partner, updated_at) \
+             VALUES ('nani', '4242', $1, TRUE, now())",
+        )
+        .bind(940_540_i64.to_string())
+        .execute(&state.pool)
+        .await
+        .expect("streamer zeile");
+
+        let ohne_auth = load_creator_profile(&state, 940_540)
+            .await
+            .expect("profil ohne raid-auth");
+        assert!(
+            !ohne_auth.twitch_oauth,
+            "ohne Zeile in twitch_raid_auth ist unsere App nicht autorisiert"
+        );
+        assert!(ohne_auth.creator_approved);
+        assert_eq!(ohne_auth.twitch_login.as_deref(), Some("nani"));
+
+        sqlx::query("INSERT INTO public.twitch_raid_auth (twitch_user_id, needs_reauth) VALUES ('4242', FALSE)")
+            .execute(&state.pool)
+            .await
+            .expect("raid auth");
+        assert!(
+            load_creator_profile(&state, 940_540)
+                .await
+                .expect("profil mit raid-auth")
+                .twitch_oauth
+        );
+
+        sqlx::query(
+            "UPDATE public.twitch_raid_auth SET needs_reauth=TRUE WHERE twitch_user_id='4242'",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("reauth flag");
+        assert!(
+            !load_creator_profile(&state, 940_540)
+                .await
+                .expect("profil mit reauth")
+                .twitch_oauth,
+            "needs_reauth zaehlt als nicht autorisiert"
+        );
+
+        sqlx::query("UPDATE public.streamer_dim SET twitch_login='' WHERE twitch_user_id='4242'")
+            .execute(&state.pool)
+            .await
+            .expect("leerer login");
+        assert_eq!(
+            load_creator_profile(&state, 940_540)
+                .await
+                .expect("profil mit leerem login")
+                .twitch_login,
+            None,
+            "leerer Login gilt als kein Login — sonst entscheidet der Redirect anders als der Payload"
         );
     }
 

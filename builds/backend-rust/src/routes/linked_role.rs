@@ -188,23 +188,36 @@ async fn finish_callback(
     {
         return Ok(http::redirect(&next_path, response_headers));
     }
-    if let Err(err) =
-        discord_role_connection::push_for_user(state, provider, oauth_discord_id).await
+    let pushed_profile = match discord_role_connection::push_for_user_with_profile(
+        state,
+        provider,
+        oauth_discord_id,
+    )
+    .await
     {
-        tracing::warn!(
-            ?err,
-            discord_id = oauth_discord_id,
-            provider = provider.as_str(),
-            "Linked-Role-Metadata-Push fehlgeschlagen"
-        );
-    }
+        Ok((_, profile)) => profile,
+        Err(err) => {
+            tracing::warn!(
+                ?err,
+                discord_id = oauth_discord_id,
+                provider = provider.as_str(),
+                "Linked-Role-Metadata-Push fehlgeschlagen"
+            );
+            None
+        }
+    };
 
     // Fehlt die eigentliche Verknuepfung noch, geht es direkt in den bestehenden
     // Flow weiter — Steam in den Discord-Kanal, Creator in den Twitch-Flow des
     // Twitch-Bots. Der Metadata-Push oben hat die Rolle schon auf den aktuellen
     // Stand gebracht, damit ein bereits verknuepfter User hier nicht landet.
-    let profile =
-        discord_role_connection::load_linked_role_profile(state, provider, oauth_discord_id).await;
+    let profile = match pushed_profile {
+        Some(profile) => Ok(profile),
+        None => {
+            discord_role_connection::load_linked_role_profile(state, provider, oauth_discord_id)
+                .await
+        }
+    };
     match profile {
         Ok(profile) if !profile.is_satisfied() => {
             let target = follow_up_url(state, provider, &profile);
@@ -273,17 +286,34 @@ pub async fn register_metadata(
     // DISCORD_CREATOR_CLIENT_ID sah sonst wie ein Erfolg aus, obwohl nichts
     // registriert wurde.
     let mut skipped = Vec::new();
+    let mut failed = Vec::new();
     for provider in LinkedRoleProvider::ALL {
         if !provider.app(&state.cfg).is_configured() {
-            skipped.push(provider.as_str());
+            skipped.push(json!({ "provider": provider.as_str(), "reason": "not_configured" }));
             continue;
         }
-        let records = discord_role_connection::register_metadata(&state, provider).await?;
-        registered.push(json!({ "provider": provider.as_str(), "records": records }));
+        // Ein Fehler beim zweiten Provider darf den ersten nicht unsichtbar
+        // machen: sonst ist Steam registriert, der Aufrufer sieht nur 503.
+        match discord_role_connection::register_metadata(&state, provider).await {
+            Ok(records) => {
+                registered.push(json!({ "provider": provider.as_str(), "records": records }))
+            }
+            Err(err) => {
+                tracing::warn!(
+                    ?err,
+                    provider = provider.as_str(),
+                    "Metadata-Registrierung fehlgeschlagen"
+                );
+                failed.push(json!({ "provider": provider.as_str() }));
+            }
+        }
     }
-    Ok(Json(
-        json!({ "ok": true, "registered": registered, "skipped": skipped }),
-    ))
+    Ok(Json(json!({
+        "ok": failed.is_empty(),
+        "registered": registered,
+        "skipped": skipped,
+        "failed": failed,
+    })))
 }
 
 pub async fn sync_user(
@@ -332,29 +362,48 @@ pub async fn sync_user(
         return Ok(Json(json!({ "ok": true, "outcome": "enqueued" })));
     }
 
-    // Ein Fehler bei einem Provider darf den anderen nicht verschlucken: sonst
-    // sieht der Aufrufer nur 503, wiederholt den Aufruf und pusht den bereits
-    // erledigten Provider ein zweites Mal.
+    // Jeder Provider wird versucht, damit ein Fehler beim zweiten den ersten nicht
+    // verwirft. Nach aussen bleibt es aber bei 503, sonst liest ein Aufrufer, der
+    // nur den Status prueft, Erfolg, obwohl Discord nichts bekommen hat.
     let mut outcomes = serde_json::Map::new();
-    let mut failed = false;
+    let mut first_error = None;
     for provider in providers {
-        let value = match discord_role_connection::push_for_user(&state, provider, discord_id).await
-        {
-            Ok(outcome) => Value::String(outcome.as_str().to_string()),
+        match discord_role_connection::push_for_user(&state, provider, discord_id).await {
+            Ok(outcome) => {
+                outcomes.insert(
+                    provider.as_str().to_string(),
+                    Value::String(outcome.as_str().to_string()),
+                );
+            }
             Err(err) => {
-                failed = true;
                 tracing::warn!(
-                    ?err,
                     discord_id,
                     provider = provider.as_str(),
+                    bisher = %serde_json::Value::Object(outcomes.clone()),
                     "Linked-Role-Push ueber den internen Endpunkt fehlgeschlagen"
                 );
-                Value::String("error".to_string())
+                outcomes.insert(
+                    provider.as_str().to_string(),
+                    Value::String("error".to_string()),
+                );
+                if first_error.is_none() {
+                    first_error = Some(err);
+                }
             }
-        };
-        outcomes.insert(provider.as_str().to_string(), value);
+        }
     }
-    Ok(Json(json!({ "ok": !failed, "outcomes": outcomes })))
+    if let Some(err) = first_error {
+        return Err(err);
+    }
+    // `outcome` ist der alte Vertrag dieses Endpunkts (ein String, Steam-Ergebnis)
+    // und bleibt fuer bestehende Aufrufer erhalten.
+    let legacy_outcome = outcomes
+        .get(LinkedRoleProvider::Steam.as_str())
+        .cloned()
+        .unwrap_or_else(|| Value::String("skipped".to_string()));
+    Ok(Json(
+        json!({ "ok": true, "outcome": legacy_outcome, "outcomes": outcomes }),
+    ))
 }
 
 fn parse_provider(raw: &str) -> AppResult<LinkedRoleProvider> {

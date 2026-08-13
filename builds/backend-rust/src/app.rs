@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use anyhow::Context;
+
 use axum::{
     http::{header, Method},
     routing::{delete, get, patch, post, put},
@@ -50,7 +52,7 @@ impl AppState {
         let discord_role_broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg)?);
         let discord_role_connections =
             Arc::new(ReqwestDiscordRoleConnectionClient::from_config(&cfg)?);
-        warn_if_role_connection_provider_missing(&pool).await;
+        ensure_role_connection_schema(&pool).await?;
         let twitch_pool = connect_twitch_pool(&cfg);
         let auth = Auth::new(cfg.clone());
         let state = Self {
@@ -456,7 +458,20 @@ fn scrim_router(mode: ScrimBackendMode) -> Router<AppState> {
 /// hier keine Behauptung: jede Verbindung setzt
 /// `default_transaction_read_only`, ein Schreibversuch scheitert an Postgres.
 fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
-    let dsn = cfg.twitch_analytics_dsn.as_deref()?;
+    let Some(dsn) = cfg.twitch_analytics_dsn.as_deref() else {
+        // Ohne diese Meldung liesse sich die Creator-Haelfte deployen und taete
+        // dauerhaft nichts: der Reconcile-Sweep gibt still 0 zurueck, und nur
+        // vereinzelte Callback-Warnungen wuerden es verraten.
+        if cfg.discord_creator_app.is_configured() {
+            tracing::error!(
+                "TWITCH_ANALYTICS_DSN fehlt, die Creator-Application ist aber konfiguriert — \
+                 der Creator-Provider kann kein Profil lesen und bleibt wirkungslos."
+            );
+        } else {
+            tracing::info!("TWITCH_ANALYTICS_DSN nicht gesetzt — Creator-Linked-Role ist inaktiv.");
+        }
+        return None;
+    };
     match sqlx::postgres::PgPoolOptions::new()
         .max_connections(2)
         .acquire_timeout(std::time::Duration::from_secs(5))
@@ -482,31 +497,60 @@ fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
 }
 
 /// Prueft beim Start, ob Migration 2026081301 aus `dl-central-db` (anderes Repo)
-/// eingespielt ist. Ohne die Spalte `provider` scheitert jeder Linked-Role-Pfad,
-/// auch die bereits laufende Steam-Verknuepfung — das soll einmal laut im Log
-/// stehen und nicht erst bei jedem Callback einzeln auffallen.
-async fn warn_if_role_connection_provider_missing(pool: &PgPool) {
-    let present: Option<i32> = sqlx::query_scalar(
-        "SELECT 1 FROM information_schema.columns \
-          WHERE table_schema='core' AND table_name='discord_role_connection_tokens' \
-            AND column_name='provider'",
-    )
-    .fetch_optional(pool)
-    .await
-    .unwrap_or_else(|err| {
-        tracing::warn!(
-            ?err,
-            "Schema-Pruefung der Linked-Role-Tabellen fehlgeschlagen"
-        );
-        None
-    });
-    if present.is_none() {
-        tracing::error!(
-            "core.discord_role_connection_tokens.provider fehlt — Migration 2026081301 \
-             aus dl-central-db ist nicht eingespielt. Bis dahin scheitert jede \
-             Linked-Role-Verknuepfung, auch die bestehende Steam-Verknuepfung."
-        );
+/// vollstaendig eingespielt ist: Spalte `provider` **und** ein Unique-Index auf
+/// `(discord_id, provider)` auf beiden Tabellen — genau das setzt jedes
+/// `ON CONFLICT (discord_id, provider)` voraus.
+///
+/// Fehlt etwas davon, bricht der Start ab. Weiterlaufen hiesse: die bereits
+/// live laufende Steam-Verknuepfung scheitert bei jedem Callback still, waehrend
+/// der Dienst gesund aussieht. Ein Dienst, der nicht startet, ist im Deploy
+/// sofort sichtbar — und der Weg zurueck ist genau ein Migrationslauf.
+async fn ensure_role_connection_schema(pool: &PgPool) -> anyhow::Result<()> {
+    for table in [
+        "discord_role_connection_tokens",
+        "discord_role_connection_sync_state",
+    ] {
+        let column: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 FROM information_schema.columns \
+              WHERE table_schema='core' AND table_name=$1 AND column_name='provider'",
+        )
+        .bind(table)
+        .fetch_optional(pool)
+        .await
+        .with_context(|| format!("Schema-Pruefung von core.{table} fehlgeschlagen"))?;
+        if column.is_none() {
+            anyhow::bail!(
+                "core.{table}.provider fehlt — Migration 2026081301 aus dl-central-db ist \
+                 nicht eingespielt. Erst `dl-central-migrate` laufen lassen, dann diesen \
+                 Dienst starten."
+            );
+        }
+
+        let unique: Option<i32> = sqlx::query_scalar(
+            "SELECT 1 \
+               FROM pg_index idx \
+               JOIN pg_class cls ON cls.oid = idx.indrelid \
+               JOIN pg_namespace nsp ON nsp.oid = cls.relnamespace \
+              WHERE nsp.nspname='core' AND cls.relname=$1 AND idx.indisunique \
+                AND (SELECT array_agg(att.attname::text ORDER BY att.attname) \
+                       FROM pg_attribute att \
+                      WHERE att.attrelid = cls.oid \
+                        AND att.attnum = ANY (idx.indkey)) \
+                    = ARRAY['discord_id','provider']",
+        )
+        .bind(table)
+        .fetch_optional(pool)
+        .await
+        .with_context(|| format!("Index-Pruefung von core.{table} fehlgeschlagen"))?;
+        if unique.is_none() {
+            anyhow::bail!(
+                "core.{table} hat keinen Unique-Index auf (discord_id, provider) — Migration \
+                 2026081301 ist nur halb eingespielt. Jedes ON CONFLICT (discord_id, provider) \
+                 wuerde zur Laufzeit scheitern."
+            );
+        }
     }
+    Ok(())
 }
 
 fn scrim_http_client(cfg: &Config) -> anyhow::Result<Client> {
