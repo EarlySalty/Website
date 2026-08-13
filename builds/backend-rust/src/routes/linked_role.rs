@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use axum::{
-    extract::{ConnectInfo, Query, State},
+    extract::{ConnectInfo, Path, Query, State},
     http::HeaderMap,
     response::Response,
     Json,
@@ -13,12 +13,14 @@ use crate::{
     app::AppState,
     auth, config,
     discord_role_connection::{
-        self, build_authorize_url, MSG_CALLBACK_URL_UNAVAILABLE, MSG_DISCORD_ID_REQUIRED,
-        ROLE_CONNECTION_CALLBACK_PATH,
+        self, build_authorize_url, LinkedRoleProvider, MSG_CALLBACK_URL_UNAVAILABLE,
+        MSG_DISCORD_ID_REQUIRED,
     },
     error::{AppError, AppResult},
     http,
 };
+
+pub const MSG_UNKNOWN_PROVIDER: &str = "Unbekannte Verknüpfung.";
 
 #[derive(Deserialize)]
 pub struct LoginQuery {
@@ -32,25 +34,48 @@ pub struct CallbackQuery {
     error: Option<String>,
 }
 
-pub async fn linked_role_login(
+/// `/linked-role/{provider}` — Ziel der Discord-Verifizierungs-URL.
+pub async fn linked_role_login_for(
     State(state): State<AppState>,
     headers: HeaderMap,
+    Path(provider): Path<String>,
     Query(query): Query<LoginQuery>,
 ) -> AppResult<Response> {
-    let callback_url = build_callback_url(&state, &headers)?;
-    let fallback = auth::default_redirect_path(&headers);
-    let next_path = auth::normalize_redirect_path(query.next.as_deref(), &fallback);
+    let provider = parse_provider(&provider)?;
+    start_login(&state, &headers, provider, query.next.as_deref()).await
+}
+
+pub async fn linked_role_callback_for(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(_peer): ConnectInfo<SocketAddr>,
+    Path(provider): Path<String>,
+    Query(query): Query<CallbackQuery>,
+) -> AppResult<Response> {
+    let provider = parse_provider(&provider)?;
+    finish_callback(&state, &headers, provider, query).await
+}
+
+async fn start_login(
+    state: &AppState,
+    headers: &HeaderMap,
+    provider: LinkedRoleProvider,
+    next: Option<&str>,
+) -> AppResult<Response> {
+    let callback_url = build_callback_url(state, headers, provider)?;
+    let fallback = auth::default_redirect_path(headers);
+    let next_path = auth::normalize_redirect_path(next, &fallback);
     let state_id = crate::ids::token_urlsafe(32);
     let token = state.auth.create_pre_auth_jwt(&state_id, &next_path)?;
-    let authorize_url = build_authorize_url(&state.cfg, &state_id, &callback_url)?;
+    let authorize_url = build_authorize_url(&state.cfg, provider, &state_id, &callback_url)?;
 
     let mut response_headers = HeaderMap::new();
     auth::append_cookie(
         &mut response_headers,
         auth::set_cookie(
-            &state,
-            &headers,
-            &state.cfg.discord_role_connection_cookie_name,
+            state,
+            headers,
+            &state_cookie_name(state, provider),
             &token,
             state.cfg.pre_auth_ttl_seconds,
         ),
@@ -58,15 +83,15 @@ pub async fn linked_role_login(
     Ok(http::redirect(&authorize_url, response_headers))
 }
 
-pub async fn linked_role_callback(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-    ConnectInfo(_peer): ConnectInfo<SocketAddr>,
-    Query(query): Query<CallbackQuery>,
+async fn finish_callback(
+    state: &AppState,
+    headers: &HeaderMap,
+    provider: LinkedRoleProvider,
+    query: CallbackQuery,
 ) -> AppResult<Response> {
-    let fallback = auth::default_redirect_path(&headers);
-    let state_cookie_name = &state.cfg.discord_role_connection_cookie_name;
-    let pre_auth = auth::cookie(&headers, state_cookie_name)
+    let fallback = auth::default_redirect_path(headers);
+    let state_cookie_name = state_cookie_name(state, provider);
+    let pre_auth = auth::cookie(headers, &state_cookie_name)
         .and_then(|token| state.auth.decode_jwt(&token))
         .filter(|claims| claims.kind.as_deref() == Some("pre_auth"));
     let next_path = pre_auth
@@ -76,7 +101,7 @@ pub async fn linked_role_callback(
         .unwrap_or(fallback);
 
     let mut response_headers = HeaderMap::new();
-    for cookie in auth::clear_cookie_variants(&state, &headers, state_cookie_name) {
+    for cookie in auth::clear_cookie_variants(state, headers, &state_cookie_name) {
         auth::append_cookie(&mut response_headers, cookie);
     }
 
@@ -101,11 +126,12 @@ pub async fn linked_role_callback(
     if code.is_empty() {
         return Ok(http::redirect(&next_path, response_headers));
     }
-    let callback_url = build_callback_url(&state, &headers)?;
+    let callback_url = build_callback_url(state, headers, provider)?;
+    let credentials = provider.credentials(&state.cfg)?;
 
     let Ok(token) = state
         .discord_role_connections
-        .exchange_code(code, &callback_url)
+        .exchange_code(&credentials, code, &callback_url)
         .await
     else {
         return Ok(http::redirect(&next_path, response_headers));
@@ -120,7 +146,7 @@ pub async fn linked_role_callback(
     let oauth_discord_id = auth::parse_discord_user_id(&discord_user.id)?;
 
     let role = auth::upsert_meta_user(
-        &state,
+        state,
         oauth_discord_id,
         &discord_user.display_name(),
         &discord_user.display_name(),
@@ -128,20 +154,80 @@ pub async fn linked_role_callback(
     )
     .await?;
     let _ = role;
-    if discord_role_connection::store_oauth_tokens(&state, oauth_discord_id, &token)
+    if discord_role_connection::store_oauth_tokens(state, provider, oauth_discord_id, &token)
         .await
         .is_err()
     {
         return Ok(http::redirect(&next_path, response_headers));
     }
-    if let Err(err) = discord_role_connection::push_for_user(&state, oauth_discord_id).await {
+    if let Err(err) =
+        discord_role_connection::push_for_user(state, provider, oauth_discord_id).await
+    {
         tracing::warn!(
             ?err,
             discord_id = oauth_discord_id,
+            provider = provider.as_str(),
             "Linked-Role-Metadata-Push fehlgeschlagen"
         );
     }
-    Ok(http::redirect(&next_path, response_headers))
+
+    // Fehlt die eigentliche Verknuepfung noch, geht es direkt in den bestehenden
+    // Flow weiter — Steam in den Discord-Kanal, Creator in den Twitch-Flow des
+    // Twitch-Bots. Der Metadata-Push oben hat die Rolle schon auf den aktuellen
+    // Stand gebracht, damit ein bereits verknuepfter User hier nicht landet.
+    let profile =
+        discord_role_connection::load_linked_role_profile(state, provider, oauth_discord_id).await;
+    match profile {
+        Ok(profile) if !profile.is_satisfied() => {
+            let target = follow_up_url(state, provider, &profile);
+            Ok(http::redirect(&target, response_headers))
+        }
+        Ok(_) => Ok(http::redirect(&next_path, response_headers)),
+        Err(err) => {
+            tracing::warn!(
+                ?err,
+                discord_id = oauth_discord_id,
+                provider = provider.as_str(),
+                "Linked-Role-Profil nach dem Callback nicht lesbar"
+            );
+            Ok(http::redirect(&next_path, response_headers))
+        }
+    }
+}
+
+fn follow_up_url(
+    state: &AppState,
+    provider: LinkedRoleProvider,
+    profile: &discord_role_connection::LinkedRoleProfile,
+) -> String {
+    match (provider, profile) {
+        (LinkedRoleProvider::Steam, _) => state.cfg.linked_role_steam_link_url.clone(),
+        (
+            LinkedRoleProvider::Creator,
+            discord_role_connection::LinkedRoleProfile::Creator(creator),
+        ) if creator.twitch_login.is_some() => {
+            // Discord und Twitch sind verknuepft, es fehlt nur die
+            // Autorisierung unserer Twitch-Anwendung.
+            state.cfg.linked_role_twitch_auth_url.clone()
+        }
+        (LinkedRoleProvider::Creator, _) => state.cfg.linked_role_twitch_link_url.clone(),
+    }
+}
+
+pub async fn register_metadata_for(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(provider): Path<String>,
+) -> AppResult<Json<Value>> {
+    auth::require_admin_user(&state, &headers, Some(peer)).await?;
+    let provider = parse_provider(&provider)?;
+    let records = discord_role_connection::register_metadata(&state, provider).await?;
+    Ok(Json(json!({
+        "ok": true,
+        "provider": provider.as_str(),
+        "records": records,
+    })))
 }
 
 pub async fn register_metadata(
@@ -150,11 +236,15 @@ pub async fn register_metadata(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
 ) -> AppResult<Json<Value>> {
     auth::require_admin_user(&state, &headers, Some(peer)).await?;
-    discord_role_connection::register_metadata(&state).await?;
-    Ok(Json(json!({
-        "ok": true,
-        "records": discord_role_connection::metadata_records(),
-    })))
+    let mut registered = Vec::new();
+    for provider in LinkedRoleProvider::ALL {
+        if !provider.app(&state.cfg).is_configured() {
+            continue;
+        }
+        let records = discord_role_connection::register_metadata(&state, provider).await?;
+        registered.push(json!({ "provider": provider.as_str(), "records": records }));
+    }
+    Ok(Json(json!({ "ok": true, "registered": registered })))
 }
 
 pub async fn sync_user(
@@ -181,6 +271,12 @@ pub async fn sync_user(
         .get("discord_id")
         .and_then(coerce_i64)
         .ok_or_else(|| AppError::bad_request(MSG_DISCORD_ID_REQUIRED))?;
+    let providers = match body.get("provider").and_then(Value::as_str) {
+        Some(raw) => vec![LinkedRoleProvider::parse(raw)
+            .ok_or_else(|| AppError::bad_request(MSG_UNKNOWN_PROVIDER))?],
+        None => LinkedRoleProvider::ALL.to_vec(),
+    };
+
     if body
         .get("enqueue")
         .and_then(Value::as_bool)
@@ -190,16 +286,43 @@ pub async fn sync_user(
             .get("reason")
             .and_then(Value::as_str)
             .unwrap_or("manual");
-        discord_role_connection::enqueue_sync(&state.pool, discord_id, reason).await?;
+        for provider in &providers {
+            discord_role_connection::enqueue_sync(&state.pool, *provider, discord_id, reason)
+                .await?;
+        }
         return Ok(Json(json!({ "ok": true, "outcome": "enqueued" })));
     }
 
-    let outcome = discord_role_connection::push_for_user(&state, discord_id).await?;
-    Ok(Json(json!({ "ok": true, "outcome": outcome.as_str() })))
+    let mut outcomes = serde_json::Map::new();
+    for provider in providers {
+        let outcome = discord_role_connection::push_for_user(&state, provider, discord_id).await?;
+        outcomes.insert(
+            provider.as_str().to_string(),
+            Value::String(outcome.as_str().to_string()),
+        );
+    }
+    Ok(Json(json!({ "ok": true, "outcomes": outcomes })))
 }
 
-fn build_callback_url(state: &AppState, headers: &HeaderMap) -> AppResult<String> {
-    if let Some(url) = state.cfg.discord_role_connection_callback_url.as_ref() {
+fn parse_provider(raw: &str) -> AppResult<LinkedRoleProvider> {
+    LinkedRoleProvider::parse(raw).ok_or_else(|| AppError::bad_request(MSG_UNKNOWN_PROVIDER))
+}
+
+fn state_cookie_name(state: &AppState, provider: LinkedRoleProvider) -> String {
+    match provider {
+        LinkedRoleProvider::Steam => state.cfg.discord_role_connection_cookie_name.clone(),
+        LinkedRoleProvider::Creator => {
+            format!("{}_creator", state.cfg.discord_role_connection_cookie_name)
+        }
+    }
+}
+
+fn build_callback_url(
+    state: &AppState,
+    headers: &HeaderMap,
+    provider: LinkedRoleProvider,
+) -> AppResult<String> {
+    if let Some(url) = provider.app(&state.cfg).callback_url.as_ref() {
         return Ok(url.clone());
     }
     let scheme = headers
@@ -222,7 +345,7 @@ fn build_callback_url(state: &AppState, headers: &HeaderMap) -> AppResult<String
     if scheme.is_empty() || host.is_empty() {
         return Err(AppError::service_unavailable(MSG_CALLBACK_URL_UNAVAILABLE));
     }
-    Ok(format!("{scheme}://{host}{ROLE_CONNECTION_CALLBACK_PATH}"))
+    Ok(format!("{scheme}://{host}{}", provider.callback_path()))
 }
 
 fn has_internal_token(headers: &HeaderMap) -> bool {

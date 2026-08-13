@@ -18,9 +18,11 @@ use crate::{
 };
 
 pub const LINKED_ROLE_SCOPE: &str = "identify role_connections.write";
-pub const ROLE_CONNECTION_CALLBACK_PATH: &str = "/api/auth/discord/linked-role/callback";
+pub const STEAM_CALLBACK_PATH: &str = "/auth/discord/steam/callback";
+pub const CREATOR_CALLBACK_PATH: &str = "/auth/discord/creator/callback";
 pub const FALLBACK_DISPLAY_NAME: &str = "Discord-User";
-pub const PLATFORM_NAME: &str = "Deadlock Community";
+pub const PLATFORM_NAME_STEAM: &str = "Deadlock Steam";
+pub const PLATFORM_NAME_CREATOR: &str = "Deadlock Creator";
 pub const PLATFORM_USERNAME_LINKED: &str = "Steam verknüpft";
 pub const PLATFORM_USERNAME_UNLINKED: &str = "nicht verknüpft";
 pub const METADATA_STEAM_NAME: &str = "Steam verknüpft";
@@ -28,7 +30,15 @@ pub const METADATA_STEAM_DESCRIPTION: &str =
     "Steam-Account ist mit der Community-Website verknüpft";
 pub const METADATA_RANG_NAME: &str = "Deadlock-Rang";
 pub const METADATA_RANG_DESCRIPTION: &str = "Verifizierter Rang aus den verknüpften Steam-Daten";
+pub const METADATA_TWITCH_OAUTH_NAME: &str = "Twitch verbunden";
+pub const METADATA_TWITCH_OAUTH_DESCRIPTION: &str =
+    "Twitch wurde fuer das Deadlock Creator Program autorisiert";
+pub const METADATA_CREATOR_APPROVED_NAME: &str = "Creator bestätigt";
+pub const METADATA_CREATOR_APPROVED_DESCRIPTION: &str =
+    "Creator ist im Deadlock Creator Program freigeschaltet";
 pub const MSG_NOT_CONFIGURED: &str = "Steam-Verknüpfung ist serverseitig nicht konfiguriert.";
+pub const MSG_CREATOR_SOURCE_UNAVAILABLE: &str =
+    "Creator-Daten sind gerade nicht abrufbar — versuch es später nochmal.";
 pub const MSG_RELINK_REQUIRED: &str = "Discord-Verknüpfung abgelaufen — bitte neu verknüpfen.";
 pub const MSG_DISCORD_UNAVAILABLE: &str =
     "Discord ist gerade nicht erreichbar — versuch es später nochmal.";
@@ -44,6 +54,71 @@ const REFRESH_AAD_FIELD: &str = "refresh_token";
 const TOKEN_AAD_VERSION: i32 = 1;
 const ROLE_CONNECTION_ADVISORY_LOCK_NAMESPACE: i64 = 0x4452_0003_0000_0000;
 
+/// Die zwei Discord-Applications, die als Linked-Role-Provider auftreten.
+///
+/// `Steam` liefert Steam-Verknüpfung und Deadlock-Rang aus `core.steam_links`,
+/// `Creator` liefert Twitch-Autorisierung und Creator-Freigabe aus der
+/// Twitch-Datenbank. Der Wert landet als Spalte `provider` in
+/// `core.discord_role_connection_tokens` und `…_sync_state`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum LinkedRoleProvider {
+    Steam,
+    Creator,
+}
+
+impl LinkedRoleProvider {
+    pub const ALL: [Self; 2] = [Self::Steam, Self::Creator];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Steam => "steam",
+            Self::Creator => "creator",
+        }
+    }
+
+    pub fn parse(raw: &str) -> Option<Self> {
+        match raw.trim().to_ascii_lowercase().as_str() {
+            "steam" => Some(Self::Steam),
+            "creator" => Some(Self::Creator),
+            _ => None,
+        }
+    }
+
+    pub fn callback_path(self) -> &'static str {
+        match self {
+            Self::Steam => STEAM_CALLBACK_PATH,
+            Self::Creator => CREATOR_CALLBACK_PATH,
+        }
+    }
+
+    pub fn app(self, cfg: &Config) -> &crate::config::DiscordLinkedRoleApp {
+        match self {
+            Self::Steam => &cfg.discord_steam_app,
+            Self::Creator => &cfg.discord_creator_app,
+        }
+    }
+
+    pub fn credentials(self, cfg: &Config) -> AppResult<OAuthAppCredentials> {
+        let app = self.app(cfg);
+        let (Some(client_id), Some(client_secret)) =
+            (app.client_id.as_deref(), app.client_secret.as_deref())
+        else {
+            return Err(AppError::service_unavailable(MSG_NOT_CONFIGURED));
+        };
+        Ok(OAuthAppCredentials {
+            client_id: client_id.to_string(),
+            client_secret: client_secret.to_string(),
+        })
+    }
+}
+
+/// Client-Credentials genau einer Discord-Application.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OAuthAppCredentials {
+    pub client_id: String,
+    pub client_secret: String,
+}
+
 pub type DynDiscordRoleConnectionClient = Arc<dyn DiscordRoleConnectionClient>;
 pub type DiscordRoleConnectionFuture<'a, T> =
     Pin<Box<dyn Future<Output = Result<T, DiscordRoleConnectionError>> + Send + 'a>>;
@@ -51,12 +126,14 @@ pub type DiscordRoleConnectionFuture<'a, T> =
 pub trait DiscordRoleConnectionClient: Send + Sync {
     fn exchange_code<'a>(
         &'a self,
+        credentials: &'a OAuthAppCredentials,
         code: &'a str,
         redirect_uri: &'a str,
     ) -> DiscordRoleConnectionFuture<'a, OAuthTokenResponse>;
 
     fn refresh_token<'a>(
         &'a self,
+        credentials: &'a OAuthAppCredentials,
         refresh_token: &'a str,
     ) -> DiscordRoleConnectionFuture<'a, OAuthTokenResponse>;
 
@@ -82,7 +159,6 @@ pub trait DiscordRoleConnectionClient: Send + Sync {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiscordRoleConnectionError {
-    Unconfigured,
     InvalidGrant,
     Unauthorized,
     Transport,
@@ -194,8 +270,6 @@ impl RoleConnectionPushOutcome {
 pub struct ReqwestDiscordRoleConnectionClient {
     http: Client,
     api_base: String,
-    client_id: Option<String>,
-    client_secret: Option<String>,
 }
 
 impl ReqwestDiscordRoleConnectionClient {
@@ -204,8 +278,6 @@ impl ReqwestDiscordRoleConnectionClient {
         Ok(Self {
             http,
             api_base: cfg.discord_api_base.trim_end_matches('/').to_string(),
-            client_id: cfg.discord_oauth_client_id.clone(),
-            client_secret: cfg.discord_oauth_client_secret.clone(),
         })
     }
 
@@ -228,18 +300,14 @@ impl ReqwestDiscordRoleConnectionClient {
 impl DiscordRoleConnectionClient for ReqwestDiscordRoleConnectionClient {
     fn exchange_code<'a>(
         &'a self,
+        credentials: &'a OAuthAppCredentials,
         code: &'a str,
         redirect_uri: &'a str,
     ) -> DiscordRoleConnectionFuture<'a, OAuthTokenResponse> {
         Box::pin(async move {
-            let (Some(client_id), Some(client_secret)) =
-                (self.client_id.as_deref(), self.client_secret.as_deref())
-            else {
-                return Err(DiscordRoleConnectionError::Unconfigured);
-            };
             self.post_token_form(vec![
-                ("client_id", client_id),
-                ("client_secret", client_secret),
+                ("client_id", credentials.client_id.as_str()),
+                ("client_secret", credentials.client_secret.as_str()),
                 ("grant_type", "authorization_code"),
                 ("code", code),
                 ("redirect_uri", redirect_uri),
@@ -250,17 +318,13 @@ impl DiscordRoleConnectionClient for ReqwestDiscordRoleConnectionClient {
 
     fn refresh_token<'a>(
         &'a self,
+        credentials: &'a OAuthAppCredentials,
         refresh_token: &'a str,
     ) -> DiscordRoleConnectionFuture<'a, OAuthTokenResponse> {
         Box::pin(async move {
-            let (Some(client_id), Some(client_secret)) =
-                (self.client_id.as_deref(), self.client_secret.as_deref())
-            else {
-                return Err(DiscordRoleConnectionError::Unconfigured);
-            };
             self.post_token_form(vec![
-                ("client_id", client_id),
-                ("client_secret", client_secret),
+                ("client_id", credentials.client_id.as_str()),
+                ("client_secret", credentials.client_secret.as_str()),
                 ("grant_type", "refresh_token"),
                 ("refresh_token", refresh_token),
             ])
@@ -378,8 +442,13 @@ async fn decode_empty_discord_response(
     ))
 }
 
-pub fn build_authorize_url(cfg: &Config, state: &str, redirect_uri: &str) -> AppResult<String> {
-    let Some(client_id) = cfg.discord_oauth_client_id.as_deref() else {
+pub fn build_authorize_url(
+    cfg: &Config,
+    provider: LinkedRoleProvider,
+    state: &str,
+    redirect_uri: &str,
+) -> AppResult<String> {
+    let Some(client_id) = provider.app(cfg).client_id.as_deref() else {
         return Err(AppError::service_unavailable(MSG_NOT_CONFIGURED));
     };
     let query = form_urlencoded::Serializer::new(String::new())
@@ -396,46 +465,68 @@ pub fn build_authorize_url(cfg: &Config, state: &str, redirect_uri: &str) -> App
     ))
 }
 
-pub fn metadata_records() -> Vec<RoleConnectionMetadataRecord> {
-    vec![
-        RoleConnectionMetadataRecord {
-            kind: 7,
-            key: "steam_verknuepft".to_string(),
-            name: METADATA_STEAM_NAME.to_string(),
-            description: METADATA_STEAM_DESCRIPTION.to_string(),
-        },
-        RoleConnectionMetadataRecord {
-            kind: 2,
-            key: "rang".to_string(),
-            name: METADATA_RANG_NAME.to_string(),
-            description: METADATA_RANG_DESCRIPTION.to_string(),
-        },
-    ]
+pub fn metadata_records(provider: LinkedRoleProvider) -> Vec<RoleConnectionMetadataRecord> {
+    match provider {
+        LinkedRoleProvider::Steam => vec![
+            RoleConnectionMetadataRecord {
+                kind: 7,
+                key: "steam_verknuepft".to_string(),
+                name: METADATA_STEAM_NAME.to_string(),
+                description: METADATA_STEAM_DESCRIPTION.to_string(),
+            },
+            RoleConnectionMetadataRecord {
+                kind: 2,
+                key: "rang".to_string(),
+                name: METADATA_RANG_NAME.to_string(),
+                description: METADATA_RANG_DESCRIPTION.to_string(),
+            },
+        ],
+        LinkedRoleProvider::Creator => vec![
+            RoleConnectionMetadataRecord {
+                kind: 7,
+                key: "twitch_oauth".to_string(),
+                name: METADATA_TWITCH_OAUTH_NAME.to_string(),
+                description: METADATA_TWITCH_OAUTH_DESCRIPTION.to_string(),
+            },
+            RoleConnectionMetadataRecord {
+                kind: 7,
+                key: "creator_approved".to_string(),
+                name: METADATA_CREATOR_APPROVED_NAME.to_string(),
+                description: METADATA_CREATOR_APPROVED_DESCRIPTION.to_string(),
+            },
+        ],
+    }
 }
 
-pub async fn register_metadata(state: &AppState) -> AppResult<()> {
-    let Some(application_id) = state.cfg.discord_application_id.as_deref() else {
+pub async fn register_metadata(
+    state: &AppState,
+    provider: LinkedRoleProvider,
+) -> AppResult<Vec<RoleConnectionMetadataRecord>> {
+    let app = provider.app(&state.cfg);
+    let Some(application_id) = app.application_id.as_deref() else {
         return Err(AppError::service_unavailable(MSG_NOT_CONFIGURED));
     };
-    let Some(bot_token) = state.cfg.discord_bot_token.as_deref() else {
+    let Some(bot_token) = app.bot_token.as_deref() else {
         return Err(AppError::service_unavailable(MSG_NOT_CONFIGURED));
     };
+    let records = metadata_records(provider);
     state
         .discord_role_connections
-        .register_metadata(application_id, bot_token, &metadata_records())
+        .register_metadata(application_id, bot_token, &records)
         .await
         .map_err(map_discord_error)?;
-    Ok(())
+    Ok(records)
 }
 
 pub async fn store_oauth_tokens(
     state: &AppState,
+    provider: LinkedRoleProvider,
     discord_id: i64,
     token: &OAuthTokenResponse,
 ) -> AppResult<i32> {
     let crypto = FieldCrypto::from_config(&state.cfg)?;
-    let encrypted = encrypt_oauth_token_fields(&crypto, discord_id, token)?;
-    store_oauth_tokens_encrypted(&state.pool, discord_id, &encrypted).await
+    let encrypted = encrypt_oauth_token_fields(&crypto, provider, discord_id, token)?;
+    store_oauth_tokens_encrypted(&state.pool, provider, discord_id, &encrypted).await
 }
 
 struct EncryptedOAuthToken {
@@ -448,18 +539,19 @@ struct EncryptedOAuthToken {
 
 fn encrypt_oauth_token_fields(
     crypto: &FieldCrypto,
+    provider: LinkedRoleProvider,
     discord_id: i64,
     token: &OAuthTokenResponse,
 ) -> AppResult<EncryptedOAuthToken> {
     Ok(EncryptedOAuthToken {
         access_token: crypto.encrypt(
             &token.access_token,
-            &token_aad(discord_id, ACCESS_AAD_FIELD),
+            &token_aad(provider, discord_id, ACCESS_AAD_FIELD),
             FIELD_CRYPTO_KEY_ID,
         )?,
         refresh_token: crypto.encrypt(
             &token.refresh_token,
-            &token_aad(discord_id, REFRESH_AAD_FIELD),
+            &token_aad(provider, discord_id, REFRESH_AAD_FIELD),
             FIELD_CRYPTO_KEY_ID,
         )?,
         token_type: token.token_type.as_deref().unwrap_or("Bearer").to_string(),
@@ -474,6 +566,7 @@ fn encrypt_oauth_token_fields(
 
 async fn store_oauth_tokens_encrypted<'e, E>(
     executor: E,
+    provider: LinkedRoleProvider,
     discord_id: i64,
     token: &EncryptedOAuthToken,
 ) -> AppResult<i32>
@@ -482,10 +575,10 @@ where
 {
     let token_version = sqlx::query_scalar(
         "INSERT INTO core.discord_role_connection_tokens \
-         (discord_id, access_token, refresh_token, token_type, scope, expires_at, active, \
+         (discord_id, provider, access_token, refresh_token, token_type, scope, expires_at, active, \
           invalidated_at, invalidation_reason, last_refresh_at, updated_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, TRUE, NULL, NULL, now(), now()) \
-         ON CONFLICT (discord_id) DO UPDATE SET \
+         VALUES ($1, $7, $2, $3, $4, $5, $6, TRUE, NULL, NULL, now(), now()) \
+         ON CONFLICT (discord_id, provider) DO UPDATE SET \
              access_token=EXCLUDED.access_token, \
              refresh_token=EXCLUDED.refresh_token, \
              token_type=EXCLUDED.token_type, \
@@ -505,6 +598,7 @@ where
     .bind(&token.token_type)
     .bind(&token.scope)
     .bind(token.expires_at)
+    .bind(provider.as_str())
     .fetch_one(executor)
     .await?;
     Ok(token_version)
@@ -512,15 +606,25 @@ where
 
 pub async fn push_for_user(
     state: &AppState,
+    provider: LinkedRoleProvider,
     discord_id: i64,
 ) -> AppResult<RoleConnectionPushOutcome> {
-    let Some(application_id) = state.cfg.discord_application_id.as_deref() else {
+    let app = provider.app(&state.cfg);
+    let (Some(application_id), Ok(credentials)) = (
+        app.application_id.as_deref(),
+        provider.credentials(&state.cfg),
+    ) else {
         return Ok(RoleConnectionPushOutcome::NotConfigured);
     };
-    let mut tx = state.pool.begin().await?;
-    acquire_role_connection_lock(&mut tx, discord_id).await?;
+    // Das Provider-Profil kommt je Provider aus einer anderen Datenquelle und
+    // wird vor der Schreib-Transaktion geladen (Creator liegt in der
+    // Twitch-Datenbank, nicht in der zentralen).
+    let profile = load_linked_role_profile(state, provider, discord_id).await?;
 
-    let Some(stored) = load_stored_token(&mut tx, discord_id).await? else {
+    let mut tx = state.pool.begin().await?;
+    acquire_role_connection_lock(&mut tx, provider, discord_id).await?;
+
+    let Some(stored) = load_stored_token(&mut tx, provider, discord_id).await? else {
         tx.commit().await?;
         return Ok(RoleConnectionPushOutcome::NoToken);
     };
@@ -535,12 +639,19 @@ pub async fn push_for_user(
     let mut token_version = stored.token_version;
     let mut access_token = match crypto.decrypt(
         &stored.access_token,
-        &token_aad(discord_id, ACCESS_AAD_FIELD),
+        &token_aad(provider, discord_id, ACCESS_AAD_FIELD),
     ) {
         Ok(token) => token,
         Err(err) => {
-            tracing::warn!(%err, discord_id, "Linked-Role-Token konnte nicht entschluesselt werden");
-            mark_token_inactive(&mut tx, discord_id, "decrypt_failed", token_version).await?;
+            tracing::warn!(%err, discord_id, provider = provider.as_str(), "Linked-Role-Token konnte nicht entschluesselt werden");
+            mark_token_inactive(
+                &mut tx,
+                provider,
+                discord_id,
+                "decrypt_failed",
+                token_version,
+            )
+            .await?;
             tx.commit().await?;
             return Ok(RoleConnectionPushOutcome::TokenInvalidated);
         }
@@ -549,41 +660,57 @@ pub async fn push_for_user(
     if stored.expires_at <= Utc::now() + TimeDelta::seconds(60) {
         let refresh_token = match crypto.decrypt(
             &stored.refresh_token,
-            &token_aad(discord_id, REFRESH_AAD_FIELD),
+            &token_aad(provider, discord_id, REFRESH_AAD_FIELD),
         ) {
             Ok(token) => token,
             Err(err) => {
-                tracing::warn!(%err, discord_id, "Linked-Role-Refresh-Token konnte nicht entschluesselt werden");
-                mark_token_inactive(&mut tx, discord_id, "decrypt_failed", token_version).await?;
+                tracing::warn!(%err, discord_id, provider = provider.as_str(), "Linked-Role-Refresh-Token konnte nicht entschluesselt werden");
+                mark_token_inactive(
+                    &mut tx,
+                    provider,
+                    discord_id,
+                    "decrypt_failed",
+                    token_version,
+                )
+                .await?;
                 tx.commit().await?;
                 return Ok(RoleConnectionPushOutcome::TokenInvalidated);
             }
         };
         match state
             .discord_role_connections
-            .refresh_token(&refresh_token)
+            .refresh_token(&credentials, &refresh_token)
             .await
         {
             Ok(refreshed) => {
                 access_token = refreshed.access_token.clone();
-                let encrypted = encrypt_oauth_token_fields(&crypto, discord_id, &refreshed)?;
+                let encrypted =
+                    encrypt_oauth_token_fields(&crypto, provider, discord_id, &refreshed)?;
                 token_version =
-                    store_oauth_tokens_encrypted(&mut *tx, discord_id, &encrypted).await?;
+                    store_oauth_tokens_encrypted(&mut *tx, provider, discord_id, &encrypted)
+                        .await?;
             }
             Err(err) if err.invalidates_user_token() => {
-                mark_token_inactive(&mut tx, discord_id, "refresh_invalid", token_version).await?;
+                mark_token_inactive(
+                    &mut tx,
+                    provider,
+                    discord_id,
+                    "refresh_invalid",
+                    token_version,
+                )
+                .await?;
                 tx.commit().await?;
                 return Ok(RoleConnectionPushOutcome::TokenInvalidated);
             }
             Err(err) => {
-                record_push_error(&mut tx, discord_id, format!("refresh:{err:?}")).await?;
+                record_push_error(&mut tx, provider, discord_id, format!("refresh:{err:?}"))
+                    .await?;
                 tx.commit().await?;
                 return Err(map_discord_error(err));
             }
         }
     }
 
-    let profile = load_role_connection_profile(&mut *tx, discord_id).await?;
     let payload = build_user_role_connection_payload(&profile);
     match state
         .discord_role_connections
@@ -591,34 +718,41 @@ pub async fn push_for_user(
         .await
     {
         Ok(()) => {
-            record_push_success(&mut tx, discord_id).await?;
+            record_push_success(&mut tx, provider, discord_id).await?;
             tx.commit().await?;
             Ok(RoleConnectionPushOutcome::Pushed)
         }
         Err(err) if err.invalidates_user_token() => {
-            mark_token_inactive(&mut tx, discord_id, "push_invalid", token_version).await?;
+            mark_token_inactive(&mut tx, provider, discord_id, "push_invalid", token_version)
+                .await?;
             tx.commit().await?;
             Ok(RoleConnectionPushOutcome::TokenInvalidated)
         }
         Err(err) => {
-            record_push_error(&mut tx, discord_id, format!("push:{err:?}")).await?;
+            record_push_error(&mut tx, provider, discord_id, format!("push:{err:?}")).await?;
             tx.commit().await?;
             Err(map_discord_error(err))
         }
     }
 }
 
-pub async fn enqueue_sync(pool: &PgPool, discord_id: i64, reason: &str) -> AppResult<()> {
+pub async fn enqueue_sync(
+    pool: &PgPool,
+    provider: LinkedRoleProvider,
+    discord_id: i64,
+    reason: &str,
+) -> AppResult<()> {
     sqlx::query(
         "INSERT INTO core.discord_role_connection_sync_state \
-         (discord_id, pending, reason, attempts, next_attempt_at, last_error, updated_at) \
-         VALUES ($1, TRUE, $2, 0, now(), NULL, now()) \
-         ON CONFLICT (discord_id) DO UPDATE SET \
+         (discord_id, provider, pending, reason, attempts, next_attempt_at, last_error, updated_at) \
+         VALUES ($1, $3, TRUE, $2, 0, now(), NULL, now()) \
+         ON CONFLICT (discord_id, provider) DO UPDATE SET \
              pending=TRUE, reason=EXCLUDED.reason, attempts=0, next_attempt_at=now(), \
              last_error=NULL, updated_at=now()",
     )
     .bind(discord_id)
     .bind(reason)
+    .bind(provider.as_str())
     .execute(pool)
     .await?;
     Ok(())
@@ -643,8 +777,8 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
     let rows = sqlx::query(
         "UPDATE core.discord_role_connection_sync_state AS sync \
             SET pending=FALSE, locked_at=now(), updated_at=now() \
-          WHERE sync.discord_id IN ( \
-              SELECT discord_id \
+          WHERE (sync.discord_id, sync.provider) IN ( \
+              SELECT discord_id, provider \
                 FROM core.discord_role_connection_sync_state \
                WHERE pending=TRUE \
                  AND next_attempt_at <= now() \
@@ -652,7 +786,7 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
                LIMIT $1 \
                FOR UPDATE SKIP LOCKED \
           ) \
-          RETURNING sync.discord_id, sync.attempts",
+          RETURNING sync.discord_id, sync.provider, sync.attempts",
     )
     .bind(limit)
     .fetch_all(&state.pool)
@@ -662,7 +796,16 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
     for row in rows {
         let discord_id: i64 = row.get("discord_id");
         let attempts: i32 = row.get("attempts");
-        match push_for_user(state, discord_id).await {
+        let raw_provider: String = row.get("provider");
+        let Some(provider) = LinkedRoleProvider::parse(&raw_provider) else {
+            tracing::warn!(
+                provider = %raw_provider,
+                discord_id,
+                "Unbekannter Linked-Role-Provider in der Sync-Queue — Zeile wird uebersprungen"
+            );
+            continue;
+        };
+        match push_for_user(state, provider, discord_id).await {
             Ok(RoleConnectionPushOutcome::Pushed)
             | Ok(RoleConnectionPushOutcome::NoToken)
             | Ok(RoleConnectionPushOutcome::InactiveToken)
@@ -670,9 +813,10 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
                 sqlx::query(
                     "UPDATE core.discord_role_connection_sync_state \
                         SET pending=FALSE, locked_at=NULL, last_error=NULL, updated_at=now() \
-                      WHERE discord_id=$1",
+                      WHERE discord_id=$1 AND provider=$2",
                 )
                 .bind(discord_id)
+                .bind(provider.as_str())
                 .execute(&state.pool)
                 .await?;
             }
@@ -681,6 +825,7 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
                 let next_attempts = attempts.saturating_add(1);
                 record_sync_retry(
                     state,
+                    provider,
                     discord_id,
                     next_attempts,
                     outcome.as_str().to_string(),
@@ -689,7 +834,14 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
             }
             Err(err) => {
                 let next_attempts = attempts.saturating_add(1);
-                record_sync_retry(state, discord_id, next_attempts, format!("{err:?}")).await?;
+                record_sync_retry(
+                    state,
+                    provider,
+                    discord_id,
+                    next_attempts,
+                    format!("{err:?}"),
+                )
+                .await?;
             }
         }
         processed += 1;
@@ -699,6 +851,7 @@ pub async fn process_pending_sync(state: &AppState, limit: i64) -> AppResult<usi
 
 async fn record_sync_retry(
     state: &AppState,
+    provider: LinkedRoleProvider,
     discord_id: i64,
     attempts: i32,
     error: String,
@@ -708,12 +861,13 @@ async fn record_sync_retry(
             SET pending=TRUE, locked_at=NULL, attempts=$2, \
                 next_attempt_at=now() + (($3::int * 60)::text || ' seconds')::interval, \
                 last_error=$4, updated_at=now() \
-          WHERE discord_id=$1",
+          WHERE discord_id=$1 AND provider=$5",
     )
     .bind(discord_id)
     .bind(attempts)
     .bind(attempts.clamp(1, 30))
     .bind(error.chars().take(300).collect::<String>())
+    .bind(provider.as_str())
     .execute(&state.pool)
     .await?;
     Ok(())
@@ -730,30 +884,39 @@ struct StoredToken {
 
 async fn acquire_role_connection_lock(
     tx: &mut Transaction<'_, Postgres>,
+    provider: LinkedRoleProvider,
     discord_id: i64,
 ) -> AppResult<()> {
     sqlx::query("SELECT pg_advisory_xact_lock($1)")
-        .bind(role_connection_lock_key(discord_id))
+        .bind(role_connection_lock_key(provider, discord_id))
         .execute(&mut **tx)
         .await?;
     Ok(())
 }
 
-fn role_connection_lock_key(discord_id: i64) -> i64 {
-    ROLE_CONNECTION_ADVISORY_LOCK_NAMESPACE ^ discord_id
+fn role_connection_lock_key(provider: LinkedRoleProvider, discord_id: i64) -> i64 {
+    // Beide Provider derselben Discord-ID duerfen parallel laufen, deshalb geht
+    // der Provider in den Schluessel ein.
+    let provider_bit = match provider {
+        LinkedRoleProvider::Steam => 0,
+        LinkedRoleProvider::Creator => 1 << 40,
+    };
+    (ROLE_CONNECTION_ADVISORY_LOCK_NAMESPACE ^ discord_id) ^ provider_bit
 }
 
 async fn load_stored_token(
     tx: &mut Transaction<'_, Postgres>,
+    provider: LinkedRoleProvider,
     discord_id: i64,
 ) -> AppResult<Option<StoredToken>> {
     let row = sqlx::query(
         "SELECT access_token, refresh_token, expires_at, token_version, active \
            FROM core.discord_role_connection_tokens \
-          WHERE discord_id=$1 \
+          WHERE discord_id=$1 AND provider=$2 \
           FOR UPDATE",
     )
     .bind(discord_id)
+    .bind(provider.as_str())
     .fetch_optional(&mut **tx)
     .await?;
     Ok(row.map(|row| StoredToken {
@@ -804,31 +967,135 @@ where
     })
 }
 
+/// Creator-Profil aus der Twitch-Datenbank.
+///
+/// `twitch_oauth` heisst: der Streamer hat **unsere** Twitch-Anwendung
+/// autorisiert (Zeile in `twitch_raid_auth`, kein Re-Auth faellig).
+/// `creator_approved` kommt aus `streamer_dim.is_partner` und bleibt damit
+/// vollstaendig in der Hand der bestehenden Partner-Logik.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct CreatorProfile {
+    pub twitch_oauth: bool,
+    pub creator_approved: bool,
+    pub twitch_login: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LinkedRoleProfile {
+    Steam(RoleConnectionProfile),
+    Creator(CreatorProfile),
+}
+
+impl LinkedRoleProfile {
+    /// Ist die Grundvoraussetzung des Providers erfuellt? Wenn nicht, schickt
+    /// der Callback den User in den bestehenden Verknuepfungs-Flow.
+    pub fn is_satisfied(&self) -> bool {
+        match self {
+            Self::Steam(profile) => profile.steam_linked,
+            Self::Creator(profile) => profile.twitch_oauth,
+        }
+    }
+}
+
+pub async fn load_linked_role_profile(
+    state: &AppState,
+    provider: LinkedRoleProvider,
+    discord_id: i64,
+) -> AppResult<LinkedRoleProfile> {
+    match provider {
+        LinkedRoleProvider::Steam => Ok(LinkedRoleProfile::Steam(
+            load_role_connection_profile(&state.pool, discord_id).await?,
+        )),
+        LinkedRoleProvider::Creator => Ok(LinkedRoleProfile::Creator(
+            load_creator_profile(state, discord_id).await?,
+        )),
+    }
+}
+
+pub async fn load_creator_profile(state: &AppState, discord_id: i64) -> AppResult<CreatorProfile> {
+    let Some(pool) = state.twitch_pool.as_ref() else {
+        return Err(AppError::service_unavailable(
+            MSG_CREATOR_SOURCE_UNAVAILABLE,
+        ));
+    };
+    let row = sqlx::query(
+        "SELECT dim.twitch_login, \
+                COALESCE(dim.is_partner, FALSE) AS is_partner, \
+                COALESCE(auth.twitch_user_id IS NOT NULL \
+                         AND COALESCE(auth.needs_reauth, FALSE) = FALSE, FALSE) AS twitch_oauth \
+           FROM public.streamer_dim AS dim \
+           LEFT JOIN public.twitch_raid_auth AS auth \
+                  ON auth.twitch_user_id = dim.twitch_user_id \
+          WHERE dim.discord_user_id = $1 \
+            AND dim.archived_at IS NULL \
+          ORDER BY twitch_oauth DESC, dim.updated_at DESC NULLS LAST \
+          LIMIT 1",
+    )
+    .bind(discord_id.to_string())
+    .fetch_optional(pool)
+    .await?;
+    Ok(
+        row.map_or_else(CreatorProfile::default, |row| CreatorProfile {
+            twitch_oauth: row.get("twitch_oauth"),
+            creator_approved: row.get("is_partner"),
+            twitch_login: row.get("twitch_login"),
+        }),
+    )
+}
+
 pub fn build_user_role_connection_payload(
-    profile: &RoleConnectionProfile,
+    profile: &LinkedRoleProfile,
 ) -> UserRoleConnectionPayload {
     let mut metadata = BTreeMap::new();
-    metadata.insert(
-        "steam_verknuepft".to_string(),
-        if profile.steam_linked { "1" } else { "0" }.to_string(),
-    );
-    metadata.insert("rang".to_string(), profile.rank.max(0).to_string());
-    UserRoleConnectionPayload {
-        platform_name: Some(PLATFORM_NAME.to_string()),
-        platform_username: Some(
-            if profile.steam_linked {
-                PLATFORM_USERNAME_LINKED
-            } else {
-                PLATFORM_USERNAME_UNLINKED
+    match profile {
+        LinkedRoleProfile::Steam(steam) => {
+            metadata.insert(
+                "steam_verknuepft".to_string(),
+                if steam.steam_linked { "1" } else { "0" }.to_string(),
+            );
+            metadata.insert("rang".to_string(), steam.rank.max(0).to_string());
+            UserRoleConnectionPayload {
+                platform_name: Some(PLATFORM_NAME_STEAM.to_string()),
+                platform_username: Some(
+                    if steam.steam_linked {
+                        PLATFORM_USERNAME_LINKED
+                    } else {
+                        PLATFORM_USERNAME_UNLINKED
+                    }
+                    .to_string(),
+                ),
+                metadata,
             }
-            .to_string(),
-        ),
-        metadata,
+        }
+        LinkedRoleProfile::Creator(creator) => {
+            metadata.insert(
+                "twitch_oauth".to_string(),
+                if creator.twitch_oauth { "1" } else { "0" }.to_string(),
+            );
+            metadata.insert(
+                "creator_approved".to_string(),
+                if creator.creator_approved { "1" } else { "0" }.to_string(),
+            );
+            UserRoleConnectionPayload {
+                platform_name: Some(PLATFORM_NAME_CREATOR.to_string()),
+                platform_username: Some(
+                    creator
+                        .twitch_login
+                        .as_deref()
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty())
+                        .unwrap_or(PLATFORM_USERNAME_UNLINKED)
+                        .to_string(),
+                ),
+                metadata,
+            }
+        }
     }
 }
 
 async fn mark_token_inactive(
     tx: &mut Transaction<'_, Postgres>,
+    provider: LinkedRoleProvider,
     discord_id: i64,
     reason: &'static str,
     token_version: i32,
@@ -836,23 +1103,29 @@ async fn mark_token_inactive(
     let result = sqlx::query(
         "UPDATE core.discord_role_connection_tokens \
             SET active=FALSE, invalidated_at=now(), invalidation_reason=$2, updated_at=now() \
-          WHERE discord_id=$1 AND token_version=$3",
+          WHERE discord_id=$1 AND token_version=$3 AND provider=$4",
     )
     .bind(discord_id)
     .bind(reason)
     .bind(token_version)
+    .bind(provider.as_str())
     .execute(&mut **tx)
     .await?;
     Ok(result.rows_affected() > 0)
 }
 
-async fn record_push_success(tx: &mut Transaction<'_, Postgres>, discord_id: i64) -> AppResult<()> {
+async fn record_push_success(
+    tx: &mut Transaction<'_, Postgres>,
+    provider: LinkedRoleProvider,
+    discord_id: i64,
+) -> AppResult<()> {
     sqlx::query(
         "UPDATE core.discord_role_connection_tokens \
             SET last_push_at=now(), last_push_error=NULL, updated_at=now() \
-          WHERE discord_id=$1",
+          WHERE discord_id=$1 AND provider=$2",
     )
     .bind(discord_id)
+    .bind(provider.as_str())
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -860,16 +1133,18 @@ async fn record_push_success(tx: &mut Transaction<'_, Postgres>, discord_id: i64
 
 async fn record_push_error(
     tx: &mut Transaction<'_, Postgres>,
+    provider: LinkedRoleProvider,
     discord_id: i64,
     error: String,
 ) -> AppResult<()> {
     sqlx::query(
         "UPDATE core.discord_role_connection_tokens \
             SET last_push_error=$2, updated_at=now() \
-          WHERE discord_id=$1",
+          WHERE discord_id=$1 AND provider=$3",
     )
     .bind(discord_id)
     .bind(error.chars().take(300).collect::<String>())
+    .bind(provider.as_str())
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -877,9 +1152,6 @@ async fn record_push_error(
 
 fn map_discord_error(err: DiscordRoleConnectionError) -> AppError {
     match err {
-        DiscordRoleConnectionError::Unconfigured => {
-            AppError::service_unavailable(MSG_NOT_CONFIGURED)
-        }
         DiscordRoleConnectionError::InvalidGrant | DiscordRoleConnectionError::Unauthorized => {
             AppError::unauthorized(MSG_RELINK_REQUIRED)
         }
@@ -897,8 +1169,17 @@ fn map_discord_error(err: DiscordRoleConnectionError) -> AppError {
     }
 }
 
-fn token_aad(discord_id: i64, field: &str) -> String {
-    format!("core.discord_role_connection_tokens|{field}|{discord_id}|{TOKEN_AAD_VERSION}")
+fn token_aad(provider: LinkedRoleProvider, discord_id: i64, field: &str) -> String {
+    match provider {
+        // Steam behaelt die alte AAD-Form, sonst waeren die bereits
+        // gespeicherten Tokens nicht mehr entschluesselbar.
+        LinkedRoleProvider::Steam => {
+            format!("core.discord_role_connection_tokens|{field}|{discord_id}|{TOKEN_AAD_VERSION}")
+        }
+        LinkedRoleProvider::Creator => format!(
+            "core.discord_role_connection_tokens|creator|{field}|{discord_id}|{TOKEN_AAD_VERSION}"
+        ),
+    }
 }
 
 struct FieldCrypto {
@@ -1021,7 +1302,7 @@ mod tests {
 
     #[test]
     fn metadata_records_match_discord_contract() {
-        let records = metadata_records();
+        let records = metadata_records(LinkedRoleProvider::Steam);
         assert_eq!(
             serde_json::to_value(&records).expect("metadata json"),
             json!([
@@ -1043,20 +1324,50 @@ mod tests {
 
     #[test]
     fn role_connection_payload_stringifies_metadata_values() {
-        let payload = build_user_role_connection_payload(&RoleConnectionProfile {
-            steam_linked: true,
-            rank: 843,
-        });
+        let payload =
+            build_user_role_connection_payload(&LinkedRoleProfile::Steam(RoleConnectionProfile {
+                steam_linked: true,
+                rank: 843,
+            }));
         assert_eq!(
             serde_json::to_value(&payload).expect("payload json"),
             json!({
-                "platform_name": "Deadlock Community",
+                "platform_name": "Deadlock Steam",
                 "platform_username": "Steam verknüpft",
                 "metadata": {
                     "rang": "843",
                     "steam_verknuepft": "1"
                 }
             })
+        );
+    }
+
+    #[test]
+    fn creator_payload_uses_twitch_login_and_stringified_flags() {
+        let payload =
+            build_user_role_connection_payload(&LinkedRoleProfile::Creator(CreatorProfile {
+                twitch_oauth: true,
+                creator_approved: false,
+                twitch_login: Some("earlysalty".into()),
+            }));
+        assert_eq!(
+            serde_json::to_value(&payload).expect("payload json"),
+            json!({
+                "platform_name": "Deadlock Creator",
+                "platform_username": "earlysalty",
+                "metadata": {
+                    "twitch_oauth": "1",
+                    "creator_approved": "0"
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn provider_lock_keys_do_not_collide() {
+        assert_ne!(
+            role_connection_lock_key(LinkedRoleProvider::Steam, 4242),
+            role_connection_lock_key(LinkedRoleProvider::Creator, 4242)
         );
     }
 
@@ -1079,13 +1390,9 @@ mod tests {
         let role_client = Arc::new(MockRoleConnectionClient::new("940500"));
         let (_db, state) = test_state(role_client).await;
         let app = router(state);
-        let request = request(
-            Method::GET,
-            "/api/auth/discord/linked-role/login?next=/done",
-            None,
-        )
-        .body(Body::empty())
-        .expect("request");
+        let request = request(Method::GET, "/linked-role/steam?next=/done", None)
+            .body(Body::empty())
+            .expect("request");
 
         let response = app.oneshot(with_peer(request)).await.expect("response");
 
@@ -1117,7 +1424,7 @@ mod tests {
         let app = router(state.clone());
         let request = request(
             Method::GET,
-            "/api/auth/discord/linked-role/callback?state=state-940501&code=oauth-code",
+            "/auth/discord/steam/callback?state=state-940501&code=oauth-code",
             None,
         )
         .header(
@@ -1167,7 +1474,7 @@ mod tests {
         let app = router(state.clone());
         let request = request(
             Method::GET,
-            "/api/auth/discord/linked-role/callback?state=state-940506&code=oauth-code",
+            "/auth/discord/steam/callback?state=state-940506&code=oauth-code",
             None,
         )
         .header(
@@ -1214,6 +1521,7 @@ mod tests {
             .expect("meta user");
         store_oauth_tokens(
             &state,
+            LinkedRoleProvider::Steam,
             940502,
             &OAuthTokenResponse {
                 access_token: "old-access".into(),
@@ -1233,7 +1541,9 @@ mod tests {
         .await
         .expect("expire token");
 
-        let outcome = push_for_user(&state, 940502).await.expect("push");
+        let outcome = push_for_user(&state, LinkedRoleProvider::Steam, 940502)
+            .await
+            .expect("push");
 
         assert_eq!(outcome, RoleConnectionPushOutcome::Pushed);
         assert_eq!(role_client.refresh_count.load(Ordering::SeqCst), 1);
@@ -1268,6 +1578,7 @@ mod tests {
             .expect("meta user");
         store_oauth_tokens(
             &state,
+            LinkedRoleProvider::Steam,
             940504,
             &OAuthTokenResponse {
                 access_token: "old-access".into(),
@@ -1287,8 +1598,10 @@ mod tests {
         .await
         .expect("expire token");
 
-        let (first, second) =
-            tokio::join!(push_for_user(&state, 940504), push_for_user(&state, 940504));
+        let (first, second) = tokio::join!(
+            push_for_user(&state, LinkedRoleProvider::Steam, 940504),
+            push_for_user(&state, LinkedRoleProvider::Steam, 940504)
+        );
 
         assert_eq!(
             first.expect("first push"),
@@ -1321,7 +1634,7 @@ mod tests {
     async fn pending_sync_survives_missing_config_and_processes_after_config_returns() {
         let role_client = Arc::new(MockRoleConnectionClient::new("940505"));
         let mut cfg = test_cfg();
-        cfg.discord_application_id = None;
+        cfg.discord_steam_app.application_id = None;
         let (_db, state) = test_state_with_cfg(role_client.clone(), cfg).await;
         seed_verified_steam_link(&state, 940505, 1024).await;
         auth::upsert_meta_user(&state, 940505, "pending_user", "Pending User", None)
@@ -1329,6 +1642,7 @@ mod tests {
             .expect("meta user");
         store_oauth_tokens(
             &state,
+            LinkedRoleProvider::Steam,
             940505,
             &OAuthTokenResponse {
                 access_token: "pending-access".into(),
@@ -1340,7 +1654,7 @@ mod tests {
         )
         .await
         .expect("store token");
-        enqueue_sync(&state.pool, 940505, "unit")
+        enqueue_sync(&state.pool, LinkedRoleProvider::Steam, 940505, "unit")
             .await
             .expect("enqueue");
 
@@ -1409,9 +1723,11 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let records = role_client.registered.lock().expect("registered");
-        assert_eq!(records.len(), 1);
+        assert_eq!(records.len(), 2, "beide Provider-Apps registrieren");
         assert_eq!(records[0][0].key, "steam_verknuepft");
         assert_eq!(records[0][1].key, "rang");
+        assert_eq!(records[1][0].key, "twitch_oauth");
+        assert_eq!(records[1][1].key, "creator_approved");
     }
 
     async fn test_state(
@@ -1470,11 +1786,25 @@ mod tests {
             youtube_api_key: None,
             auth_session_secret: Some("test-session-secret".into()),
             discord_api_base: "https://discord.com/api/v10".into(),
-            discord_oauth_client_id: Some("123".into()),
-            discord_oauth_client_secret: Some("secret".into()),
-            discord_application_id: Some("123".into()),
             discord_bot_token: Some("bot-token".into()),
-            discord_role_connection_callback_url: None,
+            discord_steam_app: crate::config::DiscordLinkedRoleApp {
+                client_id: Some("123".into()),
+                client_secret: Some("secret".into()),
+                application_id: Some("123".into()),
+                bot_token: Some("bot-token".into()),
+                callback_url: None,
+            },
+            discord_creator_app: crate::config::DiscordLinkedRoleApp {
+                client_id: Some("456".into()),
+                client_secret: Some("creator-secret".into()),
+                application_id: Some("456".into()),
+                bot_token: Some("creator-bot-token".into()),
+                callback_url: None,
+            },
+            linked_role_steam_link_url: "https://example.test/steam".into(),
+            linked_role_twitch_link_url: "https://example.test/twitch-link".into(),
+            linked_role_twitch_auth_url: "https://example.test/twitch-auth".into(),
+            twitch_analytics_dsn: None,
             discord_role_connection_cookie_name: "ddc_role_connection_state".into(),
             discord_role_connection_sync_worker_enabled: false,
             discord_role_connection_sync_interval_seconds: 30,
@@ -1575,6 +1905,7 @@ mod tests {
     impl DiscordRoleConnectionClient for MockRoleConnectionClient {
         fn exchange_code<'a>(
             &'a self,
+            _credentials: &'a OAuthAppCredentials,
             _code: &'a str,
             _redirect_uri: &'a str,
         ) -> DiscordRoleConnectionFuture<'a, OAuthTokenResponse> {
@@ -1591,6 +1922,7 @@ mod tests {
 
         fn refresh_token<'a>(
             &'a self,
+            _credentials: &'a OAuthAppCredentials,
             _refresh_token: &'a str,
         ) -> DiscordRoleConnectionFuture<'a, OAuthTokenResponse> {
             Box::pin(async move {

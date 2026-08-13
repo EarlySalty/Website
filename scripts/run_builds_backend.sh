@@ -52,7 +52,10 @@ unset INFISICAL_SERVICE_TOKEN
 export SCRIM_BACKEND_MODE=proxy
 
 export AUTH_PUBLIC_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/callback"
-export DISCORD_ROLE_CONNECTION_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/linked-role/callback"
+# Linked-Role-Provider: die beiden Callbacks laufen ueber eigene Caddy-Routen ohne
+# /coaching-Praefix, damit die im Discord-Portal eingetragene URI kurz bleibt.
+export DISCORD_STEAM_CALLBACK_URL="https://deutsche-deadlock-community.de/auth/discord/steam/callback"
+export DISCORD_CREATOR_CALLBACK_URL="https://deutsche-deadlock-community.de/auth/discord/creator/callback"
 
 if [[ ! -x "$RUST_BACKEND_BIN" ]]; then
   echo "Rust Website Backend fehlt oder ist nicht ausführbar: $RUST_BACKEND_BIN" >&2

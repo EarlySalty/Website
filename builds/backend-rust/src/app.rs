@@ -30,6 +30,10 @@ pub struct AppInner {
     pub scrim_http: Client,
     pub discord_role_broker: DynDiscordRoleBroker,
     pub discord_role_connections: DynDiscordRoleConnectionClient,
+    /// Nur-lesender Pool auf die Twitch-Datenbank. Quelle fuer das
+    /// Creator-Linked-Role-Profil; ohne `TWITCH_ANALYTICS_DSN` bleibt er leer und
+    /// der Creator-Provider meldet "nicht abrufbar".
+    pub twitch_pool: Option<PgPool>,
     pub auth: Auth,
 }
 
@@ -45,6 +49,7 @@ impl AppState {
         let discord_role_broker = Arc::new(ReqwestDiscordRoleBroker::from_config(&cfg)?);
         let discord_role_connections =
             Arc::new(ReqwestDiscordRoleConnectionClient::from_config(&cfg)?);
+        let twitch_pool = connect_twitch_pool(&cfg).await;
         let auth = Auth::new(cfg.clone());
         let state = Self {
             inner: Arc::new(AppInner {
@@ -54,6 +59,7 @@ impl AppState {
                 scrim_http,
                 discord_role_broker,
                 discord_role_connections,
+                twitch_pool,
                 auth,
             }),
         };
@@ -87,6 +93,7 @@ impl AppState {
                 scrim_http,
                 discord_role_broker,
                 discord_role_connections,
+                twitch_pool: None,
                 auth,
             }),
         }
@@ -113,6 +120,7 @@ impl AppState {
                 scrim_http,
                 discord_role_broker,
                 discord_role_connections,
+                twitch_pool: None,
                 auth,
             }),
         }
@@ -184,12 +192,12 @@ pub fn router(state: AppState) -> Router {
             get(routes::auth::discord_callback),
         )
         .route(
-            "/api/auth/discord/linked-role/login",
-            get(routes::linked_role::linked_role_login),
+            "/linked-role/{provider}",
+            get(routes::linked_role::linked_role_login_for),
         )
         .route(
-            "/api/auth/discord/linked-role/callback",
-            get(routes::linked_role::linked_role_callback),
+            "/auth/discord/{provider}/callback",
+            get(routes::linked_role::linked_role_callback_for),
         )
         .route("/api/auth/me", get(routes::auth::me))
         .route("/api/auth/logout", post(routes::auth::logout))
@@ -269,6 +277,10 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/admin/users/{user_id}/role",
             put(routes::meta::update_user_role),
+        )
+        .route(
+            "/api/admin/discord-role-connections/metadata/{provider}",
+            post(routes::linked_role::register_metadata_for),
         )
         .route(
             "/api/admin/discord-role-connections/metadata",
@@ -406,6 +418,30 @@ fn scrim_router(mode: ScrimBackendMode) -> Router<AppState> {
     match mode {
         ScrimBackendMode::Legacy => legacy_scrim_router(),
         ScrimBackendMode::Proxy | ScrimBackendMode::Maintenance => routes::scrim_proxy::router(),
+    }
+}
+
+/// Verbindet den nur-lesenden Twitch-Pool fuer das Creator-Linked-Role-Profil.
+///
+/// Ein Fehler hier darf den Start nicht verhindern: die Website laeuft ohne
+/// Twitch-Datenbank vollstaendig weiter, nur der Creator-Provider antwortet dann
+/// mit einer Nicht-verfuegbar-Meldung.
+async fn connect_twitch_pool(cfg: &Config) -> Option<PgPool> {
+    let dsn = cfg.twitch_analytics_dsn.as_deref()?;
+    match sqlx::postgres::PgPoolOptions::new()
+        .max_connections(2)
+        .acquire_timeout(std::time::Duration::from_secs(5))
+        .connect(dsn)
+        .await
+    {
+        Ok(pool) => Some(pool),
+        Err(err) => {
+            tracing::warn!(
+                ?err,
+                "Twitch-Datenbank fuer den Creator-Provider nicht verbunden"
+            );
+            None
+        }
     }
 }
 
@@ -4934,6 +4970,7 @@ mod tests {
                 scrim_http,
                 discord_role_broker,
                 discord_role_connections,
+                twitch_pool: None,
                 auth,
             }),
         };

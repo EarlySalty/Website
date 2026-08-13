@@ -27,6 +27,26 @@ impl ScrimBackendMode {
     }
 }
 
+/// Eine Discord-Application, die als Linked-Role-Provider auftritt.
+///
+/// Es gibt zwei davon: die Steam-App (Steam-Verknuepfung und Deadlock-Rang) und
+/// die Creator-App (Twitch-Autorisierung im Creator-Programm). Beide haben
+/// eigene Client-Credentials, ein eigenes Bot-Token und einen eigenen Callback.
+#[derive(Clone, Debug, Default)]
+pub struct DiscordLinkedRoleApp {
+    pub client_id: Option<String>,
+    pub client_secret: Option<String>,
+    pub application_id: Option<String>,
+    pub bot_token: Option<String>,
+    pub callback_url: Option<String>,
+}
+
+impl DiscordLinkedRoleApp {
+    pub fn is_configured(&self) -> bool {
+        self.client_id.is_some() && self.client_secret.is_some() && self.application_id.is_some()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Config {
     pub host: String,
@@ -53,11 +73,14 @@ pub struct Config {
     pub auth_session_secret: Option<String>,
     pub discord_api_base: String,
     pub discord_oauth_authorize_base: String,
-    pub discord_oauth_client_id: Option<String>,
-    pub discord_oauth_client_secret: Option<String>,
-    pub discord_application_id: Option<String>,
+    /// Bot-Token des Hauptbots — von der Video-Ingest-Pipeline genutzt.
     pub discord_bot_token: Option<String>,
-    pub discord_role_connection_callback_url: Option<String>,
+    pub discord_steam_app: DiscordLinkedRoleApp,
+    pub discord_creator_app: DiscordLinkedRoleApp,
+    pub linked_role_steam_link_url: String,
+    pub linked_role_twitch_link_url: String,
+    pub linked_role_twitch_auth_url: String,
+    pub twitch_analytics_dsn: Option<String>,
     pub discord_role_connection_cookie_name: String,
     pub discord_role_connection_sync_worker_enabled: bool,
     pub discord_role_connection_sync_interval_seconds: u64,
@@ -153,26 +176,71 @@ impl Config {
                 "DISCORD_AUTHORIZE_BASE",
             ])
             .unwrap_or_else(|| "https://discord.com/oauth2/authorize".to_string()),
-            discord_oauth_client_id: first_env(&["DISCORD_OAUTH_CLIENT_ID", "DISCORD_CLIENT_ID"]),
-            discord_oauth_client_secret: first_env(&[
-                "DISCORD_OAUTH_CLIENT_SECRET",
-                "DISCORD_CLIENT_SECRET",
-            ]),
-            discord_application_id: first_env(&[
-                "DISCORD_APPLICATION_ID",
-                "DISCORD_OAUTH_CLIENT_ID",
-                "DISCORD_CLIENT_ID",
-            ]),
             discord_bot_token: first_env(&[
                 "DISCORD_ROLE_CONNECTION_BOT_TOKEN",
                 "DISCORD_BOT_TOKEN",
                 "DISCORD_TOKEN",
                 "BOT_TOKEN",
             ]),
-            discord_role_connection_callback_url: env::var("DISCORD_ROLE_CONNECTION_CALLBACK_URL")
-                .ok()
-                .map(|v| v.trim().to_string())
-                .filter(|v| !v.is_empty()),
+            // Steam-App: eigene Variablen zuerst, danach die alten generischen
+            // Namen — solange die dedizierte App noch nicht hinterlegt ist,
+            // laeuft der Steam-Provider unveraendert auf der alten Application.
+            discord_steam_app: DiscordLinkedRoleApp {
+                client_id: first_env(&[
+                    "DISCORD_STEAM_CLIENT_ID",
+                    "DISCORD_STEAM_APP_ID",
+                    "DISCORD_OAUTH_CLIENT_ID",
+                    "DISCORD_CLIENT_ID",
+                ]),
+                client_secret: first_env(&[
+                    "DISCORD_STEAM_CLIENT_SECRET",
+                    "DISCORD_OAUTH_CLIENT_SECRET",
+                    "DISCORD_CLIENT_SECRET",
+                ]),
+                application_id: first_env(&[
+                    "DISCORD_STEAM_APP_ID",
+                    "DISCORD_STEAM_CLIENT_ID",
+                    "DISCORD_APPLICATION_ID",
+                    "DISCORD_OAUTH_CLIENT_ID",
+                    "DISCORD_CLIENT_ID",
+                ]),
+                bot_token: first_env(&[
+                    "DISCORD_STEAM_BOT_TOKEN",
+                    "DISCORD_ROLE_CONNECTION_BOT_TOKEN",
+                    "DISCORD_BOT_TOKEN",
+                    "DISCORD_TOKEN",
+                    "BOT_TOKEN",
+                ]),
+                callback_url: first_env(&[
+                    "DISCORD_STEAM_CALLBACK_URL",
+                    "DISCORD_ROLE_CONNECTION_CALLBACK_URL",
+                ]),
+            },
+            // Creator-App: bewusst ohne Fallback. Fehlen die Werte, meldet der
+            // Provider "nicht konfiguriert" statt versehentlich die Steam-App zu
+            // benutzen.
+            discord_creator_app: DiscordLinkedRoleApp {
+                client_id: first_env(&["DISCORD_CREATOR_CLIENT_ID", "DISCORD_CREATOR_APP_ID"]),
+                client_secret: first_env(&["DISCORD_CREATOR_CLIENT_SECRET"]),
+                application_id: first_env(&["DISCORD_CREATOR_APP_ID", "DISCORD_CREATOR_CLIENT_ID"]),
+                bot_token: first_env(&["DISCORD_CREATOR_BOT_TOKEN"]),
+                callback_url: first_env(&["DISCORD_CREATOR_CALLBACK_URL"]),
+            },
+            linked_role_steam_link_url: env_or(
+                "LINKED_ROLE_STEAM_LINK_URL",
+                "https://discord.com/channels/1289721245281292288/1398021105339334666",
+            ),
+            // Discord-zu-Twitch-Verknuepfung (bestehender Partner-Flow des
+            // Twitch-Bots) und danach die Autorisierung unserer Twitch-App.
+            linked_role_twitch_link_url: env_or(
+                "LINKED_ROLE_TWITCH_LINK_URL",
+                "https://deutsche-deadlock-community.de/twitch/auth/discord/link",
+            ),
+            linked_role_twitch_auth_url: env_or(
+                "LINKED_ROLE_TWITCH_AUTH_URL",
+                "https://deutsche-deadlock-community.de/twitch/raid/auth",
+            ),
+            twitch_analytics_dsn: first_env(&["TWITCH_ANALYTICS_DSN"]),
             discord_role_connection_cookie_name: env_or(
                 "DISCORD_ROLE_CONNECTION_STATE_COOKIE_NAME",
                 "ddc_role_connection_state",
