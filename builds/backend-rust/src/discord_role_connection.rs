@@ -1408,6 +1408,63 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn legacy_master_app_paths_still_serve_the_steam_provider() {
+        // Die Master-Application zeigt im Dev-Portal auf diese beiden Adressen;
+        // sie sind dort nur vom Portal-Inhaber aenderbar. Fallen sie hier weg,
+        // laeuft jede bestehende Steam-Verknuepfung in einen 404.
+        let role_client = Arc::new(MockRoleConnectionClient::new("940509"));
+        let (_db, state) = test_state(role_client.clone()).await;
+        seed_verified_steam_link(&state, 940509, 512).await;
+
+        let login = router(state.clone())
+            .oneshot(with_peer(
+                request(
+                    Method::GET,
+                    "/api/auth/discord/linked-role/login?next=/done",
+                    None,
+                )
+                .body(Body::empty())
+                .expect("request"),
+            ))
+            .await
+            .expect("login response");
+        assert_eq!(login.status(), StatusCode::FOUND);
+        assert!(login
+            .headers()
+            .get(header::LOCATION)
+            .and_then(|value| value.to_str().ok())
+            .expect("location")
+            .starts_with("https://discord.com/oauth2/authorize?"));
+
+        let role_state = state
+            .auth
+            .create_pre_auth_jwt("state-940509", "/done")
+            .expect("role state");
+        let callback = router(state.clone())
+            .oneshot(with_peer(
+                request(
+                    Method::GET,
+                    "/api/auth/discord/linked-role/callback?state=state-940509&code=oauth-code",
+                    None,
+                )
+                .header(
+                    header::COOKIE,
+                    format!("ddc_role_connection_state={role_state}"),
+                )
+                .body(Body::empty())
+                .expect("request"),
+            ))
+            .await
+            .expect("callback response");
+
+        assert_eq!(callback.status(), StatusCode::FOUND);
+        let updates = role_client.updates.lock().expect("updates");
+        assert_eq!(updates.len(), 1);
+        assert_eq!(updates[0].1.metadata["steam_verknuepft"], "1");
+        assert_eq!(updates[0].1.metadata["rang"], "512");
+    }
+
+    #[tokio::test]
     async fn linked_role_callback_stores_token_and_pushes_metadata() {
         let role_client = Arc::new(MockRoleConnectionClient::new("940501"));
         let (_db, state) = test_state(role_client.clone()).await;

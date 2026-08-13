@@ -199,6 +199,15 @@ pub fn router(state: AppState) -> Router {
             "/auth/discord/{provider}/callback",
             get(routes::linked_role::linked_role_callback_for),
         )
+        // Die Master-Application zeigt im Dev-Portal auf diese beiden Adressen.
+        .route(
+            "/api/auth/discord/linked-role/login",
+            get(routes::linked_role::legacy_steam_login),
+        )
+        .route(
+            "/api/auth/discord/linked-role/callback",
+            get(routes::linked_role::legacy_steam_callback),
+        )
         .route("/api/auth/me", get(routes::auth::me))
         .route("/api/auth/logout", post(routes::auth::logout))
         .route(

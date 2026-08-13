@@ -56,6 +56,34 @@ pub async fn linked_role_callback_for(
     finish_callback(&state, &headers, provider, query).await
 }
 
+/// Legacy-Pfade der Master-Application: deren `role_connections_verification_url`
+/// und Redirect-URI stehen im Dev-Portal auf `/coaching/api/auth/discord/linked-role/*`
+/// und nur der Portal-Inhaber kann sie dort umstellen. Solange die eigene
+/// Steam-Application keine Zugangsdaten hat, laeuft die Steam-Verknuepfung weiter
+/// ueber die Master-App — dann muessen diese beiden Adressen antworten.
+pub async fn legacy_steam_login(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<LoginQuery>,
+) -> AppResult<Response> {
+    start_login(
+        &state,
+        &headers,
+        LinkedRoleProvider::Steam,
+        query.next.as_deref(),
+    )
+    .await
+}
+
+pub async fn legacy_steam_callback(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    ConnectInfo(_peer): ConnectInfo<SocketAddr>,
+    Query(query): Query<CallbackQuery>,
+) -> AppResult<Response> {
+    finish_callback(&state, &headers, LinkedRoleProvider::Steam, query).await
+}
+
 async fn start_login(
     state: &AppState,
     headers: &HeaderMap,

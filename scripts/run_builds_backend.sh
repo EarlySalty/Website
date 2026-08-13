@@ -54,7 +54,11 @@ export SCRIM_BACKEND_MODE=proxy
 export AUTH_PUBLIC_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/callback"
 # Linked-Role-Provider: die beiden Callbacks laufen ueber eigene Caddy-Routen ohne
 # /coaching-Praefix, damit die im Discord-Portal eingetragene URI kurz bleibt.
-export DISCORD_STEAM_CALLBACK_URL="https://deutsche-deadlock-community.de/auth/discord/steam/callback"
+# Steam laeuft bis auf Weiteres ueber die Master-Application; im Dev-Portal ist dort
+# nur die Legacy-URI registriert, und Discord prueft die redirect_uri exakt. Sobald
+# die eigene Steam-App Zugangsdaten und die kurze URI eingetragen hat, wird hier auf
+# https://deutsche-deadlock-community.de/auth/discord/steam/callback umgestellt.
+export DISCORD_STEAM_CALLBACK_URL="https://deutsche-deadlock-community.de/coaching/api/auth/discord/linked-role/callback"
 export DISCORD_CREATOR_CALLBACK_URL="https://deutsche-deadlock-community.de/auth/discord/creator/callback"
 
 if [[ ! -x "$RUST_BACKEND_BIN" ]]; then
