@@ -40,11 +40,14 @@ fi
 unset DL_INFISICAL_READY
 unset INFISICAL_SERVICE_TOKEN
 
-if [[ -n "${INVOCATION_ID:-}" && ! -x "$DEPLOY_PREFLIGHT" ]]; then
-  echo "FEHLER: deploy-preflight fehlt unter systemd-Start, breche ab: $DEPLOY_PREFLIGHT" >&2
-  exit 1
-fi
-if [[ -x "$DEPLOY_PREFLIGHT" ]]; then
+_dp_parent_comm="$(ps -o comm= -p "$PPID" 2>/dev/null || true)"
+if [[ "$_dp_parent_comm" == "systemd" ]]; then
+  if [[ ! -x "$DEPLOY_PREFLIGHT" ]]; then
+    echo "FEHLER: deploy-preflight fehlt unter systemd-Start, breche ab: $DEPLOY_PREFLIGHT" >&2
+    exit 1
+  fi
+  DEPLOY_PREFLIGHT_SYSTEMD_PARENT=1 "$DEPLOY_PREFLIGHT" "$ROOT_DIR" main "website-backend"
+elif [[ -x "$DEPLOY_PREFLIGHT" ]]; then
   "$DEPLOY_PREFLIGHT" "$ROOT_DIR" main "website-backend"
 fi
 
