@@ -7,6 +7,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # .../Website
 RUST_BACKEND_BIN="${RUST_BACKEND_BIN:-$ROOT_DIR/builds/backend-rust/target/release/ddc-website-backend}"
 INFISICAL_CONFIG_FILE="${INFISICAL_CONFIG_FILE:-$HOME/.config/deadlock-bots/infisical.conf}"
+DEPLOY_PREFLIGHT="${DEPLOY_PREFLIGHT:-$HOME/Documents/Admin-Scripts/deploy-preflight.sh}"
+if [[ -x "$DEPLOY_PREFLIGHT" ]]; then
+  "$DEPLOY_PREFLIGHT" "$ROOT_DIR" main "website-backend"
+fi
 
 if [[ ! -f "$INFISICAL_CONFIG_FILE" ]]; then
   echo "Missing Infisical config: $INFISICAL_CONFIG_FILE" >&2
