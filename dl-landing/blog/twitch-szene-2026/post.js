@@ -14,7 +14,7 @@ import {
   VIEWER_KLASSEN, VIEWER_META,
   PATCHES,
   NETZWERK, NETZWERK_BEITRITTE, NETZWERK_ALTER, RAIDS, RAID_GROESSEN, MATCHED,
-  NETZWERK_DID, NETZWERK_UEBERLEBEN_GEMATCHT, NETZWERK_KANAELE_MIT_BEITRITT, NETZWERK_RUECKKEHR,
+  NETZWERK_DID, NETZWERK_UEBERLEBEN_GEMATCHT, NETZWERK_RUECKKEHR,
   NETZWERK_PUBLIKUM, RAID_REICHWEITE, RAID_WIEDERKEHR, LIVE_ANKUENDIGUNG,
   METHODIK,
 } from './data.js';
@@ -244,7 +244,7 @@ if (ue30) {
 }
 
 buildTable('netz-ueberleben-gematcht',
-  ['Horizont', 'Netzwerk überlebt', 'Kontrolle', 'Differenz', '95-Prozent-Intervall', 'Placebo', 'Placebo-Intervall', 'Bewertbar', 'Fenster noch offen', 'Am Beitrittstag nicht im Risiko'],
+  ['Horizont', 'Netzwerk überlebt', 'Kontrolle', 'Differenz', '95-Prozent-Intervall', 'Placebo', 'Placebo-Intervall', 'Bewertbar', 'Fenster noch offen'],
   NETZWERK_UEBERLEBEN_GEMATCHT.map((u) => [
     `${u.tage} Tage`, `${fmt1(u.netz)} %`, `${fmt1(u.kontrolle)} %`,
     `${vz(u.differenz, fmt1)} pp`,
@@ -252,7 +252,6 @@ buildTable('netz-ueberleben-gematcht',
     u.placebo === null ? 'nicht gerechnet' : `${vz(u.placebo, fmt1)} pp (n = ${u.placeboN})`,
     u.placeboCi === null ? 'nicht gerechnet' : `${fmt1(u.placeboCi[0])} bis ${fmt1(u.placeboCi[1])} pp`,
     fmt(u.bewertbar), fmt(u.zensiert),
-    fmt(NETZWERK_KANAELE_MIT_BEITRITT - u.bewertbar - u.zensiert),
   ]));
 
 /* ── Geteiltes Publikum ────────────────────────────────────── */
