@@ -8,7 +8,9 @@
  * Median-Abstand zweier Durchlaeufe: 300 s bis 17.01.2026, 75 s bis 11.03.2026,
  * danach 15 bis 16 s. Zeilenzaehlungen und Anteile ueber Zeilen (VIEWER_KLASSEN,
  * HEATMAP) sind dadurch auf die spaeten Monate gewichtet. Kennzahlen je Snapshot
- * oder je Kanal (WOCHEN, PATCHES, UEBERLEBEN) sind davon unberuehrt. SESSIONDAUER
+ * (PATCHES viewer/streams je Snapshot) sind davon unberuehrt. WOCHEN.aktive, Zu-/Abgaenge
+ * und UEBERLEBEN beruhen auf Erkennung und sind in den 300-s-Monaten um grob 7 %
+ * zu niedrig (Anteil Kanal-Wochen nur mit Streams unter 5 min, gemessen seit 2026-03-12). SESSIONDAUER
  * und METHODIK.sendezeitStunden haengen an der Session-Rekonstruktion (Luecke
  * ueber 10 min) und sind in den 300-s-Monaten nach unten verzerrt: Streams unter
  * 5 min fehlen, Messausfaelle zerschneiden Sessions.
