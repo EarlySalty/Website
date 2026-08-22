@@ -71,3 +71,7 @@ Deadlock ist ein Hero-Shooter / MOBA-Hybrid von Valve Corporation, aktuell in Cl
 **Discord-Server: https://discord.gg/PhkP3WgY7w**
 
 Kein Bewerbungsprozess, kein Voice-Pflicht, einfach beitreten und reinschauen.
+
+## Vollversion
+
+- [llms-full.txt](https://deutsche-deadlock-community.de/llms-full.txt): dieselben Inhalte mit allen Kernzahlen des Szene-Reports im Klartext.

@@ -13,37 +13,23 @@ User-agent: Claude-User
 Allow: /
 
 # ── Modell-Trainings-Crawler ────────────────────────────────────
-# Die Site bleibt fuer Trainingsdaten gesperrt. Ausnahme ist /blog/:
-# der Szene-Report ist eine eigene Auswertung, die bewusst zitierbar und
-# in Modellen auffindbar sein soll. Die Reihenfolge ist wichtig, Allow
-# muss vor Disallow stehen, sonst greift die laengere Regel nicht.
+# GPTBot und ClaudeBot bleiben fuer die Site gesperrt, mit Ausnahme von
+# /blog/ und den llms-Dateien: der Szene-Report ist eine eigene Auswertung,
+# die bewusst zitierbar und in Modellen auffindbar sein soll. Alle anderen
+# Crawler (auch Google-Extended, CCBot, Applebot-Extended) fallen unter
+# "User-agent: *" und duerfen wie bisher die ganze Site lesen.
+# Nach RFC 9309 gewinnt die laengste passende Regel, die Reihenfolge ist egal.
 
 User-agent: GPTBot
 Allow: /blog/
+Allow: /llms.txt
+Allow: /llms-full.txt
 Disallow: /
 
 User-agent: ClaudeBot
 Allow: /blog/
-Disallow: /
-
-User-agent: Google-Extended
-Allow: /blog/
-Disallow: /
-
-User-agent: CCBot
-Allow: /blog/
-Disallow: /
-
-User-agent: Applebot-Extended
-Allow: /blog/
-Disallow: /
-
-User-agent: Bytespider
-Allow: /blog/
-Disallow: /
-
-User-agent: meta-externalagent
-Allow: /blog/
+Allow: /llms.txt
+Allow: /llms-full.txt
 Disallow: /
 
 Sitemap: https://deutsche-deadlock-community.de/sitemap.xml
