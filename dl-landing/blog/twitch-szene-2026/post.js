@@ -26,6 +26,7 @@ const TEAL = '#55978f';
 const nf = new Intl.NumberFormat('de-DE');
 const fmt = (n) => nf.format(n);
 const fmt1 = (n) => nf.format(Math.round(n * 10) / 10);
+const fmt2 = (n) => new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 const MONATE_KURZ = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 const MONATE_LANG = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
@@ -505,10 +506,10 @@ renderGroupedBars(q('[data-chart="raid-wirkung"]'), RAID_GROESSEN.map((r) => ({
   a: r.raidSchnitt20,
   b: r.kontrollSchnitt20,
   tip: [
-    ['Raid, Zuwachs nach 20 Minuten im Schnitt', fmt1(r.raidSchnitt20), GOLD],
-    ['Kontrollfenster, Zuwachs im Schnitt', fmt1(r.kontrollSchnitt20), TEAL],
-    ['Raid, Zuwachs im Median', fmt1(r.raid20)],
-    ['Differenz je Paar, Median', fmt1(r.differenz20)],
+    ['Raid, Zuwachs nach 20 Minuten im Schnitt', fmt2(r.raidSchnitt20), GOLD],
+    ['Kontrollfenster, Zuwachs im Schnitt', fmt2(r.kontrollSchnitt20), TEAL],
+    ['Raid, Zuwachs im Median', fmt2(r.raid20)],
+    ['Differenz je Paar, Median', fmt2(r.differenz20)],
     ['Raids in dieser Klasse', fmt(r.n)],
   ],
 })), {
@@ -516,16 +517,16 @@ renderGroupedBars(q('[data-chart="raid-wirkung"]'), RAID_GROESSEN.map((r) => ({
   ariaLabel: 'Zuschauerzuwachs des Ziels 20 Minuten nach dem Raid, verglichen mit einem Kontrollfenster ohne Raid',
 });
 buildTable('raids', ['Raid-Größe', 'Raids', 'Zuschauer vorher', 'Gesendet', 'Zuwachs Raid, Median', 'Zuwachs Kontrolle, Median', 'Differenz je Paar, Median', 'Zuwachs Raid, Schnitt', 'Zuwachs Kontrolle, Schnitt'],
-  RAID_GROESSEN.map((r) => [r.klasse, fmt(r.n), fmt1(r.basis), fmt1(r.gesendet), fmt1(r.raid20), fmt1(r.kontroll20), fmt1(r.differenz20), fmt1(r.raidSchnitt20), fmt1(r.kontrollSchnitt20)]));
+  RAID_GROESSEN.map((r) => [r.klasse, fmt(r.n), fmt2(r.basis), fmt2(r.gesendet), fmt2(r.raid20), fmt2(r.kontroll20), fmt2(r.differenz20), fmt2(r.raidSchnitt20), fmt2(r.kontrollSchnitt20)]));
 
 buildTable('raid-kennzahlen', ['Kennzahl', 'Raid', 'Kontrollfenster'], [
-  ['Zuwachs nach 10 Minuten, Median', fmt1(RAIDS.raidZuwachs10), fmt1(RAIDS.kontrollZuwachs10)],
-  ['Zuwachs nach 20 Minuten, Median', fmt1(RAIDS.raidZuwachs20), fmt1(RAIDS.kontrollZuwachs20)],
-  ['Zuwachs nach 20 Minuten, Schnitt', fmt1(RAIDS.raidSchnitt20), fmt1(RAIDS.kontrollSchnitt20)],
-  ['Über dem Ausgangswert nach 10 Minuten', `${fmt1(RAIDS.raidUeber10)} %`, `${fmt1(RAIDS.kontrollUeber10)} %`],
-  ['Über dem Ausgangswert nach 20 Minuten', `${fmt1(RAIDS.raidUeber20)} %`, `${fmt1(RAIDS.kontrollUeber20)} %`],
-  ['Faktor zum Ausgangswert nach 20 Minuten, Median', fmt1(RAIDS.faktor20Raid), fmt1(RAIDS.faktor20Kontroll)],
-  ['Faktor zum Ausgangswert nach 20 Minuten, oberes Viertel', fmt1(RAIDS.faktor20RaidP75), fmt1(RAIDS.faktor20KontrollP75)],
+  ['Zuwachs nach 10 Minuten, Median', fmt2(RAIDS.raidZuwachs10), fmt2(RAIDS.kontrollZuwachs10)],
+  ['Zuwachs nach 20 Minuten, Median', fmt2(RAIDS.raidZuwachs20), fmt2(RAIDS.kontrollZuwachs20)],
+  ['Zuwachs nach 20 Minuten, Schnitt', fmt2(RAIDS.raidSchnitt20), fmt2(RAIDS.kontrollSchnitt20)],
+  ['Über dem Ausgangswert nach 10 Minuten', `${fmt2(RAIDS.raidUeber10)} %`, `${fmt2(RAIDS.kontrollUeber10)} %`],
+  ['Über dem Ausgangswert nach 20 Minuten', `${fmt2(RAIDS.raidUeber20)} %`, `${fmt2(RAIDS.kontrollUeber20)} %`],
+  ['Faktor zum Ausgangswert nach 20 Minuten, Median', fmt2(RAIDS.faktor20Raid), fmt2(RAIDS.faktor20Kontroll)],
+  ['Faktor zum Ausgangswert nach 20 Minuten, oberes Viertel', fmt2(RAIDS.faktor20RaidP75), fmt2(RAIDS.faktor20KontrollP75)],
 ]);
 
 renderHBars(q('[data-chart="chatter"]'), [

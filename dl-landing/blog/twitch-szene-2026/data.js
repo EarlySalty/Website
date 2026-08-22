@@ -143,7 +143,7 @@ export const PATCHES = [
   ["2026-05-22", "Gameplay Update 05-22", 9.1, 8.9, 6.25, 10.18],
 ];
 
-export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStart": 2.87, "medianStartJeKanal": 2, "startP25": 1, "startP75": 3, "ueberleben90": 53.1, "bewertbar90": 49, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStart": 19.08, "medianStartJeKanal": 1, "ueberleben90": 5.3, "bewertbar90": 1458, "sessionsProWoche": 2.11}, "beitritt": {"n": 51, "vor": 2.02, "nach": 2.22}, "streams": {"sessionRetention5": 0.843, "sessionRetention10": 0.842, "sessionRetention20": 0.83, "erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
+export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStartJeKanal": 2, "startP25": 1, "startP75": 3, "ueberleben90": 53.1, "bewertbar90": 49, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStartJeKanal": 1, "ueberleben90": 5.3, "bewertbar90": 1458, "sessionsProWoche": 2.11}, "beitritt": {"n": 51, "vor": 2.02, "nach": 2.22}, "streams": {"erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
 
 /**
  * Beitritte ins Streamer-Netzwerk je Monat. Beitrittsdatum ist der frueheste
