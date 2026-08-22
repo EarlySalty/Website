@@ -202,6 +202,8 @@ export const NETZWERK_DID = {
  * Sendetag im Fenster d bis d+30. Placebo: statt des Netzwerk-Kanals gilt ein
  * zufaelliger Kontrollkanal derselben Zelle als behandelt, Erwartung null.
  */
+export const NETZWERK_KANAELE_MIT_BEITRITT = 67;
+
 export const NETZWERK_UEBERLEBEN_GEMATCHT = [
   { tage: 30, netz: 56.3, netzCi: [41.7, 70.8], kontrolle: 23.1, differenz: 33.2, ci: [19.1, 46.2], bewertbar: 48, zensiert: 13, placebo: 3.4, placeboCi: [-11.7, 17.6], placeboN: 49 },
   { tage: 90, netz: 40.6, netzCi: [25.0, 59.4], kontrolle: 19.6, differenz: 21.1, ci: [2.4, 39.5], bewertbar: 32, zensiert: 30, placebo: 9.7, placeboCi: [-6.2, 24.0], placeboN: 35 },
@@ -239,8 +241,12 @@ export const NETZWERK_PUBLIKUM = {
 /**
  * Raid-Reichweite gegen ein Kontrollfenster (derselbe Kanal, sieben Tage
  * frueher, gleicher Wochentag und gleiche Uhrzeit) und Wiederkehr der
- * Angekommenen. Nur 190 der 1.435 erfolgreichen Raids haben Messdaten in
- * beiden Fenstern plus Basislinie, diese Auswahl bevorzugt regelmaessige
+ * Angekommenen. Grundgesamtheit sind hier alle 1.435 erfolgreichen Raids,
+ * also einschliesslich der 31, die keinen einzigen Zuschauer mitgebracht
+ * haben; RAIDS oben rechnet dagegen auf den 1.404 mit viewer_count > 0.
+ * Ein Raid ohne Zuschauer gehoert in eine Reichweitenrechnung hinein, sonst
+ * faellt der Anteil zu hoch aus. Nur 190 dieser 1.435 Raids haben Messdaten
+ * in beiden Fenstern plus Basislinie, diese Auswahl bevorzugt regelmaessige
  * Sender und ueberschaetzt die Wirkung eher.
  */
 export const RAID_REICHWEITE = {
@@ -260,8 +266,15 @@ export const RAID_REICHWEITE = {
   placebo: { n: 68, zuwachs20Median: 0.0, ci: [-0.5, 0.34], zuschauerminutenMedian: 0.0, zuschauerminutenMittel: -3.17 },
 };
 
-/** Kehren Raid-Ankoemmlinge haeufiger zurueck als andere Erstchatter? */
+/**
+ * Kehren Raid-Ankoemmlinge haeufiger zurueck als andere Erstchatter?
+ * Geltungsbereich beider Gruppen: erste Nachricht in einem der 61
+ * Netzwerk-Kanaele mit Chatterdaten, Ankunft zwischen 2026-01-18 und
+ * 2026-07-22 (Cutoff minus 30 Tage Nachlauf).
+ */
 export const RAID_WIEDERKEHR = {
+  kanaele: 61,
+  zeitraum: ['2026-01-18', '2026-07-22'],
   ankoemmlinge: { n: 749, anteil: 32.2, ci: [29.0, 35.9] },
   sonstige: { n: 8525, anteil: 31.2, ci: [30.2, 32.2] },
   differenz: 1.0,
@@ -316,10 +329,20 @@ export const NETZWERK_ALTER = { gesamt: 67, medianTage: 151, unter90Tage: 23, un
  * Achtung: twitch_raid_history.id ist nicht eindeutig, 163 Werte kommen doppelt
  * vor (eindeutig ist erst id zusammen mit executed_at). Wer nachrechnet, darf
  * nicht nach id gruppieren.
+ *
+ * Grundgesamtheit, einheitlich fuer beide Raid-Bloecke dieser Datei:
+ * 1.589 ausgeloeste Raids bis zum Cutoff 2026-08-22 05:57:44.668097+00,
+ * davon 1.435 mit success = true auf 234 Zielkanaelen, davon wiederum 1.404
+ * mit viewer_count > 0 auf 232 Zielkanaelen. Die 31 erfolgreichen Raids ohne
+ * einen einzigen geschickten Zuschauer sind der ganze Unterschied.
+ * Dieser Block (Wirkung je Raid) rechnet auf den 1.404 mit Zuschauern,
+ * RAID_REICHWEITE (Anteil an der Wochenreichweite) auf allen 1.435.
  */
 export const RAIDS = {
   gesamt: 1589,
-  erfolgreich: 1404,
+  erfolgreich: 1435,
+  mitZuschauern: 1404,
+  zielkanaeleErfolgreich: 234,
   bewertbar: 1094,
   ohneVorherFenster: 177,
   ohneZehnMinutenFenster: 70,
