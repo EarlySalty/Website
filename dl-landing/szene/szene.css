@@ -101,6 +101,7 @@
   display: inline-block; margin-top: 0.5rem; font-size: 0.77rem;
   color: var(--bone-faint); font-variant-numeric: tabular-nums;
 }
+.sz-tile-delta.is-flat { color: var(--bone-faint); }
 .sz-tile-delta.is-up { color: #8ec7b4; }
 .sz-tile-delta.is-down { color: #d59a8a; }
 

@@ -16,7 +16,7 @@
 import {
   GOLD, TEAL, fmt, fmt1,
   TAGE, datumLang,
-  buildTable, wireTableToggles, createCharts,
+  buildTable, wireTableToggles, createCharts, escapeHtml,
 } from '../src/charts.js';
 
 const {
@@ -25,19 +25,34 @@ const {
 
 const DATEN_URL = '/szene/data/szene.json';
 
+/**
+ * Fehler, dessen Text auf der Seite stehen darf. Alles andere (Netzwerk,
+ * Parser, unerwartete Ausnahmen) traegt englische oder technische Texte und
+ * wird durch eine allgemeine Meldung ersetzt.
+ */
+class DatenFehler extends Error {}
+
+const ALLGEMEINER_FEHLER = 'Die Daten konnten gerade nicht geladen werden. Bitte später noch einmal versuchen.';
+
 /* ══════════════════════════════════════════════════════════════
    Adapter. Einzige Stelle, an der die Feldnamen aus szene.json
    vorkommen. Aendert sich der Vertrag, aendert sich nur diese
    Funktion, der Rest der Seite arbeitet mit den Namen von hier.
    ══════════════════════════════════════════════════════════════ */
 function adapt(roh) {
-  if (!roh || typeof roh !== 'object') throw new Error('Die Datei enthält kein Objekt.');
+  if (!roh || typeof roh !== 'object') throw new DatenFehler('Die Datei enthält kein Objekt.');
 
   const zahl = (v, ersatz = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : ersatz);
   // Anteile und Raten kommen als Bruch zwischen 0 und 1, die Seite rechnet in Prozent.
   const prozent = (v) => zahl(v) * 100;
   // Zeitstempel im JSON sind RFC 3339, die Datumsformatierung will YYYY-MM-DD.
-  const tag = (v) => (typeof v === 'string' && v.length >= 10 ? v.slice(0, 10) : null);
+  const tag = (v) => {
+    // Nur ein echtes Datum durchlassen: die Seite schneidet spaeter Positionen
+    // aus dem String heraus und baut ihn in Beschriftungen ein.
+    if (typeof v !== 'string') return null;
+    const kopf = v.slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(kopf) ? kopf : null;
+  };
   const punkt = (eintrag) => (eintrag && typeof eintrag.rate === 'number'
     ? { quote: prozent(eintrag.rate), n: zahl(eintrag.n) }
     : null);
@@ -50,8 +65,8 @@ function adapt(roh) {
     ? new Date(`${datenEnde}T00:00:00Z`).getTime() - 30 * 86400000
     : null;
 
-  const wochen = (Array.isArray(roh.weekly) ? roh.weekly : []).map((w) => {
-    const woche = tag(w.week) || String(w.week);
+  const wochen = (Array.isArray(roh.weekly) ? roh.weekly : []).filter((w) => tag(w.week)).map((w) => {
+    const woche = tag(w.week);
     const wochenEnde = new Date(`${woche}T00:00:00Z`).getTime() + 6 * 86400000;
     return {
       woche,
@@ -63,7 +78,7 @@ function adapt(roh) {
       abgangZensiert: abgangStichtag === null ? false : wochenEnde > abgangStichtag,
     };
   });
-  if (!wochen.length) throw new Error('Die Datei enthält keine Wochenreihe.');
+  if (!wochen.length) throw new DatenFehler('Die Datei enthält keine Wochenreihe.');
 
   const dw = roh.this_week || {};
   const delta = dw.delta_prev_week || {};
@@ -87,8 +102,9 @@ function adapt(roh) {
     ? roh.heatmap.map((zeile) => Array.from({ length: 24 }, (_, h) => zahl((zeile || [])[h])))
     : null;
 
+  // Die Beschriftungen kommen aus der Datei und landen in innerHTML.
   const anteile = (liste) => (Array.isArray(liste) ? liste : [])
-    .map((e) => ({ label: String(e.label), anteil: prozent(e.share) }));
+    .map((e) => ({ label: escapeHtml(e.label), anteil: prozent(e.share) }));
 
   return {
     stand: roh.generated_at ? new Date(roh.generated_at) : null,
@@ -140,6 +156,20 @@ function deltaKlasse(wert) {
   if (wert > 0) return 'is-up';
   if (wert < 0) return 'is-down';
   return 'is-flat';
+}
+
+/**
+ * Tabelle zuklappen und ihren Schalter zuruecksetzen. Beim Wechsel der
+ * Zeitwahl wird der Inhalt neu gebaut; eine offen gebliebene Tabelle zeigt
+ * sonst weiter den alten Schaltertext oder haengt an einer versteckten Figur.
+ */
+function tabelleZuruecksetzen(name) {
+  const wrap = q(`[data-table="${name}"]`);
+  if (wrap) wrap.classList.remove('is-open');
+  const btn = q(`.sz-table-toggle[data-table-for="${name}"]`);
+  if (!btn) return;
+  btn.setAttribute('aria-expanded', 'false');
+  btn.textContent = 'Als Tabelle anzeigen';
 }
 
 /** Diagramm-Wirt leeren, inklusive der Legende, die neben ihm liegt. */
@@ -196,7 +226,8 @@ function renderWochen(daten, schluessel) {
   const anzahl = ZEITRAEUME[schluessel] ?? Infinity;
   const reihe = anzahl === Infinity ? daten.wochen : daten.wochen.slice(-anzahl);
   const jedeZweite = reihe.length > 20 ? 2 : 1;
-  const label = (w, i) => (i % jedeZweite === 0 ? w.woche.slice(8) + '.' + w.woche.slice(5, 7) : '');
+  const label = (w, i) => (i % jedeZweite === 0 ? `${w.woche.slice(8)}.${w.woche.slice(5, 7)}` : '');
+  ['aktiv', 'primetime', 'fluss'].forEach(tabelleZuruecksetzen);
 
   const aktivHost = q('[data-chart="aktiv"]');
   leeren(aktivHost);
@@ -220,28 +251,33 @@ function renderWochen(daten, schluessel) {
   buildTable('primetime', ['Woche ab', 'Streams gleichzeitig (Primetime)'],
     reihe.map((w) => [datumLang(w.woche), fmt1(w.primetimeStreams)]));
 
-  // Fuer die juengsten Wochen kann ein Abgang noch nicht feststehen, dort steht
-  // systembedingt 0. Diese Wochen werden nicht gezeichnet, sonst liest sich die
-  // Zensierung wie ein Einbruch der Abgaenge.
-  const flussReihe = reihe.filter((w) => !w.abgangZensiert);
-  const zensiert = reihe.length - flussReihe.length;
-  const flussFigur = q('[data-figure="fluss"]');
+  // Ein Abgang steht erst 30 Tage nach der letzten Sichtung fest, fuer die
+  // juengsten Wochen liefert der Job deshalb systembedingt 0. Diese Wochen
+  // werden nicht gezeichnet, sonst liest sich die Zensierung wie ein Einbruch.
+  // Die Reihe wird dafuer unabhaengig von der Zeitwahl aus den bewertbaren
+  // Wochen genommen, sonst bliebe die 4-Wochen-Ansicht immer leer.
+  const bewertbar = daten.wochen.filter((w) => !w.abgangZensiert);
+  const flussReihe = anzahl === Infinity ? bewertbar : bewertbar.slice(-anzahl);
+  const offen = daten.wochen.length - bewertbar.length;
   const flussHinweis = q('[data-hinweis="fluss"]');
-  flussHinweis.hidden = zensiert === 0;
-  flussHinweis.textContent = zensiert === 1
-    ? 'Für die letzte Woche steht noch nicht fest, wer wirklich weg ist: ein Kanal gilt erst nach 30 Tagen ohne Sichtung als Abgang. Diese Woche fehlt im Diagramm.'
-    : `Für die letzten ${fmt(zensiert)} Wochen steht noch nicht fest, wer wirklich weg ist: ein Kanal gilt erst nach 30 Tagen ohne Sichtung als Abgang. Diese Wochen fehlen im Diagramm.`;
+  flussHinweis.hidden = offen === 0;
+  flussHinweis.textContent = offen === 1
+    ? 'Die letzte Woche fehlt: ein Kanal gilt erst nach 30 Tagen ohne Sichtung als Abgang, vorher steht nicht fest, wer wirklich weg ist. Das Diagramm zeigt stattdessen die jüngsten Wochen, für die das feststeht.'
+    : `Die letzten ${fmt(offen)} Wochen fehlen: ein Kanal gilt erst nach 30 Tagen ohne Sichtung als Abgang, vorher steht nicht fest, wer wirklich weg ist. Das Diagramm zeigt stattdessen die jüngsten Wochen, für die das feststeht.`;
 
   const flussHost = q('[data-chart="fluss"]');
   leeren(flussHost);
-  flussFigur.querySelector('.sz-table-toggle').hidden = flussReihe.length === 0;
+  const flussToggle = q('.sz-table-toggle[data-table-for="fluss"]');
+  flussToggle.hidden = flussReihe.length === 0;
   if (!flussReihe.length) {
-    buildTable('fluss', [], []);
+    q('[data-table="fluss"]').innerHTML = '';
     return;
   }
+  const flussLabel = (w, i) => ((flussReihe.length > 20 ? i % 2 === 0 : true)
+    ? `${w.woche.slice(8)}.${w.woche.slice(5, 7)}` : '');
   renderGroupedBars(flussHost, flussReihe.map((w, i) => ({
     key: `Woche ab ${datumLang(w.woche)}`,
-    label: label(w, i),
+    label: flussLabel(w, i),
     a: w.neu,
     b: w.weg,
     tip: [
@@ -268,7 +304,7 @@ function renderRest(daten) {
       value: u.quote,
       display: fmt1(u.quote),
       color: farbe[u.gruppe] || GOLD,
-    })), { unit: ' %' });
+    })), { unit: ' %', maxValue: 100 });
     buildTable('ueberleben', ['Gruppe', 'Fenster', 'Noch aktiv', 'Bewertbare Kanäle'],
       daten.ueberleben.map((u) => [u.gruppe, `${u.tage} Tage`, `${fmt1(u.quote)} %`, fmt(u.n)]));
   } else {
@@ -279,6 +315,7 @@ function renderRest(daten) {
     renderHeatmap(q('[data-heat="zeit"]'), daten.heatmap, {
       unitLabel: 'Streams gleichzeitig im Schnitt',
       formatValue: fmt1,
+      ariaLabel: 'Raster der gleichzeitig laufenden Streams nach Wochentag und Stunde; die Werte stehen in der Tabelle darunter',
     });
     buildTable('zeit', ['Wochentag', ...Array.from({ length: 24 }, (_, h) => String(h)), 'Schnitt'],
       daten.heatmap.map((zeile, wd) => [
@@ -295,7 +332,7 @@ function renderRest(daten) {
       name: `${k.label} Zuschauer`,
       value: k.anteil,
       display: fmt1(k.anteil),
-    })), { unit: ' %' });
+    })), { unit: ' %', maxValue: 100 });
     buildTable('viewer', ['Zuschauer gleichzeitig', 'Anteil der Snapshots'],
       daten.viewerKlassen.map((k) => [k.label, `${fmt1(k.anteil)} %`]));
   } else {
@@ -343,14 +380,14 @@ async function start() {
   const status = q('[data-status]');
   const inhalt = q('[data-inhalt]');
   try {
-    const antwort = await fetch(DATEN_URL, { cache: 'no-cache' });
-    if (!antwort.ok) throw new Error(`Der Server hat mit Status ${antwort.status} geantwortet.`);
+    const antwort = await fetch(DATEN_URL);
+    if (!antwort.ok) throw new DatenFehler(`Der Server hat mit Status ${antwort.status} geantwortet.`);
     let roh;
     try {
       roh = JSON.parse(await antwort.text());
     } catch {
       // Kommt vor, wenn der Server statt der Datei eine HTML-Seite ausliefert.
-      throw new Error('Die Antwort war keine gültige Datendatei.');
+      throw new DatenFehler('Die Antwort war keine gültige Datendatei.');
     }
     const daten = adapt(roh);
 
@@ -368,9 +405,11 @@ async function start() {
       <b>Die Zahlen sind gerade nicht abrufbar.</b>
       <span data-grund></span>
       <a href="/blog/twitch-szene-2026/">Zur ausführlichen Auswertung</a>`;
-    // Der Fehlertext kommt von aussen, deshalb als Text setzen und nicht als HTML.
+    // Nur die eigenen deutschen Meldungen werden gezeigt. Fremde Fehlertexte
+    // sind technisch, oft englisch und helfen niemandem weiter.
+    const grund = fehler instanceof DatenFehler ? fehler.message : ALLGEMEINER_FEHLER;
     status.querySelector('[data-grund]').textContent =
-      `${fehler.message} Der Blogpost mit dem Stand August 2026 funktioniert weiterhin.`;
+      `${grund} Der Blogpost mit dem Stand August 2026 funktioniert weiterhin.`;
   }
 }
 

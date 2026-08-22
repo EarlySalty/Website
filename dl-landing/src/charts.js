@@ -71,6 +71,16 @@ export function axisLabel(v) {
   return fmt(v);
 }
 
+/**
+ * Text fuer den Einbau in innerHTML entschaerfen. Gedacht fuer Beschriftungen,
+ * die aus einer Datendatei kommen und nicht im Repo stehen.
+ */
+export function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (z) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[z]);
+}
+
 export const svgEl = (name, attrs = {}) => {
   const node = document.createElementNS('http://www.w3.org/2000/svg', name);
   for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
@@ -389,7 +399,9 @@ export function createCharts(config = {}) {
   /* ── Waagerechte Balken, eine Serie, immer direkt beschriftet ── */
   function renderHBars(host, rows, opts = {}) {
     if (!host || !rows.length) return;
-    const max = Math.max(...rows.map((r) => r.value));
+    // Prozentserien bekommen mit maxValue: 100 die volle Skala, sonst wuerde
+    // der groesste Wert immer als voller Balken erscheinen, egal wie klein er ist.
+    const max = opts.maxValue ?? Math.max(...rows.map((r) => r.value));
     host.innerHTML = rows.map((row) => `
     <div class="${p}-hbar">
       <span class="${p}-hbar-name">${row.name}${row.sub ? `<small>${row.sub}</small>` : ''}</span>
