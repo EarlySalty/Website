@@ -126,13 +126,13 @@ const html = `<!doctype html>
   <meta property="og:url" content="${SITE}/helden/" />
   <meta property="og:title" content="Alle Deadlock Helden auf Deutsch ( ${heroes.length} )" />
   <meta property="og:description" content="Komplette Hero-Übersicht mit Lane, Rolle und Schwierigkeitsgrad. Auf Deutsch, sortier- und filterbar." />
-  <meta property="og:image" content="${SITE}/images/og-image.png" />
+  <meta property="og:image" content="${SITE}/images/og-logo.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Alle Deadlock Helden auf Deutsch" />
   <meta name="twitter:description" content="${heroes.length} Helden mit Lane, Rolle und Schwierigkeit. Filter für Einsteiger und mehr." />
-  <meta name="twitter:image" content="${SITE}/images/og-image.png" />
+  <meta name="twitter:image" content="${SITE}/images/og-logo.png" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <script type="application/ld+json">
 ${JSON.stringify(itemListJson, null, 2)}

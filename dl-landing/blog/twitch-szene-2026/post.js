@@ -517,7 +517,7 @@ renderGroupedBars(q('[data-chart="raid-wirkung"]'), RAID_GROESSEN.map((r) => ({
   ariaLabel: 'Zuschauerzuwachs des Ziels 20 Minuten nach dem Raid, verglichen mit einem Kontrollfenster ohne Raid',
 });
 buildTable('raids', ['Raid-Größe', 'Raids', 'Zuschauer vorher', 'Gesendet', 'Zuwachs Raid, Median', 'Zuwachs Kontrolle, Median', 'Differenz je Paar, Median', 'Zuwachs Raid, Schnitt', 'Zuwachs Kontrolle, Schnitt'],
-  RAID_GROESSEN.map((r) => [r.klasse, fmt(r.n), fmt2(r.basis), fmt2(r.gesendet), fmt2(r.raid20), fmt2(r.kontroll20), fmt2(r.differenz20), fmt2(r.raidSchnitt20), fmt2(r.kontrollSchnitt20)]));
+  RAID_GROESSEN.map((r) => [r.klasse, fmt(r.n), fmt2(r.basis), fmt(r.gesendet), fmt2(r.raid20), fmt2(r.kontroll20), fmt2(r.differenz20), fmt2(r.raidSchnitt20), fmt2(r.kontrollSchnitt20)]));
 
 buildTable('raid-kennzahlen', ['Kennzahl', 'Raid', 'Kontrollfenster'], [
   ['Zuwachs nach 10 Minuten, Median', fmt2(RAIDS.raidZuwachs10), fmt2(RAIDS.kontrollZuwachs10)],
