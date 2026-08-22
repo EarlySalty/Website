@@ -138,7 +138,62 @@ export const PATCHES = [
   ["2026-05-22", "Gameplay Update 05-22", 9.1, 8.9, 6.25, 10.18],
 ];
 
-export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStart": 2.87, "ueberleben90": 53.1, "bewertbar90": 49, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStart": 19.08, "ueberleben90": 5.3, "bewertbar90": 1458, "sessionsProWoche": 2.11}, "beitritt": {"n": 51, "vor": 2.02, "nach": 2.22}, "raids": {"r5": 0.843, "r10": 0.842, "r20": 0.83, "erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
+export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStart": 2.87, "medianStartJeKanal": 2, "startP25": 1, "startP75": 3, "ueberleben90": 53.1, "bewertbar90": 49, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStart": 19.08, "medianStartJeKanal": 1, "ueberleben90": 5.3, "bewertbar90": 1458, "sessionsProWoche": 2.11}, "beitritt": {"n": 51, "vor": 2.02, "nach": 2.22}, "streams": {"r5": 0.843, "r10": 0.842, "r20": 0.83, "erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
+
+/**
+ * Beitritte ins Streamer-Netzwerk je Monat. Beitrittsdatum ist der frueheste
+ * Zeitstempel aus twitch_streamers.created_at, twitch_partners.partnered_at und
+ * twitch_raid_auth.authorized_at. Austritte sind darin nicht abgebildet, die
+ * Reihe zeigt Zugaenge, nicht den Bestand.
+ */
+export const NETZWERK_BEITRITTE = [
+  ["2025-10", 5],
+  ["2025-11", 1],
+  ["2025-12", 1],
+  ["2026-01", 3],
+  ["2026-02", 17],
+  ["2026-03", 7],
+  ["2026-04", 6],
+  ["2026-05", 7],
+  ["2026-06", 10],
+  ["2026-07", 5],
+  ["2026-08", 5],
+];
+
+/** Wie lange die 67 Netzwerk-Kanaele am Stichtag dabei sind. */
+export const NETZWERK_ALTER = { gesamt: 67, medianTage: 151, unter90Tage: 23, unter180Tage: 44 };
+
+/**
+ * Raid-Wirkung, gemessen am Zuschauerverlauf des Ziels statt an Chatter-Zaehlern.
+ * Basis ist der Mittelwert der Zuschauerzahl des Ziels in den zehn Minuten vor
+ * dem Raid, verglichen mit dem Fenster um plus zehn und plus zwanzig Minuten.
+ * Bewertbar sind nur Raids, fuer die in allen drei Fenstern Messpunkte liegen.
+ */
+export const RAIDS = {
+  gesamt: 1589,
+  erfolgreich: 1404,
+  bewertbar: 1058,
+  ziele: 232,
+  medianGesendet: 2,
+  medianBasis: 2,
+  medianZuwachs10: 0.33,
+  medianZuwachs20: 0.19,
+  halbeDa10: 32.1,
+  halbeDa20: 30.1,
+  volleDa20: 14.4,
+  ueberhauptMehr20: 52.1,
+  faktor10: 1.11,
+  faktor20: 1.04,
+  faktor20P75: 1.67,
+};
+
+/** Raid-Wirkung nach Groesse des Raids. Zuwachs in Zuschauern, Anteile in Prozent. */
+export const RAID_GROESSEN = [
+  { klasse: "1 Zuschauer", n: 411, basis: 1.72, gesendet: 1, zuwachs10: 0, zuwachs20: 0, halb10: 35.8, halb20: 36.0 },
+  { klasse: "2 bis 3", n: 377, basis: 2, gesendet: 2, zuwachs10: 0.41, zuwachs20: 0.22, halb10: 33.4, halb20: 29.4 },
+  { klasse: "4 bis 6", n: 201, basis: 2, gesendet: 4, zuwachs10: 1, zuwachs20: 1, halb10: 27.9, halb20: 24.9 },
+  { klasse: "7 und mehr", n: 69, basis: 2, gesendet: 8, zuwachs10: 1.61, zuwachs20: 1.63, halb10: 15.9, halb20: 13.0 },
+];
 
 /** Gematchte Paare: gleicher Startmonat, gleicher Groessen-Bucket. Nur Paare, bei denen beide Seiten nach drei Monaten noch messbar sind. */
 export const MATCHED = [

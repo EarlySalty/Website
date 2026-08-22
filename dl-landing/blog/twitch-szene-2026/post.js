@@ -16,7 +16,7 @@ import {
   HEATMAP, SESSIONDAUER,
   VIEWER_KLASSEN, VIEWER_META,
   PATCHES,
-  NETZWERK, MATCHED,
+  NETZWERK, NETZWERK_BEITRITTE, NETZWERK_ALTER, RAIDS, RAID_GROESSEN, MATCHED,
   METHODIK,
 } from './data.js';
 
@@ -453,6 +453,25 @@ buildTable('patches', ['Patch', 'Datum', 'Streams gleichzeitig davor', 'Streams 
   PATCHES.map(([datum, titel, sv, sn, vv, vn]) => [titel, datumLang(datum), fmt1(sv), fmt1(sn), fmt1(vv), fmt1(vn)]));
 
 /* ══ Kapitel 7: Netzwerk und Rest ═════════════════════════════ */
+renderBars(q('[data-chart="beitritte"]'), NETZWERK_BEITRITTE.map(([monat, n]) => ({
+  key: monatLang(monat),
+  label: monatKurz(monat),
+  value: n,
+  tip: [['Beitritte in diesem Monat', fmt(n)]],
+})), {
+  height: 200,
+  ariaLabel: 'Beitritte ins Streamer-Netzwerk je Monat',
+});
+buildTable('beitritte', ['Monat', 'Beitritte'],
+  NETZWERK_BEITRITTE.map(([monat, n]) => [monatLang(monat), fmt(n)]));
+
+/* Die Alters-Kennzahlen stehen nicht als Text in der Seite, sondern kommen aus data.js. */
+const alterSpan = q('[data-fill="netz-alter"]');
+if (alterSpan) {
+  alterSpan.textContent = `${NETZWERK_ALTER.unter90Tage} der ${NETZWERK_ALTER.gesamt} Kanäle sind weniger als 90 Tage dabei, `
+    + `${NETZWERK_ALTER.unter180Tage} weniger als 180 Tage; im Median sind es ${fmt(NETZWERK_ALTER.medianTage)} Tage.`;
+}
+
 renderHBars(q('[data-chart="frequenz"]'), [
   { name: 'Im Netzwerk', sub: `${NETZWERK.imNetz.n} Streamer`, value: NETZWERK.imNetz.sessionsProWoche, display: fmt1(NETZWERK.imNetz.sessionsProWoche), color: GOLD },
   { name: 'Ausserhalb', sub: `${fmt(NETZWERK.ausserhalb.n)} Streamer`, value: NETZWERK.ausserhalb.sessionsProWoche, display: fmt1(NETZWERK.ausserhalb.sessionsProWoche), color: TEAL },
@@ -479,6 +498,16 @@ renderGroupedBars(q('[data-chart="matched"]'), MATCHED.map((p) => ({
 });
 buildTable('matched', ['Startmonat', 'Größenklasse', 'Netzwerk Start', 'Netzwerk nach 3 Monaten', 'Kontrolle Start', 'Kontrolle nach 3 Monaten', 'Streamer'],
   MATCHED.map((p) => [monatLang(p.monat), String(p.bucket), fmt1(p.netzStart), fmt1(p.netzM3), fmt1(p.ctrlStart), fmt1(p.ctrlM3), `${p.nNetz} zu ${p.nCtrl}`]));
+
+renderHBars(q('[data-chart="raid-halb"]'), RAID_GROESSEN.map((r) => ({
+  name: r.klasse,
+  sub: `${fmt(r.n)} Raids`,
+  value: r.halb20,
+  display: fmt1(r.halb20),
+  color: GOLD,
+})), { unit: ' %' });
+buildTable('raids', ['Raid-Größe', 'Raids', 'Zuschauer vorher', 'Gesendet', 'Zuwachs nach 10 Minuten', 'Zuwachs nach 20 Minuten', 'Mindestens die Hälfte nach 10 Minuten', 'Mindestens die Hälfte nach 20 Minuten'],
+  RAID_GROESSEN.map((r) => [r.klasse, fmt(r.n), fmt1(r.basis), fmt1(r.gesendet), fmt1(r.zuwachs10), fmt1(r.zuwachs20), `${fmt1(r.halb10)} %`, `${fmt1(r.halb20)} %`]));
 
 /* ══ Methodik: Zeilenbilanz ═══════════════════════════════════ */
 buildTable('zeilen', ['Schritt', 'Zeilen'], [
