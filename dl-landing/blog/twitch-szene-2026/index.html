@@ -45,7 +45,7 @@
           "alternativeHeadline": "Szene-Report: die deutschsprachige Deadlock-Szene auf Twitch, Oktober 2025 bis August 2026",
           "description": "Zehn Monate Messung der deutschsprachigen Deadlock-Szene auf Twitch: Größe, Fluktuation, Sendezeiten, Zuschauerverteilung, Patch-Wirkung und der Vergleich zwischen Netzwerk und Rest.",
           "datePublished": "2026-08-22",
-          "dateModified": "2026-08-22T10:19:13+02:00",
+          "dateModified": "2026-08-22T11:52:46+02:00",
           "inLanguage": "de-DE",
           "url": "https://deutsche-deadlock-community.de/blog/twitch-szene-2026/",
           "mainEntityOfPage": { "@type": "WebPage", "@id": "https://deutsche-deadlock-community.de/blog/twitch-szene-2026/" },
@@ -53,7 +53,7 @@
           "isAccessibleForFree": true,
           "articleSection": "Szene-Report",
           "keywords": "Deadlock, Twitch, Streaming, deutschsprachige Szene, Datenanalyse, Szene-Report",
-          "wordCount": 4485,
+          "wordCount": 5913,
           "about": [
             { "@type": "VideoGame", "name": "Deadlock", "publisher": { "@type": "Organization", "name": "Valve Corporation" } },
             { "@type": "Thing", "name": "Twitch-Streaming" },
@@ -547,6 +547,22 @@
               kann: bringt das überhaupt etwas.
             </p>
 
+            <p class="bl-warn">
+              <b>Dieses Kapitel wurde am 22. August 2026 ein drittes Mal nachgerechnet</b>
+              Die erste Fassung verglich Netzwerk und Rest ohne Kontrollgruppe, die zweite hat die
+              Raid-Wirkung gegen ein Kontrollfenster gestellt. Diese dritte Runde nimmt sich den
+              Beitritt selbst vor. Geändert hat sich Folgendes: der Satz, der Median-Zuschauer
+              steige rund um den Beitritt von 2,02 auf 2,22, ist ersatzlos gestrichen, weil ein
+              Placebo-Beitritt acht Wochen früher denselben Zuwachs zeigt. Neben die ungematchte
+              Überlebensrechnung (53,1 gegen 5,3 Prozent, Uhr ab erstem Auftritt) tritt eine
+              gematchte Rechnung mit dem Beitritt als Uhr und einer Risikodefinition, in der die
+              Kontrolle bei 19,6 statt bei 5,3 Prozent liegt. Neu dazugekommen sind die
+              Chatter-Überlappung zwischen Kanälen, der Anteil der Raids an der Wochenreichweite,
+              die Wiederkehr der Raid-Ankömmlinge und ein Absatz dazu, warum sich die Wirkung der
+              Discord-Live-Ankündigung mit diesen Daten nicht messen lässt. Das Fazit des Kapitels
+              ist neu geschrieben.
+            </p>
+
             <p class="bl-p">
               Vorweg gehört ein Satz zur Zusammensetzung dieser 67 Kanäle, sonst lesen sich alle
               folgenden Zahlen falsch. Das Netzwerk ist nicht an einem Stichtag entstanden, es ist
@@ -571,7 +587,8 @@
 
             <p class="bl-p">
               Der erste Blick auf die Rohwerte sieht spektakulär aus. 53,1 Prozent der
-              Netzwerk-Kanäle streamen nach 90 Tagen noch, außerhalb sind es 5,3 Prozent. Gezählt
+              Netzwerk-Kanäle streamen nach 90 Tagen noch, außerhalb sind es 5,3 Prozent, also
+              rund das Zehnfache. Gezählt
               wird mit derselben Zensierungsregel wie in Kapitel 3, es bleiben also 49 bewertbare
               Netzwerk-Kanäle und 1.458 außerhalb, zusammen die 1.507 aus Kapitel 3. Und die
               Netzwerk-Kanäle senden mit 3,8 Streams pro Woche fast doppelt so oft wie der Rest
@@ -583,7 +600,8 @@
               Auftritt in der Kategorie schon vollständig beobachtet ist (die Überlebensuhr läuft
               ab erstem Auftritt, nicht ab Beitritt, deshalb sind es 49 und nicht die 44 mit mehr
               als 90 Tagen Zugehörigkeit). Für alle anderen ist das Fenster noch offen. Das ist
-              eine frühe Lesung, kein Endstand.
+              eine frühe Lesung, kein Endstand. Und der Faktor Zehn hält der nächsten Rechnung
+              nicht stand.
             </p>
 
             <figure class="bl-figure">
@@ -601,6 +619,51 @@
               </div>
               <div class="bl-chart bl-hbars" data-chart="netz-ueberleben"></div>
             </figure>
+
+            <p class="bl-p">
+              Dieselbe Frage lässt sich fairer stellen. Die Uhr startet dann nicht beim ersten
+              Auftritt in der Kategorie, sondern am Beitrittstag, und im Risiko steht nur, wer in
+              den 28 Tagen davor überhaupt gesendet hat. Ohne diese Bedingung zählt jeder Kanal
+              mit, der zum Beitrittszeitpunkt längst aufgehört hatte, und bekommt geschenkte
+              Lebenszeit. Verglichen wird gegen Kanäle außerhalb mit gleichem Startmonat und
+              gleicher Größenklasse, gemessen ab demselben Kalendertag und ebenfalls im Risiko.
+              Überlebt heißt: mindestens ein Sendetag im Fenster von 30 Tagen. So gerechnet
+              stehen nach 30 Tagen 56,3 Prozent im Netzwerk gegen 23,1 Prozent in der Kontrolle,
+              ein Abstand von 33,2 Prozentpunkten mit einem Intervall von 19,1 bis 46,2. Nach 90
+              Tagen, also im selben Zeitfenster wie der Rohvergleich oben, sind es 40,6 gegen
+              19,6 Prozent. Die Kontrolle liegt damit nicht mehr bei 5,3, sondern bei 19,6
+              Prozent, und der Faktor Zehn schrumpft auf gut zwei, allein weil die Kontrollgruppe
+              sinnvoll definiert ist.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Noch aktiv 30 Tage nach dem Beitritt, gematcht</p>
+                <p class="bl-figure-note">
+                  Uhr ab Beitritt, im Risiko steht nur, wer in den 28 Tagen davor gesendet hat.
+                  Die Tabelle enthält 30, 90 und 180 Tage samt Placebo.
+                </p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="netz-ueberleben-gematcht"></div>
+              <button class="bl-table-toggle" data-table-for="netz-ueberleben-gematcht" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="netz-ueberleben-gematcht"></div>
+            </figure>
+
+            <p class="bl-p">
+              Auch hier gibt es einen Placebo: statt des Netzwerk-Kanals gilt ein zufällig
+              gezogener Kontrollkanal derselben Zelle als beigetreten, alles andere bleibt gleich,
+              erwartet wird null. Nach 30 Tagen kommt der Placebo auf 3,4 Prozentpunkte, der echte
+              Effekt liegt also weit darüber. Nach 90 Tagen frisst der Placebo mit 9,7 Punkten
+              schon fast die Hälfte der verbleibenden 21,1 Punkte, und beide Intervalle überlappen.
+              Nach 180 Tagen sind vier bewertbare Kanäle keine Messung, der Wert steht nur der
+              Vollständigkeit halber in der Tabelle. In dieselbe Richtung zeigt die Rückkehr nach
+              einer Pause von über 30 Tagen: <span data-fill="netz-rueckkehr"></span>. Der
+              Vorbehalt bleibt derselbe wie beim Rohvergleich und er ist nicht ausräumbar: der
+              Beitritt ist freiwillig und kostet Aufwand, wer ihn auf sich nimmt, ist ohnehin
+              motivierter. Gematcht wird nach Startmonat und Anfangsgröße, nicht nach Motivation.
+              Belastbar ist der Satz "Netzwerk-Kanäle halten länger durch", nicht der Satz "das
+              Netzwerk lässt sie länger durchhalten".
+            </p>
 
             <p class="bl-p">
               Beim Zuschauerwachstum lässt sich der Verdacht wenigstens teilweise ausräumen.
@@ -644,9 +707,56 @@
               Das Ergebnis ist ernüchternd und wird hier trotzdem so hingeschrieben: in 7 von 17
               Paaren wächst die Netzwerk-Seite stärker, in 10 die Kontrollgruppe. Über alle Paare
               gemittelt steht ein Wachstumsfaktor von 1,10 gegen 1,11. Das Netzwerk macht aus
-              kleinen Kanälen also nachweislich keine größeren Kanäle. Auch der Blick auf den
-              Beitrittszeitpunkt selbst zeigt nur einen Hauch: bei den 51 Kanälen mit Daten aus der
-              Zeit davor steigt der Median-Zuschauer von 2,02 auf 2,22.
+              kleinen Kanälen also nachweislich keine größeren Kanäle.
+            </p>
+
+            <p class="bl-p">
+              Bleibt der Beitrittszeitpunkt selbst. Dafür werden die acht Wochen vor der
+              Beitrittswoche gegen die acht Wochen danach gestellt, die Beitrittswoche bleibt
+              außen vor, und von dieser Veränderung wird die Veränderung der Kontrollzelle im
+              selben Kalenderfenster abgezogen. Übrig bleiben 21 auswertbare Kanäle mit im Median
+              39 Kontrollkanälen je Paar; alle anderen haben entweder keine vier Wochen Vorlauf
+              vor dem Beitritt oder ihr Nachfenster reicht über den Stichtag hinaus. Von vier
+              Kennzahlen verfehlt nur eine einzige die Null: der Median-Zuschauer steigt um 0,52
+              gegenüber der Kontrolle. Bei Streams und Sendestunden liegt der Punktschätzer sogar
+              leicht negativ.
+            </p>
+
+            <p class="bl-p">
+              Diese eine Zahl hält der Gegenprobe nicht stand. Wird derselbe Vergleich mit einem
+              erfundenen Beitritt acht Wochen vor dem echten gerechnet, liegt also vollständig in
+              der Zeit vor dem Beitritt, kommt bei 11 auswertbaren Kanälen ein Zuwachs von 0,43
+              heraus, und zwar in jeder der vier Kennzahlen deutlicher von der Null getrennt als
+              beim echten Beitritt. Die Kanäle wachsen also schon, bevor sie beitreten. Zwei
+              weitere Gegenproben bestätigen das: beschränkt auf Beitritte, deren gesamtes Fenster
+              im konstanten Messtakt ab März 2026 liegt, bleiben 0,15 (Intervall minus 0,47 bis
+              0,76), und ohne das Auffüllen sendefreier Wochen mit null bleiben 0,09 (Intervall
+              minus 0,83 bis 0,49). Beide verlieren das Signal. Ein Wachstumseffekt des Beitritts
+              ist in diesen Daten nicht nachweisbar, und das ist ein Nullbefund und kein
+              Datenmangel-Vermerk.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Zuschauer-Zuwachs um den Beitritt, echt gegen Placebo</p>
+                <p class="bl-figure-note">
+                  Median-Zuschauer je Woche, acht Wochen davor gegen acht Wochen danach, abzüglich
+                  der Veränderung der Kontrollgruppe. Der Placebo setzt den Beitritt acht Wochen zu
+                  früh an. Die Tabelle enthält alle vier Kennzahlen.
+                </p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="did"></div>
+              <button class="bl-table-toggle" data-table-for="did" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="did"></div>
+            </figure>
+
+            <p class="bl-warn">
+              <b>Warum die Differenz der Differenzen hier fast nur den Netzwerk-Kanal misst</b>
+              Die Kontrollkanäle liegen bei 0,4 Streams pro Woche, sie sind also überwiegend
+              inaktiv. Damit ist ihre Veränderung nahe null, und die Rechnung fällt faktisch auf
+              ein reines Vorher-Nachher des Netzwerk-Kanals zurück. Dazu kommt die Größenordnung:
+              21 Kanäle, deren Ausgangswert bei zwei Zuschauern liegt. Ein Sprung von zwei auf drei
+              ist bei dieser Basis Rauschen, kein Wachstum.
             </p>
 
             <p class="bl-p">
@@ -722,6 +832,55 @@
             </p>
 
             <p class="bl-p">
+              Ein Bruchteil eines Zuschauers ist schwer einzuordnen. Deshalb dieselbe Rechnung noch
+              einmal als Anteil: wie viel von der Reichweite einer ganzen Kanalwoche kommt über
+              Raids herein? Gemessen wird die Fläche zwischen Raidfenster und Kontrollfenster in
+              Zuschauerminuten, aufsummiert je Kanalwoche mit mindestens einem auswertbaren Raid.
+              Über 108 solcher Kanalwochen sind das 0,45 Prozent der Zuschauerminuten, Intervall
+              0,19 bis 0,69 Prozent. Selbst eine großzügige Obergrenze, die jedem geschickten
+              Zuschauer pauschal 30 Minuten Verweildauer unterstellt, kommt nur auf 2,96 Prozent.
+              Ein Placebo ohne Raid, verankert 14 Tage vorher, liefert erwartungsgemäß null. Der
+              Effekt ist also echt, aber er entscheidet über nichts.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Anteil der Raids an der Reichweite einer Kanalwoche</p>
+                <p class="bl-figure-note">
+                  Zuschauerminuten aus Raids geteilt durch die Zuschauerminuten der Woche, Median
+                  über 108 Kanalwochen mit Raid.
+                </p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="raid-reichweite"></div>
+              <button class="bl-table-toggle" data-table-for="raid-reichweite" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="raid-reichweite"></div>
+            </figure>
+
+            <p class="bl-p">
+              Bleibt die Frage, ob wenigstens hängen bleibt, wer über einen Raid hereinkommt. Als
+              Raid-Ankömmling gilt, wer in den ersten 15 Minuten nach einem erfolgreichen Raid zum
+              ersten Mal in diesem Kanal schreibt; wiedergekehrt ist, wer später in einer anderen
+              Session desselben Kanals erneut auftaucht. 32,2 Prozent von 749 Ankömmlingen kommen
+              wieder. Bei den 8.525 Erstchattern derselben Kanäle, die ohne Raid hereingeschneit
+              sind, sind es 31,2 Prozent. Ein Prozentpunkt Unterschied bei weit überlappenden
+              Intervallen: ein Raid-Ankömmling bleibt weder besser noch schlechter hängen als
+              Laufkundschaft.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Kommen Raid-Ankömmlinge wieder?</p>
+                <p class="bl-figure-note">
+                  Erstchatter mit mindestens 30 Tagen Nachlauf. Gemessen werden Chatter, stille
+                  Zuschauer tauchen hier nicht auf.
+                </p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="raid-wiederkehr"></div>
+              <button class="bl-table-toggle" data-table-for="raid-wiederkehr" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="raid-wiederkehr"></div>
+            </figure>
+
+            <p class="bl-p">
               Zum Publikum selbst: über 3.793 Netzwerk-Streams hinweg sind 5.028 Chatter zum ersten
               Mal dabei und 15.957 kommen wieder, ein Erstbesucher-Anteil von 24 Prozent. Ein
               Viertel neue Gesichter bei drei Vierteln Stammpublikum ist eine gesunde Mischung, und
@@ -735,6 +894,53 @@
               </div>
               <div class="bl-chart bl-hbars" data-chart="chatter"></div>
             </figure>
+
+            <p class="bl-p">
+              Interessanter als die Erstbesucher-Quote ist, ob dieselben Leute in mehreren
+              Netzwerk-Kanälen auftauchen. Chatterdaten gibt es nicht nur für das Netzwerk, sondern
+              für 662 Kanäle, 64 davon im Netzwerk. Für jedes Kanalpaar lässt sich der Anteil
+              gemeinsamer Chatter an der kleineren der beiden Chattermengen berechnen. Werden die
+              Paare nach Größenklasse und zusätzlich nach Chatterzahl gematcht, damit die
+              unterschiedliche Messtiefe nicht durchschlägt, liegt die Überlappung im Netzwerk bei
+              16,0 Prozent und außerhalb bei 7,9 Prozent. Dieselbe Richtung zeigt der Anteil der
+              Chatter, die in zwei oder mehr Kanälen aktiv sind: 8,9 Prozent im Netzwerk gegen
+              einen Placebo-Median von 3,4 Prozent aus 200 Zufallsziehungen von je 64 Kanälen
+              außerhalb. Die 8,9 Prozent liegen oberhalb der gesamten Placebo-Spanne von 1,7 bis
+              7,8 Prozent.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Geteiltes Publikum je Kanalpaar</p>
+                <p class="bl-figure-note">
+                  Gemeinsame Chatter geteilt durch die kleinere der beiden Chattermengen, Paare
+                  nach Größenklasse und Chatterzahl gematcht.
+                </p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="publikum"></div>
+              <button class="bl-table-toggle" data-table-for="publikum" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="publikum"></div>
+            </figure>
+
+            <p class="bl-warn">
+              <b>Der Faktor zwei ist robust, seine Ursache nicht</b>
+              Die Überlappung ist zum Teil das Ergebnis der Raids selbst, sie ist also nicht
+              unabhängig von der Rechnung oben. Dazu kommt Selbstauswahl: wer im Community-Discord
+              ist, landet in mehreren Netzwerk-Kanälen, ganz ohne dass das Netzwerk etwas bewirkt
+              hätte. Im engen Match sind es außerdem nur 31 Netzwerk-Kanäle, und Kanalpaare sind
+              nicht unabhängig voneinander, das Intervall ist deshalb eher zu schmal. Ob das
+              Netzwerk die Überlappung erzeugt oder nur sichtbar macht, lässt sich hier nicht
+              entscheiden.
+            </p>
+
+            <p class="bl-p">
+              Eine Frage bleibt offen, und zwar aus einem banalen Grund: die Wirkung der
+              Discord-Live-Ankündigung lässt sich nicht messen, weil der Zeitpunkt des Posts
+              nirgends gespeichert wird. Das dafür vorgesehene Feld ist in
+              <span data-fill="netz-ankuendigung"></span> Zeilen gefüllt, und die Tabelle hält
+              ohnehin nur den aktuellen Zustand je Kanal, keine Historie. Solange der Bot diesen
+              Zeitstempel nicht schreibt, bleibt jede Zahl dazu geraten.
+            </p>
 
             <p class="bl-warn">
               <b>Eine frühere Fassung hat hier zwei Zahlen verwechselt</b>
@@ -763,6 +969,20 @@
               ist jedes Einzelergebnis zudem statistisch schwach. Die Aussage lautet deshalb nicht
               "das Netzwerk schadet dem Wachstum", sondern "in diesen Daten ist kein
               Wachstumsvorteil nachweisbar".
+            </p>
+
+            <p class="bl-p">
+              Was bleibt nach drei Runden Nachrechnen. Das Netzwerk ist kein Wachstumsmotor. Der
+              Beitritt selbst hebt weder Sendefrequenz noch Sendezeit noch Zuschauerzahl über das
+              hinaus, was diese Kanäle ohnehin schon getan hätten; der Placebo-Beitritt zeigt den
+              größeren Sprung. Was das Netzwerk stattdessen ist: ein gemeinsamer Publikums-Pool
+              und ein Ort, an dem Leute länger dabeibleiben. Netzwerk-Kanäle teilen doppelt so viel
+              Publikum wie vergleichbare Kanäle außerhalb, und sie senden nach dem Beitritt
+              deutlich länger weiter, wobei bei dieser zweiten Aussage die Selbstauswahl nicht
+              auszuschließen ist. Der Raid ist der Hebel, der eigentlich Reichweite bringen sollte,
+              und er ist bisher der schwächste Teil: 0,45 Prozent der Wochenreichweite, und die
+              Angekommenen bleiben nicht häufiger hängen als jeder andere Erstbesucher. Wer das
+              Netzwerk verbessern will, sollte am Raid ansetzen, nicht an der Zahl der Mitglieder.
             </p>
           </div>
         </section>

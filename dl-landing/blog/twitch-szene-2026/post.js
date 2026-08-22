@@ -14,6 +14,8 @@ import {
   VIEWER_KLASSEN, VIEWER_META,
   PATCHES,
   NETZWERK, NETZWERK_BEITRITTE, NETZWERK_ALTER, RAIDS, RAID_GROESSEN, MATCHED,
+  NETZWERK_DID, NETZWERK_UEBERLEBEN_GEMATCHT, NETZWERK_RUECKKEHR,
+  NETZWERK_PUBLIKUM, RAID_REICHWEITE, RAID_WIEDERKEHR, LIVE_ANKUENDIGUNG,
   METHODIK,
 } from './data.js';
 
@@ -202,6 +204,102 @@ buildTable('raid-kennzahlen', ['Kennzahl', 'Raid', 'Kontrollfenster'], [
   ['Faktor zum Ausgangswert nach 20 Minuten, Median', fmt2(RAIDS.faktor20Raid), fmt2(RAIDS.faktor20Kontroll)],
   ['Faktor zum Ausgangswert nach 20 Minuten, oberes Viertel', fmt2(RAIDS.faktor20RaidP75), fmt2(RAIDS.faktor20KontrollP75)],
 ]);
+
+/* ── Beitritt gegen Placebo-Beitritt (DiD) ─────────────────── */
+const didMv = NETZWERK_DID.metriken.find((m) => m.kurz === 'Median-Viewer');
+const spanne = (ci) => `${fmt2(ci[0])} bis ${fmt2(ci[1])}`;
+
+renderHBars(q('[data-chart="did"]'), [
+  {
+    name: 'Echter Beitritt',
+    sub: `${NETZWERK_DID.nPaare} Paare, Intervall ${spanne(didMv.ci)}`,
+    value: didMv.did, display: fmt2(didMv.did), color: GOLD,
+  },
+  {
+    name: 'Placebo, acht Wochen früher',
+    sub: `${NETZWERK_DID.placeboN} Paare, Intervall ${spanne(didMv.placeboCi)}`,
+    value: didMv.placeboDid, display: fmt2(didMv.placeboDid), color: TEAL,
+  },
+], { unit: ' Zuschauer' });
+
+buildTable('did',
+  ['Kennzahl je Woche', 'Netzwerk vorher', 'Netzwerk nachher', 'Kontrolle vorher', 'Kontrolle nachher', 'Beitritt, Differenz der Differenzen', '95-Prozent-Intervall', 'Placebo', 'Placebo-Intervall'],
+  NETZWERK_DID.metriken.map((m) => [
+    m.name, fmt2(m.netzVor), fmt2(m.netzNach), fmt2(m.ctrlVor), fmt2(m.ctrlNach),
+    fmt2(m.did), spanne(m.ci), fmt2(m.placeboDid), spanne(m.placeboCi),
+  ]));
+
+/* ── Ueberleben mit dem Beitritt als Uhr ───────────────────── */
+const ue30 = NETZWERK_UEBERLEBEN_GEMATCHT.find((u) => u.tage === 30);
+renderHBars(q('[data-chart="netz-ueberleben-gematcht"]'), [
+  { name: 'Im Netzwerk', sub: `${ue30.bewertbar} bewertbar, ${ue30.zensiert} Fenster noch offen`, value: ue30.netz, display: fmt1(ue30.netz), color: GOLD },
+  { name: 'Gematchte Kontrolle', sub: 'gleicher Startmonat, gleiche Größenklasse, im Risiko', value: ue30.kontrolle, display: fmt1(ue30.kontrolle), color: TEAL },
+], { unit: ' %', maxValue: 100 });
+
+buildTable('netz-ueberleben-gematcht',
+  ['Horizont', 'Netzwerk überlebt', 'Kontrolle', 'Differenz', '95-Prozent-Intervall', 'Placebo', 'Bewertbar', 'Zensiert'],
+  NETZWERK_UEBERLEBEN_GEMATCHT.map((u) => [
+    `${u.tage} Tage`, `${fmt1(u.netz)} %`, `${fmt1(u.kontrolle)} %`,
+    `${u.differenz > 0 ? '+' : ''}${fmt1(u.differenz)} pp`,
+    `${fmt1(u.ci[0])} bis ${fmt1(u.ci[1])} pp`,
+    u.placebo === null ? 'nicht gerechnet' : `+${fmt1(u.placebo)} pp (n = ${u.placeboN})`,
+    fmt(u.bewertbar), fmt(u.zensiert),
+  ]));
+
+/* ── Geteiltes Publikum ────────────────────────────────────── */
+const pub = NETZWERK_PUBLIKUM;
+renderHBars(q('[data-chart="publikum"]'), [
+  { name: 'Netzwerk-Paare', sub: `${fmt(pub.ueberlappungEng.netz.paare)} Paare aus ${pub.ueberlappungEng.netz.kanaele} Kanälen`, value: pub.ueberlappungEng.netz.median, display: fmt1(pub.ueberlappungEng.netz.median), color: GOLD },
+  { name: 'Paare außerhalb', sub: `${fmt(pub.ueberlappungEng.ausserhalb.paare)} Paare aus ${pub.ueberlappungEng.ausserhalb.kanaele} Kanälen`, value: pub.ueberlappungEng.ausserhalb.median, display: fmt1(pub.ueberlappungEng.ausserhalb.median), color: TEAL },
+], { unit: ' %' });
+
+buildTable('publikum', ['Rechnung', 'Gruppe', 'Kanalpaare', 'Überlappung im Median', '95-Prozent-Intervall'], [
+  ['nach Größenklasse gematcht', 'Netzwerk', fmt(pub.ueberlappungGroessenklasse.netz.paare), `${fmt1(pub.ueberlappungGroessenklasse.netz.median)} %`, `${fmt1(pub.ueberlappungGroessenklasse.netz.ci[0])} bis ${fmt1(pub.ueberlappungGroessenklasse.netz.ci[1])} %`],
+  ['nach Größenklasse gematcht', 'außerhalb', fmt(pub.ueberlappungGroessenklasse.ausserhalb.paare), `${fmt1(pub.ueberlappungGroessenklasse.ausserhalb.median)} %`, `${fmt1(pub.ueberlappungGroessenklasse.ausserhalb.ci[0])} bis ${fmt1(pub.ueberlappungGroessenklasse.ausserhalb.ci[1])} %`],
+  ['zusätzlich nach Chatterzahl gematcht', 'Netzwerk', fmt(pub.ueberlappungEng.netz.paare), `${fmt1(pub.ueberlappungEng.netz.median)} %`, `${fmt1(pub.ueberlappungEng.netz.ci[0])} bis ${fmt1(pub.ueberlappungEng.netz.ci[1])} %`],
+  ['zusätzlich nach Chatterzahl gematcht', 'außerhalb', fmt(pub.ueberlappungEng.ausserhalb.paare), `${fmt1(pub.ueberlappungEng.ausserhalb.median)} %`, `${fmt1(pub.ueberlappungEng.ausserhalb.ci[0])} bis ${fmt1(pub.ueberlappungEng.ausserhalb.ci[1])} %`],
+  ['Chatter in zwei oder mehr Kanälen', `Netzwerk (${fmt(pub.mehrkanalChatter.netz.chatter)} Chatter)`, `${fmt(pub.mehrkanalChatter.netz.inZweiPlus)} Chatter`, `${fmt1(pub.mehrkanalChatter.netz.anteil)} %`, 'Punktwert'],
+  ['Chatter in zwei oder mehr Kanälen', `Placebo, ${pub.mehrkanalChatter.placebo.ziehungen} Ziehungen von je ${pub.mehrkanalChatter.placebo.kanaeleJeZiehung} Kanälen außerhalb`, 'nicht anwendbar', `${fmt1(pub.mehrkanalChatter.placebo.median)} %`, `Spanne ${fmt1(pub.mehrkanalChatter.placebo.spanne[0])} bis ${fmt1(pub.mehrkanalChatter.placebo.spanne[1])} %`],
+]);
+
+/* ── Raid-Reichweite je Kanalwoche ─────────────────────────── */
+renderHBars(q('[data-chart="raid-reichweite"]'), [
+  { name: 'Gemessen gegen Kontrollfenster', sub: `${RAID_REICHWEITE.kanalwochen} Kanalwochen mit Raid`, value: RAID_REICHWEITE.anteilMedian, display: fmt2(RAID_REICHWEITE.anteilMedian), color: GOLD },
+  { name: 'Großzügige Obergrenze', sub: 'jeder geschickte Zuschauer bleibt pauschal 30 Minuten', value: RAID_REICHWEITE.obergrenze30min, display: fmt2(RAID_REICHWEITE.obergrenze30min), color: TEAL },
+], { unit: ' %' });
+
+buildTable('raid-reichweite', ['Kennzahl', 'Median', '95-Prozent-Intervall'], [
+  ['Anteil an den Zuschauerminuten einer Kanalwoche', `${fmt2(RAID_REICHWEITE.anteilMedian)} %`, `${fmt2(RAID_REICHWEITE.anteilCi[0])} bis ${fmt2(RAID_REICHWEITE.anteilCi[1])} %`],
+  ['Derselbe Anteil im Mittelwert', `${fmt2(RAID_REICHWEITE.anteilMittel)} %`, ''],
+  ['Großzügige Obergrenze, 30 Minuten je geschicktem Zuschauer', `${fmt2(RAID_REICHWEITE.obergrenze30min)} %`, ''],
+  ['Zuschauerminuten je Raid gegen Kontrollfenster', fmt2(RAID_REICHWEITE.zuschauerminutenJeRaidMedian), `${fmt2(RAID_REICHWEITE.zuschauerminutenJeRaidCi[0])} bis ${fmt2(RAID_REICHWEITE.zuschauerminutenJeRaidCi[1])}`],
+  ['Zuschauer mehr nach 20 Minuten gegen Kontrollfenster', fmt2(RAID_REICHWEITE.zuwachs20Median), `${fmt2(RAID_REICHWEITE.zuwachs20Ci[0])} bis ${fmt2(RAID_REICHWEITE.zuwachs20Ci[1])}`],
+  [`Placebo ohne Raid (n = ${RAID_REICHWEITE.placebo.n}), Zuschauer nach 20 Minuten`, fmt2(RAID_REICHWEITE.placebo.zuwachs20Median), `${fmt2(RAID_REICHWEITE.placebo.ci[0])} bis ${fmt2(RAID_REICHWEITE.placebo.ci[1])}`],
+  ['Bewertbare Raids', `${fmt(RAID_REICHWEITE.bewertbar)} von ${fmt(RAID_REICHWEITE.raidsErfolgreich)}`, ''],
+]);
+
+/* ── Kehren Raid-Ankoemmlinge wieder? ──────────────────────── */
+renderHBars(q('[data-chart="raid-wiederkehr"]'), [
+  { name: 'Raid-Ankömmlinge', sub: `${fmt(RAID_WIEDERKEHR.ankoemmlinge.n)} Erstchatter`, value: RAID_WIEDERKEHR.ankoemmlinge.anteil, display: fmt1(RAID_WIEDERKEHR.ankoemmlinge.anteil), color: GOLD },
+  { name: 'Sonstige Erstchatter', sub: `${fmt(RAID_WIEDERKEHR.sonstige.n)} Erstchatter`, value: RAID_WIEDERKEHR.sonstige.anteil, display: fmt1(RAID_WIEDERKEHR.sonstige.anteil), color: TEAL },
+], { unit: ' %', maxValue: 100 });
+
+buildTable('raid-wiederkehr', ['Gruppe', 'Erstchatter', 'Kommt wieder', '95-Prozent-Intervall'], [
+  ['Raid-Ankömmlinge', fmt(RAID_WIEDERKEHR.ankoemmlinge.n), `${fmt1(RAID_WIEDERKEHR.ankoemmlinge.anteil)} %`, `${fmt1(RAID_WIEDERKEHR.ankoemmlinge.ci[0])} bis ${fmt1(RAID_WIEDERKEHR.ankoemmlinge.ci[1])} %`],
+  ['Sonstige Erstchatter desselben Kanals', fmt(RAID_WIEDERKEHR.sonstige.n), `${fmt1(RAID_WIEDERKEHR.sonstige.anteil)} %`, `${fmt1(RAID_WIEDERKEHR.sonstige.ci[0])} bis ${fmt1(RAID_WIEDERKEHR.sonstige.ci[1])} %`],
+]);
+
+/* Rueckkehr nach Pause und die Datenlage zur Live-Ankuendigung stehen als
+   Fliesstext in der Seite, die Zahlen kommen aus data.js. */
+const rueckkehrSpan = q('[data-fill="netz-rueckkehr"]');
+if (rueckkehrSpan) {
+  rueckkehrSpan.textContent = `${fmt1(NETZWERK_RUECKKEHR.netz.anteil)} Prozent von ${NETZWERK_RUECKKEHR.netz.pausen} Pausen gegen `
+    + `${fmt1(NETZWERK_RUECKKEHR.kontrolle.anteil)} Prozent von ${fmt(NETZWERK_RUECKKEHR.kontrolle.pausen)} Pausen der Kontrolle`;
+}
+const ankuendigungSpan = q('[data-fill="netz-ankuendigung"]');
+if (ankuendigungSpan) {
+  ankuendigungSpan.textContent = `${fmt(LIVE_ANKUENDIGUNG.mitZeitstempel)} von ${fmt(LIVE_ANKUENDIGUNG.liveStateZeilen)}`;
+}
 
 renderHBars(q('[data-chart="chatter"]'), [
   { name: 'Stammpublikum', sub: `${fmt(NETZWERK.streams.stammchatter)} Chatter`, value: 100 - NETZWERK.streams.erstchatterPct, display: fmt1(100 - NETZWERK.streams.erstchatterPct), color: GOLD },

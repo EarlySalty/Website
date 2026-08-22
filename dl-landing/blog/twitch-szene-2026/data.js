@@ -143,7 +143,142 @@ export const PATCHES = [
   ["2026-05-22", "Gameplay Update 05-22", 9.1, 8.9, 6.25, 10.18],
 ];
 
-export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStartJeKanal": 2, "startP25": 1, "startP75": 3, "ueberleben90": 53.1, "bewertbar90": 49, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStartJeKanal": 1, "ueberleben90": 5.3, "bewertbar90": 1458, "sessionsProWoche": 2.11}, "beitritt": {"n": 51, "vor": 2.02, "nach": 2.22}, "streams": {"erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
+export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStartJeKanal": 2, "startP25": 1, "startP75": 3, "ueberleben90": 53.1, "bewertbar90": 49, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStartJeKanal": 1, "ueberleben90": 5.3, "bewertbar90": 1458, "sessionsProWoche": 2.11}, "streams": {"erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
+
+/* ═══════════════════════════════════════════════════════════════
+ * Nachrechnung Kapitel 7 vom 22.08.2026, ergebnisoffen mit
+ * Kontrollgruppe und Placebo. Quelle: netzwerk-*.json der
+ * Auswertung, Bootstrap mit 1000 Ziehungen, Seed 20260822.
+ * Diese Bloecke ersetzen die frueheren Vorher-Nachher-Literale.
+ * ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Difference-in-Differences um die Beitrittswoche: acht Wochen davor gegen
+ * acht Wochen danach, Netzwerk-Kanal minus Kontrollzelle (gleicher Startmonat,
+ * gleiche Groessenklasse, gleiches Kalenderfenster). Der Placebo setzt einen
+ * Pseudo-Beitritt acht Wochen vor den echten und liegt damit vollstaendig in
+ * der Zeit VOR dem Beitritt. Faellt er groesser aus als der echte Beitritt,
+ * war der Zuwachs schon vorher da.
+ */
+export const NETZWERK_DID = {
+  nPaare: 21,
+  kontrollenJePaarMedian: 39,
+  placeboN: 11,
+  metriken: [
+    {
+      name: "Streams je Woche", kurz: "Streams",
+      netzVor: 2.17, netzNach: 2.44, ctrlVor: 0.41, ctrlNach: 0.39,
+      did: -0.03, ci: [-0.4, 1.6], positiv: 47.6,
+      placeboDid: 0.44, placeboCi: [0.16, 2.78], placeboPositiv: 81.8,
+    },
+    {
+      name: "Sendestunden je Woche", kurz: "Sendestunden",
+      netzVor: 5.96, netzNach: 7.85, ctrlVor: 0.96, ctrlNach: 1.32,
+      did: -0.32, ci: [-1.13, 4.08], positiv: 47.6,
+      placeboDid: 1.37, placeboCi: [0.33, 7.94], placeboPositiv: 81.8,
+    },
+    {
+      name: "Median-Zuschauer je Woche", kurz: "Median-Viewer",
+      netzVor: 1.72, netzNach: 2.08, ctrlVor: 0.45, ctrlNach: 0.58,
+      did: 0.52, ci: [0.01, 0.74], positiv: 71.4,
+      placeboDid: 0.43, placeboCi: [0.24, 1.9], placeboPositiv: 90.9,
+    },
+    {
+      name: "Median-Zuschauer zur Primetime", kurz: "Primetime",
+      netzVor: 1.77, netzNach: 2.07, ctrlVor: 0.34, ctrlNach: 0.55,
+      did: 0.29, ci: [-0.03, 0.94], positiv: 66.7,
+      placeboDid: 0.31, placeboCi: [0.02, 1.45], placeboPositiv: 81.8,
+    },
+  ],
+  /** Gegenproben zur einzigen Kennzahl, deren Intervall die Null verfehlt. */
+  gegenprobeKonstantesIntervall: { n: 8, did: 0.15, ci: [-0.47, 0.76] },
+  gegenprobeNurAktiveWochen: { n: 18, did: 0.09, ci: [-0.83, 0.49] },
+};
+
+/**
+ * Ueberleben mit dem Beitritt als Uhr statt dem ersten Auftritt. Im Risiko
+ * steht nur, wer in den 28 Tagen vor dem Stichtag mindestens einmal gesendet
+ * hat, sonst entsteht Unsterblichkeitszeit. Ueberlebt heisst: mindestens ein
+ * Sendetag im Fenster d bis d+30. Placebo: statt des Netzwerk-Kanals gilt ein
+ * zufaelliger Kontrollkanal derselben Zelle als behandelt, Erwartung null.
+ */
+export const NETZWERK_UEBERLEBEN_GEMATCHT = [
+  { tage: 30, netz: 56.3, netzCi: [41.7, 70.8], kontrolle: 23.1, differenz: 33.2, ci: [19.1, 46.2], bewertbar: 48, zensiert: 13, placebo: 3.4, placeboCi: [-11.7, 17.6], placeboN: 49 },
+  { tage: 90, netz: 40.6, netzCi: [25.0, 59.4], kontrolle: 19.6, differenz: 21.1, ci: [2.4, 39.5], bewertbar: 32, zensiert: 30, placebo: 9.7, placeboCi: [-6.2, 24.0], placeboN: 35 },
+  { tage: 180, netz: 75.0, netzCi: [25.0, 100.0], kontrolle: 10.7, differenz: 64.3, ci: [13.5, 90.8], bewertbar: 4, zensiert: 59, placebo: null, placeboCi: null, placeboN: 0 },
+];
+
+/** Rueckkehr nach einer Pause von ueber 30 Tagen, Beitritt als Uhr. */
+export const NETZWERK_RUECKKEHR = {
+  netz: { pausen: 28, anteil: 50.0, ci: [32.1, 67.9] },
+  kontrolle: { pausen: 1136, anteil: 17.3, ci: [15.2, 19.5] },
+};
+
+/**
+ * Geteiltes Publikum. Kennzahl je Kanalpaar ist der Ueberlappungskoeffizient:
+ * gemeinsame Chatter geteilt durch die kleinere der beiden Chattermengen.
+ * Die enge Variante matcht zusaetzlich nach Chatterzahl (20 bis 200), damit
+ * die unterschiedliche Messtiefe nicht durchschlaegt.
+ */
+export const NETZWERK_PUBLIKUM = {
+  kanaeleMitChatterdaten: { gesamt: 662, imNetz: 64, ausserhalb: 598 },
+  ueberlappungGroessenklasse: {
+    netz: { paare: 679, median: 18.8, ci: [18.0, 20.0] },
+    ausserhalb: { paare: 5086, median: 13.0, ci: [12.5, 13.3] },
+  },
+  ueberlappungEng: {
+    netz: { kanaele: 31, paare: 2496, median: 16.0, ci: [15.2, 16.7] },
+    ausserhalb: { kanaele: 134, paare: 2385, median: 7.9, ci: [7.5, 8.3] },
+  },
+  mehrkanalChatter: {
+    netz: { chatter: 10145, inZweiPlus: 899, anteil: 8.9 },
+    placebo: { ziehungen: 200, kanaeleJeZiehung: 64, median: 3.4, spanne: [1.7, 7.8] },
+  },
+};
+
+/**
+ * Raid-Reichweite gegen ein Kontrollfenster (derselbe Kanal, sieben Tage
+ * frueher, gleicher Wochentag und gleiche Uhrzeit) und Wiederkehr der
+ * Angekommenen. Nur 190 der 1.435 erfolgreichen Raids haben Messdaten in
+ * beiden Fenstern plus Basislinie, diese Auswahl bevorzugt regelmaessige
+ * Sender und ueberschaetzt die Wirkung eher.
+ */
+export const RAID_REICHWEITE = {
+  raidsErfolgreich: 1435,
+  raidsInsNetzwerk: 1110,
+  zielkanaeleImNetz: 60,
+  bewertbar: 190,
+  kanalwochen: 108,
+  anteilMedian: 0.45,
+  anteilCi: [0.19, 0.69],
+  anteilMittel: 1.76,
+  obergrenze30min: 2.96,
+  zuschauerminutenJeRaidMedian: 3.08,
+  zuschauerminutenJeRaidCi: [0.0, 9.44],
+  zuwachs20Median: 0.01,
+  zuwachs20Ci: [0.0, 0.25],
+  placebo: { n: 68, zuwachs20Median: 0.0, ci: [-0.5, 0.34], zuschauerminutenMedian: 0.0, zuschauerminutenMittel: -3.17 },
+};
+
+/** Kehren Raid-Ankoemmlinge haeufiger zurueck als andere Erstchatter? */
+export const RAID_WIEDERKEHR = {
+  ankoemmlinge: { n: 749, anteil: 32.2, ci: [29.0, 35.9] },
+  sonstige: { n: 8525, anteil: 31.2, ci: [30.2, 32.2] },
+  differenz: 1.0,
+};
+
+/**
+ * Discord-Live-Ankuendigung: nicht messbar. Der Zeitstempel des Posts wird
+ * nirgends geschrieben, last_notified_at ist in allen 477 Zeilen leer, und
+ * die Tabelle haelt ohnehin nur den aktuellen Zustand je Kanal.
+ */
+export const LIVE_ANKUENDIGUNG = {
+  liveStateZeilen: 477,
+  mitZeitstempel: 0,
+  mitDiscordNachricht: 30,
+  linkKlicks: 365,
+  linkKlickKanaele: 45,
+};
 
 /**
  * Beitritte ins Streamer-Netzwerk je Monat. Beitrittsdatum ist der frueheste
