@@ -63,18 +63,20 @@ Die Seite `szene/index.html` enthält keine Zahlen. Sie holt beim Laden
   ausgeliefert werden, nicht aus `dist/`. Nötig sind Leserechte für Caddy,
   `Content-Type: application/json` und eine kurze Cache-Zeit
   (`Cache-Control: max-age=300`), damit ein neuer Stand schnell ankommt.
-  Die Route muss Vorrang vor der statischen Auslieferung haben, sonst
-  gewinnt die mitgebaute Stub-Datei.
+  Die Route ist seit dem 22.08.2026 eingerichtet und verifiziert. Sie muss
+  Vorrang vor der statischen Auslieferung behalten, deshalb liegt im Repo
+  bewusst keine Datei unter `public/szene/data/`.
 - **Fehlerfall:** liefert die Route 404 oder etwas anderes als JSON, zeigt die
   Seite eine Meldung und verlinkt den Blogpost. Es bleibt also nie leer.
 
-### Stub für die lokale Vorschau
+### Lokale Vorschau
 
-`public/szene/data/szene.json` ist ein Entwicklungs-Stub, erzeugt aus den
-Kapitel-JSONs unter `.tasks/2026-08-22-twitch-szene-blogpost/data/`. Er landet
-beim Build in `dist/szene/data/` und ist nur dazu da, die Seite ohne Server
-ansehen zu können. Sobald die Caddy-Route steht, sollte er entweder aus
-`public/` verschwinden oder die Route muss ihn sicher überschreiben.
+Im Repo liegt keine Datendatei mehr. `/szene/data/*` liefert Caddy live aus
+`Runtime/szene-stats`, deshalb würde eine mitgebaute Datei den echten Stand nur
+verdecken. Wer die Seite lokal mit Zahlen sehen will, kopiert die aktuelle Datei
+von Hand nach `dl-landing/public/szene/data/szene.json`; der Pfad ist in
+`.gitignore` ausgenommen und landet nie im Commit. Ohne Datei zeigt die Seite
+ihre Fehlermeldung und verlinkt den Blogpost, das ist der gewollte Zustand.
 
 ### JSON-Vertrag
 

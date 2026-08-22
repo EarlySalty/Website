@@ -7,9 +7,10 @@
  * aus src/charts.js und werden mit der Transparenz-Seite geteilt.
  *
  * Betrieb: die JSON-Datei schreibt taeglich ein Job im Twitch-Bot in ein
- * Laufzeit-Verzeichnis, Caddy liefert /szene/data/* daraus aus. Die Datei
- * unter public/szene/data/szene.json ist nur der Stub fuer die lokale
- * Vorschau. Details stehen in dl-landing/WORKFLOW.md.
+ * Laufzeit-Verzeichnis, Caddy liefert /szene/data/* daraus aus. Im Repo liegt
+ * bewusst keine Datendatei, sonst verdeckt sie den echten Stand. Fuer die
+ * lokale Vorschau von Hand nach public/szene/data/szene.json kopieren.
+ * Details stehen in dl-landing/WORKFLOW.md.
  */
 
 import {
