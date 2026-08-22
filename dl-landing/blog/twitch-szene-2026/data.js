@@ -8,7 +8,10 @@
  * Median-Abstand zweier Durchlaeufe: 300 s bis 17.01.2026, 75 s bis 11.03.2026,
  * danach 15 bis 16 s. Zeilenzaehlungen und Anteile ueber Zeilen (VIEWER_KLASSEN,
  * HEATMAP) sind dadurch auf die spaeten Monate gewichtet. Kennzahlen je Snapshot
- * oder je Kanal (WOCHEN, PATCHES, UEBERLEBEN, SESSIONDAUER) sind davon unberuehrt.
+ * oder je Kanal (WOCHEN, PATCHES, UEBERLEBEN) sind davon unberuehrt. SESSIONDAUER
+ * und METHODIK.sendezeitStunden haengen an der Session-Rekonstruktion (Luecke
+ * ueber 10 min) und sind in den 300-s-Monaten nach unten verzerrt: Streams unter
+ * 5 min fehlen, Messausfaelle zerschneiden Sessions.
  * Die Werte stehen als Literale hier drin: die Seite ist statisch und soll
  * auch dann stimmen, wenn kein Dienst laeuft. Beim naechsten Stichtag wird
  * dieser Block ersetzt, nicht ergaenzt.
@@ -138,7 +141,7 @@ export const PATCHES = [
   ["2026-05-22", "Gameplay Update 05-22", 9.1, 8.9, 6.25, 10.18],
 ];
 
-export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStart": 2.87, "medianStartJeKanal": 2, "startP25": 1, "startP75": 3, "ueberleben90": 53.1, "bewertbar90": 49, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStart": 19.08, "medianStartJeKanal": 1, "ueberleben90": 5.3, "bewertbar90": 1458, "sessionsProWoche": 2.11}, "beitritt": {"n": 51, "vor": 2.02, "nach": 2.22}, "streams": {"r5": 0.843, "r10": 0.842, "r20": 0.83, "erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
+export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStart": 2.87, "medianStartJeKanal": 2, "startP25": 1, "startP75": 3, "ueberleben90": 53.1, "bewertbar90": 49, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStart": 19.08, "medianStartJeKanal": 1, "ueberleben90": 5.3, "bewertbar90": 1458, "sessionsProWoche": 2.11}, "beitritt": {"n": 51, "vor": 2.02, "nach": 2.22}, "streams": {"sessionRetention5": 0.843, "sessionRetention10": 0.842, "sessionRetention20": 0.83, "erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
 
 /**
  * Beitritte ins Streamer-Netzwerk je Monat. Beitrittsdatum ist der frueheste
