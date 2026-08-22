@@ -228,7 +228,7 @@ if (didMv) {
 }
 
 buildTable('did',
-  ['Kennzahl je Woche', 'Netzwerk vorher', 'Netzwerk nachher', 'Kontrolle vorher', 'Kontrolle nachher', 'Beitritt, Differenz der Differenzen', '95-Prozent-Intervall', 'Placebo', 'Placebo-Intervall'],
+  ['Kennzahl je Woche', 'Netzwerk vorher', 'Netzwerk nachher', 'Kontrolle vorher', 'Kontrolle nachher', 'Beitritt, Differenz der Differenzen (Median je Kanalpaar, nicht aus den Gruppenmitteln)', '95-Prozent-Intervall', 'Placebo', 'Placebo-Intervall'],
   NETZWERK_DID.metriken.map((m) => [
     m.name, fmt2(m.netzVor), fmt2(m.netzNach), fmt2(m.ctrlVor), fmt2(m.ctrlNach),
     vz(m.did), spanne(m.ci), vz(m.placeboDid), spanne(m.placeboCi),
