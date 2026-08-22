@@ -521,10 +521,12 @@ buildTable('raids', ['Raid-Größe', 'Raids', 'Zuschauer vorher', 'Gesendet', 'Z
 
 buildTable('raid-kennzahlen', ['Kennzahl', 'Raid', 'Kontrollfenster'], [
   ['Zuwachs nach 10 Minuten, Median', fmt2(RAIDS.raidZuwachs10), fmt2(RAIDS.kontrollZuwachs10)],
+  ['Differenz je Paar nach 10 Minuten, Median', fmt2(RAIDS.differenz10), ''],
+  ['Differenz je Paar nach 20 Minuten, Median', fmt2(RAIDS.differenz20), ''],
   ['Zuwachs nach 20 Minuten, Median', fmt2(RAIDS.raidZuwachs20), fmt2(RAIDS.kontrollZuwachs20)],
   ['Zuwachs nach 20 Minuten, Schnitt', fmt2(RAIDS.raidSchnitt20), fmt2(RAIDS.kontrollSchnitt20)],
-  ['Über dem Ausgangswert nach 10 Minuten', `${fmt2(RAIDS.raidUeber10)} %`, `${fmt2(RAIDS.kontrollUeber10)} %`],
-  ['Über dem Ausgangswert nach 20 Minuten', `${fmt2(RAIDS.raidUeber20)} %`, `${fmt2(RAIDS.kontrollUeber20)} %`],
+  ['Über dem Ausgangswert nach 10 Minuten', `${fmt1(RAIDS.raidUeber10)} %`, `${fmt1(RAIDS.kontrollUeber10)} %`],
+  ['Über dem Ausgangswert nach 20 Minuten', `${fmt1(RAIDS.raidUeber20)} %`, `${fmt1(RAIDS.kontrollUeber20)} %`],
   ['Faktor zum Ausgangswert nach 20 Minuten, Median', fmt2(RAIDS.faktor20Raid), fmt2(RAIDS.faktor20Kontroll)],
   ['Faktor zum Ausgangswert nach 20 Minuten, oberes Viertel', fmt2(RAIDS.faktor20RaidP75), fmt2(RAIDS.faktor20KontrollP75)],
 ]);
