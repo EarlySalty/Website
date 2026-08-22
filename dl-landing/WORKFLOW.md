@@ -46,3 +46,63 @@ Die Hauptseite deutsche-deadlock-community.de zum Aushängeschild der Community 
 
 ---
 *Vorheriger Workflow (SEO & Bild-Fix) → abgeschlossen, wurde durch diesen ersetzt*
+
+---
+
+## /szene/ — lebende Auswertung (2026-08-22)
+
+Die Seite `szene/index.html` enthält keine Zahlen. Sie holt beim Laden
+`/szene/data/szene.json` und zeichnet daraus alle Diagramme.
+
+### Was der Betrieb dafür braucht
+
+- **Datenjob:** ein täglicher Lauf im Twitch-Bot (06:00) schreibt `szene.json`
+  in ein Laufzeit-Verzeichnis auf dem Server, zum Beispiel
+  `/srv/deadlock/runtime/szene/`. Der Job liegt nicht in diesem Repo.
+- **Caddy-Route:** `/szene/data/*` muss aus diesem Laufzeit-Verzeichnis
+  ausgeliefert werden, nicht aus `dist/`. Nötig sind Leserechte für Caddy,
+  `Content-Type: application/json` und eine kurze Cache-Zeit
+  (`Cache-Control: max-age=300`), damit ein neuer Stand schnell ankommt.
+  Die Route muss Vorrang vor der statischen Auslieferung haben, sonst
+  gewinnt die mitgebaute Stub-Datei.
+- **Fehlerfall:** liefert die Route 404 oder etwas anderes als JSON, zeigt die
+  Seite eine Meldung und verlinkt den Blogpost. Es bleibt also nie leer.
+
+### Stub für die lokale Vorschau
+
+`public/szene/data/szene.json` ist ein Entwicklungs-Stub, erzeugt aus den
+Kapitel-JSONs unter `.tasks/2026-08-22-twitch-szene-blogpost/data/`. Er landet
+beim Build in `dist/szene/data/` und ist nur dazu da, die Seite ohne Server
+ansehen zu können. Sobald die Caddy-Route steht, sollte er entweder aus
+`public/` verschwinden oder die Route muss ihn sicher überschreiben.
+
+### JSON-Vertrag
+
+Alle Feldnamen werden ausschließlich in `adapt()` in `szene/szene.js` gelesen.
+Ändert sich der Vertrag, ist das die einzige Stelle, die angefasst wird.
+
+```
+{ generated_at, data_start, data_end, rows_used,
+  weekly: [{ week, active_channels, primetime_concurrent_avg,
+             primetime_viewers_avg, new_channels, last_seen_channels }],
+  this_week: { active_channels, primetime_concurrent_avg, new_channels,
+               delta_prev_week: { … } },
+  survival: { overall: { d30: {n, rate}, d90: {…}, d180: {…} },
+              network: {…}, rest: {…} },
+  heatmap: [[24 Werte] × 7],
+  viewer_classes: [{ label, share }],
+  session_duration: [{ label, share }],
+  concentration: { top10_share } }
+```
+
+Fehlende Blöcke sind erlaubt: `survival.network.d30 = null` blendet die Zeile
+aus, ein fehlender `heatmap`-Block blendet die ganze Abbildung aus. Ohne
+`weekly` zeigt die Seite die Fehlermeldung.
+
+### Diagramm-Code
+
+`niceScale`, `axisLabel`, `svgEl`, `fmt`, `buildTable`, `renderBars` und die
+übrigen Zeichenfunktionen liegen seit 2026-08-22 einmal in `src/charts.js` und
+werden von `/transparenz/`, dem Blogpost und `/szene/` gemeinsam genutzt.
+`createCharts({ prefix })` liefert die Zeichenfunktionen mit den Klassennamen
+der jeweiligen Seite.

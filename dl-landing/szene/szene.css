@@ -1,0 +1,246 @@
+/* ══════════════════════════════════════════════════════════════
+   /szene/ — laufende Auswertung der Twitch-Szene.
+   Basis (Farben, Schriften, Header, Footer) kommt aus /brand/tokens.css
+   und src/site.css. Hier nur, was diese Seite zusätzlich braucht:
+   Kopf, Kacheln, Zeitwahl, Diagramm-Bausteine, Tabellenansicht.
+
+   Diagramm-Farben: Gold ist die Hauptserie, Teal die Vergleichsserie.
+   Nie mehr als zwei Serien pro Diagramm, bei zweien immer eine Legende.
+   ══════════════════════════════════════════════════════════════ */
+
+.sz-main { padding-top: 0; }
+
+/* ── Abschnitts-Rhythmus ──────────────────────────────────────── */
+.sz-section { padding: clamp(2.6rem, 6vw, 4.5rem) 0; position: relative; }
+.sz-section + .sz-section { border-top: 1px solid var(--line-soft); }
+.sz-section--tint { background: linear-gradient(180deg, rgba(201, 168, 106, 0.035), transparent 70%); }
+
+.sz-eyebrow {
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  font-family: var(--font-body); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold); margin: 0 0 0.9rem;
+}
+.sz-eyebrow::before { content: ''; width: 26px; height: 1px; background: var(--gold-border); }
+
+.sz-h2 {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(1.5rem, 3vw, 2.1rem); line-height: 1.15;
+  margin: 0 0 0.8rem; color: var(--bone); letter-spacing: -0.01em;
+}
+.sz-p {
+  max-width: 64ch; color: var(--bone-dim);
+  font-size: clamp(1rem, 1.5vw, 1.05rem); line-height: 1.75; margin: 0;
+}
+.sz-p + .sz-p { margin-top: 1rem; }
+.sz-p a, .sz-hero-link a { color: var(--gold-bright); text-underline-offset: 3px; }
+.sz-note {
+  margin: 1.6rem 0 0; padding: 0.9rem 1.1rem;
+  border-left: 2px solid var(--gold-border); border-radius: 0 12px 12px 0;
+  background: rgba(201, 168, 106, 0.05);
+  font-size: 0.88rem; line-height: 1.65; color: var(--bone-dim); max-width: 64ch;
+}
+.sz-note b { color: var(--bone); font-weight: 600; }
+
+/* ── Kopf ─────────────────────────────────────────────────────── */
+.sz-hero {
+  padding: clamp(4rem, 10vw, 6.5rem) 0 clamp(2rem, 4vw, 3rem);
+  position: relative; overflow: hidden;
+}
+.sz-hero::after {
+  content: ''; position: absolute; inset: auto 0 0 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-border), transparent);
+}
+.sz-hero h1 {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(1.9rem, 4.6vw, 3.1rem); line-height: 1.07;
+  letter-spacing: -0.025em; margin: 0 0 1.1rem; max-width: 20ch;
+  text-transform: none;
+}
+.sz-hero h1 em { font-style: normal; color: var(--gold); }
+.sz-hero-lede {
+  max-width: 62ch; font-size: clamp(1rem, 1.7vw, 1.12rem);
+  line-height: 1.72; color: var(--bone-dim); margin: 0;
+}
+.sz-stamp {
+  display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 1.6rem; padding: 0.55rem 0.95rem;
+  border: 1px solid var(--line-soft); border-radius: 999px;
+  background: rgba(22, 22, 22, 0.6);
+  font-size: 0.79rem; color: var(--bone-faint);
+}
+.sz-stamp b { color: var(--bone-dim); font-weight: 600; }
+.sz-hero-link { margin: 1.1rem 0 0; font-size: 0.9rem; }
+
+/* ── Ladezustand und Fehler ───────────────────────────────────── */
+.sz-status {
+  margin: 2rem 0; padding: 1rem 1.2rem;
+  border: 1px solid var(--line-soft); border-radius: 14px;
+  background: var(--panel); color: var(--bone-faint); font-size: 0.9rem;
+}
+.sz-status.is-error { border-color: var(--gold-border); color: var(--bone-dim); display: grid; gap: 0.4rem; }
+.sz-status.is-error b { color: var(--gold); font-size: 0.95rem; }
+.sz-status.is-error a { color: var(--gold-bright); text-underline-offset: 3px; }
+
+/* ── Kacheln "Diese Woche" ────────────────────────────────────── */
+.sz-tiles {
+  display: grid; gap: 1px; margin-top: clamp(1.6rem, 4vw, 2.4rem);
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft); border-radius: 18px; overflow: hidden;
+}
+.sz-tile { background: var(--ink-soft); padding: 1.45rem 1.3rem; }
+.sz-tile-num {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(1.7rem, 3.4vw, 2.3rem); line-height: 1;
+  color: var(--gold-bright); letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; display: block;
+}
+.sz-tile-label { display: block; margin-top: 0.55rem; font-size: 0.87rem; font-weight: 600; color: var(--bone); }
+.sz-tile-delta {
+  display: inline-block; margin-top: 0.5rem; font-size: 0.77rem;
+  color: var(--bone-faint); font-variant-numeric: tabular-nums;
+}
+.sz-tile-delta.is-up { color: #8ec7b4; }
+.sz-tile-delta.is-down { color: #d59a8a; }
+
+/* ── Zeitwahl ─────────────────────────────────────────────────── */
+.sz-range { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.6rem; }
+.sz-range-btn {
+  padding: 0.45rem 0.95rem; border-radius: 999px;
+  border: 1px solid var(--line-soft); background: transparent;
+  color: var(--bone-faint); font-size: 0.82rem; cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+.sz-range-btn:hover { border-color: var(--line); color: var(--bone); }
+.sz-range-btn.is-active {
+  border-color: var(--gold-border); color: var(--gold-bright);
+  background: rgba(201, 168, 106, 0.08);
+}
+
+/* ── Abbildungen ──────────────────────────────────────────────── */
+.sz-figure {
+  margin: 2rem 0 0; padding: 1.5rem 1.4rem 1.3rem;
+  background: var(--panel); border: 1px solid var(--line-soft); border-radius: 20px;
+}
+.sz-figure + .sz-figure { margin-top: 1.2rem; }
+.sz-figure-head { margin-bottom: 1.2rem; }
+.sz-figure-title {
+  font-family: var(--font-display); font-size: 1.02rem; font-weight: 700;
+  color: var(--bone); margin: 0 0 0.28rem;
+}
+.sz-figure-note { font-size: 0.81rem; color: var(--bone-faint); margin: 0; max-width: 62ch; line-height: 1.55; }
+
+.sz-chart { position: relative; width: 100%; }
+.sz-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.sz-chart text { font-family: var(--font-body); fill: var(--bone-faint); }
+.sz-grid-line { stroke: rgba(201, 168, 106, 0.11); stroke-width: 1; }
+.sz-axis-label { font-size: 10px; fill: var(--bone-faint); }
+.sz-mark { transition: opacity 0.18s ease; }
+.sz-hit { fill: transparent; cursor: pointer; }
+.sz-chart.is-hovering .sz-mark { opacity: 0.4; }
+.sz-chart.is-hovering .sz-mark.is-active { opacity: 1; }
+.sz-dot { opacity: 0; }
+.sz-chart.is-hovering .sz-dot.is-active { opacity: 1; r: 4.5; }
+.sz-value-label {
+  font-family: var(--font-display); font-size: 10.5px; font-weight: 700;
+  fill: var(--bone-dim); font-variant-numeric: tabular-nums;
+}
+
+.sz-legend {
+  display: flex; flex-wrap: wrap; gap: 1.1rem;
+  margin-top: 0.9rem; font-size: 0.79rem; color: var(--bone-dim);
+}
+.sz-legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+.sz-legend i { width: 10px; height: 10px; border-radius: 2px; display: block; }
+
+/* ── Tooltip ──────────────────────────────────────────────────── */
+.sz-tooltip {
+  position: absolute; pointer-events: none; opacity: 0;
+  transform: translate(-50%, -100%); transition: opacity 0.12s ease;
+  background: #161616; border: 1px solid var(--line);
+  border-radius: 11px; padding: 0.6rem 0.75rem;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6); z-index: 10; white-space: nowrap;
+}
+.sz-tooltip.is-visible { opacity: 1; }
+.sz-tooltip-key {
+  font-size: 0.7rem; color: var(--bone-faint); letter-spacing: 0.06em;
+  text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem;
+}
+.sz-tooltip-row { display: flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; color: var(--bone); }
+.sz-tooltip-row + .sz-tooltip-row { margin-top: 0.22rem; }
+.sz-tooltip-row i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.sz-tooltip-row--plain { padding-left: calc(9px + 0.45rem); }
+.sz-tooltip-row b {
+  font-family: var(--font-display); font-weight: 700;
+  font-variant-numeric: tabular-nums; margin-left: auto; padding-left: 0.6rem;
+}
+
+/* ── Waagerechte Balken ───────────────────────────────────────── */
+.sz-hbars { display: grid; gap: 1rem; }
+.sz-hbar { display: grid; grid-template-columns: minmax(120px, 200px) 1fr auto; gap: 0.9rem; align-items: center; }
+.sz-hbar-name { font-size: 0.88rem; color: var(--bone-dim); line-height: 1.25; }
+.sz-hbar-name small { display: block; font-size: 0.7rem; color: var(--bone-faint); font-variant-numeric: tabular-nums; }
+.sz-hbar-track { display: block; height: 10px; background: rgba(201, 168, 106, 0.08); border-radius: 5px; overflow: hidden; }
+.sz-hbar-fill { display: block; height: 100%; border-radius: 5px; }
+.sz-hbar-val {
+  font-family: var(--font-display); font-weight: 700; font-size: 0.92rem;
+  color: var(--bone); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap;
+}
+@media (max-width: 620px) {
+  .sz-hbar { grid-template-columns: 1fr auto; }
+  .sz-hbar-track { grid-column: 1 / -1; }
+}
+
+/* ── Heatmap Wochentag mal Stunde ─────────────────────────────── */
+.sz-heat { max-width: 720px; }
+.sz-heat-row { display: grid; grid-template-columns: 34px repeat(24, 1fr); gap: 3px; align-items: center; margin-bottom: 3px; }
+.sz-heat-row--head { margin-bottom: 7px; }
+.sz-heat-col-label { font-size: 0.62rem; color: var(--bone-faint); text-align: center; }
+.sz-heat-row-label { font-size: 0.78rem; color: var(--bone-dim); }
+.sz-heat-cell {
+  display: block; aspect-ratio: 1 / 1; border-radius: 3px;
+  outline: 2px solid transparent; outline-offset: 1px; transition: outline-color 0.15s ease;
+}
+.sz-heat-cell:hover { outline-color: var(--gold-border); }
+.sz-heat-legend {
+  display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+  margin-top: 0.9rem; font-size: 0.72rem; color: var(--bone-faint);
+}
+.sz-heat-legend i { width: 13px; height: 13px; border-radius: 3px; display: block; }
+@media (max-width: 780px) {
+  .sz-heat { overflow-x: auto; }
+  .sz-heat-row { grid-template-columns: 30px repeat(24, minmax(14px, 1fr)); min-width: 460px; }
+}
+
+/* ── Tabellenansicht ──────────────────────────────────────────── */
+.sz-table-toggle {
+  margin-top: 1.1rem; padding: 0.45rem 0.85rem;
+  background: transparent; border: 1px solid var(--line-soft); border-radius: 999px;
+  color: var(--bone-faint); font-size: 0.78rem; cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.sz-table-toggle:hover { border-color: var(--line); color: var(--bone); }
+.sz-table-wrap { display: none; margin-top: 1.1rem; overflow-x: auto; }
+.sz-table-wrap.is-open { display: block; }
+.sz-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.sz-table-wrap th, .sz-table-wrap td {
+  padding: 0.5rem 0.7rem; text-align: left;
+  border-bottom: 1px solid var(--line-soft); color: var(--bone-dim);
+}
+.sz-table-wrap th { color: var(--bone); font-weight: 600; white-space: nowrap; }
+.sz-table-wrap td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Bewegung nur, wenn erwünscht ─────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .sz-mark, .sz-tooltip, .sz-hbar-fill, .sz-heat-cell,
+  .sz-table-toggle, .sz-range-btn { transition: none !important; }
+}
+
+/* Der Fahrstuhl-Knopf der Seitennavigation liegt fest am linken Rand. Bei
+   Fensterbreiten knapp über der Inhaltsbreite läuft er sonst in die erste
+   Textspalte hinein, deshalb hier etwas Luft nach links. */
+@media (max-width: 1520px) {
+  .sz-main .container { padding-left: 20px; }
+}

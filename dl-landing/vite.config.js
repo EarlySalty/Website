@@ -20,6 +20,7 @@ export default defineConfig({
         guideAnfaenger: 'guides/anfaenger/index.html',
         beitreten: 'beitreten/index.html',
         transparenz: 'transparenz/index.html',
+        szene: 'szene/index.html',
         blog: 'blog/index.html',
         blogTwitchSzene2026: 'blog/twitch-szene-2026/index.html',
       },

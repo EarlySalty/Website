@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <title>Die deutsche Deadlock-Szene auf Twitch, laufend gemessen</title>
+  <meta name="description" content="Laufend aktualisierte Zahlen zur deutschsprachigen Deadlock-Szene auf Twitch: aktive Kanäle je Woche, Streams in der Primetime, Zu- und Abgänge, Überlebensraten, Sendezeiten und Zuschauerverteilung." />
+  <link rel="canonical" href="https://deutsche-deadlock-community.de/szene/" />
+  <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/szene/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Die deutsche Deadlock-Szene auf Twitch, laufend gemessen" />
+  <meta property="og:description" content="Wie viele deutsche Deadlock-Kanäle diese Woche live waren, wer neu dazukommt, wer verschwindet und wann gestreamt wird. Täglich neu gerechnet." />
+  <meta property="og:url" content="https://deutsche-deadlock-community.de/szene/" />
+  <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
+  <meta property="og:locale" content="de_DE" />
+  <meta property="og:site_name" content="Deutsche Deadlock Community" />
+  <meta name="theme-color" content="#0b0b0b" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Die deutsche Deadlock-Szene auf Twitch, laufend gemessen" />
+  <meta name="twitter:description" content="Aktive Kanäle, Primetime, Zu- und Abgänge, Überlebensraten. Täglich neu gerechnet." />
+  <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+  <link rel="icon" type="image/png" href="/brand/logo/favicon-64.png" />
+  <link rel="stylesheet" href="/brand/tokens.css" />
+  <link rel="stylesheet" href="/brand/nav.css" />
+  <link rel="stylesheet" href="./szene.css" />
+  <script src="/brand/nav.js" defer></script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Dataset",
+          "@id": "https://deutsche-deadlock-community.de/szene/#dataset",
+          "name": "Deutsche Deadlock-Szene auf Twitch",
+          "description": "Wöchentliche Kennzahlen der deutschsprachigen Deadlock-Streams auf Twitch: aktive Kanäle, Streams und Zuschauer in der Primetime, Zu- und Abgänge, Überlebensraten, Sendezeiten und Zuschauerverteilung.",
+          "inLanguage": "de-DE",
+          "url": "https://deutsche-deadlock-community.de/szene/",
+          "creator": { "@type": "Organization", "name": "Deutsche Deadlock Community" },
+          "isAccessibleForFree": true
+        }
+      ]
+    }
+  </script>
+</head>
+
+<body>
+  <a href="#main" class="sr-only">Zum Inhalt springen</a>
+  <div class="site-shell">
+
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="container">
+        <div class="header-row">
+          <div class="header-left">
+            <a class="brand" href="/" aria-label="Deutsche Deadlock Community">
+              <img src="/brand/logo/logo-192.png" alt="" class="brand-logo" />
+              <img src="/brand/logo/wordmark.svg" alt="" class="brand-wordmark-img" />
+            </a>
+          </div>
+          <div class="header-actions">
+            <a class="button button-primary" href="https://discord.gg/Jkzsnfsstg" target="_blank" rel="noopener noreferrer">Beitreten</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="sz-main">
+
+      <!-- ══ KOPF ═══════════════════════════════════════════════ -->
+      <section class="sz-hero">
+        <div class="container">
+          <p class="sz-eyebrow">Szene-Monitor</p>
+          <h1>Die deutsche Deadlock-Szene auf Twitch, <em>laufend gemessen</em></h1>
+          <p class="sz-hero-lede">
+            Ein kleines Programm schaut alle zweieinhalb Minuten nach, wer gerade auf Deutsch
+            Deadlock streamt. Diese Seite rechnet die gesammelten Zeilen jeden Tag neu durch:
+            wie viele Kanäle in einer Woche live waren, wie viele davon zur besten Sendezeit
+            gleichzeitig liefen, wer neu dazukommt, wer verschwindet und wie viele nach einem
+            Monat noch da sind.
+          </p>
+          <p class="sz-stamp">
+            <b data-stand>Stand: wird geladen</b>
+            <span data-zeitraum></span>
+          </p>
+          <p class="sz-hero-link">
+            <a href="/blog/twitch-szene-2026/">Ausführliche Auswertung, Stand August 2026</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Ladezustand und Fehlermeldung teilen sich einen Platz. -->
+      <div class="container">
+        <p class="sz-status" data-status role="status">Die Zahlen werden geladen.</p>
+      </div>
+
+      <div data-inhalt hidden>
+
+        <!-- ══ DIESE WOCHE ══════════════════════════════════════ -->
+        <section class="sz-section">
+          <div class="container">
+            <h2 class="sz-h2">Diese Woche</h2>
+            <p class="sz-p">
+              Die laufende Woche im Vergleich zur Woche davor. Die angefangene Woche ist
+              naturgemäß noch nicht vollständig, der Vergleichswert wächst also bis Sonntag.
+            </p>
+            <div class="sz-tiles" data-kacheln></div>
+          </div>
+        </section>
+
+        <!-- ══ WOCHENREIHEN ═════════════════════════════════════ -->
+        <section class="sz-section sz-section--tint">
+          <div class="container">
+            <h2 class="sz-h2">Wie groß die Szene ist</h2>
+            <p class="sz-p">
+              Ein Kanal zählt als aktiv, sobald er in der Woche mindestens einmal beim
+              Deadlock-Streamen gesehen wurde. Primetime meint 18 bis 24 Uhr deutscher Zeit.
+            </p>
+
+            <div class="sz-range" role="group" aria-label="Zeitraum der Wochenreihen">
+              <button type="button" class="sz-range-btn" data-range="4w" aria-pressed="false">4 Wochen</button>
+              <button type="button" class="sz-range-btn is-active" data-range="3m" aria-pressed="true">3 Monate</button>
+              <button type="button" class="sz-range-btn" data-range="alles" aria-pressed="false">alles</button>
+            </div>
+
+            <figure class="sz-figure">
+              <figcaption class="sz-figure-head">
+                <p class="sz-figure-title">Aktive Kanäle je Woche</p>
+                <p class="sz-figure-note">Jeder Kanal zählt einmal pro Woche, egal wie oft er live war.</p>
+              </figcaption>
+              <div class="sz-chart" data-chart="aktiv"></div>
+              <button class="sz-table-toggle" data-table-for="aktiv" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="sz-table-wrap" data-table="aktiv"></div>
+            </figure>
+
+            <figure class="sz-figure">
+              <figcaption class="sz-figure-head">
+                <p class="sz-figure-title">Streams gleichzeitig in der Primetime</p>
+                <p class="sz-figure-note">Durchschnitt der gleichzeitig laufenden deutschen Deadlock-Streams zwischen 18 und 24 Uhr.</p>
+              </figcaption>
+              <div class="sz-chart" data-chart="primetime"></div>
+              <button class="sz-table-toggle" data-table-for="primetime" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="sz-table-wrap" data-table="primetime"></div>
+            </figure>
+
+            <figure class="sz-figure">
+              <figcaption class="sz-figure-head">
+                <p class="sz-figure-title">Zu- und Abgänge je Woche</p>
+                <p class="sz-figure-note">Links die Kanäle, die zum ersten Mal auftauchen, rechts die, die in dieser Woche zum letzten Mal gesehen wurden.</p>
+              </figcaption>
+              <div class="sz-chart" data-chart="fluss"></div>
+              <button class="sz-table-toggle" data-table-for="fluss" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="sz-table-wrap" data-table="fluss"></div>
+            </figure>
+          </div>
+        </section>
+
+        <!-- ══ WER BLEIBT ═══════════════════════════════════════ -->
+        <section class="sz-section">
+          <div class="container">
+            <h2 class="sz-h2">Wer bleibt</h2>
+            <p class="sz-p">
+              Ein Kanal hat ein Fenster überlebt, wenn er nach 30, 90 oder 180 Tagen noch einmal
+              beim Streamen gesehen wurde. Kanäle, deren Fenster noch nicht abgelaufen ist,
+              fließen nicht in die Quote ein.
+            </p>
+
+            <figure class="sz-figure" data-figure="ueberleben">
+              <figcaption class="sz-figure-head">
+                <p class="sz-figure-title">Überlebensraten</p>
+                <p class="sz-figure-note">Gesamt, im Streamer-Netzwerk der Community und außerhalb.</p>
+              </figcaption>
+              <div class="sz-chart sz-hbars" data-chart="ueberleben"></div>
+              <button class="sz-table-toggle" data-table-for="ueberleben" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="sz-table-wrap" data-table="ueberleben"></div>
+            </figure>
+          </div>
+        </section>
+
+        <!-- ══ WANN UND FÜR WEN ═════════════════════════════════ -->
+        <section class="sz-section sz-section--tint">
+          <div class="container">
+            <h2 class="sz-h2">Wann gestreamt wird und wer zuschaut</h2>
+
+            <figure class="sz-figure" data-figure="zeit">
+              <figcaption class="sz-figure-head">
+                <p class="sz-figure-title">Sendezeit nach Wochentag und Stunde</p>
+                <p class="sz-figure-note">Je heller ein Feld, desto mehr Sendezeit fällt in diese Stunde. Zeiten in deutscher Zeitzone.</p>
+              </figcaption>
+              <div class="sz-heat" data-heat="zeit"></div>
+              <button class="sz-table-toggle" data-table-for="zeit" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="sz-table-wrap" data-table="zeit"></div>
+            </figure>
+
+            <figure class="sz-figure" data-figure="viewer">
+              <figcaption class="sz-figure-head">
+                <p class="sz-figure-title">Zuschauer gleichzeitig</p>
+                <p class="sz-figure-note">Anteil aller gemessenen Momentaufnahmen nach Größe des Publikums.</p>
+              </figcaption>
+              <div class="sz-chart sz-hbars" data-chart="viewer"></div>
+              <button class="sz-table-toggle" data-table-for="viewer" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="sz-table-wrap" data-table="viewer"></div>
+            </figure>
+
+            <p class="sz-note" data-konzentration></p>
+
+            <figure class="sz-figure" data-figure="dauer">
+              <figcaption class="sz-figure-head">
+                <p class="sz-figure-title">Wie lange ein Stream dauert</p>
+                <p class="sz-figure-note">Anteil der rekonstruierten Streams je Längenklasse. Eine Lücke von mehr als zehn Minuten beendet einen Stream.</p>
+              </figcaption>
+              <div class="sz-chart" data-chart="dauer"></div>
+              <button class="sz-table-toggle" data-table-for="dauer" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="sz-table-wrap" data-table="dauer"></div>
+            </figure>
+          </div>
+        </section>
+
+        <!-- ══ HERKUNFT DER ZAHLEN ══════════════════════════════ -->
+        <section class="sz-section">
+          <div class="container">
+            <h2 class="sz-h2">Woher die Zahlen kommen</h2>
+            <p class="sz-p">
+              Grundlage ist eine Momentaufnahme aller deutschsprachigen Deadlock-Streams alle
+              zweieinhalb Minuten. Daraus werden Streams rekonstruiert, Wochen gebildet und die
+              Kennzahlen dieser Seite berechnet. Rechenregeln, bekannte Störungen und Grenzen
+              der Messung stehen ausführlich im Blogpost.
+            </p>
+            <p class="sz-p">
+              <a href="/blog/twitch-szene-2026/">Ausführliche Auswertung, Stand August 2026</a>
+            </p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <section>
+            <h3>Deutsche Deadlock Community</h3>
+            <p class="mt-md">
+              Die aktivste deutsche Community für Deadlock-Spieler, Coaches und Streamer.
+            </p>
+            <p class="mt-lg muted" style="font-size: 0.82rem;">Betrieben von EarlySalty</p>
+          </section>
+          <section>
+            <h3>Navigation</h3>
+            <nav class="footer-links mt-md" aria-label="Footer-Navigation">
+              <a href="/">Start</a>
+              <a href="/blog/">Blog</a>
+              <a href="/szene/">Szene</a>
+              <a href="/streamer/">Streamer</a>
+              <a href="/coaching/">Coaching</a>
+              <a href="/transparenz/">Transparenz</a>
+            </nav>
+          </section>
+          <section>
+            <h3>Plattformen</h3>
+            <nav class="footer-links mt-md" aria-label="Community-Plattformen">
+              <a href="/turnier/">Turnierplattform</a>
+              <a href="/aktivitaet/">Aktivitäts-Tracker</a>
+              <a href="/builds/">Builds &amp; Items</a>
+            </nav>
+          </section>
+          <section>
+            <h3>Recht &amp; Links</h3>
+            <nav class="footer-links mt-md" aria-label="Rechtliches">
+              <a href="https://discord.gg/Jkzsnfsstg" target="_blank" rel="noopener noreferrer">Discord</a>
+              <a href="/twitch/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
+              <a href="/twitch/datenschutz" target="_blank" rel="noopener noreferrer">Datenschutz</a>
+              <a href="/twitch/agb" target="_blank" rel="noopener noreferrer">AGB</a>
+            </nav>
+          </section>
+        </div>
+        <div class="footer-bottom">© <span data-current-year></span> EarlySalty</div>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/site.js"></script>
+  <script type="module" src="./szene.js"></script>
+</body>
+</html>
