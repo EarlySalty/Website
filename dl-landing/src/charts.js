@@ -405,6 +405,7 @@ export function createCharts(config = {}) {
     if (!host) return;
     const max = Math.max(...matrix.flat());
     const einheit = opts.unitLabel || 'Snapshots';
+    const wert = opts.formatValue || fmt;
     // Sequenzielle Skala: ein Farbton, sechs Stufen. Die leerste Stufe ist
     // bewusst neutral statt goldgetoent, damit "fast nichts" nicht wie
     // "ein bisschen" aussieht.
@@ -426,7 +427,7 @@ export function createCharts(config = {}) {
     // per Tastatur unbenutzbar, der Inhalt steht vollstaendig in der Tabelle.
     const zeilen = matrix.map((row, wd) => {
       const zellen = row.map((v, h) => {
-        const titel = `${TAGE[wd]}, ${String(h).padStart(2, '0')} bis ${String(h).padStart(2, '0')}:59 Uhr: ${fmt(v)} ${einheit}`;
+        const titel = `${TAGE[wd]}, ${String(h).padStart(2, '0')} bis ${String(h).padStart(2, '0')}:59 Uhr: ${wert(v)} ${einheit}`;
         return `<span class="${p}-heat-cell" style="background:${stufe(v)}" title="${titel}"></span>`;
       }).join('');
       return `<div class="${p}-heat-row"><span class="${p}-heat-row-label">${TAGE_KURZ[wd]}</span>${zellen}</div>`;

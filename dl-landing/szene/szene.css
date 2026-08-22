@@ -130,6 +130,11 @@
   color: var(--bone); margin: 0 0 0.28rem;
 }
 .sz-figure-note { font-size: 0.81rem; color: var(--bone-faint); margin: 0; max-width: 62ch; line-height: 1.55; }
+.sz-figure-warn {
+  margin: 0.55rem 0 0; padding-left: 0.7rem;
+  border-left: 2px solid var(--gold-border);
+  font-size: 0.79rem; color: var(--bone-dim); max-width: 62ch; line-height: 1.55;
+}
 
 .sz-chart { position: relative; width: 100%; }
 .sz-chart svg { display: block; width: 100%; height: auto; overflow: visible; }

@@ -33,29 +33,50 @@ function adapt(roh) {
   if (!roh || typeof roh !== 'object') throw new Error('Die Datei enthält kein Objekt.');
 
   const zahl = (v, ersatz = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : ersatz);
-  const quote = (eintrag) => (eintrag && typeof eintrag === 'object'
-    ? { quote: zahl(eintrag.rate), n: zahl(eintrag.n) }
+  // Anteile und Raten kommen als Bruch zwischen 0 und 1, die Seite rechnet in Prozent.
+  const prozent = (v) => zahl(v) * 100;
+  // Zeitstempel im JSON sind RFC 3339, die Datumsformatierung will YYYY-MM-DD.
+  const tag = (v) => (typeof v === 'string' && v.length >= 10 ? v.slice(0, 10) : null);
+  const punkt = (eintrag) => (eintrag && typeof eintrag.rate === 'number'
+    ? { quote: prozent(eintrag.rate), n: zahl(eintrag.n) }
     : null);
 
-  const wochen = (Array.isArray(roh.weekly) ? roh.weekly : []).map((w) => ({
-    woche: String(w.week),
-    aktiv: zahl(w.active_channels),
-    primetimeStreams: zahl(w.primetime_concurrent_avg),
-    primetimeViewer: zahl(w.primetime_viewers_avg),
-    neu: zahl(w.new_channels),
-    weg: zahl(w.last_seen_channels),
-  }));
+  const datenEnde = tag(roh.data_end);
+  // last_seen_channels zaehlt nur Kanaele, deren letzte Sichtung mehr als 30 Tage
+  // zurueckliegt. Fuer die juengsten Wochen steht dort systembedingt 0, das ist
+  // kein gemessener Abgang. Diese Wochen werden im Abgangs-Diagramm weggelassen.
+  const abgangStichtag = datenEnde
+    ? new Date(`${datenEnde}T00:00:00Z`).getTime() - 30 * 86400000
+    : null;
+
+  const wochen = (Array.isArray(roh.weekly) ? roh.weekly : []).map((w) => {
+    const woche = tag(w.week) || String(w.week);
+    const wochenEnde = new Date(`${woche}T00:00:00Z`).getTime() + 6 * 86400000;
+    return {
+      woche,
+      aktiv: zahl(w.active_channels),
+      primetimeStreams: zahl(w.primetime_concurrent_avg),
+      primetimeViewer: zahl(w.primetime_viewers_avg),
+      neu: zahl(w.new_channels),
+      weg: zahl(w.last_seen_channels),
+      abgangZensiert: abgangStichtag === null ? false : wochenEnde > abgangStichtag,
+    };
+  });
   if (!wochen.length) throw new Error('Die Datei enthält keine Wochenreihe.');
 
   const dw = roh.this_week || {};
   const delta = dw.delta_prev_week || {};
-  const letzte = wochen[wochen.length - 1];
+  // this_week traegt keinen Zuschauerwert. Den holt die Seite aus der Wochenreihe
+  // und bildet das Delta selbst, damit die vierte Kachel nicht leer bleibt.
+  const wocheVon = (schluessel) => wochen.find((w) => w.woche === tag(schluessel));
+  const laufende = wocheVon(dw.week) || wochen[wochen.length - 1];
+  const vorige = wochen[wochen.indexOf(laufende) - 1] || null;
 
   const ueberlebenGruppe = (schluessel, name) => {
     const block = (roh.survival || {})[schluessel] || {};
     return [['d30', 30], ['d90', 90], ['d180', 180]]
       .map(([feld, tage]) => {
-        const wert = quote(block[feld]);
+        const wert = punkt(block[feld]);
         return wert ? { gruppe: name, tage, quote: wert.quote, n: wert.n } : null;
       })
       .filter(Boolean);
@@ -66,23 +87,26 @@ function adapt(roh) {
     : null;
 
   const anteile = (liste) => (Array.isArray(liste) ? liste : [])
-    .map((e) => ({ label: String(e.label), anteil: zahl(e.share) }));
+    .map((e) => ({ label: String(e.label), anteil: prozent(e.share) }));
 
   return {
     stand: roh.generated_at ? new Date(roh.generated_at) : null,
-    zeitraumVon: roh.data_start || null,
-    zeitraumBis: roh.data_end || null,
+    zeitraumVon: tag(roh.data_start),
+    zeitraumBis: datenEnde,
     zeilen: zahl(roh.rows_used),
+    intervallSekunden: typeof roh.snapshot_interval_seconds === 'number'
+      ? roh.snapshot_interval_seconds : null,
+    gewichtung: typeof roh.weighting === 'string' ? roh.weighting : null,
     wochen,
     dieseWoche: {
-      aktiv: zahl(dw.active_channels, letzte.aktiv),
-      primetimeStreams: zahl(dw.primetime_concurrent_avg, letzte.primetimeStreams),
-      primetimeViewer: zahl(dw.primetime_viewers_avg, letzte.primetimeViewer),
-      neu: zahl(dw.new_channels, letzte.neu),
+      aktiv: zahl(dw.active_channels, laufende.aktiv),
+      primetimeStreams: zahl(dw.primetime_concurrent_avg, laufende.primetimeStreams),
+      primetimeViewer: laufende.primetimeViewer,
+      neu: zahl(dw.new_channels, laufende.neu),
       delta: {
         aktiv: zahl(delta.active_channels),
         primetimeStreams: zahl(delta.primetime_concurrent_avg),
-        primetimeViewer: zahl(delta.primetime_viewers_avg),
+        primetimeViewer: vorige ? laufende.primetimeViewer - vorige.primetimeViewer : 0,
         neu: zahl(delta.new_channels),
       },
     },
@@ -94,7 +118,8 @@ function adapt(roh) {
     heatmap,
     viewerKlassen: anteile(roh.viewer_classes),
     sessionDauer: anteile(roh.session_duration),
-    top10Anteil: zahl((roh.concentration || {}).top10_share, null),
+    top10Anteil: roh.concentration && typeof roh.concentration.top10_share === 'number'
+      ? prozent(roh.concentration.top10_share) : null,
   };
 }
 
@@ -132,9 +157,23 @@ function renderKopf(daten) {
   const zeitraum = daten.zeitraumVon && daten.zeitraumBis
     ? `Messzeitraum ${datumLang(daten.zeitraumVon)} bis ${datumLang(daten.zeitraumBis)}`
     : 'Messzeitraum unbekannt';
-  q('[data-zeitraum]').textContent = daten.zeilen
-    ? `${zeitraum} · ${fmt(daten.zeilen)} ausgewertete Snapshots`
-    : zeitraum;
+  const teile = [zeitraum];
+  if (daten.zeilen) teile.push(`${fmt(daten.zeilen)} ausgewertete Snapshots`);
+  if (daten.intervallSekunden) teile.push(`Auflösung zurzeit alle ${fmt1(daten.intervallSekunden)} Sekunden`);
+  q('[data-zeitraum]').textContent = teile.join(' · ');
+
+  // Die Gewichtung gehoert in die Methodik, nicht in den Stempel.
+  const gewicht = q('[data-gewichtung]');
+  if (daten.gewichtung) {
+    gewicht.textContent = daten.gewichtung === 'time_weighted_capped_600s'
+      ? 'Weil der Scout früher deutlich seltener gemessen hat, sind Zuschauerklassen, '
+        + 'Konzentration und Sendezeit-Raster zeitgewichtet: jede Messzeile zählt mit dem '
+        + 'Abstand zur vorherigen Zeile desselben Kanals, gedeckelt bei zehn Minuten. '
+        + 'Ohne diese Gewichtung würden die letzten Monate den ganzen Zeitraum überstimmen.'
+      : `Gesamtzeitraum-Werte sind zeitgewichtet (Verfahren: ${daten.gewichtung}).`;
+  } else {
+    gewicht.hidden = true;
+  }
 
   const w = daten.dieseWoche;
   const kacheln = [
@@ -180,9 +219,26 @@ function renderWochen(daten, schluessel) {
   buildTable('primetime', ['Woche ab', 'Streams gleichzeitig (Primetime)'],
     reihe.map((w) => [datumLang(w.woche), fmt1(w.primetimeStreams)]));
 
+  // Fuer die juengsten Wochen kann ein Abgang noch nicht feststehen, dort steht
+  // systembedingt 0. Diese Wochen werden nicht gezeichnet, sonst liest sich die
+  // Zensierung wie ein Einbruch der Abgaenge.
+  const flussReihe = reihe.filter((w) => !w.abgangZensiert);
+  const zensiert = reihe.length - flussReihe.length;
+  const flussFigur = q('[data-figure="fluss"]');
+  const flussHinweis = q('[data-hinweis="fluss"]');
+  flussHinweis.hidden = zensiert === 0;
+  flussHinweis.textContent = zensiert === 1
+    ? 'Für die letzte Woche steht noch nicht fest, wer wirklich weg ist: ein Kanal gilt erst nach 30 Tagen ohne Sichtung als Abgang. Diese Woche fehlt im Diagramm.'
+    : `Für die letzten ${fmt(zensiert)} Wochen steht noch nicht fest, wer wirklich weg ist: ein Kanal gilt erst nach 30 Tagen ohne Sichtung als Abgang. Diese Wochen fehlen im Diagramm.`;
+
   const flussHost = q('[data-chart="fluss"]');
   leeren(flussHost);
-  renderGroupedBars(flussHost, reihe.map((w, i) => ({
+  flussFigur.querySelector('.sz-table-toggle').hidden = flussReihe.length === 0;
+  if (!flussReihe.length) {
+    buildTable('fluss', [], []);
+    return;
+  }
+  renderGroupedBars(flussHost, flussReihe.map((w, i) => ({
     key: `Woche ab ${datumLang(w.woche)}`,
     label: label(w, i),
     a: w.neu,
@@ -197,7 +253,7 @@ function renderWochen(daten, schluessel) {
     ariaLabel: 'Neue und zuletzt gesehene Kanäle je Woche',
   });
   buildTable('fluss', ['Woche ab', 'Neu', 'Zuletzt gesehen', 'Netto'],
-    reihe.map((w) => [datumLang(w.woche), fmt(w.neu), fmt(w.weg), vorzeichen(w.neu - w.weg)]));
+    flussReihe.map((w) => [datumLang(w.woche), fmt(w.neu), fmt(w.weg), vorzeichen(w.neu - w.weg)]));
 }
 
 /* ── Die Bloecke ohne Zeitwahl ─────────────────────────────────── */
@@ -219,9 +275,16 @@ function renderRest(daten) {
   }
 
   if (daten.heatmap) {
-    renderHeatmap(q('[data-heat="zeit"]'), daten.heatmap);
-    buildTable('zeit', ['Wochentag', ...Array.from({ length: 24 }, (_, h) => String(h)), 'Summe'],
-      daten.heatmap.map((zeile, wd) => [TAGE[wd], ...zeile.map((v) => fmt(v)), fmt(zeile.reduce((a, b) => a + b, 0))]));
+    renderHeatmap(q('[data-heat="zeit"]'), daten.heatmap, {
+      unitLabel: 'Streams gleichzeitig im Schnitt',
+      formatValue: fmt1,
+    });
+    buildTable('zeit', ['Wochentag', ...Array.from({ length: 24 }, (_, h) => String(h)), 'Schnitt'],
+      daten.heatmap.map((zeile, wd) => [
+        TAGE[wd],
+        ...zeile.map((v) => fmt1(v)),
+        fmt1(zeile.reduce((a, b) => a + b, 0) / zeile.length),
+      ]));
   } else {
     q('[data-figure="zeit"]').hidden = true;
   }
