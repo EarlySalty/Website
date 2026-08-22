@@ -5,10 +5,6 @@ Allow: /
 User-agent: OAI-SearchBot
 Allow: /
 
-# Block model-training crawler while keeping AI search open.
-User-agent: GPTBot
-Disallow: /
-
 # Anthropic search/user fetchers stay allowed for public discovery.
 User-agent: Claude-SearchBot
 Allow: /
@@ -16,8 +12,38 @@ Allow: /
 User-agent: Claude-User
 Allow: /
 
-# Block Anthropic model-training crawler.
+# ── Modell-Trainings-Crawler ────────────────────────────────────
+# Die Site bleibt fuer Trainingsdaten gesperrt. Ausnahme ist /blog/:
+# der Szene-Report ist eine eigene Auswertung, die bewusst zitierbar und
+# in Modellen auffindbar sein soll. Die Reihenfolge ist wichtig, Allow
+# muss vor Disallow stehen, sonst greift die laengere Regel nicht.
+
+User-agent: GPTBot
+Allow: /blog/
+Disallow: /
+
 User-agent: ClaudeBot
+Allow: /blog/
+Disallow: /
+
+User-agent: Google-Extended
+Allow: /blog/
+Disallow: /
+
+User-agent: CCBot
+Allow: /blog/
+Disallow: /
+
+User-agent: Applebot-Extended
+Allow: /blog/
+Disallow: /
+
+User-agent: Bytespider
+Allow: /blog/
+Disallow: /
+
+User-agent: meta-externalagent
+Allow: /blog/
 Disallow: /
 
 Sitemap: https://deutsche-deadlock-community.de/sitemap.xml
