@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <title>Zehn Monate deutsche Deadlock-Streamer auf Twitch, gemessen in 4,2 Millionen Snapshots</title>
+  <meta name="description" content="Zehn Monate Messung der deutschsprachigen Deadlock-Szene auf Twitch: wie viele streamen, wie viele bleiben, wann gestreamt wird, wie wenige Zuschauer normal sind und was Patches wirklich bewegen." />
+  <link rel="canonical" href="https://deutsche-deadlock-community.de/blog/twitch-szene-2026/" />
+  <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/blog/twitch-szene-2026/" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Zehn Monate deutsche Deadlock-Streamer auf Twitch, gemessen in 4,2 Millionen Snapshots" />
+  <meta property="og:description" content="Wie groß die deutsche Deadlock-Szene auf Twitch wirklich ist, wer bleibt, wann gestreamt wird und was Patches bewegen. Zehn Monate Messung, offen gerechnet." />
+  <meta property="og:url" content="https://deutsche-deadlock-community.de/blog/twitch-szene-2026/" />
+  <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
+  <meta property="og:locale" content="de_DE" />
+  <meta property="og:site_name" content="Deutsche Deadlock Community" />
+  <meta property="article:published_time" content="2026-08-22" />
+  <meta name="theme-color" content="#0b0b0b" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Zehn Monate deutsche Deadlock-Streamer auf Twitch" />
+  <meta name="twitter:description" content="4,2 Millionen Snapshots, 1.930 Streamer, zehn Monate. Was die Zahlen über die deutsche Deadlock-Szene sagen." />
+  <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-image.png" />
+  <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+  <link rel="icon" type="image/png" href="/brand/logo/favicon-64.png" />
+  <link rel="stylesheet" href="/brand/tokens.css" />
+  <link rel="stylesheet" href="/brand/nav.css" />
+  <link rel="stylesheet" href="./post.css" />
+  <script src="/brand/nav.js" defer></script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "BlogPosting",
+          "@id": "https://deutsche-deadlock-community.de/blog/twitch-szene-2026/#post",
+          "headline": "Zehn Monate deutsche Deadlock-Streamer auf Twitch, gemessen in 4,2 Millionen Snapshots",
+          "description": "Zehn Monate Messung der deutschsprachigen Deadlock-Szene auf Twitch: Größe, Fluktuation, Sendezeiten, Zuschauerverteilung, Patch-Wirkung und der Vergleich zwischen Netzwerk und Rest.",
+          "datePublished": "2026-08-22",
+          "dateModified": "2026-08-22",
+          "inLanguage": "de-DE",
+          "url": "https://deutsche-deadlock-community.de/blog/twitch-szene-2026/",
+          "author": { "@type": "Person", "name": "EarlySalty" },
+          "publisher": { "@type": "Organization", "name": "Deutsche Deadlock Community" },
+          "isPartOf": { "@id": "https://deutsche-deadlock-community.de/#website" }
+        }
+      ]
+    }
+  </script>
+</head>
+
+<body>
+  <a href="#main" class="sr-only">Zum Inhalt springen</a>
+  <div class="site-shell">
+
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="container">
+        <div class="header-row">
+          <div class="header-left">
+            <a class="brand" href="/" aria-label="Deutsche Deadlock Community">
+              <img src="/brand/logo/logo-192.png" alt="" class="brand-logo" />
+              <img src="/brand/logo/wordmark.svg" alt="" class="brand-wordmark-img" />
+            </a>
+          </div>
+          <div class="header-actions">
+            <a class="button button-primary" href="https://discord.gg/Jkzsnfsstg" target="_blank" rel="noopener noreferrer">Beitreten</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="bl-main">
+      <article>
+
+        <!-- ══ KOPF ═══════════════════════════════════════════ -->
+        <section class="bl-hero">
+          <div class="container">
+            <p class="bl-eyebrow">Szene-Report</p>
+            <h1>Zehn Monate deutsche Deadlock-Streamer auf Twitch, gemessen in <em>4,2 Millionen Snapshots</em></h1>
+            <p class="bl-hero-lede">
+              Seit dem 10. Oktober 2025 schaut ein kleines Programm alle zweieinhalb Minuten nach,
+              wer gerade auf Deutsch Deadlock streamt, und schreibt eine Zeile pro laufendem Stream
+              in eine Datenbank. Nach zehn Monaten sind daraus 4,2 Millionen ausgewertete Zeilen
+              geworden, rund 175.000 Stunden Sendezeit von 1.930 verschiedenen Kanälen. Dieser Text
+              rechnet aus, was in diesen Zeilen steht: wie groß die Szene wirklich ist, wie schnell
+              sie sich austauscht, wann gestreamt wird, wie wenige Zuschauer normal sind und was
+              ein neuer Held daran ändert. Alle Zahlen kommen aus derselben Datenbank, jede
+              Rechenregel und jede bekannte Schwäche stehen am Ende.
+            </p>
+            <p class="bl-stamp">
+              <b>Stand: 22. August 2026</b> · Messzeitraum 10.10.2025 bis 22.08.2026 ·
+              Rohdaten aus dem Twitch-Scout der Community
+            </p>
+
+            <div class="bl-tiles">
+              <div class="bl-tile">
+                <span class="bl-tile-num" data-count="4220094">4.220.094</span>
+                <span class="bl-tile-label">ausgewertete Snapshots</span>
+                <span class="bl-tile-sub">alle 2,5 Minuten eine Zeile pro laufendem Stream</span>
+              </div>
+              <div class="bl-tile">
+                <span class="bl-tile-num" data-count="1930">1.930</span>
+                <span class="bl-tile-label">verschiedene Streamer</span>
+                <span class="bl-tile-sub">jeder Kanal, der einmal deutsch Deadlock gestreamt hat</span>
+              </div>
+              <div class="bl-tile">
+                <span class="bl-tile-num" data-count="11887">11.887</span>
+                <span class="bl-tile-label">rekonstruierte Streams</span>
+                <span class="bl-tile-sub">zusammenhängende Snapshots, Lücke über 10 Minuten beendet einen Stream</span>
+              </div>
+              <div class="bl-tile">
+                <span class="bl-tile-num"><span data-count="11">11</span><small>%</small></span>
+                <span class="bl-tile-label">sind nach 30 Tagen noch da</span>
+                <span class="bl-tile-sub">gemessen ab dem ersten Auftritt eines Kanals</span>
+              </div>
+            </div>
+
+            <nav class="bl-toc" aria-label="Inhalt des Artikels">
+              <h2>Inhalt</h2>
+              <ol>
+                <li><a href="#groesse">Wie groß die Szene wirklich ist</a></li>
+                <li><a href="#fluss">Neu und wieder weg</a></li>
+                <li><a href="#bleiben">Wer bleibt</a></li>
+                <li><a href="#zeiten">Wann gestreamt wird</a></li>
+                <li><a href="#viewer">Die Zuschauer-Realität</a></li>
+                <li><a href="#patches">Was ein Patch bewegt</a></li>
+                <li><a href="#netzwerk">Netzwerk und Rest</a></li>
+                <li><a href="#methodik">Methodik und Grenzen</a></li>
+              </ol>
+            </nav>
+          </div>
+        </section>
+
+        <!-- ══ 1 GRÖSSE ═══════════════════════════════════════ -->
+        <section class="bl-section" id="groesse">
+          <div class="container">
+            <p class="bl-eyebrow">Kapitel 1</p>
+            <h2 class="bl-h2">Wie groß die Szene wirklich ist</h2>
+            <p class="bl-lede">
+              In der ersten, angeschnittenen Messwoche ab dem 10. Oktober 2025 tauchten 27
+              deutsche Kanäle mit Deadlock auf. Ein knappes halbes Jahr später waren es in der
+              Spitzenwoche ab dem 9. März 2026 genau 261. Danach ging es genauso deutlich wieder
+              herunter, auf zuletzt 107 Kanäle pro Woche. Über alle 46 Messwochen liegt der Median
+              bei 98 aktiven Kanälen.
+            </p>
+            <p class="bl-p">
+              Diese Zahl beschreibt allerdings nicht, wie voll die Kategorie sich anfühlt. Ein
+              Kanal zählt für die Woche schon dann, wenn er einmal fünf Minuten lang in der
+              Kategorie stand. Der zweite Wert ist deshalb der ehrlichere: wie viele deutsche
+              Deadlock-Streams zur besten Sendezeit gleichzeitig laufen, also zwischen 18 und
+              24 Uhr. Dieser Wert bewegte sich im Herbst 2025 zwischen drei und vier gleichzeitigen
+              Streams, erreichte Mitte Februar 2026 mit 20,2 seinen Höchststand und liegt heute bei
+              8,5. Wer abends die deutsche Deadlock-Kategorie öffnet, sieht also im Schnitt acht
+              oder neun Streams. Selbst im besten Monat waren es nur rund zwanzig.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Aktive deutsche Deadlock-Kanäle je Woche</p>
+                <p class="bl-figure-note">
+                  Ein Kanal zählt für eine Woche, sobald er mindestens einmal in der Kategorie
+                  erfasst wurde. Die erste Woche ist angeschnitten, die Messung begann am 10. Oktober.
+                </p>
+              </div>
+              <div class="bl-chart" data-chart="szene"></div>
+              <button class="bl-table-toggle" data-table-for="szene" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="szene"></div>
+            </figure>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Gleichzeitig laufende Streams zur besten Sendezeit</p>
+                <p class="bl-figure-note">
+                  Derselbe Zeitraum, andere Frage: wie viele deutsche Deadlock-Streams zwischen
+                  18 und 24 Uhr im Schnitt parallel liefen. Bewusst als eigenes Diagramm, weil zwei
+                  so unterschiedliche Größen nie in eine gemeinsame Achse gehören.
+                </p>
+              </div>
+              <div class="bl-chart" data-chart="primetime"></div>
+            </figure>
+
+            <p class="bl-p">
+              Bleibt die Frage, wie groß dieser deutsche Ausschnitt gemessen an ganz Deadlock auf
+              Twitch ist. Die Antwort verdankt sich einer Panne. Im Juni 2026 lief der Scout
+              mehrere Tage lang ohne Sprachfilter und erfasste versehentlich alle Sprachen. An den
+              drei Tagen, an denen zusätzlich das Sprachfeld sauber gefüllt war, standen im Schnitt
+              1,3 Prozent aller Deadlock-Streamer auf Deutsch. Von etwa 2.500 Kanälen weltweit waren
+              also zwischen 21 und 38 deutschsprachig.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Deutscher Anteil an allen Deadlock-Streamern</p>
+                <p class="bl-figure-note">Drei Tage aus der Juni-Störung, in denen alle Sprachen erfasst und korrekt beschriftet wurden.</p>
+              </div>
+              <div class="bl-table-wrap is-open" data-table="sprachprobe"></div>
+            </figure>
+
+            <p class="bl-warn">
+              <b>Was diese Zahl nicht ist</b>
+              Diese 1,3 Prozent stammen aus drei Tagen einer technischen Störung, nicht aus einer
+              geplanten Messung. Sie taugen als Größenordnung und nicht als Jahreswert. Ein
+              Sommerwochenende mit einem großen internationalen Turnier hätte einen ganz anderen
+              Wert ergeben.
+            </p>
+          </div>
+        </section>
+
+        <!-- ══ 2 FLUSS ════════════════════════════════════════ -->
+        <section class="bl-section bl-section--tint" id="fluss">
+          <div class="container">
+            <p class="bl-eyebrow">Kapitel 2</p>
+            <h2 class="bl-h2">Neu und wieder weg</h2>
+            <p class="bl-lede">
+              1.930 Kanäle haben in zehn Monaten mindestens einmal deutsch Deadlock gestreamt.
+              1.660 davon sind wieder verschwunden, also seit mehr als 30 Tagen nicht mehr
+              aufgetaucht. Das ist kein Absturz, sondern der Normalzustand: die Szene besteht zum
+              größten Teil aus Leuten, die einmal vorbeischauen.
+            </p>
+            <p class="bl-p">
+              Der Februar und der März 2026 sind die auffälligsten Monate. 388 und dann 427 neue
+              Kanäle tauchten auf, das Vier- bis Fünffache der ruhigen Monate. Im selben Atemzug
+              verschwanden 298 und 422. Der Zulauf war echt, er blieb nur nicht. Ab April kippt die
+              Bilanz ins Minus: 40 Kanäle weniger im April, 18 weniger im Mai, 28 weniger im Juni.
+              Seit dem Frühjahr schrumpft die Szene in der Breite.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Zum ersten und zum letzten Mal gesehen, je Monat</p>
+                <p class="bl-figure-note">
+                  Ein Kanal gilt als weg, wenn seine letzte Sichtung mehr als 30 Tage vor dem
+                  Datenende liegt. Deshalb steht der August 2026 bei null Abgängen: für ihn ist die
+                  Frist noch nicht abgelaufen.
+                </p>
+              </div>
+              <div class="bl-chart" data-chart="fluss"></div>
+              <button class="bl-table-toggle" data-table-for="fluss" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="fluss"></div>
+            </figure>
+
+            <p class="bl-p">
+              Von den 128 Kanälen der allerersten Kohorte, also allen, die im Oktober 2025 zum
+              ersten Mal auftauchten, streamen heute noch 17. Das sind 13,3 Prozent nach zehn
+              Monaten. Diese Quote ist besser als jede spätere, was auf den ersten Blick paradox
+              wirkt. Der Grund liegt vermutlich darin, dass Deadlock im Oktober 2025 noch kaum
+              Publikum in Deutschland hatte: wer damals anfing, tat es aus Interesse am Spiel und
+              nicht, weil die Kategorie gerade Reichweite versprach.
+            </p>
+            <p class="bl-warn">
+              <b>Wachstum oder Durchlauf</b>
+              Die hohen Zahlen im Februar und März sind kein Beleg für Szenenwachstum. Der Großteil
+              dieser Kanäle taucht genau einmal auf und nie wieder, wie das nächste Kapitel zeigt.
+              Zu- und Abgang messen Bewegung, nicht Substanz.
+            </p>
+          </div>
+        </section>
+
+        <!-- ══ 3 BLEIBEN ══════════════════════════════════════ -->
+        <section class="bl-section" id="bleiben">
+          <div class="container">
+            <p class="bl-eyebrow">Kapitel 3</p>
+            <h2 class="bl-h2">Wer bleibt</h2>
+            <p class="bl-lede">
+              Die härteste Zahl des ganzen Datensatzes ist ein Median: <strong>ein einziger
+              Stream</strong>. Von den 1.660 Kanälen, die Deadlock aufgegeben haben, hat die Hälfte
+              es genau einmal gestreamt. Nicht eine Woche lang probiert, nicht ein paar Abende
+              lang: einmal.
+            </p>
+            <p class="bl-p">
+              Entsprechend sehen die Überlebensraten aus. 30 Tage nach dem ersten Auftritt sind
+              noch 11,0 Prozent aller bewertbaren Kanäle aktiv. Nach 90 Tagen sind es 6,6 Prozent,
+              nach 180 Tagen 6,4 Prozent. Zwischen dem dritten und dem sechsten Monat passiert also
+              fast nichts mehr. Wer die ersten drei Monate übersteht, hört danach kaum noch auf.
+              Die Auslese findet in den ersten vier Wochen statt.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Anteil der Kanäle, die nach 30, 90 und 180 Tagen noch streamen</p>
+                <p class="bl-figure-note">
+                  Als aktiv gilt, wer im Zeitfenster von 14 Tagen rund um den Stichtag mindestens
+                  einmal erfasst wurde. Die Zahl der bewertbaren Kanäle sinkt mit dem Fenster, weil
+                  spät gestartete Kanäle ausgeschlossen werden.
+                </p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="ueberleben"></div>
+              <button class="bl-table-toggle" data-table-for="ueberleben" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="ueberleben"></div>
+            </figure>
+
+            <p class="bl-warn">
+              <b>Zensierte Werte</b>
+              Wer im Juli 2026 angefangen hat, kann die 180-Tage-Marke noch gar nicht erreicht
+              haben. Solche Kanäle werden aus der jeweiligen Rate ausgeschlossen, sonst würde
+              Jugend als Scheitern gezählt. Bei 30 Tagen bleiben 1.798 von 1.930 Kanälen bewertbar,
+              bei 180 Tagen nur noch 739. Die drei Prozentwerte beziehen sich also auf drei
+              unterschiedlich große Gruppen und dürfen nicht als eine Kurve gelesen werden.
+            </p>
+            <p class="bl-p">
+              Ein Gegengewicht zu diesem düsteren Bild gibt es. Von den 917 Kanälen mit mehr als
+              einem Stream kommen 274 nach einer Pause von über 30 Tagen zurück, das sind 29,9
+              Prozent. Wer also mehr als einmal gestreamt hat, verschwindet oft nicht endgültig,
+              sondern taucht Wochen später wieder auf. Für eine Community heißt das: eine lange
+              Pause ist kein Abschied, und ein Kanal, der seit sechs Wochen still ist, ist noch
+              kein verlorener Kanal.
+            </p>
+          </div>
+        </section>
+
+        <!-- ══ 4 ZEITEN ═══════════════════════════════════════ -->
+        <section class="bl-section bl-section--tint" id="zeiten">
+          <div class="container">
+            <p class="bl-eyebrow">Kapitel 4</p>
+            <h2 class="bl-h2">Wann gestreamt wird</h2>
+            <p class="bl-lede">
+              Verteilt man alle 4,2 Millionen Snapshots auf Wochentag und Stunde, entsteht ein sehr
+              deutliches Muster. Die dichteste einzelne Stunde der Woche ist der Freitagabend um 22 Uhr.
+              Über alle Tage hinweg sind 21 und 22 Uhr die stärksten Stunden, morgens um 6 Uhr
+              liegt die Sendezeit bei einem Fünfundzwanzigstel davon.
+            </p>
+            <p class="bl-p">
+              Zwischen den Wochentagen ist der Unterschied viel kleiner als zwischen den Stunden.
+              In der Summe führt der Sonntag, das Schlusslicht ist der Mittwoch, und zwischen beiden
+              liegen 35 Prozent. Zwischen der stärksten und der schwächsten Tagesstunde liegt
+              dagegen der Faktor 25. Die
+              deutsche Deadlock-Szene ist damit vor allem eine Abendszene und keine
+              Wochenendszene. Wer eine Community-Aktion plant, hat unter der Woche fast dasselbe
+              Publikum wie am Samstag, muss aber die Zeit zwischen 20 und 23 Uhr treffen.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Sendezeit nach Wochentag und Stunde</p>
+                <p class="bl-figure-note">
+                  Jede Zelle steht für eine Stunde eines Wochentags über den gesamten Zeitraum,
+                  gefüllt nach Anzahl der Snapshots. Zeitzone Europe/Berlin. Eine Farbe, sechs
+                  Stufen: hier zählt Menge, nicht Zugehörigkeit.
+                </p>
+              </div>
+              <div class="bl-heat" data-heat="zeit"></div>
+              <button class="bl-table-toggle" data-table-for="zeit" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="zeit"></div>
+            </figure>
+
+            <p class="bl-p">
+              Bei der Länge eines Streams gibt es keinen klaren Normalfall. Der größte Block sind
+              Streams zwischen zwei und vier Stunden mit 3.972 von 11.887, gefolgt von ein bis zwei
+              Stunden. Aber auch die Ränder sind gut besetzt: 1.948 Streams dauern über vier
+              Stunden, 1.545 enden vor der halben Stunde. Wie oft gestreamt wird, ist dagegen
+              eindeutig. Der Median liegt bei einem einzigen Stream pro Woche und aktivem Kanal,
+              der Durchschnitt bei 2,37. Diese Lücke zwischen Median und Mittelwert ist die ganze
+              Szene in einer Zahl: viele streamen selten, ein paar wenige streamen fast täglich.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Wie lange ein Stream dauert</p>
+                <p class="bl-figure-note">Alle 11.887 rekonstruierten Streams nach Länge.</p>
+              </div>
+              <div class="bl-chart" data-chart="dauer"></div>
+              <button class="bl-table-toggle" data-table-for="dauer" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="dauer"></div>
+            </figure>
+
+            <p class="bl-warn">
+              <b>Kurze Streams sind teils Messfehler</b>
+              Ein Stream endet in dieser Auswertung, sobald mehr als zehn Minuten ohne Snapshot
+              vergehen. Ein Verbindungsabbruch, ein Neustart oder ein kurzer Wechsel in eine andere
+              Kategorie erzeugt damit zwei Streams statt einem. Der unterste Balken ist deshalb
+              eher zu hoch als zu niedrig.
+            </p>
+          </div>
+        </section>
+
+        <!-- ══ 5 VIEWER ═══════════════════════════════════════ -->
+        <section class="bl-section" id="viewer">
+          <div class="container">
+            <p class="bl-eyebrow">Kapitel 5</p>
+            <h2 class="bl-h2">Die Zuschauer-Realität</h2>
+            <p class="bl-lede">
+              Fast die Hälfte aller Messpunkte, 2.098.417 von 4.220.094, zeigt null bis zwei
+              Zuschauer. Weitere 38,2 Prozent liegen zwischen drei und neun. Zusammen sind das 88
+              Prozent aller gemessenen Sendezeit unterhalb von zehn gleichzeitigen Zuschauern. Über
+              50 Zuschauer kommen 2,6 Prozent der Messpunkte.
+            </p>
+            <p class="bl-p">
+              Auf Streams gerechnet heißt das: 3.988 der 11.887 Streams hatten zu keinem Zeitpunkt
+              mehr als zwei Zuschauer gleichzeitig, ein Drittel aller Sendungen. Das ist der
+              Normalfall in einer Nischenkategorie einer Nischensprache, und es ist wichtig, ihn
+              beim Namen zu nennen. Wer in dieser Szene mit fünf Zuschauern streamt, liegt nicht
+              hinten, sondern im oberen Drittel.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Wie viele Zuschauer gleichzeitig zusehen</p>
+                <p class="bl-figure-note">Anteil aller 4,22 Millionen Messpunkte je Zuschauerklasse.</p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="viewer"></div>
+              <button class="bl-table-toggle" data-table-for="viewer" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="viewer"></div>
+            </figure>
+
+            <p class="bl-p">
+              Die Verteilung darüber ist noch schiefer, als diese Klassen zeigen. Summiert man je
+              Kanal alle gemessenen Zuschauer über alle Snapshots, entfallen auf die oberen zehn
+              Prozent der Kanäle 94,5 Prozent der gesamten Zuschauerzeit. Die übrigen 90 Prozent
+              der Kanäle teilen sich zusammen 5,5 Prozent. Reichweite ist in dieser Szene keine
+              Verteilung mit einem breiten Mittelfeld, sondern eine sehr kleine Spitze mit einem
+              sehr langen Schwanz. Genau deshalb sind Durchschnittswerte über die ganze Szene
+              nutzlos: ein einziger großer Kanal, der einen Abend lang Deadlock spielt, hebt jeden
+              Monatsschnitt.
+            </p>
+            <p class="bl-warn">
+              <b>Ein Näherungswert, keine Watchtime</b>
+              Die 94,5 Prozent sind über die Summe der Snapshot-Zuschauer gerechnet und damit ein
+              Ersatzmaß für Watchtime. Twitch selbst misst anders. Auch gewichtet die Rechnung
+              nicht nach Tageszeit, ein Nachmittagszuschauer zählt so viel wie ein Zuschauer um
+              21 Uhr.
+            </p>
+          </div>
+        </section>
+
+        <!-- ══ 6 PATCHES ══════════════════════════════════════ -->
+        <section class="bl-section bl-section--tint" id="patches">
+          <div class="container">
+            <p class="bl-eyebrow">Kapitel 6</p>
+            <h2 class="bl-h2">Was ein Patch bewegt</h2>
+            <p class="bl-lede">
+              Neun größere Updates fallen in den Messzeitraum, sechs Heldenveröffentlichungen im
+              Januar und Februar 2026 und drei Gameplay-Updates danach. Für jedes davon lässt sich
+              die Woche davor mit der Woche danach vergleichen. Das Ergebnis fällt eindeutig in
+              zwei Hälften.
+            </p>
+            <p class="bl-p">
+              Jede einzelne der sechs Heldenveröffentlichungen hebt die Zahl der gleichzeitig
+              laufenden Streams. Rem bringt von 22,7 auf 41,3, Graves von 33,1 auf 45,1, danach
+              Silver, Venator, Celeste und Apollo in Schritten weiter bis auf 63,9. Über sechs
+              Releases in 18 Tagen verdreifacht sich die Zahl der laufenden deutschen Streams
+              damit fast.
+              Bei den Zuschauern je Stream ist der Sprung noch größer: um Venator und Celeste
+              herum steigt er von 5,2 auf 23,6 und dann auf 28,7.
+            </p>
+            <p class="bl-p">
+              Ab März kehrt sich das Bild um. Das Gameplay-Update vom 6. März wird von 77,9 auf
+              74,1 gleichzeitige Streams beantwortet, die Zuschauer je Stream fallen von 36,5 auf
+              16,2. Die Updates vom 30. April und vom 22. Mai bewegen praktisch nichts mehr, die
+              Streamerzahl geht in beiden Fällen leicht zurück. Ein neuer Held zieht Publikum, ein
+              Balance-Update nicht. Und selbst der Held zieht nur, solange die Szene wächst.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Gleichzeitige Streams in der Woche vor und nach jedem Update</p>
+                <p class="bl-figure-note">
+                  Davor sind die sieben Tage vor dem Patch, danach der Patchtag und die sechs
+                  Folgetage. Die Zuschauerzahlen je Stream stehen in der Tabelle.
+                </p>
+              </div>
+              <div class="bl-chart" data-chart="patches"></div>
+              <button class="bl-table-toggle" data-table-for="patches" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="patches"></div>
+            </figure>
+
+            <p class="bl-warn">
+              <b>Sechs Releases in 18 Tagen lassen sich nicht trennen</b>
+              Im Januar und Februar lagen die Veröffentlichungen so dicht, dass sich die
+              Vergleichsfenster überlappen. Die Woche nach Venator ist zugleich die Woche vor
+              Celeste. Was hier zu sehen ist, ist die Wirkung einer ganzen Release-Welle und nicht
+              die eines einzelnen Helden. Der Patch vom 11. Juni fiel in die Störungstage und wurde
+              deshalb ganz weggelassen.
+            </p>
+          </div>
+        </section>
+
+        <!-- ══ 7 NETZWERK ═════════════════════════════════════ -->
+        <section class="bl-section" id="netzwerk">
+          <div class="container">
+            <p class="bl-eyebrow">Kapitel 7</p>
+            <h2 class="bl-h2">Netzwerk und Rest</h2>
+            <p class="bl-lede">
+              67 der 1.930 Kanäle sind Teil des Streamer-Netzwerks der Community, haben also eine
+              Partnerschaft, eine Raid-Freigabe oder einen Eintrag in der Streamer-Verwaltung. Damit
+              lässt sich die unangenehmste Frage stellen, die eine Community sich selbst stellen
+              kann: bringt das überhaupt etwas.
+            </p>
+            <p class="bl-p">
+              Der erste Blick auf die Rohwerte sieht spektakulär aus. 40,6 Prozent der
+              Netzwerk-Kanäle streamen nach 90 Tagen noch, außerhalb sind es 4,3 Prozent. Und die
+              Netzwerk-Kanäle senden mit 3,8 Streams pro Woche fast doppelt so oft wie der Rest
+              mit 2,1. Nur ist dieser Vergleich in dieser Form nichts wert. Wer sich um eine
+              Partnerschaft bemüht, an einem Onboarding teilnimmt und eine Raid-Freigabe erteilt,
+              hat schon vorher entschieden, dass er ernsthaft streamen will. Ein Teil dieses
+              Abstands ist Selbstauswahl und nicht Wirkung.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Streams pro Woche je aktivem Kanal</p>
+                <p class="bl-figure-note">Ungematchter Rohvergleich, siehe Einordnung im Text.</p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="frequenz"></div>
+            </figure>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Noch aktiv nach 90 Tagen</p>
+                <p class="bl-figure-note">Ebenfalls ungematcht. Der Abstand ist groß, die Ursache ist damit nicht geklärt.</p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="netz-ueberleben"></div>
+            </figure>
+
+            <p class="bl-p">
+              Beim Zuschauerwachstum lässt sich der Verdacht wenigstens teilweise ausräumen.
+              Netzwerk-Kanäle starten im Schnitt mit 2,9 Zuschauern im Median, der Durchschnitt
+              aller anderen liegt bei 19,1, weil dort einige sehr große Kanäle mitzählen, die
+              Deadlock einmal ausprobiert haben. Ein direkter Vergleich beider Rohwerte wäre
+              irreführend. Stattdessen wird jeder Netzwerk-Kanal mit Kanälen außerhalb verglichen,
+              die im selben Monat angefangen haben und in derselben Größenklasse starteten. Übrig
+              bleiben 17 vergleichbare Paare mit 44 Netzwerk-Kanälen gegen 780 Kontroll-Kanäle.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Zuschauer nach drei Monaten, als Faktor zum Start</p>
+                <p class="bl-figure-note">
+                  Je Paar aus Startmonat und Größenklasse. Ein Wert von 1,0 bedeutet unverändert,
+                  1,5 bedeutet die Hälfte mehr Zuschauer als zu Beginn.
+                </p>
+              </div>
+              <div class="bl-chart" data-chart="matched"></div>
+              <button class="bl-table-toggle" data-table-for="matched" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="matched"></div>
+            </figure>
+
+            <p class="bl-p">
+              Das Ergebnis ist ernüchternd und wird hier trotzdem so hingeschrieben: in 7 von 17
+              Paaren wächst die Netzwerk-Seite stärker, in 10 die Kontrollgruppe. Über alle Paare
+              gemittelt steht ein Wachstumsfaktor von 1,10 gegen 1,11. Das Netzwerk macht aus
+              kleinen Kanälen also nachweislich keine größeren Kanäle. Auch der Blick auf den
+              Beitrittszeitpunkt selbst zeigt nur einen Hauch: bei den 51 Kanälen mit Daten aus der
+              Zeit davor steigt der Median-Zuschauer von 2,02 auf 2,22.
+            </p>
+            <p class="bl-p">
+              Wirkung zeigt sich woanders. Wer im Netzwerk ist, streamt häufiger und hört später
+              auf, und die Raids landen. Über 3.793 Netzwerk-Streams hinweg sind nach fünf Minuten
+              noch 84,3 Prozent der Zuschauer eines Raids da, nach zehn Minuten 84,2 Prozent und
+              nach zwanzig Minuten 83,0 Prozent. Wer bleibt, bleibt also richtig. Von allen
+              Chattern in Netzwerk-Streams sind 5.028 zum ersten Mal dabei und 15.957 kommen wieder,
+              ein Erstbesucher-Anteil von 24 Prozent. Ein Viertel neue Gesichter bei drei Vierteln
+              Stammpublikum ist eine gesunde Mischung, und sie ist der Teil dieser Auswertung, auf
+              den man tatsächlich stolz sein kann.
+            </p>
+
+            <p class="bl-warn">
+              <b>Follower-Zahlen bleiben hier außen vor</b>
+              Der durchschnittliche Follower-Zuwachs pro Netzwerk-Stream liegt bei minus 14, der
+              Median dagegen bei genau null. Die Spannweite reicht von minus 661 bis plus 2.778.
+              Einzelne Ausreißer, vermutlich Aufräumaktionen gegen Fake-Follower, ziehen den
+              Mittelwert ins Bodenlose. Ein Mittelwert, der so kaputt ist, gehört in keine
+              Schlagzeile, deshalb steht hier nur der Median: null.
+            </p>
+            <p class="bl-warn">
+              <b>Kontrollgruppe, kein Zwillingsversuch</b>
+              Gematcht wurde nach Startmonat und Größenklasse, nicht nach Person, Spielstärke,
+              bisheriger Reichweite oder Streaming-Erfahrung. Bei 44 Netzwerk-Kanälen in 17 Paaren
+              ist jedes Einzelergebnis zudem statistisch schwach. Die Aussage lautet deshalb nicht
+              "das Netzwerk schadet dem Wachstum", sondern "in diesen Daten ist kein
+              Wachstumsvorteil nachweisbar".
+            </p>
+          </div>
+        </section>
+
+        <!-- ══ 8 METHODIK ═════════════════════════════════════ -->
+        <section class="bl-section bl-section--tint" id="methodik">
+          <div class="container">
+            <p class="bl-eyebrow">Kapitel 8</p>
+            <h2 class="bl-h2">Methodik und Grenzen</h2>
+            <p class="bl-lede">
+              Alle Zahlen dieses Textes stammen aus einer einzigen Tabelle: einem Snapshot der
+              deutschsprachigen Deadlock-Streams alle rund 2,5 Minuten, vom 10. Oktober 2025 bis
+              zum 22. August 2026. Was daraus wie gerechnet wurde und wo die Rechnung schwach ist,
+              steht hier.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Von der Rohzeile zur ausgewerteten Zeile</p>
+                <p class="bl-figure-note">Mehr als die Hälfte aller erfassten Zeilen wurde vor der Auswertung verworfen.</p>
+              </div>
+              <div class="bl-table-wrap is-open" data-table="zeilen"></div>
+            </figure>
+
+            <div class="bl-method">
+              <div class="bl-method-card">
+                <h3>Sprachfilter</h3>
+                <p>
+                  Der Scout filtert die Sprache schon beim Abruf. Ein eigenes Sprachfeld wird erst
+                  seit dem 11. Juni 2026 mitgeschrieben. Zeilen ohne Sprachfeld gelten deshalb als
+                  deutsch, Zeilen mit Sprachfeld nur, wenn es mit <code>de</code> beginnt.
+                </p>
+              </div>
+              <div class="bl-method-card">
+                <h3>Die Juni-Störung</h3>
+                <p>
+                  Vom 10. bis 13. Juni 2026 lief der Scout ohne Sprachfilter und erfasste alle
+                  Sprachen. An normalen Tagen liegt die Zahl der erfassten Kanäle zwischen 11 und
+                  91, an diesen vier Tagen zwischen 1.602 und 2.587.
+                </p>
+                <p>
+                  Zeilen ohne Sprachfeld aus diesen Tagen wurden komplett verworfen, weil sich echte
+                  und falsche nicht trennen lassen. Das kostet knapp 2 Millionen Zeilen und den
+                  Patch vom 11. Juni.
+                </p>
+              </div>
+              <div class="bl-method-card">
+                <h3>Streams rekonstruieren</h3>
+                <p>
+                  Aufeinanderfolgende Snapshots desselben Kanals gelten als ein Stream, solange
+                  zwischen zwei Zeilen höchstens zehn Minuten liegen. Daraus entstehen 11.887
+                  Streams über 1.930 Kanäle.
+                </p>
+                <p>
+                  Die App führt zusätzlich eine eigene Session-Tabelle, aber nur für bekannte Kanäle
+                  und erst ab Januar 2026. Sie wird nur in Kapitel 7 benutzt, weil Raid-, Chatter-
+                  und Follower-Daten ausschließlich dort stehen.
+                </p>
+              </div>
+              <div class="bl-method-card">
+                <h3>Kohorten und Zensierung</h3>
+                <p>
+                  Als aktiv nach N Tagen gilt, wer im Fenster von N bis N plus 14 Tagen nach dem
+                  ersten Auftritt mindestens einmal erfasst wurde. Kanäle, deren Fenster über das
+                  Datenende hinausragt, werden aus der Rate ausgeschlossen.
+                </p>
+                <p>
+                  Als aufgegeben gilt, wessen letzte Sichtung mehr als 30 Tage zurückliegt. Der
+                  jeweils letzte Monat einer Reihe ist deshalb systematisch unvollständig.
+                </p>
+              </div>
+              <div class="bl-method-card">
+                <h3>Netzwerk und Kontrolle</h3>
+                <p>
+                  Im Netzwerk ist, wer in der Streamer-Verwaltung, in der Partnertabelle oder in der
+                  Raid-Freigabe auftaucht. Das Beitrittsdatum ist der früheste dieser Zeitstempel.
+                </p>
+                <p>
+                  Die Kontrollgruppe besteht aus Kanälen außerhalb mit gleichem Startmonat und
+                  gleicher Größenklasse. Größenklasse ist der Zweierlogarithmus des Median-Zuschauers
+                  im ersten Monat.
+                </p>
+              </div>
+              <div class="bl-method-card">
+                <h3>Was hier nicht steht</h3>
+                <p>
+                  Keine Namen einzelner Kanäle, keine Ranglisten, keine Zuordnung von Zahlen zu
+                  Personen. Die Auswertung läuft ausschließlich über Aggregate. Öffentlich sind
+                  ohnehin nur die Werte, die Twitch selbst jedem Besucher anzeigt.
+                </p>
+              </div>
+            </div>
+
+            <p class="bl-p" style="margin-top: 2rem;">
+              Was am Ende bleibt: Die deutschsprachige Deadlock-Szene ist klein, sie war im Februar
+              2026 kurz dreimal so groß, und sie besteht aus einer stabilen Kernszene von wenigen
+              Dutzend Kanälen plus einem sehr breiten Strom von Leuten, die einmal vorbeischauen.
+              Neue Helden bringen Aufmerksamkeit, Balance-Updates nicht. Und die Arbeit einer
+              Community lässt sich an Zuschauerzahlen nicht ablesen, an Regelmäßigkeit und an
+              wiederkehrenden Chattern dagegen schon.
+            </p>
+          </div>
+        </section>
+
+      </article>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <section>
+            <h3>Deutsche Deadlock Community</h3>
+            <p class="mt-md">
+              Die aktivste deutsche Community für Deadlock-Spieler, Coaches und Streamer.
+            </p>
+            <p class="mt-lg muted" style="font-size: 0.82rem;">Betrieben von EarlySalty</p>
+          </section>
+          <section>
+            <h3>Navigation</h3>
+            <nav class="footer-links mt-md" aria-label="Footer-Navigation">
+              <a href="/">Start</a>
+              <a href="/blog/">Blog</a>
+              <a href="/streamer/">Streamer</a>
+              <a href="/coaching/">Coaching</a>
+              <a href="/transparenz/">Transparenz</a>
+            </nav>
+          </section>
+          <section>
+            <h3>Plattformen</h3>
+            <nav class="footer-links mt-md" aria-label="Community-Plattformen">
+              <a href="/turnier/">Turnierplattform</a>
+              <a href="/aktivitaet/">Aktivitäts-Tracker</a>
+              <a href="/builds/">Builds &amp; Items</a>
+            </nav>
+          </section>
+          <section>
+            <h3>Recht &amp; Links</h3>
+            <nav class="footer-links mt-md" aria-label="Rechtliches">
+              <a href="https://discord.gg/Jkzsnfsstg" target="_blank" rel="noopener noreferrer">Discord</a>
+              <a href="/twitch/impressum" target="_blank" rel="noopener noreferrer">Impressum</a>
+              <a href="/twitch/datenschutz" target="_blank" rel="noopener noreferrer">Datenschutz</a>
+              <a href="/twitch/agb" target="_blank" rel="noopener noreferrer">AGB</a>
+            </nav>
+          </section>
+        </div>
+        <div class="footer-bottom">© <span data-current-year></span> EarlySalty</div>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/site.js"></script>
+  <script type="module" src="./post.js"></script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+/* ══════════════════════════════════════════════════════════════
+   Blogpost "Zehn Monate deutsche Deadlock-Streamer auf Twitch".
+   Basis (Farben, Schriften, Header, Footer) kommt aus /brand/tokens.css
+   und src/site.css. Hier nur, was der Longform-Text zusätzlich braucht:
+   Kapitel-Rhythmus, Diagramm-Bausteine, Tabellenansicht, Datenwarnungen.
+
+   Diagramm-Farben: Gold ist die Hauptserie, Teal die Vergleichsserie.
+   Nie mehr als zwei Serien pro Diagramm, bei zweien immer eine Legende.
+   ══════════════════════════════════════════════════════════════ */
+
+.bl-main { padding-top: 0; }
+
+/* ── Kapitel-Rhythmus ─────────────────────────────────────────── */
+.bl-section {
+  padding: clamp(3rem, 7vw, 5.5rem) 0; position: relative;
+  /* Der Kopf der Seite steht fest, deshalb dürfen Sprungmarken nicht
+     bündig oben landen, sonst verschwindet die Überschrift darunter. */
+  scroll-margin-top: calc(var(--header-height, 78px) + 16px);
+}
+.bl-section + .bl-section { border-top: 1px solid var(--line-soft); }
+.bl-section--tint { background: linear-gradient(180deg, rgba(201, 168, 106, 0.035), transparent 70%); }
+.bl-narrow { max-width: 760px; }
+
+.bl-eyebrow {
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  font-family: var(--font-body); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--gold); margin: 0 0 0.9rem;
+}
+.bl-eyebrow::before { content: ''; width: 26px; height: 1px; background: var(--gold-border); }
+
+.bl-h2 {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(1.6rem, 3.3vw, 2.35rem); line-height: 1.15;
+  margin: 0 0 0.8rem; color: var(--bone); letter-spacing: -0.01em;
+}
+.bl-h3 {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(1.05rem, 2vw, 1.25rem); line-height: 1.3;
+  margin: 2.4rem 0 0.7rem; color: var(--bone);
+}
+.bl-lede, .bl-p {
+  max-width: 64ch; color: var(--bone-dim);
+  font-size: clamp(1rem, 1.5vw, 1.07rem); line-height: 1.75; margin: 0;
+}
+.bl-p + .bl-p, .bl-lede + .bl-p, .bl-lede + .bl-lede { margin-top: 1rem; }
+.bl-p strong, .bl-lede strong { color: var(--bone); font-weight: 600; }
+.bl-p a, .bl-lede a { color: var(--gold-bright); text-underline-offset: 3px; }
+
+/* ── Kopf des Artikels ────────────────────────────────────────── */
+.bl-hero {
+  padding: clamp(4.5rem, 11vw, 7.5rem) 0 clamp(2.5rem, 5vw, 3.5rem);
+  position: relative; overflow: hidden;
+}
+.bl-hero::after {
+  content: ''; position: absolute; inset: auto 0 0 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-border), transparent);
+}
+.bl-hero h1 {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(2rem, 5.2vw, 3.5rem); line-height: 1.06;
+  letter-spacing: -0.025em; margin: 0 0 1.1rem; max-width: 20ch;
+  text-transform: none;
+}
+.bl-hero h1 em { font-style: normal; color: var(--gold); }
+.bl-hero-lede {
+  max-width: 62ch; font-size: clamp(1.02rem, 1.8vw, 1.16rem);
+  line-height: 1.72; color: var(--bone-dim); margin: 0;
+}
+.bl-stamp {
+  display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 1.6rem; padding: 0.55rem 0.95rem;
+  border: 1px solid var(--line-soft); border-radius: 999px;
+  background: rgba(22, 22, 22, 0.6);
+  font-size: 0.79rem; color: var(--bone-faint);
+}
+.bl-stamp b { color: var(--bone-dim); font-weight: 600; }
+
+/* ── Kennzahl-Kacheln ─────────────────────────────────────────── */
+.bl-tiles {
+  display: grid; gap: 1px; margin-top: clamp(2.2rem, 5vw, 3rem);
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft); border-radius: 18px; overflow: hidden;
+}
+.bl-tile { background: var(--ink-soft); padding: 1.45rem 1.3rem; }
+.bl-tile-num {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(1.75rem, 3.6vw, 2.4rem); line-height: 1;
+  color: var(--gold-bright); letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; display: block;
+}
+.bl-tile-num small {
+  font-size: 0.42em; font-weight: 700; color: var(--gold);
+  letter-spacing: 0.02em; margin-left: 0.2em;
+}
+.bl-tile-label { display: block; margin-top: 0.55rem; font-size: 0.87rem; font-weight: 600; color: var(--bone); }
+.bl-tile-sub { display: block; margin-top: 0.22rem; font-size: 0.78rem; color: var(--bone-faint); line-height: 1.5; }
+
+/* ── Inhaltsverzeichnis ───────────────────────────────────────── */
+.bl-toc {
+  margin-top: 2.4rem; padding: 1.3rem 1.4rem;
+  border: 1px solid var(--line-soft); border-radius: 18px;
+  background: rgba(22, 22, 22, 0.55); max-width: 680px;
+}
+.bl-toc h2 {
+  font-family: var(--font-body); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--bone-faint);
+  margin: 0 0 0.8rem;
+}
+.bl-toc ol { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.4rem; }
+.bl-toc li { font-size: 0.9rem; color: var(--bone-dim); }
+.bl-toc a { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; }
+.bl-toc a:hover { color: var(--bone); border-bottom-color: var(--gold-border); }
+
+/* ── Abbildungen ──────────────────────────────────────────────── */
+.bl-figure {
+  margin: 2.2rem 0 0; padding: 1.5rem 1.4rem 1.3rem;
+  background: var(--panel); border: 1px solid var(--line-soft); border-radius: 20px;
+}
+.bl-figure + .bl-figure { margin-top: 1.2rem; }
+.bl-figure-head { margin-bottom: 1.2rem; }
+.bl-figure-title {
+  font-family: var(--font-display); font-size: 1.02rem; font-weight: 700;
+  color: var(--bone); margin: 0 0 0.28rem;
+}
+.bl-figure-note { font-size: 0.81rem; color: var(--bone-faint); margin: 0; max-width: 62ch; line-height: 1.55; }
+
+.bl-chart { position: relative; width: 100%; }
+.bl-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.bl-chart text { font-family: var(--font-body); fill: var(--bone-faint); }
+.bl-grid-line { stroke: rgba(201, 168, 106, 0.11); stroke-width: 1; }
+.bl-axis-label { font-size: 10px; fill: var(--bone-faint); }
+.bl-mark { transition: opacity 0.18s ease; }
+.bl-hit { fill: transparent; cursor: pointer; }
+.bl-chart.is-hovering .bl-mark { opacity: 0.4; }
+.bl-chart.is-hovering .bl-mark.is-active { opacity: 1; }
+.bl-dot { opacity: 0; }
+.bl-chart.is-hovering .bl-dot.is-active { opacity: 1; r: 4.5; }
+.bl-value-label {
+  font-family: var(--font-display); font-size: 10.5px; font-weight: 700;
+  fill: var(--bone-dim); font-variant-numeric: tabular-nums;
+}
+
+.bl-legend {
+  display: flex; flex-wrap: wrap; gap: 1.1rem;
+  margin-top: 0.9rem; font-size: 0.79rem; color: var(--bone-dim);
+}
+.bl-legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+.bl-legend i { width: 10px; height: 10px; border-radius: 2px; display: block; }
+
+/* ── Tooltip ──────────────────────────────────────────────────── */
+.bl-tooltip {
+  position: absolute; pointer-events: none; opacity: 0;
+  transform: translate(-50%, -100%); transition: opacity 0.12s ease;
+  background: #161616; border: 1px solid var(--line);
+  border-radius: 11px; padding: 0.6rem 0.75rem;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6); z-index: 10; white-space: nowrap;
+}
+.bl-tooltip.is-visible { opacity: 1; }
+.bl-tooltip-key {
+  font-size: 0.7rem; color: var(--bone-faint); letter-spacing: 0.06em;
+  text-transform: uppercase; font-weight: 700; margin-bottom: 0.3rem;
+}
+.bl-tooltip-row { display: flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; color: var(--bone); }
+.bl-tooltip-row + .bl-tooltip-row { margin-top: 0.22rem; }
+.bl-tooltip-row i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.bl-tooltip-row b {
+  font-family: var(--font-display); font-weight: 700;
+  font-variant-numeric: tabular-nums; margin-left: auto; padding-left: 0.6rem;
+}
+
+/* ── Waagerechte Balken ───────────────────────────────────────── */
+.bl-hbars { display: grid; gap: 1rem; }
+.bl-hbar { display: grid; grid-template-columns: minmax(120px, 168px) 1fr auto; gap: 0.9rem; align-items: center; }
+.bl-hbar-name { font-size: 0.88rem; color: var(--bone-dim); line-height: 1.25; }
+.bl-hbar-name small { display: block; font-size: 0.7rem; color: var(--bone-faint); font-variant-numeric: tabular-nums; }
+.bl-hbar-track { display: block; height: 10px; background: rgba(201, 168, 106, 0.08); border-radius: 5px; overflow: hidden; }
+.bl-hbar-fill { display: block; height: 100%; border-radius: 5px; }
+.bl-hbar-val {
+  font-family: var(--font-display); font-weight: 700; font-size: 0.92rem;
+  color: var(--bone); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap;
+}
+@media (max-width: 620px) {
+  .bl-hbar { grid-template-columns: 1fr auto; }
+  .bl-hbar-track { grid-column: 1 / -1; }
+}
+
+/* ── Heatmap Wochentag mal Stunde ─────────────────────────────── */
+.bl-heat { max-width: 720px; }
+.bl-heat-row { display: grid; grid-template-columns: 34px repeat(24, 1fr); gap: 3px; align-items: center; margin-bottom: 3px; }
+.bl-heat-row--head { margin-bottom: 7px; }
+.bl-heat-col-label { font-size: 0.62rem; color: var(--bone-faint); text-align: center; }
+.bl-heat-row-label { font-size: 0.78rem; color: var(--bone-dim); }
+.bl-heat-cell {
+  display: block; aspect-ratio: 1 / 1; border-radius: 3px;
+  outline: 2px solid transparent; outline-offset: 1px; transition: outline-color 0.15s ease;
+}
+.bl-heat-cell:hover { outline-color: var(--gold-border); }
+.bl-heat-legend {
+  display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+  margin-top: 0.9rem; font-size: 0.72rem; color: var(--bone-faint);
+}
+.bl-heat-legend i { width: 13px; height: 13px; border-radius: 3px; display: block; }
+@media (max-width: 780px) {
+  .bl-heat { overflow-x: auto; }
+  .bl-heat-row { grid-template-columns: 30px repeat(24, minmax(14px, 1fr)); min-width: 460px; }
+}
+
+/* ── Tabellenansicht ──────────────────────────────────────────── */
+.bl-table-toggle {
+  margin-top: 1.1rem; padding: 0.45rem 0.85rem;
+  background: transparent; border: 1px solid var(--line-soft); border-radius: 999px;
+  color: var(--bone-faint); font-size: 0.78rem; cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease;
+}
+.bl-table-toggle:hover { border-color: var(--line); color: var(--bone); }
+.bl-table-wrap { display: none; margin-top: 1.1rem; overflow-x: auto; }
+.bl-table-wrap.is-open { display: block; }
+.bl-table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.bl-table-wrap th, .bl-table-wrap td {
+  padding: 0.5rem 0.7rem; text-align: left;
+  border-bottom: 1px solid var(--line-soft); color: var(--bone-dim);
+}
+.bl-table-wrap th { color: var(--bone); font-weight: 600; white-space: nowrap; }
+.bl-table-wrap td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Datenwarnung ─────────────────────────────────────────────── */
+.bl-warn {
+  margin-top: 1.6rem; padding: 1rem 1.15rem;
+  border-left: 2px solid var(--gold-border); border-radius: 0 12px 12px 0;
+  background: rgba(201, 168, 106, 0.05);
+  font-size: 0.86rem; line-height: 1.65; color: var(--bone-dim); max-width: 64ch;
+}
+.bl-warn b {
+  display: block; color: var(--gold); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.35rem;
+}
+
+/* ── Methodik-Kästen ──────────────────────────────────────────── */
+.bl-method {
+  display: grid; gap: 1.1rem; margin-top: 2.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(272px, 1fr));
+}
+.bl-method-card {
+  background: var(--panel); border: 1px solid var(--line-soft);
+  border-radius: 18px; padding: 1.35rem 1.3rem;
+}
+.bl-method-card h3 {
+  font-family: var(--font-display); font-size: 0.95rem; font-weight: 700;
+  color: var(--bone); margin: 0 0 0.5rem; text-transform: none;
+}
+.bl-method-card p { margin: 0; font-size: 0.85rem; line-height: 1.65; color: var(--bone-faint); }
+.bl-method-card p + p { margin-top: 0.55rem; }
+.bl-method-card code {
+  font-family: var(--font-mono); font-size: 0.82em;
+  background: rgba(201, 168, 106, 0.08); padding: 0.05em 0.35em; border-radius: 4px; color: var(--bone-dim);
+}
+
+/* ── Bewegung nur, wenn erwünscht ─────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .bl-mark, .bl-tooltip, .bl-hbar-fill, .bl-heat-cell, .bl-table-toggle { transition: none !important; }
+}
+
+/* Der Fahrstuhl-Knopf der Seitennavigation liegt fest am linken Rand. Bei
+   Fensterbreiten knapp über der Inhaltsbreite läuft er sonst in die erste
+   Textspalte hinein, deshalb hier etwas Luft nach links. */
+@media (max-width: 1520px) {
+  .bl-main .container { padding-left: 20px; }
+}
