@@ -3,6 +3,12 @@
  *
  * Erhoben am 22.08.2026 aus der Twitch-Analytics-Datenbank der Community,
  * Zeitraum 10.10.2025 bis 22.08.2026, 4.220.094 gefilterte Snapshot-Zeilen.
+ *
+ * Achtung beim Weiterrechnen: Das Messintervall des Scouts ist nicht konstant.
+ * Median-Abstand zweier Durchlaeufe: 300 s bis 17.01.2026, 75 s bis 11.03.2026,
+ * danach 15 bis 16 s. Zeilenzaehlungen und Anteile ueber Zeilen (VIEWER_KLASSEN,
+ * HEATMAP) sind dadurch auf die spaeten Monate gewichtet. Kennzahlen je Snapshot
+ * oder je Kanal (WOCHEN, PATCHES, UEBERLEBEN, SESSIONDAUER) sind davon unberuehrt.
  * Die Werte stehen als Literale hier drin: die Seite ist statisch und soll
  * auch dann stimmen, wenn kein Dienst laeuft. Beim naechsten Stichtag wird
  * dieser Block ersetzt, nicht ergaenzt.
@@ -155,4 +161,4 @@ export const MATCHED = [
   { monat: "2026-05", bucket: 4, netzStart: 2, netzM3: 2.5, ctrlStart: 2.37, ctrlM3: 2.5, nNetz: 3, nCtrl: 35 },
 ];
 
-export const METHODIK = {"start": "2025-10-10", "ende": "2026-08-22", "zeilenRoh": 9083175, "zeilenVerworfenSprache": 2871252, "zeilenVerworfenStoerung": 1991829, "zeilenBehalten": 4220094, "sessions": 11887, "streamer": 1930, "stoerungstage": ["2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13"]};
+export const METHODIK = {"start": "2025-10-10", "ende": "2026-08-22", "zeilenRoh": 9083175, "zeilenVerworfenSprache": 2871252, "zeilenVerworfenStoerung": 1991829, "zeilenBehalten": 4220094, "sessions": 11887, "streamer": 1930, "stoerungstage": ["2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13"], "sendezeitStunden": 28244, "intervallSekunden": [["2025-10-10", 300], ["2026-01-18", 75], ["2026-03-12", 15], ["2026-06-01", 16]]};
