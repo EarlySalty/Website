@@ -12,8 +12,6 @@
     { label: 'Streamer', href: '/streamer/', floor: 'S' },
     { label: 'Beitreten', href: '/beitreten/', floor: 'B' },
     { label: 'Blog', href: '/blog/', floor: 'L' },
-    // Maschinenraum ganz unten: die Zahlen hinter der Community.
-    { label: 'Szene', href: '/szene/', floor: 'Z' },
     { label: 'Transparenz', href: '/transparenz/', floor: '0' },
   ]
 

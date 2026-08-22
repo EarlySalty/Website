@@ -3,7 +3,7 @@
  *
  * Hier stehen nur noch die Daten und ihre Zuordnung zu den Diagrammen.
  * Die Zeichenfunktionen und die Diagramm-Regeln liegen in src/charts.js und
- * werden von der Transparenz-Seite und von /szene/ mitgenutzt.
+ * werden auch von der Transparenz-Seite mitgenutzt.
  */
 
 import {

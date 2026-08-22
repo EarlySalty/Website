@@ -31,5 +31,3 @@ logs/
 *.tmp
 *.temp
 
-# Laufzeitdaten der Szene-Seite kommen live von Caddy, nie aus dem Repo
-public/szene/data/
