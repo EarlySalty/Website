@@ -167,32 +167,58 @@ export const NETZWERK_ALTER = { gesamt: 67, medianTage: 151, unter90Tage: 23, un
  * Raid-Wirkung, gemessen am Zuschauerverlauf des Ziels statt an Chatter-Zaehlern.
  * Basis ist der Mittelwert der Zuschauerzahl des Ziels in den zehn Minuten vor
  * dem Raid, verglichen mit dem Fenster um plus zehn und plus zwanzig Minuten.
- * Bewertbar sind nur Raids, fuer die in allen drei Fenstern Messpunkte liegen.
+ *
+ * Jeder bewertbare Raid hat ein Kontrollfenster: derselbe Zielkanal, ein
+ * zufaellig gezogener Zeitpunkt ohne Raid, mindestens 60 Minuten Abstand zu
+ * jedem Raid auf diesen Kanal, gleiche Tageszeit plus minus zwei Stunden,
+ * identische Rechnung. Nur die Differenz zwischen beiden ist die Wirkung.
+ *
+ * Achtung: twitch_raid_history.id ist nicht eindeutig, 163 Werte kommen doppelt
+ * vor (eindeutig ist erst id zusammen mit executed_at). Wer nachrechnet, darf
+ * nicht nach id gruppieren.
  */
 export const RAIDS = {
   gesamt: 1589,
   erfolgreich: 1404,
-  bewertbar: 1058,
-  ziele: 232,
+  bewertbar: 1094,
+  ohneVorherFenster: 177,
+  ohneZehnMinutenFenster: 70,
+  ohneZwanzigMinutenFenster: 63,
+  zielkanaele: 232,
+  zielkanaeleBewertbar: 185,
+  paare: 924,
+  ohneKontrollfenster: 170,
   medianGesendet: 2,
-  medianBasis: 2,
-  medianZuwachs10: 0.33,
-  medianZuwachs20: 0.19,
-  halbeDa10: 32.1,
-  halbeDa20: 30.1,
-  volleDa20: 14.4,
-  ueberhauptMehr20: 52.1,
-  faktor10: 1.11,
-  faktor20: 1.04,
-  faktor20P75: 1.67,
+  medianBasis: 1.94,
+  raidZuwachs10: 0.36,
+  raidZuwachs20: 0.18,
+  kontrollZuwachs10: 0,
+  kontrollZuwachs20: 0,
+  differenz10: 0.44,
+  differenz20: 0.27,
+  raidSchnitt20: 0.72,
+  kontrollSchnitt20: 0.18,
+  raidUeber10: 56.2,
+  kontrollUeber10: 31.9,
+  raidUeber20: 51.5,
+  kontrollUeber20: 35.6,
+  faktor20Raid: 1.03,
+  faktor20Kontroll: 1.0,
+  faktor20RaidP75: 1.64,
+  faktor20KontrollP75: 1.21,
 };
 
-/** Raid-Wirkung nach Groesse des Raids. Zuwachs in Zuschauern, Anteile in Prozent. */
+/**
+ * Raid-Wirkung nach Groesse des Raids, groessenunabhaengig gerechnet: absoluter
+ * Zuwachs in Zuschauern nach 20 Minuten, jeweils Raid gegen Kontrollfenster.
+ * differenz20 ist der Median der paarweisen Differenz, nicht die Differenz der
+ * beiden Mediane.
+ */
 export const RAID_GROESSEN = [
-  { klasse: "1 Zuschauer", n: 411, basis: 1.72, gesendet: 1, zuwachs10: 0, zuwachs20: 0, halb10: 35.8, halb20: 36.0 },
-  { klasse: "2 bis 3", n: 377, basis: 2, gesendet: 2, zuwachs10: 0.41, zuwachs20: 0.22, halb10: 33.4, halb20: 29.4 },
-  { klasse: "4 bis 6", n: 201, basis: 2, gesendet: 4, zuwachs10: 1, zuwachs20: 1, halb10: 27.9, halb20: 24.9 },
-  { klasse: "7 und mehr", n: 69, basis: 2, gesendet: 8, zuwachs10: 1.61, zuwachs20: 1.63, halb10: 15.9, halb20: 13.0 },
+  { klasse: "1 Zuschauer", n: 373, basis: 1.57, gesendet: 1, raid20: 0, kontroll20: 0, differenz20: 0.06, raidSchnitt20: 0.34, kontrollSchnitt20: 0.15 },
+  { klasse: "2 bis 3", n: 331, basis: 2, gesendet: 2, raid20: 0.22, kontroll20: 0, differenz20: 0.17, raidSchnitt20: 0.62, kontrollSchnitt20: 0.18 },
+  { klasse: "4 bis 6", n: 165, basis: 2, gesendet: 4, raid20: 1, kontroll20: 0, differenz20: 0.71, raidSchnitt20: 1.38, kontrollSchnitt20: 0.2 },
+  { klasse: "7 und mehr", n: 55, basis: 2, gesendet: 8, raid20: 1.58, kontroll20: 0, differenz20: 1, raidSchnitt20: 1.89, kontrollSchnitt20: 0.24 },
 ];
 
 /** Gematchte Paare: gleicher Startmonat, gleicher Groessen-Bucket. Nur Paare, bei denen beide Seiten nach drei Monaten noch messbar sind. */

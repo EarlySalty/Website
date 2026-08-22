@@ -53,7 +53,7 @@
           "isAccessibleForFree": true,
           "articleSection": "Szene-Report",
           "keywords": "Deadlock, Twitch, Streaming, deutschsprachige Szene, Datenanalyse, Szene-Report",
-          "wordCount": 3412,
+          "wordCount": 4250,
           "about": [
             { "@type": "VideoGame", "name": "Deadlock", "publisher": { "@type": "Organization", "name": "Valve Corporation" } },
             { "@type": "Thing", "name": "Twitch-Streaming" },
@@ -652,43 +652,70 @@
               erfolgreich, verteilt auf 232 verschiedene Zielkanäle. Gemessen wird nicht am
               Chatverlauf, sondern am Zuschauerverlauf des Ziels: die durchschnittliche
               Zuschauerzahl in den zehn Minuten vor dem Raid gegen das Fenster um zehn und um
-              zwanzig Minuten danach. Für 1.058 Raids liegen in allen drei Fenstern Messpunkte.
+              zwanzig Minuten danach.
             </p>
 
             <p class="bl-p">
-              Ein typischer Raid schickt zwei Zuschauer an einen Kanal, der selbst gerade zwei
-              hat. Nach zehn Minuten liegt der Zuwachs im Median bei 0,33 Zuschauern, nach zwanzig
-              Minuten bei 0,19. In 32,1 Prozent der Raids ist nach zehn Minuten noch mindestens die
-              Hälfte der geschickten Zuschauer zusätzlich da, nach zwanzig Minuten in 30,1 Prozent,
-              die volle Menge in 14,4 Prozent. Umgekehrt liegt der Zielkanal in 52,1 Prozent der
-              Fälle nach zwanzig Minuten überhaupt noch über seinem Ausgangswert. Als Faktor
-              gerechnet: im Median steht ein Ziel zwanzig Minuten nach dem Raid beim 1,04-fachen
-              seiner üblichen Zuschauerzahl, im oberen Viertel beim 1,67-fachen. Wer aus einem
-              Raid ein Vielfaches erwartet, wird enttäuscht. Wer erwartet, dass ungefähr jeder
-              dritte Raid die Hälfte seiner Leute für zwanzig Minuten dalässt, liegt richtig.
+              Diese Rechnung allein sagt nichts. Ein Kanal, der abends ohnehin voller wird, würde
+              denselben Zuwachs auch ohne Raid zeigen. Deshalb bekommt jeder bewertbare Raid ein
+              Kontrollfenster: derselbe Zielkanal, ein zufällig gezogener Zeitpunkt ohne Raid, mit
+              mindestens 60 Minuten Abstand zu jedem Raid auf diesen Kanal und zur gleichen
+              Tageszeit plus minus zwei Stunden. Auf dieses Fenster wird exakt dieselbe Rechnung
+              angewendet. Nur der Abstand zwischen beiden ist die Wirkung des Raids. Für 924 Raids
+              gibt es ein solches Paar.
+            </p>
+
+            <p class="bl-p">
+              Ein typischer Raid schickt zwei Zuschauer an einen Kanal, der selbst gerade knapp
+              zwei hat. Nach zwanzig Minuten liegt das Ziel im Median 0,18 Zuschauer über seinem
+              Ausgangswert, im Kontrollfenster genau 0,00. Die paarweise Differenz beträgt 0,27
+              Zuschauer nach zwanzig Minuten und 0,44 nach zehn. Im Mittelwert stehen 0,72 gegen
+              0,18. In 51,5 Prozent der Fälle liegt der Kanal zwanzig Minuten nach dem Raid über
+              seinem Ausgangswert, im Kontrollfenster ist das in 35,6 Prozent der Fälle ebenfalls
+              so, ganz ohne Raid. Der Abstand ist also da, aber er ist klein: was von einem Raid
+              nach zwanzig Minuten bleibt, ist im Median ein Bruchteil eines Zuschauers.
             </p>
 
             <figure class="bl-figure">
               <div class="bl-figure-head">
-                <p class="bl-figure-title">Anteil der Raids, bei denen nach 20 Minuten noch mindestens die Hälfte da ist</p>
+                <p class="bl-figure-title">Zuschauerzuwachs 20 Minuten danach, Raid gegen Kontrollfenster</p>
                 <p class="bl-figure-note">
-                  Nach Größe des Raids. Große Raids bringen mehr Zuschauer, halten aber einen
-                  kleineren Teil davon.
+                  Mittelwert des Zuwachses in Zuschauern, nach Größe des Raids. Die Tabelle
+                  enthält zusätzlich die Mediane und die Differenz je Paar.
                 </p>
               </div>
-              <div class="bl-chart bl-hbars" data-chart="raid-halb"></div>
+              <div class="bl-chart" data-chart="raid-wirkung"></div>
               <button class="bl-table-toggle" data-table-for="raids" aria-expanded="false">Als Tabelle anzeigen</button>
               <div class="bl-table-wrap" data-table="raids"></div>
             </figure>
 
             <p class="bl-p">
-              Der Verlauf über die Größenklassen ist die eigentliche Aussage. Ein Raid mit einem
-              einzigen Zuschauer bleibt in 36,0 Prozent der Fälle hängen, ein Raid mit sieben oder
-              mehr nur in 13,0 Prozent. In absoluten Zuschauern gewinnt trotzdem der große Raid:
-              er bringt nach zwanzig Minuten im Median 1,63 Zuschauer, der kleine null. Das ist
-              kein Widerspruch, sondern der übliche Verlauf: je mehr Leute mitkommen, desto
-              geringer der Anteil, der bleibt. Für den Betrieb heißt das, dass viele kleine Raids
-              nicht schlechter sind als wenige große.
+              Nach Größe des Raids aufgeschlüsselt bleibt die Richtung eindeutig: je mehr Zuschauer
+              mitkommen, desto größer der Abstand zum Kontrollfenster. Bei Raids mit einem einzigen
+              Zuschauer beträgt die Differenz je Paar 0,06 Zuschauer und ist damit nicht von null
+              zu unterscheiden. Bei zwei bis drei sind es 0,17, bei vier bis sechs 0,71 und bei
+              sieben und mehr 1,00. Ein Raid wirkt, aber ungefähr proportional zu dem, was er
+              mitbringt, und ein sehr kleiner Raid wirkt praktisch gar nicht.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Raid gegen Kontrollfenster, alle Kennzahlen</p>
+                <p class="bl-figure-note">924 Paare aus Raid und raidfreiem Kontrollfenster desselben Kanals.</p>
+              </div>
+              <div class="bl-table-wrap is-open" data-table="raid-kennzahlen"></div>
+            </figure>
+
+            <p class="bl-warn">
+              <b>Von 1.404 erfolgreichen Raids sind 310 nicht bewertbar</b>
+              Bewertbar ist ein Raid nur, wenn das Ziel in allen drei Fenstern gemessene Punkte
+              hat. Bei 177 Raids fehlen die Messpunkte davor, bei 70 die nach zehn Minuten, bei 63
+              die nach zwanzig. Es bleiben 1.094 Raids auf 185 statt 232 Zielkanälen, davon 924 mit
+              Kontrollfenster. Das ist keine Zufallsauswahl: Messpunkte fehlen genau dann, wenn das
+              Ziel zu diesem Zeitpunkt nicht als deutscher Deadlock-Stream erfasst war, also
+              offline ging, die Kategorie wechselte oder gerade erst gestartet war. Ein Ziel, das
+              nach dem Raid offline geht, fällt damit aus der Rechnung heraus, obwohl genau das ein
+              Ergebnis wäre. Die ausgewiesene Wirkung ist dadurch eher zu hoch als zu niedrig.
             </p>
 
             <p class="bl-p">
@@ -698,6 +725,14 @@
               sie ist der Teil dieser Auswertung, auf den man tatsächlich stolz sein kann.
             </p>
 
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Chatter in Netzwerk-Streams</p>
+                <p class="bl-figure-note">Anteil an allen gezählten Chattern über 3.793 Streams.</p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="chatter"></div>
+            </figure>
+
             <p class="bl-warn">
               <b>Eine frühere Fassung hat hier zwei Zahlen verwechselt</b>
               An dieser Stelle standen zuvor 84,3, 84,2 und 83,0 Prozent als Raid-Retention nach
@@ -705,7 +740,10 @@
               beschreiben, wie viele der Zuschauer zu Beginn eines Streams nach fünf, zehn und
               zwanzig Minuten noch da sind. Mit Raids haben sie nichts zu tun, die Sessiontabelle
               kennt keine Raids. Die Zahlen oben sind neu und direkt aus der Raid-Historie
-              gerechnet.
+              gerechnet. Beim Nachrechnen ist noch etwas aufgefallen: die Spalte id der
+              Raid-Historie ist nicht eindeutig, 163 Werte kommen doppelt vor, eindeutig ist erst
+              id zusammen mit dem Zeitstempel. Wer nach id gruppiert, wirft verschiedene Raids
+              zusammen.
             </p>
             <p class="bl-warn">
               <b>Follower-Zahlen bleiben hier außen vor</b>
@@ -766,9 +804,17 @@
                 <p>
                   Robust gegen den Wechsel sind alle Kennzahlen, die je Snapshot oder je Kanal
                   rechnen: gleichzeitig laufende Streams, Zuschauer je Snapshot, aktive Kanäle
-                  pro Woche, Zu- und Abgänge, Überlebensraten und Streamdauern. Auch die Summe
-                  der Sendezeit ist unabhängig davon, weil sie aus den Zeitabständen selbst
-                  gerechnet wird und nicht aus der Zahl der Zeilen.
+                  pro Woche, Zu- und Abgänge und Überlebensraten. Auch die Summe der Sendezeit ist
+                  unabhängig davon, weil sie aus den Zeitabständen selbst gerechnet wird und nicht
+                  aus der Zahl der Zeilen.
+                </p>
+                <p>
+                  Nicht robust sind dagegen die Streamdauern, anders als hier früher stand. Beim
+                  Fünf-Minuten-Takt bis Januar 2026 ist ein Stream unter fünf Minuten überhaupt
+                  nicht sichtbar, und weil eine Lücke von mehr als zehn Minuten eine Session
+                  beendet, zerschneidet jeder Messausfall einen langen Stream in mehrere kurze.
+                  Die Verteilung in Kapitel 4 hat deshalb in den frühen Monaten zu wenig kurze und
+                  zu viele zerstückelte Streams.
                 </p>
               </div>
               <div class="bl-method-card">

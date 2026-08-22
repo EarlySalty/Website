@@ -331,7 +331,7 @@ function renderHeatmap(host, matrix) {
     [0, 0.1, 0.22, 0.4, 0.6, 1].map((p) => `<i style="background:${stufe(p * max)}"></i>`).join('')
   }<span>mehr</span></div>`;
 
-  host.innerHTML = `<div role="img" aria-label="Raster der Sendezeit nach Wochentag und Stunde; die Werte stehen in der Tabelle darunter">${kopf}${zeilen}</div>${legende}`;
+  host.innerHTML = `<div role="img" aria-label="Raster der Messpunkte nach Wochentag und Stunde; die Werte stehen in der Tabelle darunter">${kopf}${zeilen}</div>${legende}`;
 }
 
 /* ── Legende und Tabellen ────────────────────────────────────── */
@@ -499,15 +499,39 @@ renderGroupedBars(q('[data-chart="matched"]'), MATCHED.map((p) => ({
 buildTable('matched', ['Startmonat', 'Größenklasse', 'Netzwerk Start', 'Netzwerk nach 3 Monaten', 'Kontrolle Start', 'Kontrolle nach 3 Monaten', 'Streamer'],
   MATCHED.map((p) => [monatLang(p.monat), String(p.bucket), fmt1(p.netzStart), fmt1(p.netzM3), fmt1(p.ctrlStart), fmt1(p.ctrlM3), `${p.nNetz} zu ${p.nCtrl}`]));
 
-renderHBars(q('[data-chart="raid-halb"]'), RAID_GROESSEN.map((r) => ({
-  name: r.klasse,
-  sub: `${fmt(r.n)} Raids`,
-  value: r.halb20,
-  display: fmt1(r.halb20),
-  color: GOLD,
-})), { unit: ' %' });
-buildTable('raids', ['Raid-Größe', 'Raids', 'Zuschauer vorher', 'Gesendet', 'Zuwachs nach 10 Minuten', 'Zuwachs nach 20 Minuten', 'Mindestens die Hälfte nach 10 Minuten', 'Mindestens die Hälfte nach 20 Minuten'],
-  RAID_GROESSEN.map((r) => [r.klasse, fmt(r.n), fmt1(r.basis), fmt1(r.gesendet), fmt1(r.zuwachs10), fmt1(r.zuwachs20), `${fmt1(r.halb10)} %`, `${fmt1(r.halb20)} %`]));
+renderGroupedBars(q('[data-chart="raid-wirkung"]'), RAID_GROESSEN.map((r) => ({
+  key: `Raid mit ${r.klasse}`,
+  label: r.klasse,
+  a: r.raidSchnitt20,
+  b: r.kontrollSchnitt20,
+  tip: [
+    ['Raid, Zuwachs nach 20 Minuten im Schnitt', fmt1(r.raidSchnitt20), GOLD],
+    ['Kontrollfenster, Zuwachs im Schnitt', fmt1(r.kontrollSchnitt20), TEAL],
+    ['Raid, Zuwachs im Median', fmt1(r.raid20)],
+    ['Differenz je Paar, Median', fmt1(r.differenz20)],
+    ['Raids in dieser Klasse', fmt(r.n)],
+  ],
+})), {
+  height: 220, nameA: 'Raid', nameB: 'Kontrollfenster ohne Raid',
+  ariaLabel: 'Zuschauerzuwachs des Ziels 20 Minuten nach dem Raid, verglichen mit einem Kontrollfenster ohne Raid',
+});
+buildTable('raids', ['Raid-Größe', 'Raids', 'Zuschauer vorher', 'Gesendet', 'Zuwachs Raid, Median', 'Zuwachs Kontrolle, Median', 'Differenz je Paar, Median', 'Zuwachs Raid, Schnitt', 'Zuwachs Kontrolle, Schnitt'],
+  RAID_GROESSEN.map((r) => [r.klasse, fmt(r.n), fmt1(r.basis), fmt1(r.gesendet), fmt1(r.raid20), fmt1(r.kontroll20), fmt1(r.differenz20), fmt1(r.raidSchnitt20), fmt1(r.kontrollSchnitt20)]));
+
+buildTable('raid-kennzahlen', ['Kennzahl', 'Raid', 'Kontrollfenster'], [
+  ['Zuwachs nach 10 Minuten, Median', fmt1(RAIDS.raidZuwachs10), fmt1(RAIDS.kontrollZuwachs10)],
+  ['Zuwachs nach 20 Minuten, Median', fmt1(RAIDS.raidZuwachs20), fmt1(RAIDS.kontrollZuwachs20)],
+  ['Zuwachs nach 20 Minuten, Schnitt', fmt1(RAIDS.raidSchnitt20), fmt1(RAIDS.kontrollSchnitt20)],
+  ['Über dem Ausgangswert nach 10 Minuten', `${fmt1(RAIDS.raidUeber10)} %`, `${fmt1(RAIDS.kontrollUeber10)} %`],
+  ['Über dem Ausgangswert nach 20 Minuten', `${fmt1(RAIDS.raidUeber20)} %`, `${fmt1(RAIDS.kontrollUeber20)} %`],
+  ['Faktor zum Ausgangswert nach 20 Minuten, Median', fmt1(RAIDS.faktor20Raid), fmt1(RAIDS.faktor20Kontroll)],
+  ['Faktor zum Ausgangswert nach 20 Minuten, oberes Viertel', fmt1(RAIDS.faktor20RaidP75), fmt1(RAIDS.faktor20KontrollP75)],
+]);
+
+renderHBars(q('[data-chart="chatter"]'), [
+  { name: 'Stammpublikum', sub: `${fmt(NETZWERK.streams.stammchatter)} Chatter`, value: 100 - NETZWERK.streams.erstchatterPct, display: fmt1(100 - NETZWERK.streams.erstchatterPct), color: GOLD },
+  { name: 'Erstbesucher', sub: `${fmt(NETZWERK.streams.erstchatter)} Chatter`, value: NETZWERK.streams.erstchatterPct, display: fmt1(NETZWERK.streams.erstchatterPct), color: TEAL },
+], { unit: ' %' });
 
 /* ══ Methodik: Zeilenbilanz ═══════════════════════════════════ */
 buildTable('zeilen', ['Schritt', 'Zeilen'], [
