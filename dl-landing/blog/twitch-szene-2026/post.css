@@ -165,6 +165,7 @@
 .bl-tooltip-row { display: flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; color: var(--bone); }
 .bl-tooltip-row + .bl-tooltip-row { margin-top: 0.22rem; }
 .bl-tooltip-row i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.bl-tooltip-row--plain { padding-left: calc(9px + 0.45rem); }
 .bl-tooltip-row b {
   font-family: var(--font-display); font-weight: 700;
   font-variant-numeric: tabular-nums; margin-left: auto; padding-left: 0.6rem;

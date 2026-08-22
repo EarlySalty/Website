@@ -91,7 +91,9 @@ function attachTooltip(host, svg, rows, markSelector) {
     const row = rows[idx];
     if (!row) return;
     const lines = row.tip
-      .map(([k, v, c]) => `<div class="bl-tooltip-row"><i style="background:${c || GOLD}"></i>${k}<b>${v}</b></div>`)
+      .map(([k, v, c]) => (c
+        ? `<div class="bl-tooltip-row"><i style="background:${c}"></i>${k}<b>${v}</b></div>`
+        : `<div class="bl-tooltip-row bl-tooltip-row--plain">${k}<b>${v}</b></div>`))
       .join('');
     tip.innerHTML = `<div class="bl-tooltip-key">${row.key}</div>${lines}`;
     tip.classList.add('is-visible');
@@ -438,16 +440,16 @@ renderGroupedBars(q('[data-chart="patches"]'), PATCHES.map(([datum, titel, sv, s
   a: sv,
   b: sn,
   tip: [
-    ['Streams je Snapshot davor', fmt1(sv), GOLD],
-    ['Streams je Snapshot danach', fmt1(sn), TEAL],
-    ['Viewer je Snapshot davor', fmt1(vv)],
-    ['Viewer je Snapshot danach', fmt1(vn)],
+    ['Streams gleichzeitig davor', fmt1(sv), GOLD],
+    ['Streams gleichzeitig danach', fmt1(sn), TEAL],
+    ['Viewer je Stream davor', fmt1(vv)],
+    ['Viewer je Stream danach', fmt1(vn)],
   ],
 })), {
   height: 240, nameA: 'Woche davor', nameB: 'Woche danach',
-  ariaLabel: 'Gleichzeitige Streams in der Woche vor und nach jedem Patch',
+  ariaLabel: 'Gleichzeitig laufende Streams zur besten Sendezeit in der Woche vor und nach jedem Patch',
 });
-buildTable('patches', ['Patch', 'Datum', 'Streams davor', 'Streams danach', 'Viewer davor', 'Viewer danach'],
+buildTable('patches', ['Patch', 'Datum', 'Streams gleichzeitig davor', 'Streams gleichzeitig danach', 'Viewer je Stream davor', 'Viewer je Stream danach'],
   PATCHES.map(([datum, titel, sv, sn, vv, vn]) => [titel, datumLang(datum), fmt1(sv), fmt1(sn), fmt1(vv), fmt1(vn)]));
 
 /* ══ Kapitel 7: Netzwerk und Rest ═════════════════════════════ */

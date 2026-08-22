@@ -270,10 +270,13 @@
             </p>
             <p class="bl-p">
               Entsprechend sehen die Überlebensraten aus. 30 Tage nach dem ersten Auftritt sind
-              noch 11,0 Prozent aller bewertbaren Kanäle aktiv. Nach 90 Tagen sind es 6,6 Prozent,
-              nach 180 Tagen 6,4 Prozent. Zwischen dem dritten und dem sechsten Monat passiert also
-              fast nichts mehr. Wer die ersten drei Monate übersteht, hört danach kaum noch auf.
-              Die Auslese findet in den ersten vier Wochen statt.
+              noch 11,1 Prozent aller bewertbaren Kanäle aktiv. Nach 90 Tagen sind es 6,8 Prozent.
+              Die Auslese findet damit fast vollständig in den ersten vier Wochen statt: wer den
+              ersten Monat übersteht, verschwindet danach kaum noch. Der 180-Tage-Wert liegt mit
+              7,7 Prozent sogar leicht darüber. Das ist keine Rückkehr, sondern eine Folge der
+              Zensierung: für dieses Fenster sind nur noch 530 früh gestartete Kanäle bewertbar,
+              und diese frühe Gruppe war von Anfang an entschlossener als der Zustrom des
+              Frühjahrs.
             </p>
 
             <figure class="bl-figure">
@@ -294,9 +297,12 @@
               <b>Zensierte Werte</b>
               Wer im Juli 2026 angefangen hat, kann die 180-Tage-Marke noch gar nicht erreicht
               haben. Solche Kanäle werden aus der jeweiligen Rate ausgeschlossen, sonst würde
-              Jugend als Scheitern gezählt. Bei 30 Tagen bleiben 1.798 von 1.930 Kanälen bewertbar,
-              bei 180 Tagen nur noch 739. Die drei Prozentwerte beziehen sich also auf drei
-              unterschiedlich große Gruppen und dürfen nicht als eine Kurve gelesen werden.
+              Jugend als Scheitern gezählt. Ein Kanal gilt für das Fenster von N Tagen als
+              bewertbar, wenn sein erster Auftritt mindestens N plus 14 Tage vor dem Datenende
+              liegt, das Beobachtungsfenster also vollständig gemessen wurde. Dieselbe Regel gilt
+              in Kapitel 7. Bei 30 Tagen bleiben so 1.761 von 1.930 Kanälen bewertbar, bei 90 Tagen
+              1.507 und bei 180 Tagen nur noch 530. Die drei Prozentwerte beziehen sich also auf
+              drei unterschiedlich große Gruppen und dürfen nicht als eine Kurve gelesen werden.
             </p>
             <p class="bl-p">
               Ein Gegengewicht zu diesem düsteren Bild gibt es. Von den 917 Kanälen mit mehr als
@@ -390,7 +396,7 @@
               mehr als zwei Zuschauer gleichzeitig, ein Drittel aller Sendungen. Das ist der
               Normalfall in einer Nischenkategorie einer Nischensprache, und es ist wichtig, ihn
               beim Namen zu nennen. Wer in dieser Szene mit fünf Zuschauern streamt, liegt nicht
-              hinten, sondern im oberen Drittel.
+              hinten: 70,9 Prozent aller Messpunkte zeigen weniger als fünf Zuschauer.
             </p>
 
             <figure class="bl-figure">
@@ -435,17 +441,18 @@
               zwei Hälften.
             </p>
             <p class="bl-p">
-              Jede einzelne der sechs Heldenveröffentlichungen hebt die Zahl der gleichzeitig
-              laufenden Streams. Rem bringt von 22,7 auf 41,3, Graves von 33,1 auf 45,1, danach
-              Silver, Venator, Celeste und Apollo in Schritten weiter bis auf 63,9. Über sechs
-              Releases in 18 Tagen verdreifacht sich die Zahl der laufenden deutschen Streams
-              damit fast.
+              Gezählt wird hier dieselbe Größe wie in Kapitel 1: gleichzeitig laufende Streams
+              zur besten Sendezeit. Jede einzelne der sechs Heldenveröffentlichungen hebt sie.
+              Rem bringt von 6,1 auf 9,9, Graves von 9,0 auf 10,5, danach Silver, Venator, Celeste
+              und Apollo in Schritten weiter bis auf 16,1. Über sechs Releases in 18 Tagen wird die
+              Szene damit zur besten Sendezeit rund zweieinhalbmal so voll, und der Höchststand von
+              20,2 aus Kapitel 1 wird wenige Tage später erreicht.
               Bei den Zuschauern je Stream ist der Sprung noch größer: um Venator und Celeste
               herum steigt er von 5,2 auf 23,6 und dann auf 28,7.
             </p>
             <p class="bl-p">
-              Ab März kehrt sich das Bild um. Das Gameplay-Update vom 6. März wird von 77,9 auf
-              74,1 gleichzeitige Streams beantwortet, die Zuschauer je Stream fallen von 36,5 auf
+              Ab März kehrt sich das Bild um. Das Gameplay-Update vom 6. März wird von 19,0 auf
+              16,9 gleichzeitige Streams beantwortet, die Zuschauer je Stream fallen von 36,5 auf
               16,2. Die Updates vom 30. April und vom 22. Mai bewegen praktisch nichts mehr, die
               Streamerzahl geht in beiden Fällen leicht zurück. Ein neuer Held zieht Publikum, ein
               Balance-Update nicht. Und selbst der Held zieht nur, solange die Szene wächst.
@@ -456,7 +463,9 @@
                 <p class="bl-figure-title">Gleichzeitige Streams in der Woche vor und nach jedem Update</p>
                 <p class="bl-figure-note">
                   Davor sind die sieben Tage vor dem Patch, danach der Patchtag und die sechs
-                  Folgetage. Die Zuschauerzahlen je Stream stehen in der Tabelle.
+                  Folgetage. Gezählt werden gleichzeitig laufende Streams zwischen 18 und 24 Uhr,
+                  dieselbe Größe wie in Kapitel 1. Die Zuschauerzahlen je Stream stehen in der
+                  Tabelle.
                 </p>
               </div>
               <div class="bl-chart" data-chart="patches"></div>
@@ -481,14 +490,18 @@
             <p class="bl-eyebrow">Kapitel 7</p>
             <h2 class="bl-h2">Netzwerk und Rest</h2>
             <p class="bl-lede">
-              67 der 1.930 Kanäle sind Teil des Streamer-Netzwerks der Community, haben also eine
-              Partnerschaft, eine Raid-Freigabe oder einen Eintrag in der Streamer-Verwaltung. Damit
+              Das Streamer-Netzwerk der Community umfasst 67 Kanäle, hat also eine Partnerschaft,
+              eine Raid-Freigabe oder einen Eintrag in der Streamer-Verwaltung. 64 davon tauchen in
+              den 1.930 gemessenen Kanälen auf, die übrigen drei haben in zehn Monaten nie einen
+              deutschen Deadlock-Stream gefahren und können deshalb nicht ausgewertet werden. Damit
               lässt sich die unangenehmste Frage stellen, die eine Community sich selbst stellen
               kann: bringt das überhaupt etwas.
             </p>
             <p class="bl-p">
-              Der erste Blick auf die Rohwerte sieht spektakulär aus. 40,6 Prozent der
-              Netzwerk-Kanäle streamen nach 90 Tagen noch, außerhalb sind es 4,3 Prozent. Und die
+              Der erste Blick auf die Rohwerte sieht spektakulär aus. 53,1 Prozent der
+              Netzwerk-Kanäle streamen nach 90 Tagen noch, außerhalb sind es 5,3 Prozent. Gezählt
+              wird mit derselben Zensierungsregel wie in Kapitel 3, es bleiben also 49 bewertbare
+              Netzwerk-Kanäle und 1.458 außerhalb, zusammen die 1.507 aus Kapitel 3. Und die
               Netzwerk-Kanäle senden mit 3,8 Streams pro Woche fast doppelt so oft wie der Rest
               mit 2,1. Nur ist dieser Vergleich in dieser Form nichts wert. Wer sich um eine
               Partnerschaft bemüht, an einem Onboarding teilnimmt und eine Raid-Freigabe erteilt,
@@ -514,9 +527,12 @@
 
             <p class="bl-p">
               Beim Zuschauerwachstum lässt sich der Verdacht wenigstens teilweise ausräumen.
-              Netzwerk-Kanäle starten im Schnitt mit 2,9 Zuschauern im Median, der Durchschnitt
-              aller anderen liegt bei 19,1, weil dort einige sehr große Kanäle mitzählen, die
-              Deadlock einmal ausprobiert haben. Ein direkter Vergleich beider Rohwerte wäre
+              Für jeden Kanal wird zuerst der Median seiner Zuschauerzahlen im ersten Monat
+              gebildet, danach der Mittelwert dieser Mediane über die Kanäle. Netzwerk-Kanäle
+              kommen so auf 2,9, alle anderen auf 19,1. Der Median je Kanal ist gegen einzelne
+              starke Abende robust, der Mittelwert über die Kanäle ist es nicht: in die 19,1 gehen
+              einige sehr große Kanäle voll ein, die Deadlock genau einmal ausprobiert haben. Ein
+              direkter Vergleich beider Rohwerte wäre
               irreführend. Stattdessen wird jeder Netzwerk-Kanal mit Kanälen außerhalb verglichen,
               die im selben Monat angefangen haben und in derselben Größenklasse starteten. Übrig
               bleiben 17 vergleichbare Paare mit 44 Netzwerk-Kanälen gegen 780 Kontroll-Kanäle.

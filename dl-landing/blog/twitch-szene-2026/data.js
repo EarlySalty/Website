@@ -81,11 +81,15 @@ export const ZU_UND_ABGANG = [
 
 export const OKTOBER_KOHORTE = {"groesse": 128, "nochAktiv": 17, "anteil": 13.3};
 
-/** Ueberlebensraten, zensiert: nur Streamer, deren Fenster komplett in den Daten liegt. */
+/**
+ * Ueberlebensraten. Eine Zensierungsregel fuer alle Fenster und fuer Kapitel 7:
+ * ein Kanal ist fuer das N-Tage-Fenster bewertbar, wenn first_seen + N + 14 Tage
+ * noch in den Daten liegt, das Messfenster also vollstaendig beobachtet wurde.
+ */
 export const UEBERLEBEN = [
-  { tage: 30, anteil: 11.0, bewertbar: 1798 },
-  { tage: 90, anteil: 6.6, bewertbar: 1597 },
-  { tage: 180, anteil: 6.4, bewertbar: 739 },
+  { tage: 30, anteil: 11.1, bewertbar: 1761 },
+  { tage: 90, anteil: 6.8, bewertbar: 1507 },
+  { tage: 180, anteil: 7.7, bewertbar: 530 },
 ];
 export const AUFGABE = {"medianSessions": 1, "aufgegeben": 1660, "comeback": 274, "mehrfachStreamer": 917, "returnRate": 29.9};
 
@@ -107,20 +111,28 @@ export const SESSIONS_PRO_WOCHE = { median: 1, schnitt: 2.37 };
 export const VIEWER_KLASSEN = [["0-2", 2098417], ["3-9", 1612834], ["10-49", 399836], ["50+", 109007]];
 export const VIEWER_META = {"zeilen": 4220094, "sessionsGesamt": 11887, "sessionsLeer": 3988, "sessionsLeerPct": 33.5, "top10Pct": 94.5};
 
-/** Patch | Titel | Streamer je Snapshot vorher/nachher | Viewer je Snapshot vorher/nachher */
+/**
+ * Patch | Titel | gleichzeitige Streams in der Primetime vorher/nachher | Viewer je Stream vorher/nachher
+ *
+ * Die Streamzahl ist bewusst dieselbe Groesse wie in Kapitel 1: Zahl der
+ * gleichzeitig laufenden Streams je Snapshot, gemittelt ueber alle Snapshots
+ * zwischen 18 und 24 Uhr Europe/Berlin. Frueher stand hier die Zahl der
+ * unterschiedlichen Kanaele je Tag, die rund viermal so hoch liegt und sich
+ * nicht mit dem Primetime-Hoechststand von 20,2 aus Kapitel 1 vergleichen laesst.
+ */
 export const PATCHES = [
-  ["2026-01-26", "Rem Hero-Release", 22.7, 41.3, 3.05, 4.6],
-  ["2026-01-29", "Graves Hero-Release", 33.1, 45.1, 3.03, 5.16],
-  ["2026-02-02", "Silver Hero-Release", 41.3, 52.9, 4.6, 5.57],
-  ["2026-02-05", "Venator Hero-Release", 45.1, 56.0, 5.16, 23.57],
-  ["2026-02-09", "Celeste Hero-Release", 52.9, 59.0, 5.57, 28.74],
-  ["2026-02-12", "Apollo Hero-Release", 56.0, 63.9, 23.57, 43.5],
-  ["2026-03-06", "Gameplay Update 03-06", 77.9, 74.1, 36.48, 16.18],
-  ["2026-04-30", "Gameplay Update 04-30", 41.1, 37.6, 10.26, 10.21],
-  ["2026-05-22", "Gameplay Update 05-22", 36.4, 35.4, 6.25, 10.18],
+  ["2026-01-26", "Rem Hero-Release", 6.1, 9.9, 3.05, 4.6],
+  ["2026-01-29", "Graves Hero-Release", 9.0, 10.5, 3.03, 5.16],
+  ["2026-02-02", "Silver Hero-Release", 9.9, 12.2, 4.6, 5.57],
+  ["2026-02-05", "Venator Hero-Release", 10.5, 13.4, 5.16, 23.57],
+  ["2026-02-09", "Celeste Hero-Release", 12.2, 14.2, 5.57, 28.74],
+  ["2026-02-12", "Apollo Hero-Release", 13.4, 16.1, 23.57, 43.5],
+  ["2026-03-06", "Gameplay Update 03-06", 19.0, 16.9, 36.48, 16.18],
+  ["2026-04-30", "Gameplay Update 04-30", 10.4, 9.2, 10.26, 10.21],
+  ["2026-05-22", "Gameplay Update 05-22", 9.1, 8.9, 6.25, 10.18],
 ];
 
-export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStart": 2.87, "ueberleben90": 40.6, "bewertbar90": 64, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStart": 19.08, "ueberleben90": 4.3, "bewertbar90": 1808, "sessionsProWoche": 2.11}, "beitritt": {"n": 51, "vor": 2.02, "nach": 2.22}, "raids": {"r5": 0.843, "r10": 0.842, "r20": 0.83, "erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
+export const NETZWERK = {"groesse": 67, "imNetz": {"n": 64, "medianStart": 2.87, "ueberleben90": 53.1, "bewertbar90": 49, "sessionsProWoche": 3.81}, "ausserhalb": {"n": 1866, "medianStart": 19.08, "ueberleben90": 5.3, "bewertbar90": 1458, "sessionsProWoche": 2.11}, "beitritt": {"n": 51, "vor": 2.02, "nach": 2.22}, "raids": {"r5": 0.843, "r10": 0.842, "r20": 0.83, "erstchatter": 5028, "stammchatter": 15957, "sessions": 3793, "erstchatterPct": 24.0}};
 
 /** Gematchte Paare: gleicher Startmonat, gleicher Groessen-Bucket. Nur Paare, bei denen beide Seiten nach drei Monaten noch messbar sind. */
 export const MATCHED = [
@@ -143,4 +155,4 @@ export const MATCHED = [
   { monat: "2026-05", bucket: 4, netzStart: 2, netzM3: 2.5, ctrlStart: 2.37, ctrlM3: 2.5, nNetz: 3, nCtrl: 35 },
 ];
 
-export const METHODIK = {"start": "2025-10-10", "ende": "2026-08-22", "zeilenRoh": 9083150, "zeilenVerworfenSprache": 2871252, "zeilenVerworfenStoerung": 1991829, "zeilenBehalten": 4220094, "sessions": 11887, "streamer": 1930, "stoerungstage": ["2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13"]};
+export const METHODIK = {"start": "2025-10-10", "ende": "2026-08-22", "zeilenRoh": 9083175, "zeilenVerworfenSprache": 2871252, "zeilenVerworfenStoerung": 1991829, "zeilenBehalten": 4220094, "sessions": 11887, "streamer": 1930, "stoerungstage": ["2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13"]};
