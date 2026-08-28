@@ -93,6 +93,8 @@
     document.body.appendChild(createFooter(links, currentPath))
   }
 
+  mountPreferredSource()
+
   function setOpen(open) {
     nav.classList.toggle('is-open', open)
     button.setAttribute('aria-expanded', open ? 'true' : 'false')
@@ -178,5 +180,86 @@ function normalizePath(path) {
   const clean = `/${String(path || '').replace(/^\/+/, '')}`.replace(/\/{2,}/g, '/')
   if (clean === '/') return clean
   return clean.endsWith('/') ? clean : `${clean}/`
+}
+
+const PREFERRED_SOURCE_DEEPLINK = 'https://www.google.com/preferences/source?q=deutsche-deadlock-community.de'
+const PREFERRED_SOURCE_SCRIPT = 'https://news.google.com/swg/js/v1/publisher.js'
+let preferredSourceLoading = null
+
+function mountPreferredSource() {
+  if (document.querySelector('[data-preferred-source]')) return
+  if (shouldSkipPreferredSource(currentPath)) return
+
+  const wrap = document.createElement('div')
+  wrap.className = 'brand-preferred-source'
+  wrap.dataset.preferredSource = ''
+  wrap.innerHTML = `
+    <p class="brand-preferred-copy">Google zeigt dir unsere Seiten in Top Stories und KI-Antworten häufiger, wenn du uns als Quelle merkst.</p>
+    <button class="brand-preferred-btn" type="button">Als bevorzugte Quelle merken</button>
+  `
+  wrap.querySelector('.brand-preferred-btn').addEventListener('click', onPreferredSourceClick)
+
+  const footer = document.querySelector('footer, .brand-footer')
+  if (footer) {
+    footer.appendChild(wrap)
+    return
+  }
+  document.body.appendChild(wrap)
+}
+
+function shouldSkipPreferredSource(path) {
+  return (
+    path.startsWith('/twitch/') ||
+    path.startsWith('/uplink/') ||
+    path.startsWith('/analyse/') ||
+    path.startsWith('/social-media') ||
+    path.startsWith('/admin')
+  )
+}
+
+function onPreferredSourceClick() {
+  loadPreferredSourceApi()
+    .then((api) => {
+      api.addPreferredSource()
+    })
+    .catch(() => {
+      window.open(PREFERRED_SOURCE_DEEPLINK, '_blank', 'noopener,noreferrer')
+    })
+}
+
+function loadPreferredSourceApi() {
+  if (window.__ddcPreferredSource) {
+    return Promise.resolve(window.__ddcPreferredSource)
+  }
+  if (preferredSourceLoading) return preferredSourceLoading
+
+  preferredSourceLoading = new Promise((resolve, reject) => {
+    let settled = false
+    const finish = (fn, value) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timer)
+      fn(value)
+    }
+    const queue = (self.PREFERRED_SOURCE = self.PREFERRED_SOURCE || [])
+    queue.push((preferredSource) => {
+      preferredSource.init({ theme: 'dark', lang: 'de' })
+      window.__ddcPreferredSource = preferredSource
+      finish(resolve, preferredSource)
+    })
+
+    const script = document.createElement('script')
+    script.async = true
+    script.src = PREFERRED_SOURCE_SCRIPT
+    script.setAttribute('preferred-sources-control', 'manual')
+    script.onerror = () => finish(reject, new Error('preferred-source-script'))
+    document.head.appendChild(script)
+    const timer = window.setTimeout(() => finish(reject, new Error('preferred-source-timeout')), 8000)
+  }).catch((error) => {
+    preferredSourceLoading = null
+    throw error
+  })
+
+  return preferredSourceLoading
 }
 })()

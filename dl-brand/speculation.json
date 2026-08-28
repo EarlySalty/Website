@@ -1,0 +1,36 @@
+{
+  "tag": "ddc-same-origin",
+  "prerender": [
+    {
+      "source": "document",
+      "where": {
+        "and": [
+          { "href_matches": "/*" },
+          { "not": { "href_matches": "/twitch/*" } },
+          { "not": { "href_matches": "/uplink/*" } },
+          { "not": { "href_matches": "/analyse*" } },
+          { "not": { "href_matches": "/social-media*" } },
+          { "not": { "href_matches": "/admin*" } },
+          { "not": { "selector_matches": "[rel~=nofollow]" } },
+          { "not": { "selector_matches": "[target=_blank]" } }
+        ]
+      },
+      "eagerness": "moderate"
+    }
+  ],
+  "prefetch": [
+    {
+      "source": "document",
+      "where": {
+        "and": [
+          { "href_matches": "/*" },
+          { "not": { "href_matches": "/twitch/*" } },
+          { "not": { "href_matches": "/uplink/*" } },
+          { "not": { "selector_matches": "[rel~=nofollow]" } },
+          { "not": { "selector_matches": "[target=_blank]" } }
+        ]
+      },
+      "eagerness": "moderate"
+    }
+  ]
+}

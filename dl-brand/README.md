@@ -5,7 +5,7 @@
 <script src="/brand/nav.js" defer></script>
 ```
 
-Static asset package for tokens, fonts, the shared logo, floating navigation, and footer. Disable the footer with:
+Static asset package for tokens, fonts, the shared logo, floating navigation, footer, and the Google Preferred-Sources button. Disable the footer with:
 
 ```html
 <script src="/brand/nav.js" defer data-footer="false"></script>
