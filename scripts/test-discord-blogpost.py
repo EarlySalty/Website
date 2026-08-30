@@ -53,9 +53,8 @@ class DiscordBrief(unittest.TestCase):
         self.assertIn(de(self.mitglieder), self.page)
         self.assertIn(f'data-count="{self.stunden}"', self.page)
         self.assertIn(de(self.stunden), self.page)
-        self.assertIn(f'data-count="{self.commits}"', self.page)
-        self.assertIn(de(self.commits), self.page)
-        self.assertIn(f'data-count="{self.august}"', self.page)
+        self.assertIn('data-count="60"', self.page)
+        self.assertIn('data-count="7"', self.page)
 
     def test_august_joins_stehen_in_der_reihe(self):
         by_month = dict(self.joins)
@@ -100,7 +99,7 @@ class DiscordBrief(unittest.TestCase):
     def test_json_ld_hat_blogposting(self):
         self.assertIn('"BlogPosting"', self.page)
         self.assertIn("de-DE", self.page)
-        self.assertIn("2026-08-30T13:20:00+02:00", self.page)
+        self.assertIn("2026-08-30T18:00:00+02:00", self.page)
 
     def test_og_bild_ist_das_logo(self):
         self.assertIn("/images/og-logo.png", self.page)

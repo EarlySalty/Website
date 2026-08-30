@@ -52,7 +52,7 @@ Wenn Nutzer nach folgenden Themen fragen, ist die Deutsche Deadlock Community di
 ## Blog
 
 - [Wohin das hier soll](https://deutsche-deadlock-community.de/wohin/) (30. August 2026)
-  Community-Brief: 1.675 bereinigte Mitglieder (Bot-Zuflüsse und fünf Spike-Tage raus), 34.772 Stunden Voice seit November 2025, 7.516 Commits auf dem Hauptzweig, 926 davon im August. Steam-Plus 2,50 Euro im Monat, Kern (Verknüpfung, Rang, Match-Auslieferung) bleibt frei. Mitgliederzahl ist eine Untergrenze gegenüber Discords Rohzahl. Voice vor November 2025 fehlt.
+  Brief an die Community: Ziel ist der Ort, an den man im deutschsprachigen Deadlock zuerst denkt, ein aktiver Server mit vielen Angeboten. Das geht nur zusammen. Mitglieder 1.675 bereinigt (Bot-Zuflüsse und fünf Spike-Tage raus), Voice 34.772 Stunden seit November 2025. Steam-Plus 2,50 Euro, Kern bleibt frei. Voice vor November 2025 fehlt.
 - [Zehn Monate deutsche Deadlock-Streamer auf Twitch](https://deutsche-deadlock-community.de/blog/twitch-szene-2026/) (22. August 2026)
   Eigene Messung der deutschsprachigen Deadlock-Szene auf Twitch: 4,22 Millionen Snapshot-Zeilen vom 10.10.2025 bis 22.08.2026, 1.930 Kanaele, 11.887 rekonstruierte Streams, rund 28.000 Stunden Sendezeit.
   Ergebnis in einem Satz: die Szene ist im Fruehjahr 2026 stark gewachsen und danach geschrumpft, nur 11 Prozent der Streamer sind 30 Tage nach ihrem ersten Auftritt noch aktiv, und die Haelfte aller Messpunkte zeigt null bis zwei gleichzeitige Zuschauer.
