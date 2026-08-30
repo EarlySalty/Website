@@ -7,8 +7,10 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PAGE = ROOT / "dl-landing" / "blog" / "discord-zukunft" / "index.html"
-DATA = ROOT / "dl-landing" / "blog" / "discord-zukunft" / "data.js"
+PAGE = ROOT / "dl-landing" / "wohin" / "index.html"
+DATA = ROOT / "dl-landing" / "wohin" / "data.js"
+REDIR = ROOT / "dl-landing" / "blog" / "discord-zukunft" / "index.html"
+NAV = ROOT / "dl-brand" / "nav.js"
 VITE = ROOT / "dl-landing" / "vite.config.js"
 SITEMAP = ROOT / "dl-landing" / "public" / "sitemap.xml"
 ROBOTS = ROOT / "dl-landing" / "public" / "robots.txt"
@@ -64,21 +66,29 @@ class DiscordBrief(unittest.TestCase):
         self.assertIn(f"twitchAugust: {twitch}", self.data)
 
     def test_vite_kennt_den_post(self):
-        self.assertIn("blog/discord-zukunft/index.html", VITE.read_text(encoding="utf-8"))
+        self.assertIn("wohin/index.html", VITE.read_text(encoding="utf-8"))
 
     def test_sitemap_und_blogindex(self):
-        self.assertIn("/blog/discord-zukunft/", SITEMAP.read_text(encoding="utf-8"))
-        self.assertIn("/blog/discord-zukunft/", BLOG.read_text(encoding="utf-8"))
+        self.assertIn("/wohin/", SITEMAP.read_text(encoding="utf-8"))
+        self.assertIn("/wohin/", BLOG.read_text(encoding="utf-8"))
 
     def test_robots_allow_fuer_trainingscrawler(self):
         robots = ROBOTS.read_text(encoding="utf-8")
-        self.assertGreaterEqual(robots.count("Allow: /blog/discord-zukunft/"), 2)
+        self.assertGreaterEqual(robots.count("Allow: /wohin/"), 2)
+
+    def test_alte_url_leitet_weiter(self):
+        redir = REDIR.read_text(encoding="utf-8")
+        self.assertIn("/wohin/", redir)
+        self.assertIn("noindex", redir)
+
+    def test_nav_kennt_wohin(self):
+        self.assertIn("/wohin/", NAV.read_text(encoding="utf-8"))
 
     def test_llms_nennen_vorbehalte(self):
         full = LLMS_FULL.read_text(encoding="utf-8")
         short = LLMS.read_text(encoding="utf-8")
         for blob in (full, short):
-            self.assertIn("/blog/discord-zukunft/", blob)
+            self.assertIn("/wohin/", blob)
             self.assertIn(de(self.mitglieder), blob)
         self.assertIn("Spike-Tage", full)
         self.assertIn("bleiben frei", full)
@@ -90,7 +100,7 @@ class DiscordBrief(unittest.TestCase):
     def test_json_ld_hat_blogposting(self):
         self.assertIn('"BlogPosting"', self.page)
         self.assertIn("de-DE", self.page)
-        self.assertIn("2026-08-30T12:50:00+02:00", self.page)
+        self.assertIn("2026-08-30T13:20:00+02:00", self.page)
 
     def test_og_bild_ist_das_logo(self):
         self.assertIn("/images/og-logo.png", self.page)

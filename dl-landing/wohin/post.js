@@ -10,7 +10,7 @@ import {
   monatKurz, monatLang,
   buildTable, wireTableToggles, countUp,
   createCharts,
-} from '../../src/charts.js';
+} from '../src/charts.js';
 
 const { renderBars } = createCharts({
   prefix: 'bl',

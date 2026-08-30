@@ -12,6 +12,7 @@
     { label: 'Streamer', href: '/streamer/', floor: 'S' },
     { label: 'Beitreten', href: '/beitreten/', floor: 'B' },
     { label: 'Blog', href: '/blog/', floor: 'L' },
+    { label: 'Wohin', href: '/wohin/', floor: 'W' },
     { label: 'Transparenz', href: '/transparenz/', floor: '0' },
   ]
 
