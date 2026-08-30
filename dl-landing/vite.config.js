@@ -22,6 +22,7 @@ export default defineConfig({
         transparenz: 'transparenz/index.html',
         blog: 'blog/index.html',
         blogTwitchSzene2026: 'blog/twitch-szene-2026/index.html',
+        blogDiscordZukunft: 'blog/discord-zukunft/index.html',
       },
     },
   },
