@@ -1203,6 +1203,30 @@ ol {
   z-index: -1;
 }
 
+.rank-float-coaching-left {
+  left: 5%;
+  top: 14%;
+  width: 110px;
+}
+
+.rank-float-coaching-right {
+  right: 7%;
+  bottom: 16%;
+  width: 95px;
+}
+
+.rank-float-mitspieler-left {
+  left: 6%;
+  top: 12%;
+  width: 100px;
+}
+
+.rank-float-mitspieler-right {
+  right: 8%;
+  bottom: 18%;
+  width: 90px;
+}
+
 /* ── 3-Pillar Grid ── */
 .pillars-grid {
   display: grid;
@@ -1673,6 +1697,10 @@ ol {
 
 .muted {
   color: var(--muted);
+}
+
+.footer-operator {
+  font-size: 0.82rem;
 }
 
 .mt-sm { margin-top: 0.4rem; }

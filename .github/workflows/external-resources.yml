@@ -1,7 +1,7 @@
-name: "📈 Analytics-Beacon"
+name: "🔒 Externe Web-Ressourcen"
 
-# Eigener Workflow, damit die Beacon-Pruefung bei jedem Push und Pull Request
-# laeuft, ohne die bestehenden Lint-Jobs mitzuziehen.
+# Baut die ausgelieferten HTML-Artefakte und verhindert ungesicherte externe
+# Skripte/Stylesheets sowie die Rückkehr des nicht pinbaren RUM-Beacons.
 on:
   workflow_dispatch:
   push:
@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 jobs:
-  analytics-beacon:
-    name: "📈 Analytics-Beacon"
+  external-resources:
+    name: "🔒 Externe Web-Ressourcen"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,7 +39,5 @@ jobs:
             (cd "$projekt" && npm ci && npm run build)
           done
 
-      # Der Live-Check gegen die echten HTTP-Antworten laeuft nicht in CI:
-      # er braucht die ausgelieferte Seite samt CSP aus dem Caddy-Repo.
-      - name: Beacon-Suite
-        run: python3 -m pytest scripts/test_cf_analytics.py -v
+      - name: Ressourcen-Suite
+        run: python3 -m pytest scripts/test_external_resources.py -v
