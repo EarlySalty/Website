@@ -290,6 +290,26 @@ export function createCharts(config = {}) {
 
     rows.forEach((row, i) => {
       const x = f.padL + slot * i + (slot - barW) / 2;
+
+      if (row.gap) {
+        const gh = Math.min(f.plotH, 42);
+        const gy = baseline - gh;
+        const ph = svgEl('rect', {
+          x, y: gy, width: barW, height: gh, rx: 3,
+          fill: 'none', stroke: GOLD, 'stroke-opacity': 0.5, 'stroke-dasharray': '4 3', class: markClass,
+        });
+        ph.dataset.idx = String(i);
+        f.svg.appendChild(ph);
+        const gt = svgEl('text', {
+          x: x + barW / 2, y: gy - 7, 'text-anchor': 'middle', class: `${p}-axis-label`,
+        });
+        gt.textContent = row.gapLabel || 'keine Daten';
+        f.svg.appendChild(gt);
+        xLabel(f, row, i, rows, opts, x + barW / 2);
+        hitArea(f, i, slot);
+        return;
+      }
+
       const h = (row.value / scale.max) * f.plotH;
       const bar = svgEl('path', {
         d: barPath(x, baseline, barW, h, 4),
@@ -455,6 +475,7 @@ export function createCharts(config = {}) {
   function renderStackedBars(host, rows, opts = {}) {
     if (!host || !rows.length) return;
     const f = chartFrame(host, opts);
+    drawGrid(f, { max: 100, step: 50, ticks: 2 });
     const slot = f.plotW / rows.length;
     const barW = Math.max(cfg.minBarWidth, Math.min(opts.maxBarWidth || 42, slot - 8));
     const baseline = f.padT + f.plotH;

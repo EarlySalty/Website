@@ -28,8 +28,10 @@ renderBars(q('[data-chart="monatsrate"]'), MONATE.map((m) => ({
   label: monatKurz(m.monat),
   value: m.je10k,
   dim: m.luecke === true,
+  gap: m.luecke === true,
+  gapLabel: 'keine Daten',
   tip: [
-    ['Vorfälle je 10.000 Nachrichten', m.luecke ? 'Lücke' : fmt1(m.je10k)],
+    ['Vorfälle je 10.000 Nachrichten', m.luecke ? 'keine Chat-Daten' : fmt1(m.je10k)],
     ['Vorfälle im Chat', fmt(m.chat)],
     ['Vorfälle gesamt', fmt(m.gesamt)],
     ['Mitgelesene Kanäle', fmt(m.kanaele)],
@@ -40,7 +42,7 @@ buildTable('monatsreihe',
   ['Monat', 'Mitgelesene Kanäle', 'Nachrichten', 'Vorfälle gesamt', 'Vorfälle im Chat', 'je 10.000 Nachrichten'],
   MONATE.map((m) => [monatLang(m.monat), fmt(m.kanaele), fmt(m.nachrichten), fmt(m.gesamt), fmt(m.chat), m.luecke ? 'Lücke' : fmt1(m.je10k)]));
 
-const stackFormen = VERFREMDUNG_FORMEN.filter((f) => f.schluessel !== 'zero_width');
+const stackFormen = VERFREMDUNG_FORMEN.filter((f) => VERFREMDUNG.some((m) => m[f.schluessel] > 0));
 renderStackedBars(q('[data-chart="verfremdung"]'), VERFREMDUNG.map((m) => {
   const segments = VERFREMDUNG_FORMEN.map((f) => ({ name: f.name, value: m[f.schluessel], color: f.color }));
   return {
@@ -121,6 +123,9 @@ const streamboo = MARKEN.find((m) => m.marke === 'streamboo');
 const augMarken = MARKEN.filter((m) => m.erstauftritt.startsWith('2026-08')).map((m) => m.erstauftritt).sort();
 const augustSpanne = augMarken.length ? daysBetween(augMarken[0], augMarken[augMarken.length - 1]) : 0;
 const alterExistierend = GELOESCHT.spam.angefragt - GELOESCHT.spam.fehlend;
+const homoglyphGesamt = VERFREMDUNG.reduce((a, m) => a + m.homoglyph, 0);
+const homoglyphMonate = VERFREMDUNG.filter((m) => m.homoglyph > 0).map((m) => monatLang(m.monat));
+const zahlwort = (n) => ({ 0: 'kein Mal', 1: 'einmal', 2: 'zweimal' })[n] ?? `${fmt(n)}-mal`;
 const spanne = (monate, key) => {
   const werte = monate.map((m) => mo(m)[key]);
   return `${fmt(Math.min(...werte))} bis ${fmt(Math.max(...werte))}`;
@@ -155,7 +160,8 @@ const fills = {
   'c2-jul2': fmt(vf('2026-07').texte),
   'c2-mai-math': fmt(vf('2026-05').math_smallcaps),
   'c2-jun-math': fmt(vf('2026-06').math_smallcaps),
-  'c2-homoglyph': 'zweimal',
+  'c2-homoglyph': zahlwort(homoglyphGesamt),
+  'c2-homoglyph-monat': homoglyphMonate.join(' und '),
 
   'c3-streamboo-vorfaelle': fmt(streamboo.vorfaelle),
   'c3-streamboo-kanaele': fmt(streamboo.kanaele),
