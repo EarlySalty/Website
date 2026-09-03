@@ -512,9 +512,83 @@ export function createCharts(config = {}) {
     host.parentElement.insertBefore(box, host.nextSibling);
   }
 
+  function renderDualLine(host, rows, opts = {}) {
+    if (!host || !rows.length) return;
+    const f = chartFrame(host, opts);
+    const scale = niceScale(Math.max(1, ...rows.flatMap((r) => [r.a, r.b])));
+    drawGrid(f, scale);
+
+    const x = (i) => f.padL + (f.plotW / Math.max(1, rows.length - 1)) * i;
+    const y = (v) => f.padT + f.plotH - (v / scale.max) * f.plotH;
+
+    [['a', GOLD], ['b', TEAL]].forEach(([field, color]) => {
+      const d = rows.map((r, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(r[field]).toFixed(1)}`).join(' ');
+      f.svg.appendChild(svgEl('path', {
+        d, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+      }));
+      rows.forEach((row, i) => {
+        const dot = svgEl('circle', { cx: x(i), cy: y(row[field]), r: 2.6, fill: color, class: markClass });
+        dot.dataset.idx = String(i);
+        f.svg.appendChild(dot);
+      });
+    });
+
+    rows.forEach((row, i) => {
+      if (row.label && (i % (opts.labelEvery || 1) === 0)) {
+        const t = svgEl('text', { x: x(i), y: f.H - 10, 'text-anchor': 'middle', class: `${p}-axis-label` });
+        t.textContent = row.label;
+        f.svg.appendChild(t);
+      }
+      const hit = svgEl('rect', {
+        x: x(i) - f.plotW / rows.length / 2, y: f.padT,
+        width: f.plotW / rows.length, height: f.plotH, class: hitClass,
+      });
+      hit.dataset.idx = String(i);
+      f.svg.appendChild(hit);
+    });
+
+    attachTooltip(host, f.svg, rows, opts);
+    legend(host, [[opts.nameA, GOLD], [opts.nameB, TEAL]]);
+  }
+
+  function renderTimeline(host, opts = {}) {
+    if (!host || !opts.weeks || !opts.rows) return;
+    const weeks = opts.weeks;
+    const max = opts.max || Math.max(1, ...opts.rows.flatMap((r) => Object.values(r.cells)));
+    const stufe = (v) => {
+      if (!v) return 'rgba(242,238,230,0.04)';
+      const anteil = v / max;
+      if (anteil < 0.08) return 'rgba(201,168,106,0.22)';
+      if (anteil < 0.2) return 'rgba(201,168,106,0.4)';
+      if (anteil < 0.4) return 'rgba(210,180,116,0.62)';
+      if (anteil < 0.7) return 'rgba(224,197,138,0.84)';
+      return '#efd49d';
+    };
+
+    const kopf = `<div class="${p}-tl-row ${p}-tl-row--head"><span class="${p}-tl-name"></span><span class="${p}-tl-cells">${
+      weeks.map((w) => `<span class="${p}-tl-col-label">${w.label || ''}</span>`).join('')
+    }</span></div>`;
+
+    const zeilen = opts.rows.map((row) => {
+      const zellen = weeks.map((w) => {
+        const v = row.cells[w.key] || 0;
+        const learned = row.fragmentWeek === w.key;
+        const titel = `${row.name}, ${w.title}: ${fmt(v)} Spam-Nachrichten${learned ? ', Fragment gelernt' : ''}`;
+        return `<span class="${p}-tl-cell${learned ? ` ${p}-tl-cell--learned` : ''}" style="background:${stufe(v)}" title="${escapeHtml(titel)}"></span>`;
+      }).join('');
+      return `<div class="${p}-tl-row"><span class="${p}-tl-name">${escapeHtml(row.name)}${row.sub ? `<small>${escapeHtml(row.sub)}</small>` : ''}</span><span class="${p}-tl-cells">${zellen}</span></div>`;
+    }).join('');
+
+    const legende = `<div class="${p}-tl-legend"><span>weniger</span>${
+      [0, 0.06, 0.15, 0.35, 0.6, 1].map((a) => `<i style="background:${stufe(a * max)}"></i>`).join('')
+    }<span>mehr</span><span class="${p}-tl-legend-mark"><i class="${p}-tl-learned-key"></i>Fragment gelernt</span></div>`;
+
+    host.innerHTML = `<div class="${p}-tl-grid" role="img" aria-label="${escapeHtml(opts.ariaLabel || 'Marken im Wochenraster; die Werte stehen in der Tabelle darunter')}">${kopf}${zeilen}</div>${legende}`;
+  }
+
   return {
     renderBars, renderGroupedBars, renderLine, renderHBars, renderHeatmap,
-    renderStackedBars,
+    renderStackedBars, renderDualLine, renderTimeline,
     legend, attachTooltip, chartFrame, drawGrid,
   };
 }
