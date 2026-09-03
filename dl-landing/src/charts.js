@@ -468,7 +468,7 @@ export function createCharts(config = {}) {
         const h = total > 0 ? (s.value / total) * f.plotH : 0;
         const gap = acc > 0 ? 2 : 0;
         const rect = svgEl('rect', {
-          x, y: baseline - acc - h + gap, width: barW, height: Math.max(0, h - gap),
+          x, y: baseline - acc - h, width: barW, height: Math.max(0, h - gap),
           fill: s.color, opacity: 0.92, class: markClass,
         });
         rect.dataset.idx = String(i);

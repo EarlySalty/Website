@@ -53,7 +53,7 @@
           "isAccessibleForFree": true,
           "articleSection": "Chat-Report",
           "keywords": "Deadlock, Twitch, Chat, Spam, Scam, Viewer-Bots, Moderation, Datenanalyse, deutschsprachige Szene",
-          "wordCount": 1947,
+          "wordCount": 1986,
           "about": [
             { "@type": "VideoGame", "name": "Deadlock", "publisher": { "@type": "Organization", "name": "Valve Corporation" } },
             { "@type": "Thing", "name": "Twitch-Chat-Moderation" },
@@ -131,7 +131,7 @@
               Vorbehalt stehen am Ende.
             </p>
             <p class="bl-stamp">
-              <b>Stand: 3. September 2026</b> · Messzeitraum Februar bis September 2026 ·
+              <b>Stand: <span data-fill="stand"></span></b> · Messzeitraum Februar bis September 2026 ·
               Chat-Log und Moderationsdaten des Twitch-Bots
             </p>
 
@@ -278,14 +278,15 @@
               Hinter fast allem steht ein einziger Dienst. streamboo läuft von Februar bis September
               durch, <span data-fill="c3-streamboo-vorfaelle"></span> Vorfälle in
               <span data-fill="c3-streamboo-kanaele"></span> Kanälen, verteilt über die Endungen
-              .com, .org und .live. Das passende Filter-Fragment wurde aber erst
+              .com, .org und .live. Das passende Filter-Fragment wurde aber erst am
               <span data-fill="c3-streamboo-fragment"></span> gelernt, also
-              <span data-fill="c3-streamboo-reaktion"></span> Tage nach dem ersten Auftritt
+              <span data-fill="c3-streamboo-reaktion"></span> Tage nach dem ersten Auftritt am
               <span data-fill="c3-streamboo-erst"></span>.
             </p>
             <p class="bl-p">
-              Die drei jüngsten Marken tauchen im August innerhalb einer Woche auf und werden jeweils
-              am selben Tag in den Filter aufgenommen (siehe Tabelle). Genau darin liegt die
+              Die drei jüngsten Marken tauchen im August binnen <span data-fill="c3-august-spanne"></span>
+              Tagen auf und werden jeweils am selben Tag in den Filter aufgenommen (siehe Tabelle).
+              Genau darin liegt die
               Entwicklung: die Lernreaktion ist von rund hundert Tagen auf denselben Tag gesunken. Daneben
               stehen kurzlebige Wegwerfdomains, viele davon auf .ru registriert
               (<span data-fill="c3-ru"></span>), mit ein bis zwei Tagen Lebensdauer und einer
@@ -405,9 +406,12 @@
               <b>Das Spam-Alter ist nach oben verzerrt</b>
               Twitchs Schnittstelle liefert nur noch existierende Konten, und die gelöschten (die
               <span data-fill="c5-geloescht-spam2"></span> Prozent) sind eher die jungen
-              Wegwerfkonten. Das echte Alter liegt also darunter. Kontoalter und Löschquote nutzen
-              die <span data-fill="c5-n-spam"></span> noch existierenden Spam-Konten, Namen und
-              Verhalten die <span data-fill="c5-konten"></span> Vorfall-Konten.
+              Wegwerfkonten. Das echte Alter liegt also darunter. Das Kontoalter nutzt die
+              <span data-fill="c5-n-spam"></span> noch existierenden Konten mit gültigem Erstauftritt,
+              die Löschquote alle <span data-fill="c5-angefragt"></span> angefragten (davon
+              <span data-fill="c5-fehlend"></span> gelöscht), die Namensmuster die
+              <span data-fill="c5-konten"></span> Vorfall-Konten und das Verhalten die
+              <span data-fill="c5-verhalten"></span> Konten mit mitgelesenen Nachrichten.
             </p>
           </div>
         </section>
@@ -504,7 +508,10 @@
                   Das Alter kommt aus Twitchs Konto-Schnittstelle und gibt es nur für noch
                   existierende Konten. Weil die gelöschten eher die jungen Wegwerfkonten sind, ist
                   das Median-Alter der Spam-Gruppe nach oben verzerrt. Das echte Alter liegt
-                  darunter, die Löschquote selbst ist bereits das stärkere Signal.
+                  darunter, die Löschquote selbst ist bereits das stärkere Signal. Gezählt sind die
+                  <span data-fill="m-alter-n"></span> der <span data-fill="m-alter-existing"></span>
+                  noch existierenden Konten mit gültigem Erstauftritt; ein Konto ohne verwertbaren
+                  Erstzeitpunkt fällt heraus.
                 </p>
               </div>
               <div class="bl-method-card">

@@ -1,5 +1,5 @@
 import {
-  META, MONATE,
+  STAND, META, MONATE,
   VERFREMDUNG, VERFREMDUNG_FORMEN, VERFREMDUNG_GESAMT,
   MARKEN, RU_DOMAINS,
   SCAM_MONATE, SCAM_KATEGORIEN, SCAM_PITCH, SCAM_DISCORD, SCAM_AKTIONEN,
@@ -23,9 +23,7 @@ const q = (sel) => document.querySelector(sel);
 const pct = (n) => `${fmt1(n)} %`;
 const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
 
-const CHART_MONATE = MONATE.filter((m) => m.monat >= '2026-02');
-
-renderBars(q('[data-chart="monatsrate"]'), CHART_MONATE.map((m) => ({
+renderBars(q('[data-chart="monatsrate"]'), MONATE.map((m) => ({
   key: monatLang(m.monat),
   label: monatKurz(m.monat),
   value: m.je10k,
@@ -120,6 +118,9 @@ const mo = (m) => MONATE.find((x) => x.monat === m);
 const vf = (m) => VERFREMDUNG.find((x) => x.monat === m);
 const sc = (m) => SCAM_MONATE.find((x) => x.monat === m);
 const streamboo = MARKEN.find((m) => m.marke === 'streamboo');
+const augMarken = MARKEN.filter((m) => m.erstauftritt.startsWith('2026-08')).map((m) => m.erstauftritt).sort();
+const augustSpanne = augMarken.length ? daysBetween(augMarken[0], augMarken[augMarken.length - 1]) : 0;
+const alterExistierend = GELOESCHT.spam.angefragt - GELOESCHT.spam.fehlend;
 const spanne = (monate, key) => {
   const werte = monate.map((m) => mo(m)[key]);
   return `${fmt(Math.min(...werte))} bis ${fmt(Math.max(...werte))}`;
@@ -128,6 +129,8 @@ const kanaeleFebMar = spanne(['2026-02', '2026-03'], 'kanaele');
 const kanaeleAprJun = spanne(['2026-04', '2026-05', '2026-06'], 'kanaele');
 
 const fills = {
+  stand: datumLang(STAND),
+
   'hero-vorfaelle': fmt(META.vorfaelle),
   'hero-konten': fmt(META.konten),
 
@@ -159,6 +162,7 @@ const fills = {
   'c3-streamboo-fragment': datumLang(streamboo.fragment),
   'c3-streamboo-reaktion': fmt(daysBetween(streamboo.erstauftritt, streamboo.fragment)),
   'c3-streamboo-erst': datumLang(streamboo.erstauftritt),
+  'c3-august-spanne': fmt(augustSpanne),
   'c3-ru': RU_DOMAINS.join(', '),
 
   'c4-scam-gesamt': fmt(scamGesamt),
@@ -187,6 +191,9 @@ const fills = {
   'c5-max-kanaele': fmt(VERHALTEN.kanaele_max),
   'c5-geloescht-spam2': fmt1(GELOESCHT.spam.anteil),
   'c5-n-spam': fmt(KONTOALTER.spam.n),
+  'c5-angefragt': fmt(GELOESCHT.spam.angefragt),
+  'c5-fehlend': fmt(GELOESCHT.spam.fehlend),
+  'c5-verhalten': fmt(VERHALTEN.konten),
   'c5-konten': fmt(META.konten),
 
   'c6-jul': fmt1(BANRATE[0].anteil),
@@ -212,6 +219,8 @@ const fills = {
   'm-kanaele-aug': fmt(mo('2026-08').kanaele),
   'm-paare': fmt(REAKTIONSZEIT.paare),
   'm-unbans': fmt(METHODIK.massentbannung),
+  'm-alter-n': fmt(KONTOALTER.spam.n),
+  'm-alter-existing': fmt(alterExistierend),
 };
 
 Object.entries(fills).forEach(([key, value]) => {

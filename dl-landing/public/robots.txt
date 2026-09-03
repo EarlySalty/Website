@@ -14,7 +14,8 @@ Allow: /
 
 # ── Modell-Trainings-Crawler ────────────────────────────────────
 # GPTBot und ClaudeBot bleiben fuer die Site gesperrt, mit Ausnahme von
-# /blog/twitch-szene-2026/, /wohin/ und den llms-Dateien: diese Texte sind eigene Auswertungen,
+# /blog/twitch-szene-2026/, /blog/spam-bots-2026/, /blog/discord-zukunft/, /wohin/ und den
+# llms-Dateien: diese Texte sind eigene Auswertungen,
 # die bewusst zitierbar und in Modellen auffindbar sein soll. Alle anderen
 # Crawler (auch Google-Extended, CCBot, Applebot-Extended) fallen unter
 # "User-agent: *" und duerfen wie bisher die ganze Site lesen.
