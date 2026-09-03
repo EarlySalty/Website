@@ -452,6 +452,37 @@ export function createCharts(config = {}) {
     host.innerHTML = `<div role="img" aria-label="${opts.ariaLabel || 'Raster der Sendezeit nach Wochentag und Stunde; die Werte stehen in der Tabelle darunter'}">${kopf}${zeilen}</div>${legende}`;
   }
 
+  function renderStackedBars(host, rows, opts = {}) {
+    if (!host || !rows.length) return;
+    const f = chartFrame(host, opts);
+    const slot = f.plotW / rows.length;
+    const barW = Math.max(cfg.minBarWidth, Math.min(opts.maxBarWidth || 42, slot - 8));
+    const baseline = f.padT + f.plotH;
+
+    rows.forEach((row, i) => {
+      const total = row.segments.reduce((a, s) => a + s.value, 0);
+      const x = f.padL + slot * i + (slot - barW) / 2;
+      let acc = 0;
+      row.segments.forEach((s) => {
+        if (s.value <= 0) return;
+        const h = total > 0 ? (s.value / total) * f.plotH : 0;
+        const gap = acc > 0 ? 2 : 0;
+        const rect = svgEl('rect', {
+          x, y: baseline - acc - h + gap, width: barW, height: Math.max(0, h - gap),
+          fill: s.color, opacity: 0.92, class: markClass,
+        });
+        rect.dataset.idx = String(i);
+        f.svg.appendChild(rect);
+        acc += h;
+      });
+      xLabel(f, row, i, rows, opts, x + barW / 2);
+      hitArea(f, i, slot);
+    });
+
+    attachTooltip(host, f.svg, rows, opts);
+    if (opts.series) legend(host, opts.series.map((s) => [s.name, s.color]));
+  }
+
   /* ── Legende ─────────────────────────────────────────────────── */
   function legend(host, entries) {
     const box = document.createElement('div');
@@ -462,6 +493,7 @@ export function createCharts(config = {}) {
 
   return {
     renderBars, renderGroupedBars, renderLine, renderHBars, renderHeatmap,
+    renderStackedBars,
     legend, attachTooltip, chartFrame, drawGrid,
   };
 }

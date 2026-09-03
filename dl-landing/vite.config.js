@@ -24,6 +24,7 @@ export default defineConfig({
         blog: 'blog/index.html',
         blogTwitchSzene2026: 'blog/twitch-szene-2026/index.html',
         blogDiscordZukunft: 'blog/discord-zukunft/index.html',
+        blogSpamBots2026: 'blog/spam-bots-2026/index.html',
       },
     },
   },

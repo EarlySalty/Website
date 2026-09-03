@@ -22,6 +22,7 @@ Allow: /
 
 User-agent: GPTBot
 Allow: /blog/twitch-szene-2026/
+Allow: /blog/spam-bots-2026/
 Allow: /wohin/
 Allow: /blog/discord-zukunft/
 Allow: /llms.txt
@@ -30,6 +31,7 @@ Disallow: /
 
 User-agent: ClaudeBot
 Allow: /blog/twitch-szene-2026/
+Allow: /blog/spam-bots-2026/
 Allow: /wohin/
 Allow: /blog/discord-zukunft/
 Allow: /llms.txt
