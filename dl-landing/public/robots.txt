@@ -1,4 +1,7 @@
 User-agent: *
+Disallow: /twitch/impressum
+Disallow: /twitch/datenschutz
+Disallow: /twitch/agb
 Allow: /
 
 # OpenAI search discovery for ChatGPT Search / search surfaces.
