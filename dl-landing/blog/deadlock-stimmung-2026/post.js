@@ -95,7 +95,7 @@ buildTable('patchliste',
   ['Datum', 'Art', 'Was', 'Tage seit vorigem'],
   patchRows.map((r, i) => [
     datumLang(r.datum), r.art, r.was,
-    i === 0 ? '–' : fmt(daysBetween(patchRows[i - 1].datum, r.datum)),
+    i === 0 ? '' : fmt(daysBetween(patchRows[i - 1].datum, r.datum)),
   ]));
 
 /* ── Kapitel 2: Szene ─────────────────────────────────────────── */
@@ -307,7 +307,7 @@ const fills = {
   'c3-td-spiel-pct': fmt(Math.round((TOTDEAD.spiel / TOTDEAD.stichprobe) * 100)),
   'c3-td-tod': fmt(TOTDEAD.spielertod),
   'c3-td-anderes': fmt(TOTDEAD.anderes),
-  'c3-td-effektiv': fmt1(effektivTotdead),
+  'c3-td-effektiv': fmtRate(effektivTotdead),
   'c3-coverage': fmt1(coverageAvg),
   'c3-newcomer': fmt(NEWCOMERS.summe),
   'c3-cfe-rows': fmt(NEWCOMERS.confirmed_rows),

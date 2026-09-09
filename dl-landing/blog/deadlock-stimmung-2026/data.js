@@ -1498,18 +1498,6 @@ export const CHAT_BEISPIELE = {
     "bald dann aber endlich dicker content patch surely",
     "sobald der grosse major patch kommt dann laeufts wieder",
     "is eh alles egal wenn neuer patch kommt sag ich"
-  ],
-  "discord_totdead": [
-    "n curse und sie stirbt ez weg",
-    "wer schickt mir eigentlich eine wraith ins Spiel die mit 4 Leuten tot keinen midboss machen will",
-    "der heal lohnt sich early und midgame nicht wirklich, in den teamfights später stirbt dafür niemand",
-    "Ja oder ganzes Game tot, gg"
-  ],
-  "discord_patch": [
-    "Hab iwie das gefühl das heute bis mittwoch ein major update kommt",
-    "Ich glaube wenn diese woche kein major update kommt, dann im august, aber als open beta launch",
-    "also. nils hat mir heute auf der arbeit gesagt das heute das update kommt. also muss es ja heute kommen",
-    "hab grade bemerkt. mein arbeitgeber zockt einfach auch deadlock, und hat mich in der steam fl. wenn ein neues update kommt, kann ich nicht zu doc holliday xD"
   ]
 };
 
