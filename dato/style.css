@@ -1,0 +1,230 @@
+@font-face {
+  font-family: "Sora";
+  src: url("/brand/fonts/sora-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/brand/fonts/manrope-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+:root {
+  --ink: #0b0b0b;
+  --ink-soft: #121211;
+  --panel: #161616;
+  --bone: #f2eee6;
+  --bone-dim: #b5aea2;
+  --bone-faint: #8d867a;
+  --gold: #c8a86b;
+  --gold-bright: #efd49d;
+  --gold-dark: #806534;
+  --gold-border: rgba(201, 168, 106, 0.42);
+  --gold-border-strong: rgba(201, 168, 106, 0.7);
+  --line-soft: rgba(201, 168, 106, 0.16);
+  --font-display: "Sora", Georgia, serif;
+  --font-body: "Manrope", "Segoe UI", Arial, sans-serif;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--bone);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(120% 55% at 50% -8%, rgba(201, 168, 106, 0.10), transparent 60%),
+    linear-gradient(180deg, #0e0d0c, #0b0b0b 45%, #080808);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 480px;
+  padding: 0 18px 48px;
+}
+
+.hero {
+  position: relative;
+  margin: 0 -18px 0;
+  padding: 0;
+}
+
+.hero-banner {
+  width: 100%;
+  height: 132px;
+  object-fit: cover;
+  display: block;
+  opacity: 0.7;
+  -webkit-mask-image: linear-gradient(180deg, #000 20%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 20%, transparent 100%);
+}
+
+.head {
+  margin-top: -56px;
+  text-align: center;
+  position: relative;
+}
+
+.avatar {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold-border-strong);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  background: var(--ink-soft);
+}
+
+.name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.9rem;
+  letter-spacing: 0.01em;
+  margin: 14px 0 4px;
+  color: var(--bone);
+}
+
+.role {
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 12px;
+}
+
+.bio {
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: var(--bone-dim);
+  margin: 0 auto;
+  max-width: 34ch;
+}
+
+.links {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 16px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--bone);
+  background: var(--panel);
+  border: 1px solid var(--gold-border);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.card:hover,
+.card:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--gold-border-strong);
+  background: #1b1b1a;
+  outline: none;
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+}
+
+.card .icon {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card .icon svg { width: 100%; height: 100%; display: block; }
+
+.card .label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 1.02rem;
+}
+
+.card .label span {
+  display: block;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--bone-faint);
+  margin-top: 1px;
+}
+
+.card .chev {
+  flex: 0 0 auto;
+  color: var(--gold-dark);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 2px 4px;
+  color: var(--bone-faint);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line-soft);
+}
+
+.card.discord {
+  border-color: var(--gold-border-strong);
+  background: linear-gradient(180deg, #1c1a14, #161514);
+}
+
+.card.discord .icon { color: var(--gold-bright); }
+
+.foot {
+  margin-top: 34px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--bone-faint);
+  line-height: 1.9;
+}
+
+.foot a {
+  color: var(--bone-dim);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.foot a:hover { color: var(--gold-bright); }
+
+.foot .sep { margin: 0 8px; opacity: 0.5; }
+
+@media (max-width: 374px) {
+  .name { font-size: 1.7rem; }
+  .card { padding: 14px 13px; gap: 12px; }
+  .card .label { font-size: 0.97rem; }
+}
