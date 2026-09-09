@@ -10,6 +10,7 @@
     { label: 'Tierlist', href: '/builds/', floor: 'T' },
     { label: 'Helden', href: '/helden/', floor: 'H' },
     { label: 'Streamer', href: '/streamer/', floor: 'S' },
+    { label: 'Partner-Dashboard', href: '/twitch/dashboard', floor: 'D' },
     { label: 'Beitreten', href: '/beitreten/', floor: 'B' },
     { label: 'Blog', href: '/blog/', floor: 'L' },
     { label: 'Wohin', href: '/wohin/', floor: 'W' },
