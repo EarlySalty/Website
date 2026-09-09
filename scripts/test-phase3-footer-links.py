@@ -14,6 +14,7 @@ HOME_LINKS = {
     "/patch/": "Patchnotes",
     "/helden/": "Helden",
     "/streamer/": "Streamer",
+    "/twitch/dashboard": "Partner-Dashboard",
     "/beitreten/": "Beitreten",
     "/builds/": "Builds",
     "/turnier/": "Turnier",
