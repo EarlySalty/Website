@@ -17,7 +17,7 @@ Allow: /
 
 # ── Modell-Trainings-Crawler ────────────────────────────────────
 # GPTBot und ClaudeBot bleiben fuer die Site gesperrt, mit Ausnahme von
-# /blog/twitch-szene-2026/, /blog/spam-bots-2026/, /blog/discord-zukunft/, /wohin/ und den
+# /blog/twitch-szene-2026/, /blog/spam-bots-2026/, /blog/deadlock-stimmung-2026/, /blog/discord-zukunft/, /wohin/ und den
 # llms-Dateien: diese Texte sind eigene Auswertungen,
 # die bewusst zitierbar und in Modellen auffindbar sein soll. Alle anderen
 # Crawler (auch Google-Extended, CCBot, Applebot-Extended) fallen unter
@@ -27,6 +27,7 @@ Allow: /
 User-agent: GPTBot
 Allow: /blog/twitch-szene-2026/
 Allow: /blog/spam-bots-2026/
+Allow: /blog/deadlock-stimmung-2026/
 Allow: /wohin/
 Allow: /blog/discord-zukunft/
 Allow: /llms.txt
@@ -36,6 +37,7 @@ Disallow: /
 User-agent: ClaudeBot
 Allow: /blog/twitch-szene-2026/
 Allow: /blog/spam-bots-2026/
+Allow: /blog/deadlock-stimmung-2026/
 Allow: /wohin/
 Allow: /blog/discord-zukunft/
 Allow: /llms.txt

@@ -251,6 +251,19 @@ export function createCharts(config = {}) {
     }
   }
 
+  function drawMarkers(f, markers, xFn) {
+    markers.forEach((m) => {
+      const mx = xFn(m.i);
+      f.svg.appendChild(svgEl('line', {
+        x1: mx, x2: mx, y1: f.padT, y2: f.padT + f.plotH,
+        stroke: GOLD,
+        'stroke-width': m.big ? 1.4 : 1,
+        'stroke-opacity': m.big ? 0.5 : 0.22,
+        'stroke-dasharray': m.big ? '3 3' : '2 5',
+      }));
+    });
+  }
+
   /** Balken mit abgerundetem Datenende, am Nullpunkt verankert. */
   function barPath(x, baseline, w, h, maxRadius) {
     const r = Math.min(maxRadius, w / 2, h);
@@ -413,6 +426,7 @@ export function createCharts(config = {}) {
       f.svg.appendChild(hit);
     });
 
+    if (opts.markers) drawMarkers(f, opts.markers, x);
     attachTooltip(host, f.svg, rows, opts);
   }
 

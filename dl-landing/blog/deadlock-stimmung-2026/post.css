@@ -1,0 +1,16 @@
+@import url('../twitch-szene-2026/post.css');
+
+.bl-ex-head {
+  margin-top: 1.6rem; color: var(--gold); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+}
+.bl-ex-note { margin: 0.4rem 0 0.9rem; font-size: 0.81rem; color: var(--bone-faint); max-width: 62ch; line-height: 1.55; }
+
+.bl-ex { display: grid; gap: 0.5rem; }
+.bl-quote {
+  display: block; padding: 0.65rem 0.85rem; background: var(--ink-soft); border-radius: 10px;
+  border-left: 2px solid rgba(201, 168, 106, 0.35);
+  color: var(--bone-dim); font-size: 0.9rem; line-height: 1.55;
+}
+.bl-quote::before { content: '\201E'; color: var(--gold); margin-right: 0.15em; }
+.bl-quote::after { content: '\201C'; color: var(--gold); margin-left: 0.15em; }
