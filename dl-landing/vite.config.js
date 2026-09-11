@@ -26,6 +26,7 @@ export default defineConfig({
         blogDiscordZukunft: 'blog/discord-zukunft/index.html',
         blogSpamBots2026: 'blog/spam-bots-2026/index.html',
         blogDeadlockStimmung2026: 'blog/deadlock-stimmung-2026/index.html',
+        blogDeadlockSpiritSlop2026: 'blog/deadlock-spirit-slop-2026/index.html',
       },
     },
   },

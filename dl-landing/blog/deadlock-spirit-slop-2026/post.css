@@ -1,0 +1,19 @@
+@import url('../twitch-szene-2026/post.css');
+
+.bl-flow {
+  display: grid; gap: 0.5rem; margin: 1.2rem 0 0.4rem;
+}
+.bl-flow-step {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.85rem;
+  background: var(--ink-soft); border-radius: 10px;
+  border-left: 2px solid rgba(201, 168, 106, 0.4);
+  color: var(--bone-dim); font-size: 0.92rem; line-height: 1.45;
+}
+.bl-flow-step b { color: var(--gold); }
+
+.bl-legend {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin: 0.6rem 0 0;
+  font-size: 0.78rem; color: var(--bone-faint);
+}
+.bl-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.bl-legend i { width: 0.85rem; height: 0.85rem; border-radius: 3px; display: inline-block; }
