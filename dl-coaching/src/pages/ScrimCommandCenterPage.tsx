@@ -18,10 +18,10 @@ import {
 } from '@/lib/commandCenter'
 
 const COPY = {
-  title: 'Scrim-Lage',
+  title: 'Lage-Verlauf & Belege',
   intro:
-    'Alles, was gerade auf eine Entscheidung wartet: offene Abfragen, anstehende Spiele und die zuletzt erzeugten Lagebilder. Ein Aufruf, ein Bildschirm.',
-  attention: 'Braucht Aufmerksamkeit',
+    'Die Detailansicht hinter der Scrim-Orga: offene Terminabfragen, anstehende Spiele und gespeicherte Lagebilder mit ihren Belegen. Die täglichen Entscheidungen startest du in der Scrim-Orga.',
+  attention: 'Operative Signale',
   attentionEmpty: 'Nichts liegt an',
   attentionEmptyCopy: 'Keine offenen Rückfragen, kein fehlender Ersatz, keine Fehler. Alles läuft.',
   batches: 'Offene Abfragen',
@@ -37,7 +37,7 @@ const COPY = {
   unavailableTitle: 'Die Scrim-Lage ist noch nicht freigeschaltet',
   unavailableCopy:
     'Dieser Bildschirm liest aus dem Turnier-Dienst. Solange die Website noch auf dem alten Scrim-Backend läuft, gibt es diese Übersicht nicht. Der Scrim-Pool und die Team-Boards funktionieren normal weiter.',
-  toPool: 'Zum Scrim-Pool',
+  toPool: 'Zur Scrim-Orga',
   errorTitle: 'Die Lage lässt sich gerade nicht laden',
   deadline: 'Deadline',
   overdue: 'überfällig',

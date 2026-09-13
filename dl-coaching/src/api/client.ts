@@ -363,6 +363,14 @@ export interface ScrimSubstituteResponse {
   dm: DiscordSyncStatus
 }
 
+export interface ScrimLagebildActionResponse {
+  team_id: string | number
+  snapshot_id: string | number
+  verdict: string
+  reason: string
+  lagebild: string
+}
+
 export const scrims = {
   /**
    * Orga-Lagebild in einem Aufruf. Existiert nur im Proxy-Modus (SCRIM_BACKEND_MODE=proxy) —
@@ -387,6 +395,16 @@ export const scrims = {
     request<ScrimRosterSuggestResponse>(`/scrim/teams/${id}/suggest`, { method: 'POST', body: JSON.stringify(data) }),
   confirmSubstitute: (teamId: number, data: ScrimSubstituteRequest) =>
     request<ScrimSubstituteResponse>(`/scrim/teams/${teamId}/substitute`, { method: 'POST', body: JSON.stringify(data) }),
+  refreshLagebild: (teamId: number) =>
+    request<ScrimLagebildActionResponse>(`/scrim/teams/${teamId}/lagebild/refresh`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  correctLagebild: (teamId: number, message: string) =>
+    request<ScrimLagebildActionResponse>(`/scrim/teams/${teamId}/lagebild/corrections`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
   pool: (status?: string) => {
     const query = status ? `?${new URLSearchParams({ status }).toString()}` : ''
     return request<ScrimPoolParticipant[]>(`/scrim/pool${query}`)

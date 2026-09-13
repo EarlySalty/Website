@@ -20,21 +20,19 @@ import { overlapWindowText, scrimWindowText, TIME_OPTIONS, WEEKDAYS } from '@/li
 
 const COPY = {
   fitSuffix: 'passen',
-  rosterSuggest: 'Roster vorschlagen',
-  useWindow: 'Wunsch-Fenster nutzen',
+  useWindow: 'Konkreten Termin prüfen',
   day: 'Tag',
   from: 'von',
   to: 'bis',
-  size: 'Größe',
   invalidWindow: 'Startzeit muss vor Endzeit liegen.',
-  findSub: 'Einspringer finden',
+  findSub: 'Einspringer für Termin finden',
   suggestion: 'Bestes Fenster',
-  noSuggestion: 'Noch kein Vorschlag — auf „Roster vorschlagen" klicken.',
+  noSuggestion: 'Noch keine Suche gestartet.',
   noCandidates: 'Keine passenden Spieler im freien Pool gefunden.',
-  noSubs: 'Kein Auswechselspieler hat zu dieser Zeit Zeit.',
+  noSubs: 'Im Einspringer-Pool passt niemand zu dieser Zeit.',
   fits: 'passt',
   minutes: 'min',
-  assign: 'Zuweisen',
+  assign: 'Als Stamm setzen',
   remove: 'Aus Team nehmen',
 } as const
 
@@ -83,7 +81,6 @@ export default function ScrimBoardPage() {
   const teamId = Number(params.id)
   const [useWindow, setUseWindow] = useState(() => !!initialWindow)
   const [windowDraft, setWindowDraft] = useState(() => draftFromWindow(initialWindow))
-  const [size, setSize] = useState('6')
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['scrim-board', teamId],
@@ -93,10 +90,13 @@ export default function ScrimBoardPage() {
 
   const selectedWindow = useWindow ? draftWindow(windowDraft) : null
   const invalidWindow = useWindow && !selectedWindow
-  const requestedSize = Number(size) || 6
+  const currentStarterCount = data?.members.filter(member => !member.is_bench).length ?? 0
+  const missingStarterSlots = Math.max(0, 6 - currentStarterCount)
+  // Die Engine soll fehlende Stammplaetze fuellen, nicht blind sechs weitere Kandidaten liefern.
+  const requestedSize = Math.max(1, missingStarterSlots)
 
-  // Ein Aufruf, zwei Toepfe: Kader aus dem Spieler-Pool, Einspringer von der Auswechselbank —
-  // gleiche Engine, gleiches Zeitfenster. `variables` merkt sich, welcher Topf zuletzt lief.
+  // Ein Aufruf, zwei klar getrennte Toepfe: feste Spieler aus dem freien Pool und temporäre
+  // Einspringer aus dem Einspringer-Pool. `variables` merkt sich, welcher Topf zuletzt lief.
   const suggestMutation = useMutation({
     mutationFn: (pool: ScrimPoolSource) =>
       scrims.suggestRoster(teamId, {
@@ -143,7 +143,9 @@ export default function ScrimBoardPage() {
   }
 
   const { team, members, overlap } = data
-  const nonBench = members.filter(m => !m.is_bench).length
+  const starters = members.filter(member => !member.is_bench)
+  const bench = members.filter(member => member.is_bench)
+  const nonBench = starters.length
   const nameOf = new Map(members.map(m => [m.participant_id, m.display_name]))
   const bestRoster = bestRosterWindow(overlap, nonBench)
   const updateBusy = participantMutation.isPending || substituteMutation.isPending
@@ -151,12 +153,12 @@ export default function ScrimBoardPage() {
   return (
     <div className="content-grid space-y-8 py-8">
       <div>
-        <Link to="/scrims" className="eyebrow mb-2 inline-block hover:underline">← Scrim-Pool</Link>
+        <Link to="/scrims" className="eyebrow mb-2 inline-block hover:underline">← Scrim-Orga</Link>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="section-title">{team.name}</h1>
             <p className="section-copy">
-              {team.coach ? `Coach ${team.coach} · ` : ''}{nonBench} Stamm-Spieler{members.length > nonBench ? ` · ${members.length - nonBench} Bank` : ''}
+              {team.coach ? `Coach ${team.coach} · ` : ''}{nonBench}/6 Stamm{bench.length > 0 ? ` · ${bench.length} Team-Bank` : ' · keine Team-Bank'}
             </p>
           </div>
         </div>
@@ -186,8 +188,18 @@ export default function ScrimBoardPage() {
       </div>
 
       <div className="panel p-5">
-        <SectionHead label={COPY.rosterSuggest} />
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_7rem_auto] lg:items-end">
+        <SectionHead
+          label="Kader auffüllen"
+          action={
+            <span className={`badge ${missingStarterSlots === 0 ? 'badge-amber' : ''}`}>
+              {missingStarterSlots === 0 ? 'Stamm komplett' : (missingStarterSlots === 1 ? '1 Stammplatz offen' : `${missingStarterSlots} Stammplätze offen`)}
+            </span>
+          }
+        />
+        <p className="mb-4 max-w-3xl text-xs" style={{ color: 'var(--text-muted)' }}>
+          Die Suche ist keine KI-Entscheidung: Sie sortiert den freien Pool nach echter Zeitüberschneidung. Du bestätigst jede Zuweisung selbst. Einspringer sind separat und brauchen immer einen konkreten Termin.
+        </p>
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div className="space-y-3">
             <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-primary)' }}>
               <input type="checkbox" checked={useWindow} onChange={e => setUseWindow(e.target.checked)} />
@@ -228,34 +240,33 @@ export default function ScrimBoardPage() {
               </div>
             )}
           </div>
-          <label className="flex flex-col gap-1.5">
-            <span className="stat-label">{COPY.size}</span>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              className="input-field !py-1.5"
-              value={size}
-              onChange={e => setSize(e.target.value)}
-            />
-          </label>
-          <button
-            type="button"
-            disabled={suggestMutation.isPending || invalidWindow}
-            onClick={() => suggestMutation.mutate('players')}
-            className="btn-amber rounded-sm px-4 py-2 text-sm"
-          >
-            {COPY.rosterSuggest}
-          </button>
-          <button
-            type="button"
-            disabled={suggestMutation.isPending || invalidWindow}
-            onClick={() => suggestMutation.mutate('reserve')}
-            className="btn-ghost rounded-sm px-4 py-2 text-sm"
-          >
-            {COPY.findSub}
-          </button>
+          <div className="flex flex-wrap gap-2 lg:justify-end">
+            <button
+              type="button"
+              disabled={suggestMutation.isPending || invalidWindow || missingStarterSlots === 0}
+              onClick={() => suggestMutation.mutate('players')}
+              className="btn-amber rounded-sm px-4 py-2 text-sm"
+            >
+              {missingStarterSlots === 0
+                ? 'Stamm komplett'
+                : `${missingStarterSlots} passende${missingStarterSlots === 1 ? 'n Spieler' : ' Spieler'} finden`}
+            </button>
+            <button
+              type="button"
+              disabled={suggestMutation.isPending || invalidWindow || !selectedWindow}
+              title={selectedWindow ? undefined : 'Für Einspringer zuerst einen konkreten Termin aktivieren.'}
+              onClick={() => suggestMutation.mutate('reserve')}
+              className="btn-ghost rounded-sm px-4 py-2 text-sm"
+            >
+              {COPY.findSub}
+            </button>
+          </div>
         </div>
+        {!useWindow && (
+          <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+            Ohne konkreten Termin sucht die Stammspieler-Suche das beste gemeinsame Wochenfenster. Für einen Einspringer muss der Termin feststehen.
+          </p>
+        )}
         {invalidWindow && <p className="mt-2 text-xs" style={{ color: 'var(--red)' }}>{COPY.invalidWindow}</p>}
         {suggestMutation.isError && <p className="mt-2 text-xs" style={{ color: 'var(--red)' }}>{suggestMutation.error.message}</p>}
         <SuggestionResult
@@ -270,7 +281,7 @@ export default function ScrimBoardPage() {
               }
               return
             }
-            participantMutation.mutate({ participantId, patch: { team_id: teamId, status: 'assigned' } })
+            participantMutation.mutate({ participantId, patch: { team_id: teamId, status: 'assigned', is_bench: false } })
           }}
         />
       </div>
@@ -284,18 +295,48 @@ export default function ScrimBoardPage() {
         </div>
       </div>
 
-      <div>
-        <SectionHead label="Kader" count={members.length} />
-        <div className="space-y-3">
-          {members.map(m => (
-            <MemberRow
-              key={m.participant_id}
-              member={m}
-              busy={updateBusy}
-              onRemove={() => participantMutation.mutate({ participantId: m.participant_id, patch: { team_id: null } })}
-            />
-          ))}
-        </div>
+      <div className="space-y-6">
+        <section>
+          <SectionHead label="Stammaufstellung" count={starters.length} action={<span className="badge">{starters.length}/6</span>} />
+          {starters.length === 0 ? (
+            <EmptyState title="Noch kein Stamm gesetzt" copy="Fülle die sechs Stammplätze aus dem freien Pool." />
+          ) : (
+            <div className="space-y-3">
+              {starters.map(member => (
+                <MemberRow
+                  key={member.participant_id}
+                  member={member}
+                  busy={updateBusy}
+                  onToggleBench={() => participantMutation.mutate({ participantId: member.participant_id, patch: { is_bench: true } })}
+                  onRemove={() => participantMutation.mutate({ participantId: member.participant_id, patch: { team_id: null, status: 'waitlist', is_bench: false, is_captain: false } })}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <SectionHead label="Team-Bank" count={bench.length} />
+          <p className="mb-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+            Feste Spieler dieses Teams, die nicht zur 6er-Stammaufstellung zählen. Teamübergreifende Einspringer stehen nicht hier, sondern im Einspringer-Pool.
+          </p>
+          {bench.length === 0 ? (
+            <EmptyState title="Keine Team-Bank" copy="Das Team hat aktuell keine festen Bankspieler." />
+          ) : (
+            <div className="space-y-3">
+              {bench.map(member => (
+                <MemberRow
+                  key={member.participant_id}
+                  member={member}
+                  busy={updateBusy}
+                  onToggleBench={() => participantMutation.mutate({ participantId: member.participant_id, patch: { is_bench: false } })}
+                  onRemove={() => participantMutation.mutate({ participantId: member.participant_id, patch: { team_id: null, status: 'waitlist', is_bench: false, is_captain: false } })}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
         {participantMutation.isError && <p className="mt-2 text-xs" style={{ color: 'var(--red)' }}>{participantMutation.error.message}</p>}
         {substituteMutation.isError && <p className="mt-2 text-xs" style={{ color: 'var(--red)' }}>{substituteMutation.error.message}</p>}
       </div>
@@ -355,6 +396,7 @@ function SuggestionResult({
               window={window}
               busy={busy}
               assignable={pool !== 'reserve' || window !== null}
+              actionLabel={pool === 'reserve' ? 'Einspringen lassen' : COPY.assign}
               onAssign={() => onAssign(candidate.participant_id, window)}
             />
           ))}
@@ -369,12 +411,14 @@ function CandidateRow({
   window,
   busy,
   assignable,
+  actionLabel,
   onAssign,
 }: {
   candidate: ScrimRosterSuggestionCandidate
   window: ScrimWindow | null
   busy: boolean
   assignable: boolean
+  actionLabel: string
   onAssign: () => void
 }) {
   const pct = Math.round(candidate.fit_ratio * 100)
@@ -402,7 +446,7 @@ function CandidateRow({
         onClick={onAssign}
         className="btn-amber rounded-sm px-4 py-2 text-sm"
       >
-        {COPY.assign}
+        {actionLabel}
       </button>
     </div>
   )
@@ -457,10 +501,12 @@ function OverlapDayCard({
 function MemberRow({
   member,
   busy,
+  onToggleBench,
   onRemove,
 }: {
   member: ScrimTeamBoardMember
   busy: boolean
+  onToggleBench: () => void
   onRemove: () => void
 }) {
   return (
@@ -470,10 +516,13 @@ function MemberRow({
           {member.display_name}
         </span>
         {member.is_captain && <span className="badge badge-amber">Captain</span>}
-        {member.is_bench && <span className="badge">Bank</span>}
+        <span className={`badge ${member.is_bench ? '' : 'badge-amber'}`}>{member.is_bench ? 'Team-Bank' : 'Stamm'}</span>
         {!member.availability_confirmed && <span className="badge" title="Verfügbarkeit stammt aus der alten Liste, nicht selbst bestätigt">unbestätigt</span>}
         {!member.discord_linked && <span className="badge" title="Kein Discord-Account verknüpft">kein Discord</span>}
         {member.rank && <span className="stat-label ml-auto">{member.rank}</span>}
+        <button type="button" disabled={busy} onClick={onToggleBench} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">
+          {member.is_bench ? 'In Stamm holen' : 'Auf Team-Bank'}
+        </button>
         <button type="button" disabled={busy} onClick={onRemove} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">
           {COPY.remove}
         </button>

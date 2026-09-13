@@ -15,36 +15,51 @@ import { useAuth } from '@/context/AuthContext'
 import AvailabilityGrid from '@/components/AvailabilityGrid'
 import { CoachOnly, EmptyState, PageSpinner, SectionHead } from '@/components/ui'
 import { formatMinutes, scrimWindowText, TIME_OPTIONS, WEEKDAYS } from '@/lib/availability'
+import type { ScrimCommandCenter } from '@/lib/commandCenter'
+import {
+  buildScrimOpsTasks,
+  groupScrimPool,
+  latestLagebildForTeam,
+  parseLagebildText,
+  summarizeTeams,
+  totalOpenStarterSlots,
+  type ScrimPoolGroupKey,
+  type TeamRosterSummary,
+} from '@/lib/scrimOps'
 
 const STATUS_OPTIONS = [
   { value: 'new', label: 'Neu' },
-  { value: 'waitlist', label: 'Spieler-Pool' },
-  { value: 'reserve', label: 'Auswechselspieler' },
-  { value: 'assigned', label: 'Zugewiesen' },
+  { value: 'waitlist', label: 'Freier Pool' },
+  { value: 'reserve', label: 'Einspringer-Pool' },
+  { value: 'assigned', label: 'Im Team' },
   { value: 'inactive', label: 'Inaktiv' },
 ] as const
 
-/** Die vier Toepfe entlang des echten Ablaufs: Eingang → Sichtung → Verwendung. Disjunkt nach status, damit niemand doppelt oder gar nicht auftaucht. */
-const POOL_GROUPS = [
+const POOL_TABS: Array<{ key: ScrimPoolGroupKey; label: string; hint: string }> = [
   {
-    key: 'new' as const,
-    title: 'Neue Anmeldungen',
-    hint: 'Frisch reingekommen und noch nicht einsortiert. Schieb sie in den Spieler-Pool oder auf die Auswechselbank.',
+    key: 'new',
+    label: 'Neu',
+    hint: 'Noch nicht einsortiert. Hier sollte niemand lange liegen bleiben.',
   },
   {
-    key: 'waitlist' as const,
-    title: 'Spieler-Pool',
-    hint: 'Warten auf ein festes Team. Aus diesem Topf schlägt das Team-Board Kader nach Zeitüberschneidung vor.',
+    key: 'waitlist',
+    label: 'Freier Pool',
+    hint: 'Spieler ohne festes Team. Daraus sucht das Team-Board passende Stammspieler.',
   },
   {
-    key: 'reserve' as const,
-    title: 'Auswechselspieler',
-    hint: 'Springen ein, wenn einem Team jemand fehlt — über die Discord-Rolle „Auswechselspieler" anpingbar.',
+    key: 'reserve',
+    label: 'Einspringer-Pool',
+    hint: 'Teamübergreifende Aushilfen. Das ist nicht dasselbe wie die Team-Bank eines festen Teams.',
   },
   {
-    key: 'assigned' as const,
-    title: 'In Teams',
-    hint: 'Fest eingeteilt. Kader und Termine stehen im jeweiligen Team-Board.',
+    key: 'assigned',
+    label: 'In Teams',
+    hint: 'Alle fest zugeordneten Spieler, inklusive klar markierter Team-Bank.',
+  },
+  {
+    key: 'inactive',
+    label: 'Inaktiv',
+    hint: 'Nicht mehr im aktiven Scrim-Programm.',
   },
 ]
 
@@ -64,8 +79,8 @@ const COPY = {
   announceSend: 'Im Scrim-Kanal posten',
   announceSending: 'Poste …',
   preview: 'Vorschau',
-  findSub: 'Auswechselspieler finden',
-  findSubHint: 'Sag uns, für welches Team und wann — wir schauen, wer von der Auswechselbank zu der Zeit kann.',
+  findSub: 'Einspringer finden',
+  findSubHint: 'Wähle Team und Termin — wir zeigen nur Leute aus dem teamübergreifenden Einspringer-Pool, die zu diesem Fenster passen.',
   forTeam: 'Für welches Team',
   search: 'Passende suchen',
   searching: 'Suche …',
@@ -74,9 +89,9 @@ const COPY = {
   minutes: 'min',
   confirmSub: 'Einspringen lassen',
   confirmed: 'Bescheid gegeben ✓',
-  confirmedHint: 'Hat die Rolle von {team} und eine DM mit Team und Uhrzeit bekommen. Auswechselspieler bleibt er.',
+  confirmedHint: 'Hat die Rolle von {team} und eine DM mit Team und Uhrzeit bekommen. Im Einspringer-Pool bleibt die Person weiterhin verfügbar.',
   noSubsTitle: 'Niemand frei',
-  noSubs: 'Kein Auswechselspieler hat zu dieser Zeit Zeit. Versuch ein anderes Fenster.',
+  noSubs: 'Im Einspringer-Pool passt gerade niemand zu diesem Zeitfenster. Versuch ein anderes Fenster.',
   dialogTitle: 'Neues Team',
   teamName: 'Name',
   coach: 'Coach',
@@ -143,26 +158,6 @@ function teamWindowText(team: ScrimTeam): string {
   return `${formatMinutes(team.default_from)}–${formatMinutes(team.default_to)} Uhr`
 }
 
-/**
- * Teilt den Pool disjunkt auf die Toepfe auf. Wer im Team ist, gilt als zugewiesen —
- * auch wenn sein status etwas anderes behauptet; sonst waere er in zwei Toepfen.
- * Unbekannte status-Werte landen bei den neuen Anmeldungen statt zu verschwinden.
- */
-function groupPool(pool: ScrimPoolParticipant[]) {
-  const groups = { new: [], waitlist: [], reserve: [], assigned: [], inactive: [] } as
-    Record<'new' | 'waitlist' | 'reserve' | 'assigned' | 'inactive', ScrimPoolParticipant[]>
-  for (const p of pool) {
-    const status = p.status?.trim().toLowerCase()
-    if (status === 'inactive') groups.inactive.push(p)
-    else if (p.team) groups.assigned.push(p)
-    else if (status === 'reserve') groups.reserve.push(p)
-    else if (status === 'waitlist') groups.waitlist.push(p)
-    else if (status === 'assigned') groups.waitlist.push(p) // zugewiesen ohne Team = wieder frei
-    else groups.new.push(p)
-  }
-  return groups
-}
-
 export default function ScrimPoolPage() {
   const { isCoach } = useAuth()
   const qc = useQueryClient()
@@ -172,6 +167,8 @@ export default function ScrimPoolPage() {
   const [announceTeam, setAnnounceTeam] = useState<ScrimTeam | null>(null)
   const [editTeam, setEditTeam] = useState<ScrimTeam | null>(null)
   const [teamForm, setTeamForm] = useState<TeamForm>(DEFAULT_TEAM_FORM)
+  const [activePoolGroup, setActivePoolGroup] = useState<ScrimPoolGroupKey>('new')
+  const [poolSearch, setPoolSearch] = useState('')
 
   const teamsQuery = useQuery({ queryKey: ['scrim-teams'], queryFn: () => scrims.teams(), enabled: isCoach })
   const coachesQuery = useQuery({ queryKey: ['scrim-coaches'], queryFn: () => scrims.coaches(), enabled: isCoach })
@@ -180,9 +177,14 @@ export default function ScrimPoolPage() {
     queryFn: () => scrims.pool(),
     enabled: isCoach,
   })
+  const commandCenterQuery = useQuery({
+    queryKey: ['scrim-command-center'],
+    queryFn: () => scrims.commandCenter(),
+    enabled: isCoach,
+    retry: false,
+    staleTime: 30_000,
+  })
   const createTeamMutation = useMutation({
-    // Das Zeitfenster ist zugleich die Stammzeit des Teams — der Tag daraus fuellt nur den
-    // ersten Roster-Vorschlag vor, die Uhrzeit bleibt dauerhaft am Team haengen.
     mutationFn: () =>
       scrims.createTeam({
         name: teamForm.name,
@@ -198,108 +200,196 @@ export default function ScrimPoolPage() {
       navigate(`/scrims/teams/${team.id}`, window ? { state: { suggestWindow: window } } : undefined)
     },
   })
+  const refreshLagebildMutation = useMutation({
+    mutationFn: (teamId: number) => scrims.refreshLagebild(teamId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['scrim-command-center'] })
+    },
+  })
 
   if (!isCoach) return <CoachOnly />
 
   const teams = teamsQuery.data ?? []
   const pool = poolQuery.data ?? []
-  const grouped = groupPool(pool)
+  const grouped = groupScrimPool(pool)
+  const summaries = summarizeTeams(teams, pool)
+  const tasks = buildScrimOpsTasks(summaries, grouped, commandCenterQuery.data)
+  const activeTab = POOL_TABS.find(tab => tab.key === activePoolGroup) ?? POOL_TABS[0]
+  const normalizedSearch = poolSearch.trim().toLowerCase()
+  const visibleParticipants = grouped[activePoolGroup].filter(participant => {
+    if (!normalizedSearch) return true
+    return [participant.display_name, participant.rank, participant.roles, participant.team?.name]
+      .filter(Boolean)
+      .some(value => String(value).toLowerCase().includes(normalizedSearch))
+  })
+
+  const selectPoolGroup = (group: ScrimPoolGroupKey) => {
+    setActivePoolGroup(group)
+    requestAnimationFrame(() => document.getElementById('scrim-pool-explorer')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
 
   return (
     <div className="content-grid space-y-8 py-8">
-      <div>
-        <h1 className="section-title">Scrim-Verwaltung</h1>
-        <p className="section-copy">
-          Teams, Kader und Verfügbarkeit an einem Ort. Öffne ein Team-Board, um den besten gemeinsamen Scrim-Termin zu sehen.
-        </p>
-      </div>
-
-      <div>
-        <SectionHead
-          label="Teams"
-          count={teams.length}
-          action={
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setShowFindSub(true)}
-                disabled={teams.length === 0}
-                className="btn-ghost rounded-sm px-3 py-1.5 text-xs"
-              >
-                {COPY.findSub}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  createTeamMutation.reset()
-                  setShowCreate(true)
-                }}
-                className="btn-amber rounded-sm px-3 py-1.5 text-xs"
-              >
-                {COPY.createTeam}
-              </button>
-            </div>
-          }
-        />
-        {teamsQuery.isLoading ? (
-          <PageSpinner />
-        ) : teams.length === 0 ? (
-          <EmptyState title="Noch keine Teams" copy="Sobald Teams angelegt sind, erscheinen hier die Boards." />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {teams.map(team => (
-              <div key={team.id} className="card p-4">
-                <Link to={`/scrims/teams/${team.id}`} className="block">
-                  <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{team.name}</span>
-                  {team.coach && <p className="stat-label mt-1">Coach {team.coach}</p>}
-                  <p className="stat-label mt-1">{teamWindowText(team)}</p>
-                  <span className="eyebrow mt-3 inline-block">Board öffnen →</span>
-                </Link>
-                <div className="mt-3 flex flex-wrap gap-2 border-t pt-3" style={{ borderColor: 'var(--border-dim)' }}>
-                  <button
-                    type="button"
-                    onClick={() => setAnnounceTeam(team)}
-                    className="btn-amber rounded-sm px-2.5 py-1 text-xs"
-                  >
-                    {COPY.announce}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditTeam(team)}
-                    className="btn-ghost rounded-sm px-2.5 py-1 text-xs"
-                  >
-                    {COPY.editTeam}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="section-title">Scrim-Orga</h1>
+          <p className="section-copy max-w-3xl">
+            Erst sehen, was wirklich blockiert, dann handeln. Stammaufstellung, Team-Bank, freier Pool und Einspringer sind hier bewusst getrennt.
+          </p>
+        </div>
+        {commandCenterQuery.isSuccess && (
+          <Link to="/scrims/lage" className="btn-ghost rounded-sm px-4 py-2 text-sm">
+            Lage-Verlauf & Belege
+          </Link>
         )}
       </div>
 
-      {poolQuery.isLoading ? (
+      {poolQuery.isLoading || teamsQuery.isLoading ? (
         <PageSpinner />
       ) : (
-        POOL_GROUPS.map(group => (
-          <PoolGroup
-            key={group.key}
-            title={group.title}
-            hint={group.hint}
-            participants={grouped[group.key]}
-            teams={teams}
-            defaultOpen={group.key === 'new' && grouped.new.length > 0}
-          />
-        ))
-      )}
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <OverviewMetric label="Neu zu klären" value={grouped.new.length} note="noch nicht einsortiert" attention={grouped.new.length > 0} />
+            <OverviewMetric label="Freier Pool" value={grouped.waitlist.length} note="für feste Teams verfügbar" />
+            <OverviewMetric label="Einspringer-Pool" value={grouped.reserve.length} note="teamübergreifende Aushilfen" />
+            <OverviewMetric label="Offene Stammplätze" value={totalOpenStarterSlots(summaries)} note="über alle Teams" attention={totalOpenStarterSlots(summaries) > 0} />
+          </div>
 
-      {grouped.inactive.length > 0 && (
-        <PoolGroup
-          title="Ausgetreten"
-          hint="Nicht mehr dabei. Discord-Rollen sind entzogen."
-          participants={grouped.inactive}
-          teams={teams}
-          defaultOpen={false}
-        />
+          <section>
+            <SectionHead
+              label="Was jetzt zu tun ist"
+              count={tasks.length}
+              action={commandCenterQuery.isSuccess ? <span className="badge badge-amber">Lagebild aktiv</span> : undefined}
+            />
+            <p className="mb-3 max-w-3xl text-xs" style={{ color: 'var(--text-muted)' }}>
+              Harte Orga-Probleme werden deterministisch erkannt. Die Lagebild-KI ergänzt pro Team nur Kontext und den nächsten Schritt; Team-Zuweisungen bleiben immer deine Entscheidung.
+            </p>
+            {tasks.length === 0 ? (
+              <EmptyState title="Nichts blockiert" copy="Kadergrößen, Zuständigkeiten und offene Vorgänge sehen aktuell sauber aus." />
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {tasks.slice(0, 9).map(task => (
+                  <div
+                    key={task.id}
+                    className="card border-l-2 p-4"
+                    style={{ borderLeftColor: task.priority === 'high' ? 'var(--red)' : 'var(--amber)' }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <span className="stat-label">{task.priority === 'high' ? 'Jetzt' : task.priority === 'medium' ? 'Danach' : 'Prüfen'}</span>
+                        <p className="mt-1 font-display text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{task.title}</p>
+                        <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>{task.detail}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      {task.teamId ? (
+                        <Link to={`/scrims/teams/${task.teamId}`} className="eyebrow">Team-Board öffnen →</Link>
+                      ) : task.poolGroup ? (
+                        <button type="button" className="eyebrow" onClick={() => selectPoolGroup(task.poolGroup!)}>Spieler anzeigen →</button>
+                      ) : task.commandCenter ? (
+                        <Link to="/scrims/lage" className="eyebrow">Vorgang prüfen →</Link>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <SectionHead
+              label="Teams"
+              count={teams.length}
+              action={
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowFindSub(true)}
+                    disabled={teams.length === 0}
+                    className="btn-ghost rounded-sm px-3 py-1.5 text-xs"
+                  >
+                    Einspringer suchen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      createTeamMutation.reset()
+                      setShowCreate(true)
+                    }}
+                    className="btn-amber rounded-sm px-3 py-1.5 text-xs"
+                  >
+                    {COPY.createTeam}
+                  </button>
+                </div>
+              }
+            />
+            {teams.length === 0 ? (
+              <EmptyState title="Noch keine Teams" copy="Sobald Teams angelegt sind, erscheinen hier Kader und Zuständigkeiten." />
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-2">
+                {summaries.map(summary => (
+                  <TeamOverviewCard
+                    key={summary.team.id}
+                    summary={summary}
+                    commandCenter={commandCenterQuery.isSuccess ? commandCenterQuery.data : undefined}
+                    refreshBusy={refreshLagebildMutation.isPending && refreshLagebildMutation.variables === summary.team.id}
+                    refreshError={refreshLagebildMutation.isError && refreshLagebildMutation.variables === summary.team.id ? refreshLagebildMutation.error.message : null}
+                    onRefreshLagebild={commandCenterQuery.isSuccess ? () => refreshLagebildMutation.mutate(summary.team.id) : undefined}
+                    onAnnounce={() => setAnnounceTeam(summary.team)}
+                    onEdit={() => setEditTeam(summary.team)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section id="scrim-pool-explorer" className="scroll-mt-24">
+            <SectionHead label="Spieler verwalten" count={pool.length - grouped.inactive.length} />
+            <div className="panel p-4 sm:p-5">
+              <div className="flex flex-wrap gap-2">
+                {POOL_TABS.map(tab => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActivePoolGroup(tab.key)}
+                    className={`rounded-sm px-3 py-2 text-xs font-semibold transition ${activePoolGroup === tab.key ? 'btn-amber' : 'btn-ghost'}`}
+                  >
+                    {tab.label} · {grouped[tab.key].length}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="font-display text-base font-bold" style={{ color: 'var(--text-primary)' }}>{activeTab.label}</p>
+                  <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>{activeTab.hint}</p>
+                </div>
+                <label className="w-full sm:max-w-xs">
+                  <span className="sr-only">Spieler suchen</span>
+                  <input
+                    className="input-field !py-2"
+                    value={poolSearch}
+                    onChange={event => setPoolSearch(event.target.value)}
+                    placeholder="Name, Rang, Rolle oder Team suchen"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {visibleParticipants.length === 0 ? (
+                  <EmptyState
+                    title={normalizedSearch ? 'Keine Treffer' : 'Niemand in diesem Bereich'}
+                    copy={normalizedSearch ? 'Passe die Suche an oder wähle einen anderen Bereich.' : 'Hier ist gerade nichts zu erledigen.'}
+                  />
+                ) : (
+                  visibleParticipants.map(participant => (
+                    <PoolRow key={participant.id} participant={participant} teams={teams} />
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+        </>
       )}
 
       {showFindSub && <FindSubstituteModal teams={teams} onClose={() => setShowFindSub(false)} />}
@@ -319,52 +409,128 @@ export default function ScrimPoolPage() {
   )
 }
 
-function PoolGroup({
-  title,
-  hint,
-  participants,
-  teams,
-  defaultOpen,
+function OverviewMetric({
+  label,
+  value,
+  note,
+  attention = false,
 }: {
-  title: string
-  hint: string
-  participants: ScrimPoolParticipant[]
-  teams: ScrimTeam[]
-  defaultOpen: boolean
+  label: string
+  value: number
+  note: string
+  attention?: boolean
 }) {
-  const [open, setOpen] = useState(defaultOpen)
-
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
-        className="card card-hover flex w-full items-center justify-between gap-3 p-4 text-left"
-      >
-        <span className="flex items-center gap-2">
-          <span className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{title}</span>
-          <span className="badge badge-amber">{participants.length}</span>
-        </span>
-        <span className="eyebrow">{open ? 'schließen ▾' : 'öffnen ▸'}</span>
-      </button>
-
-      {open && (
-        <div className="mt-4 space-y-3">
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{hint}</p>
-          {participants.length === 0 ? (
-            <EmptyState title="Niemand hier" copy="In diesem Topf ist gerade niemand." />
-          ) : (
-            <div className="space-y-2">
-              {participants.map(p => (
-                <PoolRow key={p.id} participant={p} teams={teams} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+    <div className="card p-4">
+      <p className="stat-label">{label}</p>
+      <p className="mt-1 font-display text-3xl font-extrabold" style={{ color: attention ? 'var(--amber)' : 'var(--text-primary)' }}>{value}</p>
+      <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>{note}</p>
     </div>
   )
+}
+
+function TeamOverviewCard({
+  summary,
+  commandCenter,
+  refreshBusy,
+  refreshError,
+  onRefreshLagebild,
+  onAnnounce,
+  onEdit,
+}: {
+  summary: TeamRosterSummary
+  commandCenter?: ScrimCommandCenter
+  refreshBusy: boolean
+  refreshError: string | null
+  onRefreshLagebild?: () => void
+  onAnnounce: () => void
+  onEdit: () => void
+}) {
+  const { team, starters, bench, missingStarters, excessStarters, unconfirmedAvailability } = summary
+  const snapshot = latestLagebildForTeam(commandCenter, team.id)
+  const ai = parseLagebildText(snapshot?.lagebild_text)
+  const statusText = missingStarters > 0
+    ? (missingStarters === 1 ? '1 Stammplatz offen' : `${missingStarters} Stammplätze offen`)
+    : excessStarters > 0
+      ? `${starters.length}/6 als Stamm markiert`
+      : 'Stamm 6/6'
+
+  return (
+    <div className="card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <Link to={`/scrims/teams/${team.id}`} className="font-display text-xl font-bold hover:underline" style={{ color: 'var(--text-primary)' }}>
+            {team.name}
+          </Link>
+          <p className="stat-label mt-1">{team.coach ? `Coach ${team.coach}` : 'Kein Coach'} · {teamWindowText(team)}</p>
+        </div>
+        <span className={`badge ${summary.health === 'ready' ? 'badge-amber' : ''}`}>{statusText}</span>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-sm p-3" style={{ border: '1px solid var(--border-dim)', background: 'var(--bg-surface)' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="stat-label">Stammaufstellung</span>
+            <strong className="font-mono-data text-sm" style={{ color: starters.length === 6 ? 'var(--amber)' : 'var(--text-primary)' }}>{starters.length}/6</strong>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            {starters.length > 0 ? starters.map(player => player.display_name).join(', ') : 'Noch niemand gesetzt.'}
+          </p>
+        </div>
+        <div className="rounded-sm p-3" style={{ border: '1px solid var(--border-dim)', background: 'var(--bg-surface)' }}>
+          <div className="flex items-center justify-between gap-2">
+            <span className="stat-label">Team-Bank</span>
+            <strong className="font-mono-data text-sm" style={{ color: 'var(--text-primary)' }}>{bench.length}</strong>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            {bench.length > 0 ? bench.map(player => player.display_name).join(', ') : 'Keine festen Bankspieler.'}
+          </p>
+        </div>
+      </div>
+
+      {unconfirmedAvailability > 0 && (
+        <p className="mt-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+          {unconfirmedAvailability} Stammspieler mit noch unbestätigter Verfügbarkeit.
+        </p>
+      )}
+
+      {commandCenter && (
+        <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--border-dim)' }}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="stat-label">Scrim-Assistent</span>
+                {ai.priority && <span className="badge">{ai.priority}</span>}
+                {snapshot?.model && <span className="badge">KI</span>}
+              </div>
+              <p className="mt-1 text-sm" style={{ color: 'var(--text-primary)' }}>
+                {ai.nextStep || ai.lage || (snapshot ? snapshot.status : 'Noch kein Lagebild erzeugt.')}
+              </p>
+              {snapshot?.generated_at && <p className="mt-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>Stand {formatSnapshotTime(snapshot.generated_at)}</p>}
+              {refreshError && <p className="mt-1 text-xs" style={{ color: 'var(--red)' }}>{refreshError}</p>}
+            </div>
+            {onRefreshLagebild && (
+              <button type="button" onClick={onRefreshLagebild} disabled={refreshBusy} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">
+                {refreshBusy ? 'Aktualisiere …' : snapshot ? 'Lage aktualisieren' : 'Lage erzeugen'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-2 border-t pt-4" style={{ borderColor: 'var(--border-dim)' }}>
+        <Link to={`/scrims/teams/${team.id}`} className="btn-amber rounded-sm px-3 py-1.5 text-xs">Team-Board</Link>
+        <button type="button" onClick={onAnnounce} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">{COPY.announce}</button>
+        <button type="button" onClick={onEdit} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">{COPY.editTeam}</button>
+      </div>
+    </div>
+  )
+}
+
+function formatSnapshotTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 /**
@@ -826,7 +992,7 @@ function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; te
               {participant.display_name}
             </span>
             <span className="badge">{statusLabel(participant.status)}</span>
-            {participant.team && <span className="badge badge-amber">{participant.team.name}{participant.is_captain ? ' · C' : ''}{participant.is_bench ? ' · Bank' : ''}</span>}
+            {participant.team && <span className="badge badge-amber">{participant.team.name}{participant.is_captain ? ' · C' : ''}{participant.is_bench ? ' · Team-Bank' : ' · Stamm'}</span>}
             {!participant.availability_confirmed && <span className="badge" title="Verfügbarkeit nicht selbst bestätigt">unbestätigt</span>}
             {!participant.discord_linked && <span className="badge" title="Kein Discord verknüpft">kein Discord</span>}
           </div>
@@ -841,18 +1007,28 @@ function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; te
           <span className="sr-only">{COPY.assign}</span>
           <select
             className="input-field !py-1.5"
-            value={participant.team?.id ?? ''}
+            value={participant.team ? `${participant.is_bench ? 'bench' : 'starter'}:${participant.team.id}` : ''}
             disabled={busy || teams.length === 0}
             onChange={e => {
-              const v = e.target.value
-              if (v === '' || v === String(participant.team?.id)) return
-              if (v === 'none') patch({ team_id: null })
-              else patch({ team_id: Number(v), status: 'assigned' })
+              const value = e.target.value
+              const current = participant.team ? `${participant.is_bench ? 'bench' : 'starter'}:${participant.team.id}` : ''
+              if (value === '' || value === current) return
+              if (value === 'none') {
+                patch({ team_id: null, status: 'waitlist', is_bench: false, is_captain: false })
+                return
+              }
+              const [kind, rawTeamId] = value.split(':')
+              const teamId = Number(rawTeamId)
+              if (!Number.isFinite(teamId)) return
+              patch({ team_id: teamId, status: 'assigned', is_bench: kind === 'bench' })
             }}
           >
             <option value="">{COPY.assign}</option>
-            {participant.team && <option value="none">— aus Team nehmen —</option>}
-            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {participant.team && <option value="none">— aus Team nehmen → Freier Pool —</option>}
+            {teams.flatMap(team => [
+              <option key={`starter-${team.id}`} value={`starter:${team.id}`}>{team.name} · Stamm</option>,
+              <option key={`bench-${team.id}`} value={`bench:${team.id}`}>{team.name} · Team-Bank</option>,
+            ])}
           </select>
         </label>
 
@@ -866,7 +1042,8 @@ function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; te
               <select
                 className="input-field !py-1.5"
                 value={participant.status}
-                disabled={busy}
+                disabled={busy || Boolean(participant.team)}
+                title={participant.team ? 'Pool-Status erst ändern, nachdem die Person aus dem Team genommen wurde.' : undefined}
                 onChange={e => patch({ status: e.target.value })}
               >
                 {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -888,7 +1065,7 @@ function PoolRow({ participant, teams }: { participant: ScrimPoolParticipant; te
                 onClick={() => patch({ is_bench: !participant.is_bench })}
                 className={`flex-1 rounded-sm px-3 py-1.5 text-xs font-semibold transition ${participant.is_bench ? 'btn-amber' : 'btn-ghost'}`}
               >
-                Bank
+                Team-Bank
               </button>
             </div>
 
