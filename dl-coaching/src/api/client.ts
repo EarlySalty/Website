@@ -142,8 +142,52 @@ export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 
 export interface ScrimWindow {
   day: Weekday
+  date?: string | null
   from: number
   to: number
+}
+
+/** Erklärbarer Terminvorschlag aus den gepflegten Wochenzeiten beider Stammkader. */
+export interface ScrimSlotSuggestion {
+  slot: ScrimWindow
+  team_a_available_starters: number
+  team_b_available_starters: number
+  available_starters: number
+  total_starters: number
+  missing_starters: number
+  unknown_starters: number
+  full_current_roster: boolean
+  match_ready_roster: boolean
+}
+
+export interface ScrimSlotSuggestions {
+  team_a_id: number
+  team_b_id: number
+  duration_minutes: number
+  suggestions: ScrimSlotSuggestion[]
+}
+
+export interface ScrimPlanningSlot {
+  day: Weekday
+  date?: string | null
+  from_minute: number
+  to_minute: number
+}
+
+export interface ScrimPlanningCreateRequest {
+  technical_template_key: 'regular_scrim' | 'testmatch' | 'training'
+  deadline_at: string
+  slots: ScrimPlanningSlot[]
+  pairings: Array<{
+    team_a_id: string
+    team_b_id: string
+    slots?: ScrimPlanningSlot[] | null
+  }>
+}
+
+export interface ScrimActionReceipt {
+  accepted: boolean
+  message: string
 }
 
 export interface WeeklyAvailability {
@@ -404,6 +448,13 @@ export const scrims = {
     request<ScrimLagebildActionResponse>(`/scrim/teams/${teamId}/lagebild/corrections`, {
       method: 'POST',
       body: JSON.stringify({ message }),
+    }),
+  suggestMatchSlots: (teamAId: number, teamBId: number) =>
+    request<ScrimSlotSuggestions>(`/scrim/match-requests/suggestions/${teamAId}/${teamBId}`),
+  createMatchRequestBatch: (data: ScrimPlanningCreateRequest) =>
+    request<ScrimActionReceipt>('/scrim/match-request-batches', {
+      method: 'POST',
+      body: JSON.stringify(data),
     }),
   pool: (status?: string) => {
     const query = status ? `?${new URLSearchParams({ status }).toString()}` : ''

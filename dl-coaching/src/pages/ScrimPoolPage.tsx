@@ -8,6 +8,7 @@ import {
   type ScrimParticipantPatch,
   type ScrimPoolParticipant,
   type ScrimTeam,
+  type ScrimSlotSuggestions,
   type ScrimWindow,
   type Weekday,
 } from '@/api/client'
@@ -15,12 +16,9 @@ import { useAuth } from '@/context/AuthContext'
 import AvailabilityGrid from '@/components/AvailabilityGrid'
 import { CoachOnly, EmptyState, PageSpinner, SectionHead } from '@/components/ui'
 import { formatMinutes, scrimWindowText, TIME_OPTIONS, WEEKDAYS } from '@/lib/availability'
-import type { ScrimCommandCenter } from '@/lib/commandCenter'
 import {
   buildScrimOpsTasks,
   groupScrimPool,
-  latestLagebildForTeam,
-  parseLagebildText,
   summarizeTeams,
   totalOpenStarterSlots,
   type ScrimPoolGroupKey,
@@ -164,6 +162,7 @@ export default function ScrimPoolPage() {
   const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
   const [showFindSub, setShowFindSub] = useState(false)
+  const [showScheduleRound, setShowScheduleRound] = useState(false)
   const [announceTeam, setAnnounceTeam] = useState<ScrimTeam | null>(null)
   const [editTeam, setEditTeam] = useState<ScrimTeam | null>(null)
   const [teamForm, setTeamForm] = useState<TeamForm>(DEFAULT_TEAM_FORM)
@@ -200,13 +199,6 @@ export default function ScrimPoolPage() {
       navigate(`/scrims/teams/${team.id}`, window ? { state: { suggestWindow: window } } : undefined)
     },
   })
-  const refreshLagebildMutation = useMutation({
-    mutationFn: (teamId: number) => scrims.refreshLagebild(teamId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['scrim-command-center'] })
-    },
-  })
-
   if (!isCoach) return <CoachOnly />
 
   const teams = teamsQuery.data ?? []
@@ -239,7 +231,7 @@ export default function ScrimPoolPage() {
         </div>
         {commandCenterQuery.isSuccess && (
           <Link to="/scrims/lage" className="btn-ghost rounded-sm px-4 py-2 text-sm">
-            Lage-Verlauf & Belege
+            Verlauf & Belege
           </Link>
         )}
       </div>
@@ -259,10 +251,10 @@ export default function ScrimPoolPage() {
             <SectionHead
               label="Was jetzt zu tun ist"
               count={tasks.length}
-              action={commandCenterQuery.isSuccess ? <span className="badge badge-amber">Lagebild aktiv</span> : undefined}
+              action={commandCenterQuery.isSuccess ? <span className="badge badge-amber">Orga-Regeln aktiv</span> : undefined}
             />
             <p className="mb-3 max-w-3xl text-xs" style={{ color: 'var(--text-muted)' }}>
-              Harte Orga-Probleme werden deterministisch erkannt. Die Lagebild-KI ergänzt pro Team nur Kontext und den nächsten Schritt; Team-Zuweisungen bleiben immer deine Entscheidung.
+              Termine, fehlende Antworten, Stammplätze und Ersatzbedarf werden aus Kader- und Abstimmungsdaten abgeleitet. Keine KI entscheidet über Termin, Lineup oder Ersatz.
             </p>
             {tasks.length === 0 ? (
               <EmptyState title="Nichts blockiert" copy="Kadergrößen, Zuständigkeiten und offene Vorgänge sehen aktuell sauber aus." />
@@ -304,6 +296,14 @@ export default function ScrimPoolPage() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
+                    onClick={() => setShowScheduleRound(true)}
+                    disabled={teams.length < 2}
+                    className="btn-amber rounded-sm px-3 py-1.5 text-xs"
+                  >
+                    Terminrunde starten
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setShowFindSub(true)}
                     disabled={teams.length === 0}
                     className="btn-ghost rounded-sm px-3 py-1.5 text-xs"
@@ -331,10 +331,6 @@ export default function ScrimPoolPage() {
                   <TeamOverviewCard
                     key={summary.team.id}
                     summary={summary}
-                    commandCenter={commandCenterQuery.isSuccess ? commandCenterQuery.data : undefined}
-                    refreshBusy={refreshLagebildMutation.isPending && refreshLagebildMutation.variables === summary.team.id}
-                    refreshError={refreshLagebildMutation.isError && refreshLagebildMutation.variables === summary.team.id ? refreshLagebildMutation.error.message : null}
-                    onRefreshLagebild={commandCenterQuery.isSuccess ? () => refreshLagebildMutation.mutate(summary.team.id) : undefined}
                     onAnnounce={() => setAnnounceTeam(summary.team)}
                     onEdit={() => setEditTeam(summary.team)}
                   />
@@ -392,6 +388,7 @@ export default function ScrimPoolPage() {
         </>
       )}
 
+      {showScheduleRound && <ScheduleRoundModal teams={teams} onClose={() => setShowScheduleRound(false)} />}
       {showFindSub && <FindSubstituteModal teams={teams} onClose={() => setShowFindSub(false)} />}
       {announceTeam && <AnnounceModal team={announceTeam} onClose={() => setAnnounceTeam(null)} />}
       {editTeam && <EditTeamModal team={editTeam} onClose={() => setEditTeam(null)} />}
@@ -431,24 +428,14 @@ function OverviewMetric({
 
 function TeamOverviewCard({
   summary,
-  commandCenter,
-  refreshBusy,
-  refreshError,
-  onRefreshLagebild,
   onAnnounce,
   onEdit,
 }: {
   summary: TeamRosterSummary
-  commandCenter?: ScrimCommandCenter
-  refreshBusy: boolean
-  refreshError: string | null
-  onRefreshLagebild?: () => void
   onAnnounce: () => void
   onEdit: () => void
 }) {
   const { team, starters, bench, missingStarters, excessStarters, unconfirmedAvailability } = summary
-  const snapshot = latestLagebildForTeam(commandCenter, team.id)
-  const ai = parseLagebildText(snapshot?.lagebild_text)
   const statusText = missingStarters > 0
     ? (missingStarters === 1 ? '1 Stammplatz offen' : `${missingStarters} Stammplätze offen`)
     : excessStarters > 0
@@ -494,30 +481,6 @@ function TeamOverviewCard({
         </p>
       )}
 
-      {commandCenter && (
-        <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--border-dim)' }}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="stat-label">Scrim-Assistent</span>
-                {ai.priority && <span className="badge">{ai.priority}</span>}
-                {snapshot?.model && <span className="badge">KI</span>}
-              </div>
-              <p className="mt-1 text-sm" style={{ color: 'var(--text-primary)' }}>
-                {ai.nextStep || ai.lage || (snapshot ? snapshot.status : 'Noch kein Lagebild erzeugt.')}
-              </p>
-              {snapshot?.generated_at && <p className="mt-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>Stand {formatSnapshotTime(snapshot.generated_at)}</p>}
-              {refreshError && <p className="mt-1 text-xs" style={{ color: 'var(--red)' }}>{refreshError}</p>}
-            </div>
-            {onRefreshLagebild && (
-              <button type="button" onClick={onRefreshLagebild} disabled={refreshBusy} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">
-                {refreshBusy ? 'Aktualisiere …' : snapshot ? 'Lage aktualisieren' : 'Lage erzeugen'}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="mt-4 flex flex-wrap gap-2 border-t pt-4" style={{ borderColor: 'var(--border-dim)' }}>
         <Link to={`/scrims/teams/${team.id}`} className="btn-amber rounded-sm px-3 py-1.5 text-xs">Team-Board</Link>
         <button type="button" onClick={onAnnounce} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">{COPY.announce}</button>
@@ -527,10 +490,166 @@ function TeamOverviewCard({
   )
 }
 
-function formatSnapshotTime(value: string): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+type SuggestedPairing = {
+  teamA: ScrimTeam
+  teamB: ScrimTeam
+  suggestion: ScrimSlotSuggestions
+}
+
+function defaultRoundPairs(teams: ScrimTeam[]): Array<[ScrimTeam, ScrimTeam]> {
+  const sorted = teams.slice().sort((left, right) => {
+    const leftTime = left.default_from ?? Number.MAX_SAFE_INTEGER
+    const rightTime = right.default_from ?? Number.MAX_SAFE_INTEGER
+    return leftTime - rightTime || left.id - right.id
+  })
+  const pairs: Array<[ScrimTeam, ScrimTeam]> = []
+  for (let index = 0; index + 1 < sorted.length; index += 2) {
+    pairs.push([sorted[index], sorted[index + 1]])
+  }
+  return pairs
+}
+
+function slotLabel(slot: ScrimWindow): string {
+  const day = WEEKDAYS.find(entry => entry.key === slot.day)?.long ?? slot.day
+  const date = slot.date ? new Date(`${slot.date}T12:00:00`).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : ''
+  return `${day}${date ? ` ${date}` : ''} ${formatMinutes(slot.from)}–${formatMinutes(slot.to)}`
+}
+
+function ScheduleRoundModal({ teams, onClose }: { teams: ScrimTeam[]; onClose: () => void }) {
+  const qc = useQueryClient()
+  const pairs = defaultRoundPairs(teams)
+  const suggestions = useQuery({
+    queryKey: ['scrim-round-suggestions', pairs.map(([a, b]) => `${a.id}:${b.id}`).join('|')],
+    queryFn: async () => Promise.all(
+      pairs.map(async ([teamA, teamB]): Promise<SuggestedPairing> => ({
+        teamA,
+        teamB,
+        suggestion: await scrims.suggestMatchSlots(teamA.id, teamB.id),
+      })),
+    ),
+    enabled: pairs.length > 0,
+    staleTime: 30_000,
+  })
+  const create = useMutation({
+    mutationFn: async () => {
+      const rows = suggestions.data ?? []
+      if (rows.length === 0 || rows.some(row => row.suggestion.suggestions.length < 2)) {
+        throw new Error('Für mindestens eine Paarung fehlen zwei belastbare Terminoptionen.')
+      }
+      const deadline = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
+      const firstSlots = rows[0].suggestion.suggestions.slice(0, 3).map(item => ({
+        day: item.slot.day,
+        date: item.slot.date ?? null,
+        from_minute: item.slot.from,
+        to_minute: item.slot.to,
+      }))
+      return scrims.createMatchRequestBatch({
+        technical_template_key: 'regular_scrim',
+        deadline_at: deadline,
+        slots: firstSlots,
+        pairings: rows.map(row => ({
+          team_a_id: String(row.teamA.id),
+          team_b_id: String(row.teamB.id),
+          slots: row.suggestion.suggestions.slice(0, 3).map(item => ({
+            day: item.slot.day,
+            date: item.slot.date ?? null,
+            from_minute: item.slot.from,
+            to_minute: item.slot.to,
+          })),
+        })),
+      })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['scrim-command-center'] })
+    },
+  })
+  const rows = suggestions.data ?? []
+  const unmatched = teams.length % 2 === 1
+    ? defaultRoundPairs(teams).flat().length < teams.length
+    : false
+  const canCreate = rows.length > 0 && rows.every(row =>
+    row.suggestion.suggestions.length >= 2 && row.suggestion.suggestions[0]?.match_ready_roster
+  )
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+      <div className="panel-strong max-h-[90vh] w-full max-w-3xl space-y-4 overflow-y-auto p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-xl font-extrabold" style={{ color: 'var(--text-primary)' }}>
+              Terminrunde starten
+            </h2>
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+              Teams werden nach ihrer Stammzeit gepaart. Der Bot nimmt Wochenend-Slots aus den gepflegten Verfügbarkeiten und fragt alle passenden Optionen ab. Frist: 72 Stunden. Fehlende Antworten werden nachgefasst; ein eindeutiger Termin wird automatisch gesetzt. Danach folgen finale Teilnahmebestätigung und Ersatzsuche automatisch.
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className="btn-ghost rounded-sm px-3 py-1.5 text-xs">Schließen</button>
+        </div>
+
+        {unmatched && (
+          <p className="text-xs" style={{ color: 'var(--amber)' }}>
+            Eine ungerade Teamzahl bleibt in dieser Runde ohne Paarung.
+          </p>
+        )}
+
+        {suggestions.isLoading ? (
+          <PageSpinner />
+        ) : suggestions.isError ? (
+          <p className="text-sm" style={{ color: 'var(--red)' }}>{suggestions.error.message}</p>
+        ) : (
+          <div className="space-y-3">
+            {rows.map(row => (
+              <div key={`${row.teamA.id}-${row.teamB.id}`} className="card p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <strong className="font-display text-sm" style={{ color: 'var(--text-primary)' }}>
+                    {row.teamA.name} vs {row.teamB.name}
+                  </strong>
+                  <span className="stat-label">
+                    {!row.suggestion.suggestions[0]?.match_ready_roster
+                      ? 'Kader nicht 6/6'
+                      : row.suggestion.suggestions.length >= 2
+                        ? 'bereit'
+                        : 'Zeiten fehlen'}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  {row.suggestion.suggestions.slice(0, 3).map(item => (
+                    <div key={`${item.slot.day}-${item.slot.from}`} className="rounded-sm p-2" style={{ border: '1px solid var(--border-dim)' }}>
+                      <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{slotLabel(item.slot)}</p>
+                      <p className="mt-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                        Stamm {item.team_a_available_starters}/6 + {item.team_b_available_starters}/6
+                        {item.unknown_starters > 0 ? ` · ${item.unknown_starters} unklar` : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {(!row.suggestion.suggestions[0]?.match_ready_roster || row.suggestion.suggestions.length < 2) && (
+                  <p className="mt-2 text-xs" style={{ color: 'var(--red)' }}>
+                    {!row.suggestion.suggestions[0]?.match_ready_roster
+                      ? 'Nicht senden: beide Teams brauchen zuerst genau sechs Stammspieler.'
+                      : 'Nicht senden: erst Verfügbarkeiten aktualisieren oder die Stammzeit korrigieren.'}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {create.data && <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{create.data.message}</p>}
+        {create.isError && <p className="text-sm" style={{ color: 'var(--red)' }}>{create.error.message}</p>}
+        {!create.data && (
+          <button
+            type="button"
+            className="btn-amber rounded-sm px-4 py-2 text-sm"
+            disabled={!canCreate || create.isPending}
+            onClick={() => create.mutate()}
+          >
+            {create.isPending ? 'Lege Terminabfragen an …' : 'Terminabfragen senden'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
 }
 
 /**

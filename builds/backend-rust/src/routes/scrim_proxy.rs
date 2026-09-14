@@ -9,7 +9,7 @@ use axum::{
     routing::{get, patch, post, put},
     Json, Router,
 };
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{json, Value};
 use url::form_urlencoded;
@@ -330,6 +330,8 @@ pub struct PlanningCreateRequest {
 #[serde(deny_unknown_fields)]
 pub struct PlanningSlot {
     pub day: Weekday,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub date: Option<NaiveDate>,
     pub from_minute: u16,
     pub to_minute: u16,
 }
@@ -421,6 +423,7 @@ impl LegacyPlanningSlot {
     fn into_slot(self) -> PlanningSlot {
         PlanningSlot {
             day: self.day,
+            date: None,
             from_minute: self.from,
             to_minute: self.to,
         }
@@ -636,6 +639,10 @@ fn mount_canonical_routes(mut router: Router<AppState>, prefix: &str) -> Router<
         .route(
             &format!("{prefix}/match-requests/defaults"),
             get(match_request_defaults),
+        )
+        .route(
+            &format!("{prefix}/match-requests/suggestions/{{team_a_id}}/{{team_b_id}}"),
+            get(match_request_suggestions),
         )
         .route(
             &format!("{prefix}/match-request-batches"),
@@ -1184,6 +1191,33 @@ pub async fn match_request_defaults(
         Some(peer),
         ProxyAuth::Coach,
         "/match-requests/defaults",
+        None,
+        ResponseAdapter::Json,
+    )
+    .await
+}
+
+pub async fn match_request_suggestions(
+    State(state): State<AppState>,
+    Path((team_a_id, team_b_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+) -> Response {
+    let request_id = request_id();
+    let team_a_id = match safe_path_id(&team_a_id, "team A id") {
+        Ok(id) => id,
+        Err(err) => return error_response(err, &request_id),
+    };
+    let team_b_id = match safe_path_id(&team_b_id, "team B id") {
+        Ok(id) => id,
+        Err(err) => return error_response(err, &request_id),
+    };
+    forward_read(
+        state,
+        headers,
+        Some(peer),
+        ProxyAuth::Coach,
+        &format!("/match-requests/suggestions/{team_a_id}/{team_b_id}"),
         None,
         ResponseAdapter::Json,
     )
