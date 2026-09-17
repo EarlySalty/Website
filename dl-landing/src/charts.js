@@ -292,7 +292,7 @@ export function createCharts(config = {}) {
   function renderBars(host, rows, opts = {}) {
     if (!host || !rows.length) return;
     const f = chartFrame(host, opts);
-    const scale = niceScale(Math.max(...rows.map((r) => r.value)));
+    const scale = niceScale(Math.max(...rows.map((r) => r.value)), opts.targetTicks);
     drawGrid(f, scale);
 
     const slot = f.plotW / rows.length;
@@ -386,7 +386,7 @@ export function createCharts(config = {}) {
   function renderLine(host, rows, opts = {}) {
     if (!host || !rows.length) return;
     const f = chartFrame(host, opts);
-    const scale = niceScale(Math.max(...rows.map((r) => r.value)));
+    const scale = niceScale(Math.max(...rows.map((r) => r.value)), opts.targetTicks);
     drawGrid(f, scale);
 
     const x = (i) => f.padL + (f.plotW / Math.max(1, rows.length - 1)) * i;

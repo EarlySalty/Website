@@ -14,7 +14,17 @@ wireTableToggles('bl');
 const q = (sel) => document.querySelector(sel);
 const nf2 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pct = (n) => `${fmt1(n)} %`;
-const sek = (n) => `${fmt(n)} s`;
+
+/* Zeiten kommen als Rohsekunden aus data.js; die Umrechnung in Minuten
+   passiert nur hier. minuten() liefert den Zahlenwert fuer die Achsen,
+   mmss() die Tabellen- und Tooltip-Form, minRund() die gerundete Textform. */
+const minuten = (sek) => sek / 60;
+const mmss = (sek) => {
+  const m = Math.floor(sek / 60);
+  const s = Math.round(sek - m * 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+};
+const minRund = (sek) => String(Math.round(sek / 60));
 
 const nameOf = (stufe) => RAENGE.find((r) => r.stufe === stufe).name;
 const kurzOf = (stufe) => RAENGE.find((r) => r.stufe === stufe).kurz;
@@ -23,14 +33,14 @@ const kurzOf = (stufe) => RAENGE.find((r) => r.stufe === stufe).kurz;
 renderLine(q('[data-chart="midboss-zeit"]'), MIDBOSS.stufen.map((s) => ({
   key: nameOf(s.stufe),
   label: kurzOf(s.stufe),
-  value: s.erster_claim_sekunden,
-  tip: [['Erster Rejuvenator', sek(s.erster_claim_sekunden)], ['Siegquote erster Claim', pct(s.siegquote_erster_claim)]],
-})), { height: 250, padT: 26, ariaLabel: 'Zeit bis zum ersten Rejuvenator je Rangstufe, vom Initiate bis zu Ascendant und Eternus' });
+  value: minuten(s.erster_claim_sekunden),
+  tip: [['Erster Rejuvenator', `${mmss(s.erster_claim_sekunden)} min`], ['Siegquote erster Claim', pct(s.siegquote_erster_claim)]],
+})), { height: 250, padT: 26, targetTicks: 6, ariaLabel: 'Minuten bis zum ersten Rejuvenator je Rangstufe, vom Initiate bis zu Ascendant und Eternus' });
 
 buildTable('midboss',
-  ['Rang', 'Erster Rejuvenator', 'Siegquote erster Claim', 'Steals je Match', 'Siegquote nach Steal'],
+  ['Rang', 'Erster Rejuvenator (min:s)', 'Siegquote erster Claim', 'Steals je Match', 'Siegquote nach Steal'],
   MIDBOSS.stufen.map((s) => [
-    nameOf(s.stufe), sek(s.erster_claim_sekunden), pct(s.siegquote_erster_claim),
+    nameOf(s.stufe), mmss(s.erster_claim_sekunden), pct(s.siegquote_erster_claim),
     nf2.format(s.steals_je_match), pct(s.siegquote_nach_steal),
   ]));
 
@@ -50,14 +60,14 @@ buildTable('urne',
 renderBars(q('[data-chart="shrine-luecke"]'), SHRINE.stufen.map((s) => ({
   key: nameOf(s.stufe),
   label: kurzOf(s.stufe),
-  value: s.luecke_bis_ende_sekunden,
-  tip: [['Bis Matchende', sek(s.luecke_bis_ende_sekunden)], ['Erster Shrine-Fall', sek(s.erster_fall_sekunden)]],
-})), { height: 230, valueOnMax: false, ariaLabel: 'Sekunden vom ersten Shrine-Fall bis zum Matchende je Rangstufe' });
+  value: minuten(s.luecke_bis_ende_sekunden),
+  tip: [['Bis Matchende', `${mmss(s.luecke_bis_ende_sekunden)} min`], ['Erster Shrine-Fall', `${mmss(s.erster_fall_sekunden)} min`]],
+})), { height: 230, valueOnMax: false, targetTicks: 2, ariaLabel: 'Minuten vom ersten Shrine-Fall bis zum Matchende je Rangstufe' });
 
 buildTable('shrine',
-  ['Rang', 'Erster Shrine-Fall', 'Siegquote Zerstörer', 'Bis Matchende'],
+  ['Rang', 'Erster Shrine-Fall (min:s)', 'Siegquote Zerstörer', 'Bis Matchende (min:s)'],
   SHRINE.stufen.map((s) => [
-    nameOf(s.stufe), sek(s.erster_fall_sekunden), pct(s.siegquote_erster_zerstoerer), sek(s.luecke_bis_ende_sekunden),
+    nameOf(s.stufe), mmss(s.erster_fall_sekunden), pct(s.siegquote_erster_zerstoerer), mmss(s.luecke_bis_ende_sekunden),
   ]));
 
 /* ── Reihenfolge: wie viele der drei Erst-Objectives der Sieger holt ─ */
@@ -107,13 +117,13 @@ const fills = {
   matches: fmt(META.matches),
 
   'mb-mit': pct(mb.mit_midboss_prozent),
-  'mb-claim-sek': fmt(mb.erster_claim_sekunden),
+  'mb-claim-min': minRund(mb.erster_claim_sekunden),
   'mb-siegquote': pct(mb.siegquote_erster_claim),
   'mb-steals': nf2.format(mb.steals_je_match),
   'mb-steal-win': pct(mb.siegquote_nach_steal),
   'mb-abandon': pct(mb.abandon_prozent),
-  'mb-zeit-hoch': fmt(MIDBOSS.stufen[0].erster_claim_sekunden),
-  'mb-zeit-tief': fmt(MIDBOSS.stufen[9].erster_claim_sekunden),
+  'mb-zeit-hoch': minRund(MIDBOSS.stufen[0].erster_claim_sekunden),
+  'mb-zeit-tief': minRund(MIDBOSS.stufen[9].erster_claim_sekunden),
   'mb-win-hoch': pct(MIDBOSS.stufen[0].siegquote_erster_claim),
   'mb-win-tief': pct(MIDBOSS.stufen[9].siegquote_erster_claim),
 
@@ -121,13 +131,13 @@ const fills = {
   'urn-abgaben': nf2.format(ur.abgaben_je_team_je_match),
   'urn-erste-win': pct(ur.siegquote_erste_abgabe),
   'urn-mehr-win': pct(ur.siegquote_mehr_abgaben),
-  'urn-zeit': fmt(ur.erste_abgabe_sekunden),
+  'urn-zeit': minRund(ur.erste_abgabe_sekunden),
   'urn-mehr-hoch': pct(URNE.stufen[0].siegquote_mehr_abgaben),
   'urn-mehr-tief': pct(URNE.stufen[9].siegquote_mehr_abgaben),
 
   'shr-win': pct(sh.siegquote_erster_zerstoerer),
-  'shr-luecke': fmt(sh.luecke_bis_ende_sekunden),
-  'shr-erster': fmt(sh.erster_fall_sekunden),
+  'shr-luecke': minRund(sh.luecke_bis_ende_sekunden),
+  'shr-erster': minRund(sh.erster_fall_sekunden),
   'shr-verlierer': pct(sh.verlierer_besitz_prozent),
 
   'reihen-anteil': pct(rf.anteil_alle_drei_prozent),

@@ -53,7 +53,7 @@
           "isAccessibleForFree": true,
           "articleSection": "Daten-Report",
           "keywords": "Deadlock, Objectives, Rejuvenator, Midboss, Seelenurne, Soul Urn, Shrines, Unstable Rift, Ranked, Siegquote, Deadlock API, MCP, Soul-Vorsprung",
-          "wordCount": 2558,
+          "wordCount": 2569,
           "about": [
             { "@type": "VideoGame", "name": "Deadlock", "publisher": { "@type": "Organization", "name": "Valve Corporation" } },
             { "@type": "Thing", "name": "Objectives und Map-Kontrolle" },
@@ -212,15 +212,15 @@ ORDER BY stufe;</code></pre>
             <p class="bl-lede">
               Der Midboss ist das Objective mit dem größten Ruf, und der ist nicht aus der Luft gegriffen. In
               <span data-fill="mb-mit">98,8 %</span> aller Matches fällt mindestens ein Midboss, der erste
-              Rejuvenator wird im Mittel nach <span data-fill="mb-claim-sek">1.511</span> Sekunden geholt, und
+              Rejuvenator wird im Mittel nach rund <span data-fill="mb-claim-min">25</span> Minuten geholt, und
               das Team, das ihn holt, gewinnt in <span data-fill="mb-siegquote">75,2 %</span> der Fälle. Drei
               von vier Matches, das klingt nach dem klaren Kipppunkt. Man sollte sich diese Zahl merken, denn im
               vorletzten Kapitel sieht sie sehr anders aus, sobald man dazunimmt, wer beim Claim schon vorne lag.
             </p>
             <p class="bl-p">
               Interessanter als der Mittelwert ist das Muster über die Ränge. Je höher der Rang, desto
-              früher fällt der erste Rejuvenator: vom Initiate mit <span data-fill="mb-zeit-hoch">1.727</span>
-              Sekunden bis zu Ascendant und Eternus mit <span data-fill="mb-zeit-tief">1.139</span> Sekunden,
+              früher fällt der erste Rejuvenator: vom Initiate mit rund <span data-fill="mb-zeit-hoch">29</span>
+              Minuten bis zu Ascendant und Eternus mit rund <span data-fill="mb-zeit-tief">19</span> Minuten,
               also fast zehn Minuten früher. Oben wird das Spiel schneller ausgespielt und aggressiver um den
               Midboss gestritten. Gleichzeitig fällt die Siegquote des Erst-Claim-Teams leicht, von
               <span data-fill="mb-win-hoch">76,2 %</span> beim Initiate auf <span data-fill="mb-win-tief">71,9 %</span>
@@ -232,7 +232,7 @@ ORDER BY stufe;</code></pre>
               <div class="bl-figure-head">
                 <p class="bl-figure-title">Zeit bis zum ersten Rejuvenator, nach Rang</p>
                 <p class="bl-figure-note">
-                  Mittlere Sekunden bis zum ersten Midboss-Claim je Rangstufe. Nach oben fällt er deutlich
+                  Mittlere Minuten bis zum ersten Midboss-Claim je Rangstufe. Nach oben fällt er deutlich
                   früher. Die Tabelle nennt zusätzlich die Siegquoten und die Steals je Match.
                 </p>
               </div>
@@ -261,7 +261,7 @@ ORDER BY stufe;</code></pre>
             <p class="bl-lede">
               Die Urne ist das Alltagsobjective. In <span data-fill="urn-mit">99,9 %</span> der Matches wird
               mindestens eine abgeliefert, im Mittel <span data-fill="urn-abgaben">1,90</span> je Team und Match,
-              die erste im Mittel nach <span data-fill="urn-zeit">902</span> Sekunden. Weil sie so früh und so
+              die erste im Mittel nach rund <span data-fill="urn-zeit">15</span> Minuten. Weil sie so früh und so
               oft läuft, sagt eine einzelne Abgabe wenig: Das Team mit der ersten Abgabe gewinnt nur in
               <span data-fill="urn-erste-win">55,3 %</span> der Fälle, kaum über dem Münzwurf. Mehr sagt aus,
               wer über das ganze Match mehr Urnen ablieferte. Dieses Team gewinnt in
@@ -302,7 +302,7 @@ ORDER BY stufe;</code></pre>
               <b>Die Urne ist geschätzt, nicht direkt gemessen</b>
               Die API verrät die Urne nicht als eigenes Feld. Wir erkennen eine Abgabe daran, dass bei
               mindestens fünf von sechs Spielern eines Teams im selben Zeitfenster derselbe kleine Gold-Zuwachs
-              auftaucht. Dadurch ist der Zeitpunkt nur auf drei bis fünf Minuten genau. An 20 zufällig gezogenen
+              auftaucht. Dadurch ist der Zeitpunkt nur grob auf einige Minuten genau. An 20 zufällig gezogenen
               Matches haben wir die Regel von Hand nachgerechnet, kein einzelnes Idol wurde fälschlich als
               Abgabe gezählt. Die genauen Grenzen stehen im Methodik-Kapitel.
             </p>
@@ -318,21 +318,21 @@ ORDER BY stufe;</code></pre>
               Shrine des Gegners einreißt, gewinnt in <span data-fill="shr-win">93,1 %</span> der Fälle. Das
               klingt nach dem Geheimtipp schlechthin, ist aber fast von selbst so. Der Grund steht in der
               zweiten Zahl: Vom ersten Shrine-Fall bis zum Matchende vergehen im Mittel nur
-              <span data-fill="shr-luecke">289</span> Sekunden. Ein gefallener Shrine ist kein frühes Signal,
+              rund <span data-fill="shr-luecke">5</span> Minuten. Ein gefallener Shrine ist kein frühes Signal,
               sondern gehört schon zur Schlussphase. Wer so weit in die gegnerische Basis vordringt, hat das
               Match meistens ohnehin gewonnen, der Shrine fällt auf dem Weg.
             </p>
             <p class="bl-p">
               Ein Detail bestätigt das noch: <span data-fill="shr-verlierer">91,3 %</span> aller gefallenen
               Shrines gehörten dem späteren Verlierer-Team. Der erste Shrine-Fall im Mittel nach
-              <span data-fill="shr-erster">1.944</span> Sekunden markiert also fast immer den Anfang vom Ende
+              rund <span data-fill="shr-erster">32</span> Minuten markiert also fast immer den Anfang vom Ende
               der unterlegenen Seite. Wir verkaufen die 93,1 Prozent deshalb nicht als Hebel, sondern als das,
               was sie sind: ein später Meilenstein, der zeigt, dass die Entscheidung schon gefallen war.
             </p>
 
             <figure class="bl-figure">
               <div class="bl-figure-head">
-                <p class="bl-figure-title">Sekunden vom ersten Shrine-Fall bis zum Matchende, nach Rang</p>
+                <p class="bl-figure-title">Minuten vom ersten Shrine-Fall bis zum Matchende, nach Rang</p>
                 <p class="bl-figure-note">
                   Der Abstand ist über alle Ränge klein, meist unter fünf Minuten. Genau das macht die hohe
                   Siegquote des Zerstörers fast selbstverständlich: Der Shrine fällt erst, wenn es fast vorbei ist.
@@ -505,9 +505,9 @@ ORDER BY stufe;</code></pre>
                 <p>
                   Es gibt kein Urnen-Feld. Eine Abgabe ist ein Zeitfenster, in dem bei mindestens fünf von sechs
                   Spielern eines Teams derselbe kleine positive Gold-Zuwachs steht. Der Zeitpunkt ist dadurch nur
-                  auf ein Raster von drei bis fünf Minuten genau, mehrere Abgaben im selben Fenster fallen zu einer
-                  zusammen. An 20 zufälligen Matches von Hand gegengeprüft, kein Idol-Sprung hat fälschlich
-                  ausgelöst.
+                  auf ein Raster genau, das bis Minute 15 in Drei-Minuten-Schritten läuft und danach in
+                  Fünf-Minuten-Schritten; mehrere Abgaben im selben Fenster fallen zu einer zusammen. An 20
+                  zufälligen Matches von Hand gegengeprüft, kein Idol-Sprung hat fälschlich ausgelöst.
                 </p>
               </div>
               <div class="bl-method-card">
