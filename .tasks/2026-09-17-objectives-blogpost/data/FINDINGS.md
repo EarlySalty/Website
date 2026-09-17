@@ -13,8 +13,9 @@ geschah im Mittel nach 1.511 Sekunden, von 1.727 Sekunden auf Stufe 1 bis 1.097 
 Stufe 11, das Spiel wird nach oben also deutlich schneller ausgespielt. Das Team mit dem
 ersten Rejuvenator gewann in 75,2 Prozent aller Fälle, mit leicht fallender Tendenz von 76,2
 Prozent (Stufe 1) auf 72,1 Prozent (Stufe 10) und 69,1 Prozent (Stufe 11). Rejuvenator-Steals
-(killed ungleich claimed) kamen auf 0,25 je Match vor und das steilende Team gewann dabei nur
-in 43,2 Prozent der Fälle, Steals sind also häufig, aber kein Sieggarant. 3,98 Prozent aller
+(killed ungleich claimed) kamen auf 0,25 je Match vor, und je Steal-Ereignis gewann das
+steilende Team nur in 43,2 Prozent der Fälle: Steals sind also häufig, aber kein Sieggarant.
+3,98 Prozent aller
 Matches hatten mindestens einen Abbrecher, sie bleiben enthalten (Begründung in methodik.json).
 
 ## Kapitel 2: Soul Urn

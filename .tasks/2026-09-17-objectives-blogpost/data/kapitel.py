@@ -62,7 +62,8 @@ k1 = {"kapitel": 1, "titel": "Midboss (Rejuvenator)", "einheit": "je Rangstufe",
           "match_mit_midboss": "mindestens ein Eintrag in mid_boss.destroyed_time_s",
           "erster_rejuvenator": "Eintrag mit kleinstem destroyed_time_s; Team = mid_boss.team_claimed",
           "steal": "mid_boss.team_killed != mid_boss.team_claimed bei einem Eintrag; Stealer = Claim-Team",
-          "siegquoten": "Teamvergleich mit winning_team, ohne Kontrolle fuer Soul-Vorsprung (Kapitel 6 schichtet)"},
+          "siegquoten": "Teamvergleich mit winning_team, ohne Kontrolle fuer Soul-Vorsprung (Kapitel 6 schichtet)",
+          "siegquote_nach_steal": "Anteil Steal-Ereignisse (nicht Matches), die das Claim-Team gewinnt"},
       "stufen": []}
 for t, v in tiers_qb:
     n = int(v["n_matches"])
@@ -178,7 +179,8 @@ for t, v in tiers_qd:
 for fname, doc in [("kapitel-1.json", k1), ("kapitel-2.json", k2), ("kapitel-3.json", k3),
                    ("kapitel-4.json", k4), ("kapitel-5.json", k5), ("kapitel-6.json", k6)]:
     doc["grundgesamtheit"] = ("game_mode Normal, match_mode Ranked, match_outcome TeamWin, "
-                              "2026-08-13 00:00 UTC bis 2026-09-15 23:59 UTC, 523465 Matches, "
+                              "2026-08-13 00:00 UTC bis 2026-09-15 23:59 UTC, 523602 Matches im QB-Lauf "
+                              "bzw. 523747 im QD-Lauf (Daten-drift +145), "
                               "Dedup je (match_id, account_id) ueber neueste created_at")
     with open(fname, "w") as f:
         json.dump(doc, f, ensure_ascii=False, indent=1)
