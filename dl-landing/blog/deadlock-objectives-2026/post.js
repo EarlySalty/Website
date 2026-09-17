@@ -55,7 +55,7 @@ renderBars(q('[data-chart="shrine-luecke"]'), SHRINE.stufen.map((s) => ({
 })), { height: 230, valueOnMax: false, ariaLabel: 'Sekunden vom ersten Shrine-Fall bis zum Matchende je Rangstufe' });
 
 buildTable('shrine',
-  ['Rang', 'Erster Shrine-Fall', 'Siegquote Zerstoerer', 'Bis Matchende'],
+  ['Rang', 'Erster Shrine-Fall', 'Siegquote Zerstörer', 'Bis Matchende'],
   SHRINE.stufen.map((s) => [
     nameOf(s.stufe), sek(s.erster_fall_sekunden), pct(s.siegquote_erster_zerstoerer), sek(s.luecke_bis_ende_sekunden),
   ]));
@@ -81,19 +81,19 @@ const kontrolleRows = [];
   kontrolleRows.push(
     { name: `${e.label} · vorn`, sub: `Soul-Vorsprung, n = ${fmt(e.vorn.n)}`, value: e.vorn.siegquote, display: pct(e.vorn.siegquote), color: GOLD },
     { name: `${e.label} · gleichauf`, sub: `n = ${fmt(e.gleich.n)}`, value: e.gleich.siegquote, display: pct(e.gleich.siegquote), color: C_GLEICH },
-    { name: `${e.label} · hinten`, sub: `Soul-Rueckstand, n = ${fmt(e.hinten.n)}`, value: e.hinten.siegquote, display: pct(e.hinten.siegquote), color: C_HINTEN },
+    { name: `${e.label} · hinten`, sub: `Soul-Rückstand, n = ${fmt(e.hinten.n)}`, value: e.hinten.siegquote, display: pct(e.hinten.siegquote), color: C_HINTEN },
   );
 });
 renderHBars(q('[data-chart="kontrolle"]'), kontrolleRows, { maxValue: 100 });
 
 buildTable('kontrolle',
-  ['Ereignis', 'Soul-Lage', 'Siegquote', 'Ereignisfaelle'],
+  ['Ereignis', 'Soul-Lage', 'Siegquote', 'Ereignisfälle'],
   [['midboss', 'Erster Rejuvenator'], ['shrine', 'Erster Shrine-Fall'], ['urne', 'Erste Urnen-Abgabe']].flatMap(([key, lbl]) => {
     const e = KONTROLLE[key];
     return [
       [lbl, 'vorn (Soul-Vorsprung)', pct(e.vorn.siegquote), fmt(e.vorn.n)],
       [lbl, 'gleichauf', pct(e.gleich.siegquote), fmt(e.gleich.n)],
-      [lbl, 'hinten (Soul-Rueckstand)', pct(e.hinten.siegquote), fmt(e.hinten.n)],
+      [lbl, 'hinten (Soul-Rückstand)', pct(e.hinten.siegquote), fmt(e.hinten.n)],
     ];
   }));
 
