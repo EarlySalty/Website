@@ -1,0 +1,60 @@
+{
+ "pruefungen": [
+  {
+   "pruefung": "Tagesabdeckung ohne Loecher",
+   "ergebnis": "34 Tage, 2026-08-13 bis 2026-09-15, keine Loecher"
+  },
+  {
+   "pruefung": "Duplikate",
+   "ergebnis": "rows_raw 6285779, dedup je (match_id, account_id) 6281135, Differenz 4644 (0.07 Prozent)"
+  },
+  {
+   "pruefung": "Matchzahlen je Rangstufe summieren sich zur Gesamtzahl",
+   "ergebnis": "QB 523602 gegen QA 523602: OK, QD 523747 gegen QA 523602: +145 (0.028 Prozent) durch nachtraegliche Zeilen der Quelle zwischen den Laeufen"
+  },
+  {
+   "pruefung": "match_outcome-Filter nicht einschraenkend",
+   "ergebnis": "matches_all 523602 = matches_teamwin 523602: OK"
+  },
+  {
+   "pruefung": "First-Claim-Siegquoten ergaenzen sich zu 100 Prozent",
+   "ergebnis": "Siegquote First-Claim 75.2 Prozent, Gegenteil 24.8 Prozent, Nenner n=517296 (je Stufe geliefert)"
+  },
+  {
+   "pruefung": "Shrine-Semantik (Besitzer-Team)",
+   "ergebnis": "91.3 Prozent der gefallenen Shrines gehoeren dem Verlierer-Team; waere objectives.team das Zerstoerer-Team, muesste der Anteil umgekehrt ausfallen"
+  },
+  {
+   "pruefung": "Steals pro Match gegen Matches mit Midboss",
+   "ergebnis": "steals 128398 ueber 517296 Matches mit Midboss"
+  },
+  {
+   "pruefung": "K5: f0 bis f3 summieren sich zu n_alle_drei",
+   "ergebnis": "517380 gegen 517380: OK"
+  },
+  {
+   "pruefung": "K5: genau ein Erst-Event je n_all3-Match (Gleichstand an Midboss, dann Urne, dann Shrine)",
+   "ergebnis": "first_mb+first_urn+first_shr 517380 gegen n_alle_drei 517380: OK"
+  },
+  {
+   "pruefung": "Urne: erste Abgabe je Match bestimmbar",
+   "ergebnis": "Matches mit Abgabe 523296, davon mit bestimmtem ersten Team 511560, Gleichstand beider Teams im selben Intervall 11736 (2.2 Prozent, auf Intervallauflösung nicht bestimmbar, aus der Siegquote ausgeschlossen)"
+  },
+  {
+   "pruefung": "K6 Midboss: Klassen summieren sich",
+   "ergebnis": "vorn+gleich+hinten+unbekannt 517441 gegen Ereignisfaelle 517441 (Kapitel-Kenner 517296, Abweichung +0.03 Prozent durch Daten-drift): OK; Siege in Klassen 388882 von 517441, Rest im Feld unbekannt"
+  },
+  {
+   "pruefung": "K6 Shrine: Klassen summieren sich",
+   "ergebnis": "vorn+gleich+hinten+unbekannt 523747 gegen Ereignisfaelle 523747 (Kapitel-Kenner 523597, Abweichung +0.03 Prozent durch Daten-drift): OK; Siege in Klassen 487641 von 523747, Rest im Feld unbekannt"
+  },
+  {
+   "pruefung": "K6 Urne: Klassen summieren sich",
+   "ergebnis": "vorn+gleich+hinten+unbekannt 511560 gegen Ereignisfaelle 511560 (Kapitel-Kenner 511560, Abweichung +0.00 Prozent durch Daten-drift): OK; Siege in Klassen 282718 von 511560, Rest im Feld unbekannt"
+  },
+  {
+   "pruefung": "Urnen-Abgaben Team0/Team1 annaehernd symmetrisch",
+   "ergebnis": "Team0 993354, Team1 992161, gesamt 1985515"
+  }
+ ]
+}

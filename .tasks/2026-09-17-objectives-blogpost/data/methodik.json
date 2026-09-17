@@ -1,0 +1,94 @@
+{
+  "stand": "2026-09-17",
+  "paket": "A (Findings) zum Blogpost objectives-blogpost",
+  "datenquelle": {
+    "server": "POST https://api.deadlock-api.com/v1/mcp",
+    "protokoll": "JSON-RPC, stateless, Tool execute_query, DuckDB-Dialekt, nur lesend",
+    "tabelle": "match_player (eine Zeile je Spieler und Match)",
+    "spalten": "150 Spalten laut information_schema (schema_match_player.json)",
+    "deckel": "1024 Zeilen und 50 KB je Abfrage, 300 s Timeout je Abfrage"
+  },
+  "grundgesamtheit": {
+    "filter": "game_mode = 'Normal', match_mode = 'Ranked', match_outcome = 'TeamWin'",
+    "fenster": "start_time >= 2026-08-13 00:00:00 UTC und < 2026-09-16 00:00:00 UTC (nach dem Patch vom 12.08., vor der Rift-Aenderung vom 16.09.)",
+    "matches": "523602 Matches im QB-Lauf vom 2026-09-17; spaetere Nachladungen der Quelle koennen die Zahl minimal veraendern (QD-Lauf kurz danach: 523747, plus 0,028 Prozent)",
+    "match_outcome_hinweis": "matches_all und matches_teamwin sind in der Grundgesamtheit identisch, jede Ranked-Normal-Partie im Fenster hat ein Sieger-Team eingetragen, der TeamWin-Filter schraenkt also nicht ein",
+    "abandon_match_time_s": "Matches mit mindestens einem Abbrecher werden nicht ausgeschlossen, sondern je Rangstufe als n_abandon ausgewiesen (1,6 bis 7,6 Prozent, mit sinkender Tendenz zu hohen Rängen); Ausschluss haette vor allem lange und enge Partien entfernt und die Ereignis-Siegquoten verzerrt"
+  },
+  "dedup": {
+    "problem": "Doppelte Zeilen durch inkrementellen Export; gemessen: 4644 von 6285779 Zeilen (0,07 Prozent) im Fenster (QA-Lauf)",
+    "match_felder": "Match-Felder (Midboss, Objectives, winning_team, duration_s, average_badge) stehen in allen 12 Zeilen gleich, geprüft an Match 105553799;QB liest sie je Match mit min()/any_value() nach GROUP BY match_id",
+    "spieler_felder": "QD reduziert vor der Urnen-Auswertung je (match_id, account_id) auf die Zeile mit neuester created_at via arg_max"
+  },
+  "rang": {
+    "feld": "average_badge ist je Match identisch ueber alle 12 Zeilen (Stichprobe Match 99104085: 84 bei allen, Match 99104087: 42 bei allen); average_badge_team0/1 ist durchgehend 0",
+    "stufe": "Stufe = floor(average_badge / 10), Werte 11 bis 116 ergeben Stufen 1 bis 11 (Zehner = Rangstufe)",
+    "zusammenlegung": "Stufe 11 hat nur 490 Matches (0,09 Prozent) und ist mit Stufe 10 zusammengelegt, Ausgabe-Label '10+11'"
+  },
+  "objectives_semantik": {
+    "feld": "objectives.team ist das Besitzer-Team, nicht das zerstoerende Team",
+    "beleg_struktur": "Match 105553799: beide TitanShieldGenerator-Eintraege des Verlierers fallen frueher als die des Gewinners, team-Feld zeigt jeweils den Basis-Besitzer; jedes Team hat zwei Shrines (TitanShieldGenerator1 und 2), also 4 je Match",
+    "beleg_grosszahl": "1.047.194 von 1.146.494 gefallenen Shrines (91,3 Prozent) gehoeren dem Verlierer-Team; waere objectives.team das Zerstoerer-Team, muesste der Anteil umgekehrt ausfallen",
+    "nicht_zerstoert": "destroyed_time_s = 0 heisst nie zerstört (NULL nicht beobachtet), zuerst gefallener Shrine ist das Minimum der positiven Zeiten",
+    "zerstoerer": "der zerstoerende Team ist das andere Team (negiertes objectives.team)"
+  },
+  "midboss": {
+    "felder": "mid_boss.destroyed_time_s (ein Eintrag je Midboss), parallel mid_boss.team_killed und mid_boss.team_claimed",
+    "erster_rejuvenator": "Eintrag mit kleinstem destroyed_time_s, Team = team_claimed",
+    "steal": "team_killed ungleich team_claimed beim selben Eintrag, Stealer ist das Claim-Team",
+    "siegquoten": "Vergleich mit winning_team, ohne Kontrolle (Schichtung in Kapitel 6)"
+  },
+  "urne": {
+    "feld": "kein eigenes Urnen-Feld; stats.gold_treasure (Gold aus Urne und Idolen) je Spieler kumuliert an den Stuetzstellen stats.time_stamp_s",
+    "raster": "180 s bis 900 s, danach 300 s; das Zeitgitter ist je Match ueber alle 12 Zeilen identisch (Stichproben)",
+    "erkennungsregel": "Ein Intervall eines Teams zaehlt als Abgabe, wenn mindestens 5 von 6 Spielern im selben Intervall denselben minimalen positiven Zuwachs haben; der Laeufer darf mehr haben (gleichzeitiges Idol oder Bonus), Einzelspieler-Idol-Spruenge erfuellen die Schwelle nicht",
+    "gegenprobe": "20 per Zufallsstichprobe (USING SAMPLE je Woche) gezogene Matches ueber das ganze Fenster, clientseitige Nachrechnung: 83 Regel-Abgaben, davon 57 mit gleichem Zuwachs bei allen 6 und 26 mit gleichem Minimum bei 5 von 6 (jeweils sichtbare Team-Muster, hoehster Wert des sechsten Spielers durch gleichzeitiges Idol); kein Idol-Sprung hat ausgeloest, kein sichtbares Team-Muster wurde verfehlt (urn_check_auswertung.txt, urn_check_ids.json)",
+    "aufloesung": "Zeitpunkt einer Abgabe ist nur auf das Intervall genaue obere Grenze (Stuetzstelle, an der der Sprung sichtbar wird); mehrere Abgaben im selben Intervall wuerden zu einer Zaehlung zusammenfallen, mehrere Abgaben desselben Teams im selben Intervall sind wegen der Respawn-Zeit unwahrscheinlich, aber nicht ausgeschlossen",
+    "goldhoehe": "nicht Teil der Auswertung, nur Ereignis und Zeitpunkt"
+  },
+  "rift": {
+    "befund": "Nullbefund, nicht messbar",
+    "begruendung": [
+      "match_player hat kein Rift-Feld (alle 150 Spalten geprueft)",
+      "stats.gold_boss zeigt je-Spieler-Zuwachse ohne Teammuster, stats.gold_boss_orb bleibt im Stichprobenmatch durchgehend 0; beide sind vom Rift nicht trennbar interpretierbar (probe_urn.json)",
+      "power_up_buffs.type eines Stichproben-Match enthaelt nur Perma-Pickup- und Runen-Typen, kein Rift-Signal (probe_buffs.json); Tages-Aggregationen ueber diese Spalte ueberschreiten den Server-Timeout",
+      "Demo-Endpunkt /v1/matches/demo/schema liefert fuer alle drei getesteten Match-IDs HTTP 404 (kein Demo/Salts) und ist je Einzelmatch und rate-limitiert, fuer die Grundgesamtheit ohne Schleife ueber Einzelmatches nicht nutzbar",
+      "match_tracked_stats ist eine ID-Map ohne oeffentliche Zuordnung, ein Rift-Zaehler waere nicht identifizierbar"
+    ],
+    "ersatzkennzahl": "keine, wie gefordert nichts erfindet"
+  },
+  "kapitel_5_reihenfolge": {
+    "basis": "Matches mit allen drei Erst-Events, 517380 von 523747 Matches (98,8 Prozent); Erst-Event heisst erster Midboss-Claim, erste Urnen-Abgabe mit sichtbarem Sprung, erster Shrine-Fall",
+    "zeiten": "Midboss und Shrine auf die Sekunde, Urne nur auf Checkpoint-Raster (Wert ist die Stuetzstelle, an der der Sprung sichtbar wird, also eine obere Grenze); Vergleiche mit Gleichstand fallen an Midboss, dann Urne, dann Shrine. Weil die Urnen-Upper-Bound mit der exakten Midboss- und Shrine-Zeit verglichen wird, ist der Urne-zuerst-Anteil von 99,2 Prozent eine Unterschranke",
+    "f_win": "Anzahl der drei Erst-Objectives, die das spaetere Sieger-Team geholt hat; bei Urnen-Gleichstand beider Teams im selben Intervall (11.736 Matches mit Abgabe, 2,2 Prozent) zaehlt die Urne konservativ mit 0, die Mehrheits-Siegquote von 84,2 Prozent ist also eine Unterschranke"
+  },
+  "kapitel_6_schichtung": {
+    "soul_vorsprung": "Summe stats.net_worth des Ereignis-Teams gegen das Gegner-Team an der letzten Stuetzstelle vor dem Ereignis; bei der Urne ist das die Stuetzstelle am Intervallbeginn des ersten Sprungs",
+    "klassen": "vorn: Summe groesser 105 Prozent des Gegners; gleichauf: 95 bis 105 Prozent; hinten: kleiner 95 Prozent",
+    "unbekannt": "Ereignis vor der ersten Stuetzstelle (Index 0) oder fehlende Net-Worth-Werte",
+    "leseweise": "Beobachtung, keine Wirkung; die Ereignis-Zeitpunkte sind nicht randomisiert und der Soul-Vorsprung ist selbst eine Folge des Spielverlaufs"
+  },
+  "chunking_und_merge": {
+    "grund": "300-s-Timeout und Datenmenge machen Ganzfenster-Abfragen unzuverlaessig",
+    "weise": "QA und QB wochenweise (5 Chunks), QD tageweise (34 Chunks), alle Ergebnisse sind Summen und Zaehlungen und wurden clientseitig additiv gemerged; Kreuzcheck: Summe der Tages-Dateien gegen die W1-Wochenabfrage, bestanden",
+    "snapshot": "Die Quelle schreibt nachtraeglich Zeilen; QA, QB und QD wurden deshalb am 2026-09-17 back-to-back frisch geladen, Restabweichungen von wenigen Matches sind moeglich"
+  },
+  "formattierung": {
+    "prozent": "eine Nachkommastelle",
+    "verhaeltnisse_unter_1": "zwei Nachkommastellen",
+    "zeiten": "ganze Sekunden (Mittelwert)",
+    "anzahlen": "ohne Nachkommastellen"
+  },
+  "quellen_dateien": [
+    "schema_match_player.json",
+    "probe_objectives.json",
+    "probe_urn.json",
+    "probe_buffs.json",
+    "qa_merged.json",
+    "qb_merged.json",
+    "qd_merged.json",
+    "urn_check_ids.json",
+    "urn_check_auswertung.txt",
+    "queries.sql"
+  ]
+}

@@ -1,0 +1,350 @@
+-- Abfragen fuer objectives-blogpost Paket A, gefahren ueber POST https://api.deadlock-api.com/v1/mcp
+-- JSON-RPC Tool execute_query, DuckDB-Dialekt, nur lesend.
+-- Deckel: 1024 Zeilen und 50 KB je Abfrage, 300 s Timeout.
+-- Wegen des Timeouts wurden die Fenster-Abfragen wochenweise (QA, QB) und teils tageweise (QD)
+-- gefahren und clientseitig additiv gemergt. Zeitgrenzen stehen je Lauf in den DATE-Grenzen.
+
+-- QA: Tages- und Rangabdeckung, Duplikatpruefung (Wochen-Chunk, hier Woche 1 vom 2026-08-13)
+SELECT epoch(date_trunc('day', start_time))::BIGINT AS day_epoch,
+       least(greatest(floor(average_badge/10.0)::INT, 1), 11) AS tier,
+       count(*) AS rows_raw,
+       count(DISTINCT (match_id, account_id)) AS player_rows,
+       count(DISTINCT match_id) AS matches_all,
+       count(DISTINCT CASE WHEN match_outcome = 'TeamWin' THEN match_id END) AS matches_teamwin
+FROM match_player
+WHERE start_time >= TIMESTAMPTZ '2026-08-13 00:00:00+00'
+  AND start_time < TIMESTAMPTZ '2026-08-20 00:00:00+00'
+  AND game_mode = 'Normal' AND match_mode = 'Ranked'
+GROUP BY day_epoch, tier
+ORDER BY day_epoch, tier;
+
+-- QB: K1 Midboss und K3 Shrines je Rangstufe (Wochen-Chunk, hier Woche 1)
+WITH m AS (
+  SELECT match_id,
+         least(greatest(floor(min(average_badge)/10.0)::INT, 1), 11) AS tier,
+         min(winning_team) AS wt,
+         min(duration_s) AS dur,
+         bool_or(abandon_match_time_s > 0) AS ab,
+         min("mid_boss.destroyed_time_s") AS mb_t,
+         min("mid_boss.team_killed") AS mb_k,
+         min("mid_boss.team_claimed") AS mb_c,
+         min("objectives.team_objective") AS ob_n,
+         min("objectives.team") AS ob_t,
+         min("objectives.destroyed_time_s") AS ob_d
+  FROM match_player
+  WHERE start_time >= TIMESTAMPTZ '2026-08-13 00:00:00+00'
+    AND start_time < TIMESTAMPTZ '2026-08-20 00:00:00+00'
+    AND game_mode = 'Normal' AND match_mode = 'Ranked'
+    AND match_outcome = 'TeamWin'
+  GROUP BY match_id
+),
+mb AS (
+  SELECT m.match_id, m.wt, m.tier, m.mb_c[g.i] AS c, m.mb_k[g.i] AS k, m.mb_t[g.i] AS t
+  FROM m, range(1, len(coalesce(m.mb_t, [])) + 1) AS g(i)
+),
+mbm AS (
+  SELECT match_id, any_value(wt) AS wt, any_value(tier) AS tier, count(*) AS n_mb,
+         min(t) AS mb_first_t, arg_min(c, t) AS mb_first_c,
+         count(*) FILTER (k != c) AS steals,
+         count(*) FILTER (k != c AND c = wt) AS steal_wins
+  FROM mb
+  GROUP BY match_id
+),
+ob AS (
+  SELECT m.match_id, m.wt, m.tier, m.ob_n[g.i] AS n, m.ob_t[g.i] AS t, m.ob_d[g.i] AS d
+  FROM m, range(1, len(coalesce(m.ob_n, [])) + 1) AS g(i)
+),
+shrm AS (
+  SELECT match_id, any_value(wt) AS wt, any_value(tier) AS tier,
+         count(*) FILTER (d > 0) AS shr_falls,
+         min(d) FILTER (d > 0) AS shr_first_t,
+         arg_min(t, d) FILTER (d > 0) AS shr_first_owner,
+         count(*) FILTER (d > 0 AND t = wt) AS falls_owner_win,
+         count(*) FILTER (d > 0 AND t != wt) AS falls_owner_lose
+  FROM ob
+  WHERE n LIKE 'TitanShieldGenerator%'
+  GROUP BY match_id
+),
+j AS (
+  SELECT m.match_id, m.tier, m.ab, m.dur, m.wt, mbm.n_mb, mbm.mb_first_t, mbm.mb_first_c,
+         mbm.steals, mbm.steal_wins, shrm.shr_falls, shrm.shr_first_t, shrm.shr_first_owner,
+         shrm.falls_owner_win, shrm.falls_owner_lose
+  FROM m
+  LEFT JOIN mbm USING (match_id)
+  LEFT JOIN shrm USING (match_id)
+)
+SELECT tier,
+       count(*) AS n_matches,
+       count(*) FILTER (ab) AS n_abandon,
+       count(*) FILTER (n_mb > 0) AS n_with_mb,
+       sum(mb_first_t) FILTER (n_mb > 0) AS mb_first_t_sum,
+       count(*) FILTER (mb_first_c = wt) AS mb_first_wins,
+       sum(steals) AS steals_total,
+       count(*) FILTER (steals > 0) AS n_steal_matches,
+       sum(steal_wins) AS steal_wins_total,
+       count(*) FILTER (shr_falls > 0) AS n_with_shrfall,
+       sum(shr_first_t) FILTER (shr_falls > 0) AS shr_first_t_sum,
+       count(*) FILTER (CASE WHEN shr_first_owner = 'Team0' THEN 'Team1' ELSE 'Team0' END = wt) AS shr_first_wins,
+       sum(dur - shr_first_t) FILTER (shr_falls > 0) AS shr_end_gap_sum,
+       sum(falls_owner_win) AS shr_falls_owner_win,
+       sum(falls_owner_lose) AS shr_falls_owner_lose
+FROM j
+GROUP BY tier
+ORDER BY tier;
+
+-- QD: K2 Urne, K5 Kombination, K6 Schichtung je Rangstufe (gleiche Abfrage wochen- und tageweise,
+-- hier Tag 2026-08-13). Urnen-Erkennung: mindestens 5 von 6 Spielern eines Teams mit gleichem
+-- minimalem positiven Zuwachs von stats.gold_treasure im selben Intervall.
+WITH raw AS (
+  SELECT match_id, account_id, team, created_at, average_badge, winning_team,
+         "stats.time_stamp_s" AS ts, "stats.net_worth" AS nw, "stats.gold_treasure" AS gt,
+         "mid_boss.destroyed_time_s" AS mb_t, "mid_boss.team_claimed" AS mb_c,
+         "objectives.team_objective" AS ob_n, "objectives.team" AS ob_t,
+         "objectives.destroyed_time_s" AS ob_d
+  FROM match_player
+  WHERE start_time >= TIMESTAMPTZ '2026-08-13 00:00:00+00'
+    AND start_time < TIMESTAMPTZ '2026-08-14 00:00:00+00'
+    AND game_mode = 'Normal' AND match_mode = 'Ranked'
+    AND match_outcome = 'TeamWin'
+),
+pd AS (
+  SELECT match_id, account_id,
+         arg_max(team, created_at) AS team,
+         arg_max(average_badge, created_at) AS average_badge,
+         arg_max(winning_team, created_at) AS winning_team,
+         arg_max(ts, created_at) AS ts,
+         arg_max(nw, created_at) AS nw,
+         arg_max(gt, created_at) AS gt,
+         arg_max(mb_t, created_at) AS mb_t,
+         arg_max(mb_c, created_at) AS mb_c,
+         arg_max(ob_n, created_at) AS ob_n,
+         arg_max(ob_t, created_at) AS ob_t,
+         arg_max(ob_d, created_at) AS ob_d
+  FROM raw
+  GROUP BY match_id, account_id
+),
+m AS (
+  SELECT match_id, min(winning_team) AS wt, min(ts) AS ts,
+         least(greatest(floor(min(average_badge)/10.0)::INT, 1), 11) AS tier,
+         min(mb_t) AS mb_t, min(mb_c) AS mb_c, min(ob_n) AS ob_n, min(ob_t) AS ob_t, min(ob_d) AS ob_d
+  FROM pd
+  GROUP BY match_id
+),
+mbm AS (
+  SELECT match_id, min(t) AS mb_first_t, arg_min(c, t) AS mb_first_c
+  FROM (SELECT m.match_id, m.mb_c[g.i] AS c, m.mb_t[g.i] AS t
+        FROM m, range(1, len(coalesce(m.mb_t, [])) + 1) AS g(i))
+  GROUP BY match_id
+),
+shrm AS (
+  SELECT match_id, min(d) FILTER (d > 0) AS shr_first_t, arg_min(t, d) FILTER (d > 0) AS shr_first_owner
+  FROM (SELECT m.match_id, m.ob_n[g.i] AS n, m.ob_t[g.i] AS t, m.ob_d[g.i] AS d
+        FROM m, range(1, len(coalesce(m.ob_n, [])) + 1) AS g(i))
+  WHERE n LIKE 'TitanShieldGenerator%'
+  GROUP BY match_id
+),
+ui AS (
+  SELECT match_id, team, x.i AS i, x.d AS d
+  FROM pd, UNNEST(list_filter(list_transform(range(1, len(coalesce(gt, []))),
+       i -> {'i': i, 'd': gt[i+1] - gt[i]}), x -> x.d > 0)) AS u(x)
+),
+ug AS (
+  SELECT match_id, team, i, count(*) AS npos, min(d) AS dmin
+  FROM ui
+  GROUP BY match_id, team, i
+),
+ud AS (
+  SELECT ui.match_id AS match_id, ui.team AS team, ui.i AS i
+  FROM ui JOIN ug ON ui.match_id = ug.match_id AND ui.team = ug.team AND ui.i = ug.i
+  GROUP BY ui.match_id, ui.team, ui.i, ug.dmin
+  HAVING ug.dmin > 0 AND count(*) FILTER (ui.d = ug.dmin) >= 5
+),
+uteam AS (
+  SELECT match_id, team, count(*) AS dels, min(i) AS fi
+  FROM ud
+  GROUP BY match_id, team
+),
+ev AS (
+  SELECT m.match_id, m.wt, m.tier, m.ts,
+         mbm.mb_first_t, mbm.mb_first_c, shrm.shr_first_t,
+         CASE WHEN shrm.shr_first_owner = 'Team0' THEN 'Team1' ELSE 'Team0' END AS shr_first_team,
+         u0.fi AS fi0, u1.fi AS fi1,
+         CASE WHEN u1.fi IS NULL OR u0.fi < u1.fi THEN 'Team0'
+              WHEN u0.fi IS NULL OR u1.fi < u0.fi THEN 'Team1' END AS urn_first_team,
+         least(u0.fi, u1.fi) AS urn_fi,
+         coalesce(u0.dels, 0) AS dels0, coalesce(u1.dels, 0) AS dels1
+  FROM m
+  LEFT JOIN mbm USING (match_id)
+  LEFT JOIN shrm USING (match_id)
+  LEFT JOIN uteam u0 ON m.match_id = u0.match_id AND u0.team = 'Team0'
+  LEFT JOIN uteam u1 ON m.match_id = u1.match_id AND u1.team = 'Team1'
+),
+ev2 AS (
+  SELECT *,
+         len(list_filter(ts, x -> x < mb_first_t)) AS idx_mb,
+         len(list_filter(ts, x -> x < shr_first_t)) AS idx_shr,
+         coalesce(urn_fi, 0) AS idx_urn,
+         CASE WHEN urn_fi IS NOT NULL THEN ts[urn_fi + 1] END AS urn_first_t
+  FROM ev
+),
+p2 AS (
+  SELECT pd.match_id, pd.team, ev2.wt, ev2.tier, ev2.mb_first_t, ev2.mb_first_c, ev2.shr_first_t,
+         ev2.shr_first_team, ev2.urn_first_team, ev2.urn_first_t, ev2.idx_mb, ev2.idx_shr, ev2.idx_urn,
+         ev2.dels0, ev2.dels1, ev2.fi0, ev2.fi1,
+         CASE WHEN ev2.idx_mb > 0 THEN coalesce(pd.nw, [])[ev2.idx_mb] END AS nw_mb,
+         CASE WHEN ev2.idx_shr > 0 THEN coalesce(pd.nw, [])[ev2.idx_shr] END AS nw_shr,
+         CASE WHEN ev2.idx_urn > 0 THEN coalesce(pd.nw, [])[ev2.idx_urn] END AS nw_urn
+  FROM pd JOIN ev2 USING (match_id)
+),
+agg AS (
+  SELECT match_id, any_value(wt) AS wt, any_value(tier) AS tier,
+         any_value(mb_first_t) AS mb_first_t, any_value(mb_first_c) AS mb_first_c,
+         any_value(shr_first_t) AS shr_first_t, any_value(shr_first_team) AS shr_first_team,
+         any_value(urn_first_team) AS urn_first_team, any_value(urn_first_t) AS urn_first_t,
+         any_value(idx_mb) AS idx_mb, any_value(idx_shr) AS idx_shr, any_value(idx_urn) AS idx_urn,
+         any_value(dels0) AS dels0, any_value(dels1) AS dels1,
+         sum(CASE WHEN team = 'Team0' THEN nw_mb END) AS mb_s0,
+         sum(CASE WHEN team = 'Team1' THEN nw_mb END) AS mb_s1,
+         sum(CASE WHEN team = 'Team0' THEN nw_shr END) AS shr_s0,
+         sum(CASE WHEN team = 'Team1' THEN nw_shr END) AS shr_s1,
+         sum(CASE WHEN team = 'Team0' THEN nw_urn END) AS urn_s0,
+         sum(CASE WHEN team = 'Team1' THEN nw_urn END) AS urn_s1,
+         count(*) FILTER (team = 'Team0' AND nw_mb IS NULL)
+           + count(*) FILTER (team = 'Team1' AND nw_mb IS NULL) AS mb_nulls,
+         count(*) FILTER (team = 'Team0' AND nw_shr IS NULL)
+           + count(*) FILTER (team = 'Team1' AND nw_shr IS NULL) AS shr_nulls,
+         count(*) FILTER (team = 'Team0' AND nw_urn IS NULL)
+           + count(*) FILTER (team = 'Team1' AND nw_urn IS NULL) AS urn_nulls
+  FROM p2
+  GROUP BY match_id
+),
+cls AS (
+  SELECT *,
+         CASE WHEN mb_first_c IS NULL THEN NULL
+              WHEN idx_mb = 0 OR mb_nulls > 0 OR mb_s0 IS NULL OR mb_s1 IS NULL THEN 'unbekannt'
+              WHEN (CASE WHEN mb_first_c = 'Team0' THEN mb_s0 ELSE mb_s1 END)
+                   > 1.05 * (CASE WHEN mb_first_c = 'Team0' THEN mb_s1 ELSE mb_s0 END) THEN 'vorn'
+              WHEN (CASE WHEN mb_first_c = 'Team0' THEN mb_s0 ELSE mb_s1 END)
+                   >= 0.95 * (CASE WHEN mb_first_c = 'Team0' THEN mb_s1 ELSE mb_s0 END) THEN 'gleich'
+              ELSE 'hinten' END AS mb_class,
+         CASE WHEN shr_first_team IS NULL THEN NULL
+              WHEN idx_shr = 0 OR shr_nulls > 0 OR shr_s0 IS NULL OR shr_s1 IS NULL THEN 'unbekannt'
+              WHEN (CASE WHEN shr_first_team = 'Team0' THEN shr_s0 ELSE shr_s1 END)
+                   > 1.05 * (CASE WHEN shr_first_team = 'Team0' THEN shr_s1 ELSE shr_s0 END) THEN 'vorn'
+              WHEN (CASE WHEN shr_first_team = 'Team0' THEN shr_s0 ELSE shr_s1 END)
+                   >= 0.95 * (CASE WHEN shr_first_team = 'Team0' THEN shr_s1 ELSE shr_s0 END) THEN 'gleich'
+              ELSE 'hinten' END AS shr_class,
+         CASE WHEN urn_first_team IS NULL THEN NULL
+              WHEN idx_urn = 0 OR urn_nulls > 0 OR urn_s0 IS NULL OR urn_s1 IS NULL THEN 'unbekannt'
+              WHEN (CASE WHEN urn_first_team = 'Team0' THEN urn_s0 ELSE urn_s1 END)
+                   > 1.05 * (CASE WHEN urn_first_team = 'Team0' THEN urn_s1 ELSE urn_s0 END) THEN 'vorn'
+              WHEN (CASE WHEN urn_first_team = 'Team0' THEN urn_s0 ELSE urn_s1 END)
+                   >= 0.95 * (CASE WHEN urn_first_team = 'Team0' THEN urn_s1 ELSE urn_s0 END) THEN 'gleich'
+              ELSE 'hinten' END AS urn_class,
+         coalesce((mb_first_c = wt)::INT, 0)
+           + coalesce((shr_first_team = wt)::INT, 0)
+           + coalesce((urn_first_team = wt)::INT, 0) AS f_win
+  FROM agg
+)
+SELECT tier,
+       count(*) AS n_matches,
+       count(*) FILTER (mb_first_t IS NOT NULL AND shr_first_t IS NOT NULL AND urn_first_t IS NOT NULL) AS n_all3,
+       count(*) FILTER (mb_first_t IS NOT NULL AND shr_first_t IS NOT NULL AND urn_first_team IS NOT NULL
+         AND mb_first_t <= urn_first_t AND mb_first_t <= shr_first_t) AS first_mb,
+       count(*) FILTER (mb_first_t IS NOT NULL AND shr_first_t IS NOT NULL AND urn_first_team IS NOT NULL
+         AND urn_first_t < mb_first_t AND urn_first_t <= shr_first_t) AS first_urn,
+       count(*) FILTER (mb_first_t IS NOT NULL AND shr_first_t IS NOT NULL AND urn_first_team IS NOT NULL
+         AND shr_first_t < mb_first_t AND shr_first_t < urn_first_t) AS first_shr,
+       count(*) FILTER (mb_first_t IS NOT NULL AND shr_first_t IS NOT NULL AND urn_first_t IS NOT NULL AND f_win = 0) AS f0,
+       count(*) FILTER (mb_first_t IS NOT NULL AND shr_first_t IS NOT NULL AND urn_first_t IS NOT NULL AND f_win = 1) AS f1,
+       count(*) FILTER (mb_first_t IS NOT NULL AND shr_first_t IS NOT NULL AND urn_first_t IS NOT NULL AND f_win = 2) AS f2,
+       count(*) FILTER (mb_first_t IS NOT NULL AND shr_first_t IS NOT NULL AND urn_first_t IS NOT NULL AND f_win = 3) AS f3,
+       count(*) FILTER (mb_first_t IS NOT NULL AND shr_first_t IS NOT NULL AND urn_first_t IS NOT NULL AND f_win >= 2) AS maj_wins,
+       count(*) FILTER (mb_class IS NOT NULL) AS mb_n,
+       count(*) FILTER (mb_class = 'vorn') AS mb_vorn,
+       count(*) FILTER (mb_class = 'vorn' AND mb_first_c = wt) AS mb_vorn_wins,
+       count(*) FILTER (mb_class = 'gleich') AS mb_gleich,
+       count(*) FILTER (mb_class = 'gleich' AND mb_first_c = wt) AS mb_gleich_wins,
+       count(*) FILTER (mb_class = 'hinten') AS mb_hinten,
+       count(*) FILTER (mb_class = 'hinten' AND mb_first_c = wt) AS mb_hinten_wins,
+       count(*) FILTER (mb_class = 'unbekannt') AS mb_unk,
+       count(*) FILTER (shr_class IS NOT NULL) AS shr_n,
+       count(*) FILTER (shr_class = 'vorn') AS shr_vorn,
+       count(*) FILTER (shr_class = 'vorn' AND shr_first_team = wt) AS shr_vorn_wins,
+       count(*) FILTER (shr_class = 'gleich') AS shr_gleich,
+       count(*) FILTER (shr_class = 'gleich' AND shr_first_team = wt) AS shr_gleich_wins,
+       count(*) FILTER (shr_class = 'hinten') AS shr_hinten,
+       count(*) FILTER (shr_class = 'hinten' AND shr_first_team = wt) AS shr_hinten_wins,
+       count(*) FILTER (shr_class = 'unbekannt') AS shr_unk,
+       count(*) FILTER (urn_class IS NOT NULL) AS urn_n,
+       count(*) FILTER (urn_class = 'vorn') AS urn_vorn,
+       count(*) FILTER (urn_class = 'vorn' AND urn_first_team = wt) AS urn_vorn_wins,
+       count(*) FILTER (urn_class = 'gleich') AS urn_gleich,
+       count(*) FILTER (urn_class = 'gleich' AND urn_first_team = wt) AS urn_gleich_wins,
+       count(*) FILTER (urn_class = 'hinten') AS urn_hinten,
+       count(*) FILTER (urn_class = 'hinten' AND urn_first_team = wt) AS urn_hinten_wins,
+       count(*) FILTER (urn_class = 'unbekannt') AS urn_unk,
+       count(*) FILTER (dels0 + dels1 > 0) AS n_with_delivery,
+       sum(dels0) AS dels0_sum,
+       sum(dels1) AS dels1_sum,
+       count(*) FILTER (urn_first_team IS NOT NULL) AS n_with_first,
+       sum(urn_first_t) AS urn_first_t_sum,
+       count(*) FILTER (urn_first_team = wt) AS first_team_wins,
+       count(*) FILTER (dels0 != dels1) AS n_with_more,
+       count(*) FILTER (CASE WHEN dels0 > dels1 THEN 'Team0' WHEN dels1 > dels0 THEN 'Team1' END = wt) AS more_wins
+FROM cls
+GROUP BY tier
+ORDER BY tier;
+
+-- Stichproben zur Methodik
+-- Zeilenidentitaet der Match-Felder ueber die 12 Spielerzeilen (Stichprobe)
+SELECT min("mid_boss.destroyed_time_s") = max("mid_boss.destroyed_time_s") AS mb_t_same,
+       min("mid_boss.team_killed") = max("mid_boss.team_killed") AS mb_k_same,
+       min("mid_boss.team_claimed") = max("mid_boss.team_claimed") AS mb_c_same,
+       min("objectives.team_objective") = max("objectives.team_objective") AS ob_n_same,
+       min("objectives.team") = max("objectives.team") AS ob_t_same,
+       min("objectives.destroyed_time_s") = max("objectives.destroyed_time_s") AS ob_d_same,
+       min("stats.time_stamp_s") = max("stats.time_stamp_s") AS ts_same
+FROM match_player
+WHERE match_id = 105553799;
+
+-- Urnen-Zeitreihen des Beispiel-Match aus dem Auftrag
+SELECT match_id, team, player_slot,
+       "stats.time_stamp_s" AS ts, "stats.gold_treasure" AS gt,
+       "stats.gold_boss" AS gb, "stats.gold_boss_orb" AS gbo, "stats.net_worth" AS nw
+FROM match_player
+WHERE match_id = 104753027
+ORDER BY player_slot;
+
+-- Objectives- und Midboss-Struktur eines Beispiel-Match
+SELECT match_id, winning_team, duration_s,
+       "objectives.team_objective" AS ob_n, "objectives.team" AS ob_t,
+       "objectives.destroyed_time_s" AS ob_d, "objectives.first_damage_time_s" AS ob_fd,
+       "mid_boss.team_killed" AS mb_k, "mid_boss.team_claimed" AS mb_c,
+       "mid_boss.destroyed_time_s" AS mb_t
+FROM match_player
+WHERE start_time >= TIMESTAMPTZ '2026-09-14 00:00:00+00'
+  AND start_time < TIMESTAMPTZ '2026-09-15 00:00:00+00'
+  AND game_mode = 'Normal' AND match_mode = 'Ranked'
+  AND match_outcome = 'TeamWin'
+LIMIT 1;
+
+-- power_up_buffs-Typen (Rift-Pruefung, drei Stunden)
+SELECT u.type AS buff_type, count(*) AS n
+FROM match_player m, UNNEST(m."power_up_buffs.type") AS u(type)
+WHERE m.start_time >= TIMESTAMPTZ '2026-09-14 12:00:00+00'
+  AND m.start_time < TIMESTAMPTZ '2026-09-14 15:00:00+00'
+  AND m.game_mode = 'Normal' AND m.match_mode = 'Ranked'
+GROUP BY u.type
+ORDER BY n DESC
+LIMIT 60;
+
+-- Urnen-Gegenprobe: Zuwachsserien fuer 20 Stichproben-Match (IDs in urn_check_ids.json)
+SELECT match_id, team, player_slot,
+       list_filter(list_transform(range(1, len(coalesce("stats.gold_treasure", []))),
+         i -> {'t': coalesce("stats.time_stamp_s", [])[i + 1],
+               'd': "stats.gold_treasure"[i + 1] - "stats.gold_treasure"[i]}),
+         x -> x.d > 0) AS spruenge
+FROM match_player
+WHERE match_id IN (1, 2)
+ORDER BY match_id, team, player_slot;

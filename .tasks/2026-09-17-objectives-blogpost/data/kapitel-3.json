@@ -1,0 +1,134 @@
+{
+ "kapitel": 3,
+ "titel": "Shrines (TitanShieldGenerator)",
+ "einheit": "je Rangstufe",
+ "definition": {
+  "shrine": "objectives.team_objective LIKE 'TitanShieldGenerator%', 4 pro Match (2 je Team)",
+  "gefallen": "destroyed_time_s > 0 (0 = nicht zerstoert, Objektiv-Team ist Besitzer-Team, an Stichprobe und Verteilung geprueft)",
+  "erster_fall": "kleinstes positives destroyed_time_s; Zerstoerer = anderes Team als objectives.team",
+  "luecke_bis_ende": "duration_s minus erster Fall"
+ },
+ "stufen": [
+  {
+   "rang": "1",
+   "n_matches": 40209,
+   "n_mit_shrinefall": 40209,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 2149,
+   "n_first_destroyer_siege": 37666,
+   "siegquote_erster_zerstoerer_prozent": 93.7,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 279,
+   "gefallene_shrines_besitzer_gewinner": 6616,
+   "gefallene_shrines_besitzer_verlierer": 80418
+  },
+  {
+   "rang": "2",
+   "n_matches": 71132,
+   "n_mit_shrinefall": 71130,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 2089,
+   "n_first_destroyer_siege": 66722,
+   "siegquote_erster_zerstoerer_prozent": 93.8,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 277,
+   "gefallene_shrines_besitzer_gewinner": 11840,
+   "gefallene_shrines_besitzer_verlierer": 142260
+  },
+  {
+   "rang": "3",
+   "n_matches": 62071,
+   "n_mit_shrinefall": 62071,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 2027,
+   "n_first_destroyer_siege": 58161,
+   "siegquote_erster_zerstoerer_prozent": 93.7,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 279,
+   "gefallene_shrines_besitzer_gewinner": 10693,
+   "gefallene_shrines_besitzer_verlierer": 124142
+  },
+  {
+   "rang": "4",
+   "n_matches": 53991,
+   "n_mit_shrinefall": 53990,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 1983,
+   "n_first_destroyer_siege": 50353,
+   "siegquote_erster_zerstoerer_prozent": 93.3,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 285,
+   "gefallene_shrines_besitzer_gewinner": 10033,
+   "gefallene_shrines_besitzer_verlierer": 107980
+  },
+  {
+   "rang": "5",
+   "n_matches": 52183,
+   "n_mit_shrinefall": 52183,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 1951,
+   "n_first_destroyer_siege": 48661,
+   "siegquote_erster_zerstoerer_prozent": 93.3,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 287,
+   "gefallene_shrines_besitzer_gewinner": 9704,
+   "gefallene_shrines_besitzer_verlierer": 104366
+  },
+  {
+   "rang": "6",
+   "n_matches": 54812,
+   "n_mit_shrinefall": 54811,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 1918,
+   "n_first_destroyer_siege": 50974,
+   "siegquote_erster_zerstoerer_prozent": 93.0,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 294,
+   "gefallene_shrines_besitzer_gewinner": 10784,
+   "gefallene_shrines_besitzer_verlierer": 109622
+  },
+  {
+   "rang": "7",
+   "n_matches": 55671,
+   "n_mit_shrinefall": 55671,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 1887,
+   "n_first_destroyer_siege": 51716,
+   "siegquote_erster_zerstoerer_prozent": 92.9,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 297,
+   "gefallene_shrines_besitzer_gewinner": 11021,
+   "gefallene_shrines_besitzer_verlierer": 111342
+  },
+  {
+   "rang": "8",
+   "n_matches": 82091,
+   "n_mit_shrinefall": 82091,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 1821,
+   "n_first_destroyer_siege": 75724,
+   "siegquote_erster_zerstoerer_prozent": 92.2,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 307,
+   "gefallene_shrines_besitzer_gewinner": 17716,
+   "gefallene_shrines_besitzer_verlierer": 164182
+  },
+  {
+   "rang": "9",
+   "n_matches": 42307,
+   "n_mit_shrinefall": 42306,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 1735,
+   "n_first_destroyer_siege": 39046,
+   "siegquote_erster_zerstoerer_prozent": 92.3,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 293,
+   "gefallene_shrines_besitzer_gewinner": 9072,
+   "gefallene_shrines_besitzer_verlierer": 84612
+  },
+  {
+   "rang": "10+11",
+   "n_matches": 9135,
+   "n_mit_shrinefall": 9135,
+   "anteil_matches_mit_shrinefall_prozent": 100.0,
+   "erster_shrinefall_sekunden_mittel": 1680,
+   "n_first_destroyer_siege": 8484,
+   "siegquote_erster_zerstoerer_prozent": 92.9,
+   "luecke_erster_fall_bis_ende_sekunden_mittel": 271,
+   "gefallene_shrines_besitzer_gewinner": 1821,
+   "gefallene_shrines_besitzer_verlierer": 18270
+  }
+ ],
+ "grundgesamtheit": "game_mode Normal, match_mode Ranked, match_outcome TeamWin, 2026-08-13 00:00 UTC bis 2026-09-15 23:59 UTC, 523465 Matches, Dedup je (match_id, account_id) ueber neueste created_at"
+}

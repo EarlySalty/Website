@@ -1,0 +1,65 @@
+{
+ "kapitel": 4,
+ "titel": "Unstable Rift",
+ "befund": "Nullbefund",
+ "begruendung": [
+  "match_player enthaelt kein Rift-Feld (alle 150 Spalten geprueft, schema_match_player.json)",
+  "stats.gold_boss und stats.gold_boss_orb zeigen je-Spieler-Zuwachse ohne Teammuster und sind vom Rift trennbar nicht interpretierbar (probe_urn.json); gold_boss_orb bleibt im Stichprobenmatch durchgaengig 0",
+  "power_up_buffs.type enthaelt keine Rift-Bezeichnung (probe_buffs.json)",
+  "Demo-Endpunkte (/v1/matches/demo/schema mit match_id) liefern fuer alle drei Stichproben-Matches HTTP 404 (kein Demo/Salts) und sind je Einzelmatch und rate-limitiert, fuer eine Grundgesamtheit ohne Schleife ueber Einzelmatches nicht nutzbar",
+  "match_tracked_stats ist eine ID-Map ohne oeffentliche Zuordnung, Rift-Zaehler also nicht identifizierbar"
+ ],
+ "stufen": [
+  {
+   "rang": "1",
+   "n_matches": 40213,
+   "messbar": false
+  },
+  {
+   "rang": "2",
+   "n_matches": 71154,
+   "messbar": false
+  },
+  {
+   "rang": "3",
+   "n_matches": 62091,
+   "messbar": false
+  },
+  {
+   "rang": "4",
+   "n_matches": 54002,
+   "messbar": false
+  },
+  {
+   "rang": "5",
+   "n_matches": 52225,
+   "messbar": false
+  },
+  {
+   "rang": "6",
+   "n_matches": 54830,
+   "messbar": false
+  },
+  {
+   "rang": "7",
+   "n_matches": 55690,
+   "messbar": false
+  },
+  {
+   "rang": "8",
+   "n_matches": 82095,
+   "messbar": false
+  },
+  {
+   "rang": "9",
+   "n_matches": 42310,
+   "messbar": false
+  },
+  {
+   "rang": "10+11",
+   "n_matches": 9137,
+   "messbar": false
+  }
+ ],
+ "grundgesamtheit": "game_mode Normal, match_mode Ranked, match_outcome TeamWin, 2026-08-13 00:00 UTC bis 2026-09-15 23:59 UTC, 523465 Matches, Dedup je (match_id, account_id) ueber neueste created_at"
+}
