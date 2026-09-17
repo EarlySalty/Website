@@ -1,0 +1,17 @@
+@import url('../twitch-szene-2026/post.css');
+
+.bl-code {
+  margin: 1.1rem 0 0.4rem;
+  padding: 1rem 1.1rem;
+  background: var(--ink-soft);
+  border-radius: 12px;
+  border-left: 2px solid rgba(201, 168, 106, 0.4);
+  overflow-x: auto;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+.bl-code code {
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+  color: var(--bone-dim);
+  white-space: pre;
+}
