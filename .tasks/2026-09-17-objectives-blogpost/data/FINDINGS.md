@@ -2,9 +2,10 @@
 
 Datenbasis: Deadlock-API-MCP-Server (`match_player`), Normal/Ranked/TeamWin, 2026-08-13 bis
 2026-09-15 UTC, 523.602 Matches (QB-Lauf; QD-Lauf kurz danach 523.747, siehe Unsicherheiten).
-Alle Werte je Rangstufe in `kapitel-1.json` bis `kapitel-6.json`, Definitionen in
-`methodik.json`, jede Abfrage in `queries.sql`. Siegquoten sind Beobachtungen ohne
-Kausalitätsaussage; Kapitel 6 schichtet zusätzlich nach Soul-Vorsprung.
+Alle Werte je Rangstufe in `kapitel-1.json` bis `kapitel-6.json`, je Zeitklasse und Ranggruppe
+in `kapitel-7.json`, Definitionen in `methodik.json`, jede Abfrage in `queries.sql`. Siegquoten
+sind Beobachtungen ohne Kausalitätsaussage; Kapitel 6 schichtet zusätzlich nach Soul-Vorsprung,
+Kapitel 7 wertet nach Zeitpunkt aus.
 
 ## Kapitel 1: Midboss (Rejuvenator)
 
@@ -73,6 +74,30 @@ Spielverlaufs. Auffällig ist der Abstand zwischen Midboss und Shrine: ein hinte
 Team gewinnt nach erstem Shrine-Fall noch in 75,7 Prozent, nach Erst-Claim aber nur in 45,7
 Prozent der Fälle.
 
+## Kapitel 7: Siegquote nach Zeitpunkt der Erst-Objectives
+
+Je Zeitklasse (5-Minuten-Klassen für Midboss und Shrine, Stützstellen-Raster für die Urne) und
+Ranggruppe (niedrig 1 bis 4, mittel 5 bis 7, hoch 8 bis 11) in `kapitel-7.json`, A2-Lauf vom
+2026-09-18 tageweise wie QD. Der Gradient der Siegquoten über die Zeitklassen fällt je Ereignis
+unterschiedlich aus: Beim ersten Midboss-Claim steigt die Quote des Claim-Teams von 72,9 Prozent
+(Claim zwischen Minute 5 und 20) auf 78,1 Prozent (ab Minute 35) und bei der ersten Urnen-Abgabe
+von 52,7 auf 59,9 Prozent, während sie beim ersten Shrine-Fall von 98,7 Prozent (vor Minute 20)
+auf 82,9 Prozent (nach Minute 50) fällt: Ein früher erster Shrine-Fall ist praktisch immer ein
+Zeichen für ein schon entschiedenes Spiel. Die Schichtung nach Soul-Vorsprung hebt die
+Gradienten nicht auf: Beim Midboss gewinnt das Claim-Team auch innerhalb jeder Soul-Klasse mit
+späterem Claim häufiger (von der frühesten bis zur Klasse 30 bis 35 Minuten: vorn 87 auf 91,
+gleichauf 66 auf 74, hinten 39 auf 49 Prozent), bei der Urne steigen in den beiden großen
+Klassen bis 900 s (98 Prozent der Fälle) nur vorn und gleichauf leicht an (67 auf 73 und 51 auf
+56 Prozent), während hinten liegende Teams mit früher wie später erster Abgabe gleich selten
+gewinnen (34 bis 41 Prozent), und beim ersten Shrine-Fall gilt der umgekehrte Gradient in jeder
+Schicht (niedrige Ränge: vorn 99,7 auf 87,5, hinten 100,0 auf 74,2 Prozent von der frühesten
+bis zur spätesten Klasse). Der Median des ersten Midboss-Claims sinkt von 1.714 Sekunden
+(Stufe 1) auf 1.127 Sekunden (Stufe 10+11), der des ersten Shrine-Falls von 2.119 auf 1.687
+Sekunden, die erste Urnen-Abgabe liegt in jeder Stufe bei Median 900 Sekunden (Checkpoint-
+Raster). Frühe Midboss-Claims sind öfter umkämpft: Der Steal-Anteil am ersten Claim sinkt bei
+niedrigen Rängen von 12,0 Prozent (vor Minute 20) auf 6,6 Prozent (ab Minute 35), bei hohen
+von 13,3 auf 11,8 Prozent.
+
 ## Unsicherheiten
 
 - Daten-drift: Die Quelle schreibt nachträglich Zeilen. QA und QB liefen back-to-back und
@@ -87,6 +112,17 @@ Prozent der Fälle.
 - Stufe 11 (490 Matches, 0,09 Prozent) ist mit Stufe 10 als "10+11" zusammengelegt.
 - Die Urnen-Werte in Kapitel 5 zählen bei Urnen-Gleichstand konservativ 0, die 84,2 Prozent
   zur Mehrheit sind also eine Unterschranke.
+- Kapitel 7 wurde einen Tag später geladen (A2-Lauf 2026-09-18): Die Zeitklassen-Summen weichen
+  um +347 (Midboss), +349 (Shrine) und -253 (Urne) Matches von den Kapitel-1-bis-3-Nennern ab
+  (0,05 bis 0,07 Prozent Daten-drift, Details in plausibilitaet-a2.json). Ausgegliedert und
+  nicht in den Klassen gezählt: 451 Urnen-Events mit Ereignis-Team, aber fehlendem Zeitgitter
+  (Zahl deckungsgleich mit den urn_unbekannt aus Kapitel 6) und 5 Shrine-Zeilen, in denen kein
+  Shrine tatsächlich zerstört wurde (nur destroyed_time_s = 0).
+- Kapitel-7-Zeitklassen: dünne Randklassen unter max(1000, 0,5 Prozent) der Ereignisse sind mit
+  der Nachbarklasse verschmolzen; wenige Matches mit unregelmäßigen Urnen-Stützpunkten (rund
+  0,2 Prozent) sind beim Klassenbau auf den nächsten Rasterpunkt gehoben. Mediane sind für
+  Midboss und Shrine auf 60-Sekunden-Raster interpoliert, für die Urne exakt; Urnen-Klassen
+  sind obere Stützstellenwerte, keine exakten Abgabezeiten.
 - Siegquoten sind Teamvergleiche ohne Kausalitätsaussage; die Schichtung in Kapitel 6 ist
   eine Beobachtung, kein Wirksamkeitsnachweis.
 
@@ -109,3 +145,18 @@ Ergebnisse aus `plausibilitaet.json` (Lauf 2026-09-17):
 - K6: vorn + gleichauf + hinten + unbekannt = Ereignisfälle je Ereignis; unbekannt ist mit
   0 (Midboss), 5 (Shrine) und 451 (Urne) verschwindend klein.
 - Urnen-Abgaben je Team annähernd symmetrisch: 993.354 (Team0) gegen 992.161 (Team1).
+
+## Plausibilitätsprüfungen (Paket A2)
+
+Ergebnisse aus `plausibilitaet-a2.json` (Lauf 2026-09-18):
+
+- Zeitklassen-Summen gegen die Kapitel-Nenner: Midboss 517.643 gegen 517.296 (+347, +0,07
+  Prozent), Shrine 523.946 gegen 523.597 (+349, +0,07 Prozent), Urne 511.307 gegen 511.560
+  (-253, -0,05 Prozent); gegen die K6-Nenner aus dem QD-Lauf bleiben nach Ausweis der
+  Sonderfälle +202, +204 und +198 Matches (Daten-drift zum Vortag).
+- Zellen-Integrität: In allen 51 Klassen-mal-Ranggruppen-Zellen gilt n = vorn + gleichauf +
+  hinten + unbekannt, und die Siege-Teilwerte der Schichtung summieren sich zu den Siegen der
+  Zelle (0 Verletzungen).
+- Histogramm-Konsistenz: Die je Rangstufe gelieferten Histogramme zählen je Ereignis exakt
+  so viele Matches wie die Zeitklassen (517.643, 523.946, 511.307).
+- Tagesabdeckung: 34 Tages-Dateien ohne Lücken, je Tag alle sechs Auswertungszweige.
