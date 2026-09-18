@@ -90,9 +90,9 @@ const kontrolleRows = [];
 ['midboss', 'shrine', 'urne'].forEach((key) => {
   const e = KONTROLLE[key];
   kontrolleRows.push(
-    { name: `${e.label} · vorn`, sub: `Soul-Vorsprung, n = ${fmt(e.vorn.n)}`, value: e.vorn.siegquote, display: pct(e.vorn.siegquote), color: GOLD },
-    { name: `${e.label} · gleichauf`, sub: `n = ${fmt(e.gleich.n)}`, value: e.gleich.siegquote, display: pct(e.gleich.siegquote), color: C_GLEICH },
-    { name: `${e.label} · hinten`, sub: `Soul-Rückstand, n = ${fmt(e.hinten.n)}`, value: e.hinten.siegquote, display: pct(e.hinten.siegquote), color: C_HINTEN },
+    { name: `${e.label} · vorn`, sub: `Soul-Vorsprung, ${fmt(e.vorn.n)} Matches`, value: e.vorn.siegquote, display: pct(e.vorn.siegquote), color: GOLD },
+    { name: `${e.label} · gleichauf`, sub: `${fmt(e.gleich.n)} Matches`, value: e.gleich.siegquote, display: pct(e.gleich.siegquote), color: C_GLEICH },
+    { name: `${e.label} · hinten`, sub: `Soul-Rückstand, ${fmt(e.hinten.n)} Matches`, value: e.hinten.siegquote, display: pct(e.hinten.siegquote), color: C_HINTEN },
   );
 });
 renderHBars(q('[data-chart="kontrolle"]'), kontrolleRows, { maxValue: 100, ariaLabel: 'Siegquote je Objective, getrennt nach Soul-Lage' });
