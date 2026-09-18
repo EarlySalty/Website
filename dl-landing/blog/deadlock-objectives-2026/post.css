@@ -54,7 +54,10 @@
   background: var(--ink-soft, #171310);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
   color: var(--bone-dim, #cdc3b4);
-  font: 400 0.8rem/1.5 inherit;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 0.8rem;
+  line-height: 1.5;
   font-style: normal;
   text-align: left;
   letter-spacing: 0;
