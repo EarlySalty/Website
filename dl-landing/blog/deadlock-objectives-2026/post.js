@@ -1,5 +1,5 @@
 import {
-  STAND, META, RAENGE, MIDBOSS, URNE, SHRINE, REIHENFOLGE, KONTROLLE,
+  STAND, META, RAENGE, MIDBOSS, URNE, SHRINE, REIHENFOLGE, KONTROLLE, KAPITEL7,
 } from './data.js';
 
 import {
@@ -107,6 +107,32 @@ buildTable('kontrolle',
     ];
   }));
 
+/* ── Kapitel 8: Siegquote nach Zeitpunkt des Objectives ───────── */
+[['midboss', 'k7-midboss'], ['shrine', 'k7-shrine'], ['urne', 'k7-urne']].forEach(([key, host]) => {
+  const ev = KAPITEL7[key];
+  renderHBars(q(`[data-chart="${host}"]`), ev.klassen.map((k) => ({
+    name: k.label,
+    value: k.gesamt,
+    display: pct(k.gesamt),
+    color: GOLD,
+  })), { maxValue: 100 });
+});
+
+const rangHead = (mitSteal) => mitSteal
+  ? ['Zeitklasse', 'Niedrig', 'Mittel', 'Hoch', 'Gesamt', 'Steal-Anteil']
+  : ['Zeitklasse', 'Niedrig', 'Mittel', 'Hoch', 'Gesamt'];
+[['midboss', 'k7-mb', true], ['shrine', 'k7-sh', false], ['urne', 'k7-ur', false]].forEach(([key, id, mitSteal]) => {
+  const ev = KAPITEL7[key];
+  buildTable(`${id}-rang`, rangHead(mitSteal), ev.klassen.map((k) => {
+    const row = [k.label, pct(k.niedrig), pct(k.mittel), pct(k.hoch), pct(k.gesamt)];
+    if (mitSteal) row.push(pct(k.steal_anteil));
+    return row;
+  }));
+  buildTable(`${id}-sch`,
+    ['Zeitklasse', 'Soul-Vorsprung', 'gleichauf', 'Soul-Rückstand'],
+    ev.klassen.map((k) => [k.label, pct(k.sch.vorn), pct(k.sch.gleich), pct(k.sch.hinten)]));
+});
+
 /* ── Zahlen im Text ───────────────────────────────────────────── */
 const mb = MIDBOSS.aggregat;
 const ur = URNE.aggregat;
@@ -155,6 +181,28 @@ const fills = {
   'k6-shr-hinten': pct(KONTROLLE.shrine.hinten.siegquote),
   'k6-urn-vorn': pct(KONTROLLE.urne.vorn.siegquote),
   'k6-urn-hinten': pct(KONTROLLE.urne.hinten.siegquote),
+
+  'k7-mb-frueh': pct(KAPITEL7.midboss.klassen[0].gesamt),
+  'k7-mb-spaet': pct(KAPITEL7.midboss.klassen[4].gesamt),
+  'k7-mb-vorn-frueh': pct(KAPITEL7.midboss.klassen[0].sch.vorn),
+  'k7-mb-vorn-spaet': pct(KAPITEL7.midboss.klassen[3].sch.vorn),
+  'k7-mb-hinten-frueh': pct(KAPITEL7.midboss.klassen[0].sch.hinten),
+  'k7-mb-hinten-spaet': pct(KAPITEL7.midboss.klassen[3].sch.hinten),
+  'k7-mb-med-niedrig': minRund(KAPITEL7.midboss.median_niedrig_s),
+  'k7-mb-med-hoch': minRund(KAPITEL7.midboss.median_hoch_s),
+  'k7-steal-frueh': pct(KAPITEL7.midboss.klassen[0].steal_anteil),
+  'k7-steal-spaet': pct(KAPITEL7.midboss.klassen[4].steal_anteil),
+
+  'k7-sh-frueh': pct(KAPITEL7.shrine.klassen[0].gesamt),
+  'k7-sh-spaet': pct(KAPITEL7.shrine.klassen[7].gesamt),
+  'k7-sh-med-niedrig': minRund(KAPITEL7.shrine.median_niedrig_s),
+  'k7-sh-med-hoch': minRund(KAPITEL7.shrine.median_hoch_s),
+
+  'k7-ur-frueh': pct(KAPITEL7.urne.klassen[0].gesamt),
+  'k7-ur-spaet': pct(KAPITEL7.urne.klassen[3].gesamt),
+  'k7-ur-hinten-frueh': pct(KAPITEL7.urne.klassen[0].sch.hinten),
+  'k7-ur-hinten-spaet': pct(KAPITEL7.urne.klassen[3].sch.hinten),
+  'k7-ur-med': minRund(KAPITEL7.urne.median_niedrig_s),
 };
 
 Object.entries(fills).forEach(([key, value]) => {

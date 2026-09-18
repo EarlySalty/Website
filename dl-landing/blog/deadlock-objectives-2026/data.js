@@ -166,6 +166,56 @@ export const KONTROLLE = {
   },
 };
 
+/* ── Kapitel 7 (Seite: Kapitel 8): Siegquote nach Zeitpunkt ────
+   Je Zeitklasse und Ranggruppe, plus Schichtung nach Soul-Vorsprung.
+   A2-Lauf 2026-09-18. Prozente aus dem Lauf, Mediane als Rohsekunden.
+   Beobachtung, keine Wirkung: die Zeitklassen sind nicht randomisiert. */
+export const KAPITEL7 = {
+  ranggruppen: {
+    niedrig: 'Initiate bis Arcanist',
+    mittel: 'Ritualist bis Archon',
+    hoch: 'Oracle bis Eternus',
+  },
+  midboss: {
+    label: 'Erster Rejuvenator',
+    median_niedrig_s: 1714,
+    median_hoch_s: 1127,
+    klassen: [
+      { label: '5 bis 20 min', gesamt: 72.9, niedrig: 74.2, mittel: 73.0, hoch: 72.7, steal_anteil: 12.9, sch: { vorn: 87.2, gleich: 67.3, hinten: 43.4 } },
+      { label: '20 bis 25 min', gesamt: 73.8, niedrig: 75.0, mittel: 73.9, hoch: 72.5, steal_anteil: 10.8, sch: { vorn: 88.8, gleich: 68.8, hinten: 44.2 } },
+      { label: '25 bis 30 min', gesamt: 76.3, niedrig: 76.4, mittel: 76.1, hoch: 76.4, steal_anteil: 8.3, sch: { vorn: 90.5, gleich: 72.4, hinten: 47.1 } },
+      { label: '30 bis 35 min', gesamt: 78.1, niedrig: 78.2, mittel: 77.9, hoch: 77.7, steal_anteil: 7.5, sch: { vorn: 91.6, gleich: 74.4, hinten: 48.9 } },
+      { label: 'ab 35 min', gesamt: 78.1, niedrig: 78.1, mittel: 78.7, hoch: 81.2, steal_anteil: 6.8, sch: { vorn: 90.9, gleich: 74.9, hinten: 48.7 } },
+    ],
+  },
+  shrine: {
+    label: 'Erster Shrine-Fall',
+    median_niedrig_s: 2119,
+    median_hoch_s: 1687,
+    klassen: [
+      { label: 'bis 20 min', gesamt: 98.7, niedrig: 99.6, mittel: 98.8, hoch: 98.1, steal_anteil: null, sch: { vorn: 99.4, gleich: 94.2, hinten: 77.3 } },
+      { label: '20 bis 25 min', gesamt: 96.4, niedrig: 98.2, mittel: 97.0, hoch: 95.2, steal_anteil: null, sch: { vorn: 97.8, gleich: 91.2, hinten: 75.2 } },
+      { label: '25 bis 30 min', gesamt: 94.6, niedrig: 96.3, mittel: 94.7, hoch: 93.0, steal_anteil: null, sch: { vorn: 96.9, gleich: 89.9, hinten: 76.0 } },
+      { label: '30 bis 35 min', gesamt: 92.9, niedrig: 94.2, mittel: 92.6, hoch: 91.0, steal_anteil: null, sch: { vorn: 95.9, gleich: 87.8, hinten: 75.1 } },
+      { label: '35 bis 40 min', gesamt: 91.8, niedrig: 92.8, mittel: 91.1, hoch: 89.8, steal_anteil: null, sch: { vorn: 95.5, gleich: 86.8, hinten: 75.4 } },
+      { label: '40 bis 45 min', gesamt: 89.9, niedrig: 90.4, mittel: 89.4, hoch: 87.7, steal_anteil: null, sch: { vorn: 94.1, gleich: 86.7, hinten: 77.0 } },
+      { label: '45 bis 50 min', gesamt: 87.1, niedrig: 87.5, mittel: 86.3, hoch: 83.9, steal_anteil: null, sch: { vorn: 91.8, gleich: 84.3, hinten: 76.8 } },
+      { label: 'ab 50 min', gesamt: 82.9, niedrig: 82.6, mittel: 84.9, hoch: 84.4, steal_anteil: null, sch: { vorn: 87.5, gleich: 80.8, hinten: 75.5 } },
+    ],
+  },
+  urne: {
+    label: 'Erste Urnen-Abgabe',
+    median_niedrig_s: 900,
+    median_hoch_s: 900,
+    klassen: [
+      { label: 'bis 12 min', gesamt: 52.7, niedrig: 55.1, mittel: 53.8, hoch: 47.4, steal_anteil: null, sch: { vorn: 68.7, gleich: 53.4, hinten: 38.3 } },
+      { label: '12 bis 15 min', gesamt: 55.7, niedrig: 57.1, mittel: 56.3, hoch: 52.6, steal_anteil: null, sch: { vorn: 72.3, gleich: 56.1, hinten: 38.1 } },
+      { label: '15 bis 20 min', gesamt: 56.4, niedrig: 58.9, mittel: 55.7, hoch: 52.0, steal_anteil: null, sch: { vorn: 75.9, gleich: 57.8, hinten: 34.5 } },
+      { label: 'über 20 min', gesamt: 59.9, niedrig: 60.7, mittel: 59.8, hoch: 58.4, steal_anteil: null, sch: { vorn: 84.9, gleich: 58.2, hinten: 30.4 } },
+    ],
+  },
+};
+
 export const QUELLEN = [
   'Alle Zahlen aus dem oeffentlichen MCP-Server der Deadlock-API (POST https://api.deadlock-api.com/v1/mcp, Tool execute_query, nur lesend), Tabelle match_player.',
   'Grundgesamtheit: game_mode Normal, match_mode Ranked, match_outcome TeamWin, 13.08. bis 15.09.2026 UTC, 523.602 Matches im Auswertungslauf.',

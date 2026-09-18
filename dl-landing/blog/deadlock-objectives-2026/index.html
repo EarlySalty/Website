@@ -20,7 +20,7 @@
   <meta property="og:locale" content="de_DE" />
   <meta property="og:site_name" content="Deutsche Deadlock Community" />
   <meta property="article:published_time" content="2026-09-18" />
-  <meta property="article:modified_time" content="2026-09-18T12:00:00+02:00" />
+  <meta property="article:modified_time" content="2026-09-18T16:00:00+02:00" />
   <meta property="article:section" content="Daten-Report" />
   <meta name="theme-color" content="#0b0b0b" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -45,7 +45,7 @@
           "alternativeHeadline": "Daten-Report: 523.602 Ranked-Matches aus dem MCP-Server der Deadlock-API, Objectives und Erfolg über die Ränge, getrennt nach Soul-Vorsprung",
           "description": "Auswertung von 523.602 Ranked-Matches aus dem öffentlichen MCP-Server der Deadlock-API. Der erste Rejuvenator geht mit 75,2 Prozent Siegquote einher, die erste Urnen-Abgabe mit 55,3 Prozent, der erste Shrine-Fall mit 93,1 Prozent. Schaut man getrennt danach, wer beim Ereignis schon mehr Souls hatte, bleibt ein deutlicher Unterschied: mit Vorsprung 89,5, mit Rückstand 45,7 Prozent beim Rejuvenator. Mit Rang-Mustern, Nullbefund zum Rift, Vorbehalten und Methodik.",
           "datePublished": "2026-09-18",
-          "dateModified": "2026-09-18T12:00:00+02:00",
+          "dateModified": "2026-09-18T16:00:00+02:00",
           "inLanguage": "de-DE",
           "url": "https://deutsche-deadlock-community.de/blog/deadlock-objectives-2026/",
           "mainEntityOfPage": { "@type": "WebPage", "@id": "https://deutsche-deadlock-community.de/blog/deadlock-objectives-2026/" },
@@ -53,7 +53,7 @@
           "isAccessibleForFree": true,
           "articleSection": "Daten-Report",
           "keywords": "Deadlock, Objectives, Rejuvenator, Midboss, Seelenurne, Soul Urn, Shrines, Unstable Rift, Ranked, Siegquote, Deadlock API, MCP, Soul-Vorsprung",
-          "wordCount": 2569,
+          "wordCount": 3234,
           "about": [
             { "@type": "VideoGame", "name": "Deadlock", "publisher": { "@type": "Organization", "name": "Valve Corporation" } },
             { "@type": "Thing", "name": "Objectives und Map-Kontrolle" },
@@ -164,6 +164,7 @@
                 <li><a href="#rift">Der Unstable Rift</a></li>
                 <li><a href="#reihenfolge">Reihenfolge und Kombination</a></li>
                 <li><a href="#kontrolle">Der Vorsprung zählt mehr als das Objective</a></li>
+                <li><a href="#timing">Wann das Objective fällt</a></li>
                 <li><a href="#methodik">Methodik und Grenzen</a></li>
               </ol>
             </nav>
@@ -472,9 +473,143 @@ ORDER BY stufe;</code></pre>
           </div>
         </section>
 
-        <section class="bl-section bl-section--tint" id="methodik">
+        <section class="bl-section bl-section--tint" id="timing">
           <div class="container">
             <p class="bl-eyebrow">Kapitel 8</p>
+            <h2 class="bl-h2">Wann das Objective fällt</h2>
+            <p class="bl-lede">
+              Kapitel 7 hat gezeigt, dass der Soul-Vorsprung mehr erklärt als das Objective. Bleibt die Frage
+              nach der Uhr: Ist ein früher erster Rejuvenator besser als ein später? Dafür teilen wir jedes
+              Ereignis in Zeitklassen (in Minuten) und in drei Ranggruppen (niedrig Initiate bis Arcanist,
+              mittel Ritualist bis Archon, hoch Oracle bis Eternus) und schauen je Klasse auf die Siegquote.
+              Das überraschende Ergebnis: Bei den drei Objectives zeigt die Uhr in ganz verschiedene Richtungen.
+            </p>
+
+            <p class="bl-p">
+              Beim Rejuvenator gewinnt das Claim-Team umso öfter, je später es ihn holt: von
+              <span data-fill="k7-mb-frueh">72,9 %</span> bei einem Claim zwischen Minute 5 und 20 auf
+              <span data-fill="k7-mb-spaet">78,1 %</span> ab Minute 35. Das klingt zunächst widersinnig, wird
+              aber klar, wenn man daran denkt, dass ein sehr früher Claim oft ein erzwungener Kampf ist. Dazu
+              passt der Steal-Anteil: Frühe Rejuvenatoren sind öfter umkämpft, der Anteil geklauter Erst-Claims
+              sinkt von <span data-fill="k7-steal-frueh">12,9 %</span> vor Minute 20 auf
+              <span data-fill="k7-steal-spaet">6,8 %</span> ab Minute 35.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Erster Rejuvenator: Siegquote je Zeitklasse</p>
+                <p class="bl-figure-note">
+                  Siegquote des Claim-Teams je Minutenklasse des ersten Claims. Je später, desto öfter gewinnt
+                  es. Die Tabelle zeigt die drei Ranggruppen einzeln und den Steal-Anteil je Klasse.
+                </p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="k7-midboss"></div>
+              <button class="bl-table-toggle" data-table-for="k7-mb-rang" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="k7-mb-rang"></div>
+            </figure>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Erster Rejuvenator: Siegquote je Soul-Lage und Zeitklasse</p>
+                <p class="bl-figure-note">
+                  Der Zeit-Vorteil bleibt auch innerhalb jeder Soul-Lage bestehen: Ein hinten liegendes Team
+                  gewinnt mit spätem Claim öfter als mit frühem.
+                </p>
+              </div>
+              <div class="bl-table-wrap is-open" data-table="k7-mb-sch"></div>
+            </figure>
+
+            <p class="bl-p">
+              Auch geschichtet nach Souls hält der Trend: Ein Team mit Vorsprung gewinnt von
+              <span data-fill="k7-mb-vorn-frueh">87,2 %</span> (früher Claim) auf
+              <span data-fill="k7-mb-vorn-spaet">91,6 %</span> (Claim in Minute 30 bis 35), ein hinten liegendes
+              von <span data-fill="k7-mb-hinten-frueh">43,4 %</span> auf
+              <span data-fill="k7-mb-hinten-spaet">48,9 %</span>. Wer den Rejuvenator also stehen lassen kann,
+              bis er sicher steht, holt ihn im Schnitt zu besseren Bedingungen.
+            </p>
+
+            <p class="bl-p">
+              Beim Shrine ist es genau umgekehrt. Ein früher erster Shrine-Fall ist fast immer ein schon
+              entschiedenes Spiel: vor Minute 20 gewinnt das zerstörende Team in
+              <span data-fill="k7-sh-frueh">98,7 %</span> der Fälle, nach Minute 50 nur noch in
+              <span data-fill="k7-sh-spaet">82,9 %</span>. Wer so früh einen gegnerischen Shrine reißt, hat das
+              Spiel meistens längst gewonnen, ein später Shrine-Fall gehört dagegen oft zu einer Partie, die
+              noch offen ist. Der umgekehrte Verlauf gilt auch in jeder Soul-Lage.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Erster Shrine-Fall: Siegquote je Zeitklasse</p>
+                <p class="bl-figure-note">
+                  Siegquote des Zerstörers je Minutenklasse des ersten Shrine-Falls. Je früher, desto sicherer
+                  der Sieg. Die Tabelle zeigt die drei Ranggruppen einzeln.
+                </p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="k7-shrine"></div>
+              <button class="bl-table-toggle" data-table-for="k7-sh-rang" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="k7-sh-rang"></div>
+            </figure>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Erster Shrine-Fall: Siegquote je Soul-Lage und Zeitklasse</p>
+                <p class="bl-figure-note">
+                  Auch nach Souls getrennt sinkt die Siegquote mit späterem Shrine-Fall, in jeder Lage.
+                </p>
+              </div>
+              <div class="bl-table-wrap is-open" data-table="k7-sh-sch"></div>
+            </figure>
+
+            <p class="bl-p">
+              Die Urne hat kaum einen Zeit-Effekt, mit einer wichtigen Ausnahme. Über alle Teams steigt die
+              Siegquote der ersten Abgabe nur leicht, von <span data-fill="k7-ur-frueh">52,7 %</span> bis Minute
+              12 auf <span data-fill="k7-ur-spaet">59,9 %</span> nach Minute 20 (die späten Klassen sind aber
+              dünn besetzt). Entscheidend ist die Soul-Lage: Ein hinten liegendes Team gewinnt mit der ersten
+              Urne fast unabhängig vom Zeitpunkt selten, von <span data-fill="k7-ur-hinten-frueh">38,3 %</span>
+              bei einer frühen Abgabe auf <span data-fill="k7-ur-hinten-spaet">30,4 %</span> bei einer späten.
+              Wer hinten liegt, holt sich mit einer Urne also kaum zurück ins Spiel, egal wann.
+            </p>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Erste Urnen-Abgabe: Siegquote je Zeitklasse</p>
+                <p class="bl-figure-note">
+                  Siegquote des ersten Abgabe-Teams je Zeitklasse. Der Zeitpunkt bewegt wenig. Die Tabelle zeigt
+                  die drei Ranggruppen einzeln.
+                </p>
+              </div>
+              <div class="bl-chart bl-hbars" data-chart="k7-urne"></div>
+              <button class="bl-table-toggle" data-table-for="k7-ur-rang" aria-expanded="false">Als Tabelle anzeigen</button>
+              <div class="bl-table-wrap" data-table="k7-ur-rang"></div>
+            </figure>
+
+            <figure class="bl-figure">
+              <div class="bl-figure-head">
+                <p class="bl-figure-title">Erste Urnen-Abgabe: Siegquote je Soul-Lage und Zeitklasse</p>
+                <p class="bl-figure-note">
+                  Vorne und gleichauf gewinnen etwas öfter, das hinten liegende Team bleibt niedrig, egal wann
+                  die Urne fällt.
+                </p>
+              </div>
+              <div class="bl-table-wrap is-open" data-table="k7-ur-sch"></div>
+            </figure>
+
+            <p class="bl-p">
+              Zu den Zeitpunkten selbst: Der Median des ersten Rejuvenators sinkt von rund
+              <span data-fill="k7-mb-med-niedrig">29</span> Minuten bei Initiate auf rund
+              <span data-fill="k7-mb-med-hoch">19</span> Minuten ganz oben, der des ersten Shrine-Falls von rund
+              <span data-fill="k7-sh-med-niedrig">35</span> auf rund <span data-fill="k7-sh-med-hoch">28</span>
+              Minuten, während die erste Urnen-Abgabe in jeder Stufe bei rund
+              <span data-fill="k7-ur-med">15</span> Minuten liegt (das folgt aus dem Checkpoint-Raster). In einem
+              Satz: Rejuvenator lieber sauber und spät, Shrine früh ist ein gutes Zeichen und die Urne rettet
+              kein verlorenes Spiel.
+            </p>
+          </div>
+        </section>
+
+        <section class="bl-section" id="methodik">
+          <div class="container">
+            <p class="bl-eyebrow">Kapitel 9</p>
             <h2 class="bl-h2">Methodik und Grenzen</h2>
             <p class="bl-lede">
               Alle Zahlen stammen aus einer Quelle, dem öffentlichen MCP-Server der Deadlock-API. Was wir
@@ -526,6 +661,16 @@ ORDER BY stufe;</code></pre>
                   in Kapitel 7 nimmt eine offensichtliche Störgröße heraus, und selbst sie ist eine Beobachtung
                   und kein Wirkungsnachweis: Die Ereigniszeitpunkte sind nicht randomisiert. Wir schreiben deshalb
                   durchgehend von Zusammenhang, nicht von Wirkung.
+                </p>
+              </div>
+              <div class="bl-method-card">
+                <h3>Zeitklassen (Kapitel 8)</h3>
+                <p>
+                  Die Zeit-Auswertung stammt aus einem einen Tag späteren Lauf; die Klassen-Summen weichen um
+                  +347 (Midboss), +349 (Shrine) und -253 (Urne) Matches von den Nennern der Kapitel 2 bis 4 ab
+                  (0,05 bis 0,07 Prozent Daten-drift). Dünne Randklassen sind mit der Nachbarklasse verschmolzen.
+                  Die Mediane für Midboss und Shrine sind auf ein Minuten-Raster interpoliert, die Urnen-Klassen
+                  sind obere Stützstellenwerte, keine exakten Abgabezeiten.
                 </p>
               </div>
               <div class="bl-method-card">
