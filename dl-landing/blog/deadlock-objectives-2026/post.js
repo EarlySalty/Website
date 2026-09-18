@@ -35,7 +35,7 @@ renderLine(q('[data-chart="midboss-zeit"]'), MIDBOSS.stufen.map((s) => ({
   key: nameOf(s.stufe),
   label: kurzOf(s.stufe),
   value: minuten(s.erster_claim_sekunden),
-  tip: [['Erster Rejuvenator', `${mmss(s.erster_claim_sekunden)} min`], ['Siegquote erster Claim', pct(s.siegquote_erster_claim)]],
+  tip: [['Erster Rejuvenator', `${mmss(s.erster_claim_sekunden)}`], ['Siegquote erster Claim', pct(s.siegquote_erster_claim)]],
 })), { height: 250, padT: 26, targetTicks: 6, ariaLabel: 'Minuten bis zum ersten Rejuvenator je Rangstufe, vom Initiate bis zu Ascendant und Eternus' });
 
 buildTable('midboss',
@@ -62,7 +62,7 @@ renderBars(q('[data-chart="shrine-luecke"]'), SHRINE.stufen.map((s) => ({
   key: nameOf(s.stufe),
   label: kurzOf(s.stufe),
   value: minuten(s.luecke_bis_ende_sekunden),
-  tip: [['Bis Matchende', `${mmss(s.luecke_bis_ende_sekunden)} min`], ['Erster Shrine-Fall', `${mmss(s.erster_fall_sekunden)} min`]],
+  tip: [['Bis Matchende', `${mmss(s.luecke_bis_ende_sekunden)}`], ['Erster Shrine-Fall', `${mmss(s.erster_fall_sekunden)}`]],
 })), { height: 230, valueOnMax: false, targetTicks: 2, ariaLabel: 'Minuten vom ersten Shrine-Fall bis zum Matchende je Rangstufe' });
 
 buildTable('shrine',
@@ -77,7 +77,7 @@ renderHBars(q('[data-chart="reihenfolge"]'), REIHENFOLGE.aggregat.verteilung.map
   value: v.prozent,
   display: pct(v.prozent),
   color: GOLD,
-})), { maxValue: 100 });
+})), { maxValue: 100, ariaLabel: 'Wie viele der drei Erst-Objectives der Sieger holt' });
 
 buildTable('reihenfolge',
   ['Erst-Objectives beim Sieger', 'Anteil der Matches'],
@@ -95,7 +95,7 @@ const kontrolleRows = [];
     { name: `${e.label} · hinten`, sub: `Soul-Rückstand, n = ${fmt(e.hinten.n)}`, value: e.hinten.siegquote, display: pct(e.hinten.siegquote), color: C_HINTEN },
   );
 });
-renderHBars(q('[data-chart="kontrolle"]'), kontrolleRows, { maxValue: 100 });
+renderHBars(q('[data-chart="kontrolle"]'), kontrolleRows, { maxValue: 100, ariaLabel: 'Siegquote je Objective, getrennt nach Soul-Lage' });
 
 buildTable('kontrolle',
   ['Ereignis', 'Soul-Lage', 'Siegquote', 'Ereignisfälle'],
@@ -109,14 +109,16 @@ buildTable('kontrolle',
   }));
 
 /* ── Kapitel 8: Siegquote nach Zeitpunkt des Objectives ───────── */
-[['midboss', 'k7-midboss'], ['shrine', 'k7-shrine'], ['urne', 'k7-urne']].forEach(([key, host]) => {
+[['midboss', 'k7-midboss', 'Erster Rejuvenator: Siegquote je Zeitklasse'],
+ ['shrine', 'k7-shrine', 'Erster Shrine-Fall: Siegquote je Zeitklasse'],
+ ['urne', 'k7-urne', 'Erste Urnen-Abgabe: Siegquote je Zeitklasse']].forEach(([key, host, label]) => {
   const ev = KAPITEL7[key];
   renderHBars(q(`[data-chart="${host}"]`), ev.klassen.map((k) => ({
     name: k.label,
     value: k.gesamt,
     display: pct(k.gesamt),
     color: GOLD,
-  })), { maxValue: 100 });
+  })), { maxValue: 100, ariaLabel: label });
 });
 
 const rangHead = (mitSteal) => mitSteal
@@ -140,7 +142,7 @@ renderHBars(q('[data-chart="k8-helden"]'), KAPITEL8.helden_hoch.map((h) => ({
   value: h.faktor,
   display: fak(h.faktor),
   color: GOLD,
-})), { maxValue: KAPITEL8.helden_hoch[0].faktor });
+})), { maxValue: KAPITEL8.helden_hoch[0].faktor, ariaLabel: 'Am stärksten überrepräsentierte Läufer-Helden auf hohen Rängen' });
 
 buildTable('k8-helden',
   ['Held', 'Überrepräsentation unter Läufern'],

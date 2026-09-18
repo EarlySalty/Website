@@ -436,8 +436,13 @@ export function createCharts(config = {}) {
     // Prozentserien bekommen mit maxValue: 100 die volle Skala, sonst wuerde
     // der groesste Wert immer als voller Balken erscheinen, egal wie klein er ist.
     const max = opts.maxValue ?? Math.max(...rows.map((r) => r.value));
+    if (opts.ariaLabel) {
+      host.setAttribute('role', 'list');
+      host.setAttribute('aria-label', opts.ariaLabel);
+    }
+    const itemRole = opts.ariaLabel ? ' role="listitem"' : '';
     host.innerHTML = rows.map((row) => `
-    <div class="${p}-hbar">
+    <div class="${p}-hbar"${itemRole}>
       <span class="${p}-hbar-name">${row.name}${row.sub ? `<small>${row.sub}</small>` : ''}</span>
       <span class="${p}-hbar-track">
         <span class="${p}-hbar-fill" style="width:${max > 0 ? (row.value / max) * 100 : 0}%;background:${row.color || GOLD}"></span>
