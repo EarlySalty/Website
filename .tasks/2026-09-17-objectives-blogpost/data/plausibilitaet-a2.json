@@ -1,0 +1,62 @@
+{
+ "stand": "2026-09-18",
+ "lauf": "A2, tageweise 34 Chunks, clientseitig gemergt",
+ "tage": 34,
+ "nenner_zeitklassen_gegen_kapitel": {
+  "mb": {
+   "ist_zeitklassen": 517643,
+   "nenner_kapitel": 517296,
+   "abweichung": 347,
+   "abweichung_prozent": 0.0671,
+   "ohne_zeitpunkt": 0,
+   "ohne_zeitpunkt_siege": 0,
+   "nenner_k6_qd": 517441,
+   "abweichung_k6_inkl_ohne_zeitpunkt": 202
+  },
+  "shr": {
+   "ist_zeitklassen": 523946,
+   "nenner_kapitel": 523597,
+   "abweichung": 349,
+   "abweichung_prozent": 0.0667,
+   "ohne_zeitpunkt": 5,
+   "ohne_zeitpunkt_siege": 0,
+   "nenner_k6_qd": 523747,
+   "abweichung_k6_inkl_ohne_zeitpunkt": 204
+  },
+  "urn": {
+   "ist_zeitklassen": 511307,
+   "nenner_kapitel": 511560,
+   "abweichung": -253,
+   "abweichung_prozent": -0.0495,
+   "ohne_zeitpunkt": 451,
+   "ohne_zeitpunkt_siege": 212,
+   "nenner_k6_qd": 511560,
+   "abweichung_k6_inkl_ohne_zeitpunkt": 198
+  }
+ },
+ "zellen_integritaet": {
+  "verletzungen": 0,
+  "gepruefte_ranggruppen_klassen": 51,
+  "regel": "n = vorn + gleichauf + hinten + unbekannt und Siege-Teilwerte = Siege je Zelle"
+ },
+ "hist_konsistenz": [
+  {
+   "event": "mb",
+   "hist": 517643,
+   "zeitklassen": 517643,
+   "differenz": 0
+  },
+  {
+   "event": "shr",
+   "hist": 523946,
+   "zeitklassen": 523946,
+   "differenz": 0
+  },
+  {
+   "event": "urn",
+   "hist": 511307,
+   "zeitklassen": 511307,
+   "differenz": 0
+  }
+ ]
+}
