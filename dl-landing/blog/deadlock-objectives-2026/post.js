@@ -1,5 +1,5 @@
 import {
-  STAND, META, RAENGE, MIDBOSS, URNE, SHRINE, REIHENFOLGE, KONTROLLE, KAPITEL7,
+  STAND, META, RAENGE, MIDBOSS, URNE, SHRINE, REIHENFOLGE, KONTROLLE, KAPITEL7, KAPITEL8,
 } from './data.js';
 
 import {
@@ -25,6 +25,7 @@ const mmss = (sek) => {
   return `${m}:${String(s).padStart(2, '0')}`;
 };
 const minRund = (sek) => String(Math.round(sek / 60));
+const fak = (n) => `${fmt1(n)}-fach`;
 
 const nameOf = (stufe) => RAENGE.find((r) => r.stufe === stufe).name;
 const kurzOf = (stufe) => RAENGE.find((r) => r.stufe === stufe).kurz;
@@ -133,6 +134,24 @@ const rangHead = (mitSteal) => mitSteal
     ev.klassen.map((k) => [k.label, pct(k.sch.vorn), pct(k.sch.gleich), pct(k.sch.hinten)]));
 });
 
+/* ── Kapitel 9: Der Urnen-Läufer ──────────────────────────────── */
+renderHBars(q('[data-chart="k8-helden"]'), KAPITEL8.helden_hoch.map((h) => ({
+  name: h.name,
+  value: h.faktor,
+  display: fak(h.faktor),
+  color: GOLD,
+})), { maxValue: KAPITEL8.helden_hoch[0].faktor });
+
+buildTable('k8-helden',
+  ['Held', 'Überrepräsentation unter Läufern'],
+  KAPITEL8.helden_hoch.map((h) => [h.name, fak(h.faktor)]));
+
+buildTable('k8-laeufer',
+  ['Ranggruppe', 'Läufer erkennbar', 'Läufer-Siegquote', 'Über Kollegen-Median', 'Median-Vorsprung (Seelen)', 'Rang 1 oder 2 im Team'],
+  KAPITEL8.ranggruppen.map((r) => [
+    r.label, pct(r.bekannt), pct(r.siegquote), pct(r.ueber_median), fmt(r.median_vorsprung), pct(r.rang12),
+  ]));
+
 /* ── Zahlen im Text ───────────────────────────────────────────── */
 const mb = MIDBOSS.aggregat;
 const ur = URNE.aggregat;
@@ -203,6 +222,27 @@ const fills = {
   'k7-ur-hinten-frueh': pct(KAPITEL7.urne.klassen[0].sch.hinten),
   'k7-ur-hinten-spaet': pct(KAPITEL7.urne.klassen[3].sch.hinten),
   'k7-ur-med': minRund(KAPITEL7.urne.median_niedrig_s),
+
+  'k8-abgaben': fmt(KAPITEL8.abgaben_gesamt),
+  'k8-bekannt': pct(KAPITEL8.bekannt_gesamt_prozent),
+  'k8-sq-niedrig': pct(KAPITEL8.ranggruppen[0].siegquote),
+  'k8-sq-hoch': pct(KAPITEL8.ranggruppen[2].siegquote),
+  'k8-ueber': String(KAPITEL8.ueber_median_rund),
+  'k8-vorsprung-niedrig': fmt(KAPITEL8.ranggruppen[0].median_vorsprung),
+  'k8-vorsprung-hoch': fmt(KAPITEL8.ranggruppen[2].median_vorsprung),
+  'k8-rang12-hi': pct(KAPITEL8.ranggruppen[0].rang12),
+  'k8-rang12-lo': pct(KAPITEL8.ranggruppen[1].rang12),
+  'k8-rang56-hi': pct(KAPITEL8.ranggruppen[0].rang56),
+  'k8-rang56-lo': pct(KAPITEL8.ranggruppen[2].rang56),
+  'k8-tode-niedrig': fmt1(KAPITEL8.ranggruppen[0].tode_abgabe),
+  'k8-tode-hoch': fmt1(KAPITEL8.ranggruppen[2].tode_abgabe),
+  'k8-swing-hoch': fmt(KAPITEL8.ranggruppen[2].swing_median),
+  'k8-swing-niedrig': fmt(KAPITEL8.ranggruppen[0].swing_median),
+  'k8-swing-sonst-lo': fmt(KAPITEL8.ranggruppen[1].swing_sonst),
+  'k8-swing-sonst-hi': fmt(KAPITEL8.ranggruppen[2].swing_sonst),
+  'k8-calico-niedrig': fak(KAPITEL8.calico_faktor.niedrig),
+  'k8-calico-mittel': fak(KAPITEL8.calico_faktor.mittel),
+  'k8-calico-hoch': fak(KAPITEL8.calico_faktor.hoch),
 };
 
 Object.entries(fills).forEach(([key, value]) => {

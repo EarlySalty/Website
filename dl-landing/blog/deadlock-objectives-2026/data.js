@@ -216,6 +216,34 @@ export const KAPITEL7 = {
   },
 };
 
+/* ── Kapitel 8 (Seite: Kapitel 9): Der Urnen-Läufer ────────────
+   Läufer = Spieler mit dem groessten gold_treasure-Zuwachs im Abgabe-
+   Intervall, nur in 38,5 Prozent der Abgaben eindeutig. A3-Lauf 2026-09-18.
+   Alle Läufer-Werte gelten nur fuer die erkennbaren Faelle. */
+export const KAPITEL8 = {
+  abgaben_gesamt: 1986811,
+  bekannt_gesamt_prozent: 38.5,
+  ranggruppen: [
+    { key: 'niedrig', label: 'Initiate bis Arcanist', bekannt: 40.9, siegquote: 69.8, ueber_median: 63.2, median_vorsprung: 3487, rang12: 35.7, rang56: 30.9, tode_abgabe: 6.5, tode_sonst: 10.2, swing_median: 6055, swing_sonst: 3070 },
+    { key: 'mittel', label: 'Ritualist bis Archon', bekannt: 38.0, siegquote: 69.1, ueber_median: 62.8, median_vorsprung: 3382, rang12: 35.3, rang56: 30.9, tode_abgabe: 6.5, tode_sonst: 10.1, swing_median: 5576, swing_sonst: 3034 },
+    { key: 'hoch', label: 'Oracle bis Eternus', bekannt: 34.3, siegquote: 67.3, ueber_median: 63.1, median_vorsprung: 3367, rang12: 35.5, rang56: 30.3, tode_abgabe: 6.9, tode_sonst: 10.7, swing_median: 4715, swing_sonst: 3129 },
+  ],
+  ueber_median_rund: 63,
+  calico_faktor: { niedrig: 1.36, mittel: 2.02, hoch: 2.64 },
+  helden_hoch: [
+    { name: 'Calico', faktor: 2.64 },
+    { name: 'Drifter', faktor: 1.38 },
+    { name: 'Paradox', faktor: 1.23 },
+    { name: 'Mo & Krill', faktor: 1.22 },
+    { name: 'Mina', faktor: 1.14 },
+    { name: 'Lash', faktor: 1.13 },
+  ],
+  helden_niedrig: [
+    { name: 'Celeste', faktor: 1.45 },
+    { name: 'Graves', faktor: 1.33 },
+  ],
+};
+
 export const QUELLEN = [
   'Alle Zahlen aus dem oeffentlichen MCP-Server der Deadlock-API (POST https://api.deadlock-api.com/v1/mcp, Tool execute_query, nur lesend), Tabelle match_player.',
   'Grundgesamtheit: game_mode Normal, match_mode Ranked, match_outcome TeamWin, 13.08. bis 15.09.2026 UTC, 523.602 Matches im Auswertungslauf.',
