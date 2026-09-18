@@ -1,0 +1,843 @@
+{
+ "stand": "2026-09-18",
+ "grundlage": "urn_check_0.json bis urn_check_3.json, dieselben 20 Zufalls-Matches wie Paket A",
+ "regel_abgaben": 83,
+ "davon_alle_6_gleich": 57,
+ "davon_5_von_6_gleich": 26,
+ "laeufer_bekannt": 26,
+ "laeufer_unbekannt": 57,
+ "trefferquote_lauefer_prozent": 31.3,
+ "regel": "Laeufer = eindeutiges Maximum des Zuwachses im Abgabe-Intervall und ueber dem Team-Minimum; Gleichstand oder fehlender Mehrzuwachs unbekannt",
+ "abgaben": [
+  {
+   "match_id": 99232887,
+   "team": "Team0",
+   "stuetzstelle_s": 720,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 99232887,
+   "team": "Team1",
+   "stuetzstelle_s": 1500,
+   "min_zuwachs": 88,
+   "spieler_am_min": 5,
+   "max_zuwachs": 90,
+   "spieler_am_max": 1,
+   "laeufer_slot": 9
+  },
+  {
+   "match_id": 99232887,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 977,
+   "spieler_am_min": 6,
+   "max_zuwachs": 977,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 99979932,
+   "team": "Team0",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 950,
+   "spieler_am_min": 5,
+   "max_zuwachs": 3300,
+   "spieler_am_max": 1,
+   "laeufer_slot": 1
+  },
+  {
+   "match_id": 99979932,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 99979932,
+   "team": "Team1",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 432,
+   "spieler_am_min": 6,
+   "max_zuwachs": 432,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 99979932,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 728,
+   "spieler_am_min": 6,
+   "max_zuwachs": 728,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100170059,
+   "team": "Team0",
+   "stuetzstelle_s": 1500,
+   "min_zuwachs": 710,
+   "spieler_am_min": 5,
+   "max_zuwachs": 2360,
+   "spieler_am_max": 1,
+   "laeufer_slot": 1
+  },
+  {
+   "match_id": 100170059,
+   "team": "Team0",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 765,
+   "spieler_am_min": 5,
+   "max_zuwachs": 957,
+   "spieler_am_max": 1,
+   "laeufer_slot": 4
+  },
+  {
+   "match_id": 100170059,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 436,
+   "spieler_am_min": 6,
+   "max_zuwachs": 436,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100170059,
+   "team": "Team1",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 1378,
+   "spieler_am_min": 5,
+   "max_zuwachs": 3587,
+   "spieler_am_max": 1,
+   "laeufer_slot": 10
+  },
+  {
+   "match_id": 100170059,
+   "team": "Team1",
+   "stuetzstelle_s": 2527,
+   "min_zuwachs": 1485,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1485,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100328539,
+   "team": "Team0",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 483,
+   "spieler_am_min": 6,
+   "max_zuwachs": 483,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100328539,
+   "team": "Team0",
+   "stuetzstelle_s": 3000,
+   "min_zuwachs": 1795,
+   "spieler_am_min": 5,
+   "max_zuwachs": 5195,
+   "spieler_am_max": 1,
+   "laeufer_slot": 4
+  },
+  {
+   "match_id": 100328539,
+   "team": "Team1",
+   "stuetzstelle_s": 1500,
+   "min_zuwachs": 641,
+   "spieler_am_min": 6,
+   "max_zuwachs": 641,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100328539,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 1046,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1046,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100328539,
+   "team": "Team1",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 950,
+   "spieler_am_min": 6,
+   "max_zuwachs": 950,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100328539,
+   "team": "Team1",
+   "stuetzstelle_s": 2700,
+   "min_zuwachs": 1209,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1209,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100560817,
+   "team": "Team0",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100560817,
+   "team": "Team0",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 636,
+   "spieler_am_min": 6,
+   "max_zuwachs": 636,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100560817,
+   "team": "Team0",
+   "stuetzstelle_s": 2700,
+   "min_zuwachs": 1506,
+   "spieler_am_min": 5,
+   "max_zuwachs": 1935,
+   "spieler_am_max": 1,
+   "laeufer_slot": 3
+  },
+  {
+   "match_id": 100560817,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 728,
+   "spieler_am_min": 5,
+   "max_zuwachs": 2728,
+   "spieler_am_max": 1,
+   "laeufer_slot": 8
+  },
+  {
+   "match_id": 100560817,
+   "team": "Team1",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 950,
+   "spieler_am_min": 5,
+   "max_zuwachs": 2870,
+   "spieler_am_max": 1,
+   "laeufer_slot": 9
+  },
+  {
+   "match_id": 100925984,
+   "team": "Team0",
+   "stuetzstelle_s": 1500,
+   "min_zuwachs": 29,
+   "spieler_am_min": 5,
+   "max_zuwachs": 30,
+   "spieler_am_max": 1,
+   "laeufer_slot": 1
+  },
+  {
+   "match_id": 100925984,
+   "team": "Team0",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 1098,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1098,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100925984,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 418,
+   "spieler_am_min": 6,
+   "max_zuwachs": 418,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 100925984,
+   "team": "Team1",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 987,
+   "spieler_am_min": 6,
+   "max_zuwachs": 987,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101011537,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101011537,
+   "team": "Team1",
+   "stuetzstelle_s": 1500,
+   "min_zuwachs": 469,
+   "spieler_am_min": 5,
+   "max_zuwachs": 2119,
+   "spieler_am_max": 1,
+   "laeufer_slot": 7
+  },
+  {
+   "match_id": 101011537,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 728,
+   "spieler_am_min": 6,
+   "max_zuwachs": 728,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101011537,
+   "team": "Team1",
+   "stuetzstelle_s": 2076,
+   "min_zuwachs": 987,
+   "spieler_am_min": 6,
+   "max_zuwachs": 987,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101723148,
+   "team": "Team0",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 449,
+   "spieler_am_min": 6,
+   "max_zuwachs": 449,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101723148,
+   "team": "Team0",
+   "stuetzstelle_s": 2636,
+   "min_zuwachs": 1805,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1805,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101723148,
+   "team": "Team1",
+   "stuetzstelle_s": 1500,
+   "min_zuwachs": 506,
+   "spieler_am_min": 6,
+   "max_zuwachs": 506,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101723148,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 691,
+   "spieler_am_min": 6,
+   "max_zuwachs": 691,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101723148,
+   "team": "Team1",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 987,
+   "spieler_am_min": 5,
+   "max_zuwachs": 3337,
+   "spieler_am_max": 1,
+   "laeufer_slot": 10
+  },
+  {
+   "match_id": 101920654,
+   "team": "Team0",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 1045,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1045,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101920654,
+   "team": "Team0",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 110,
+   "spieler_am_min": 5,
+   "max_zuwachs": 111,
+   "spieler_am_max": 1,
+   "laeufer_slot": 1
+  },
+  {
+   "match_id": 101920654,
+   "team": "Team1",
+   "stuetzstelle_s": 720,
+   "min_zuwachs": 498,
+   "spieler_am_min": 6,
+   "max_zuwachs": 498,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 101920654,
+   "team": "Team1",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 655,
+   "spieler_am_min": 6,
+   "max_zuwachs": 655,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 102223032,
+   "team": "Team0",
+   "stuetzstelle_s": 1500,
+   "min_zuwachs": 880,
+   "spieler_am_min": 5,
+   "max_zuwachs": 1101,
+   "spieler_am_max": 1,
+   "laeufer_slot": 4
+  },
+  {
+   "match_id": 102223032,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 102223032,
+   "team": "Team1",
+   "stuetzstelle_s": 1794,
+   "min_zuwachs": 765,
+   "spieler_am_min": 5,
+   "max_zuwachs": 1473,
+   "spieler_am_max": 1,
+   "laeufer_slot": 9
+  },
+  {
+   "match_id": 102443951,
+   "team": "Team0",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 102443951,
+   "team": "Team0",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 1024,
+   "spieler_am_min": 5,
+   "max_zuwachs": 3374,
+   "spieler_am_max": 1,
+   "laeufer_slot": 6
+  },
+  {
+   "match_id": 102443951,
+   "team": "Team1",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 690,
+   "spieler_am_min": 5,
+   "max_zuwachs": 2565,
+   "spieler_am_max": 1,
+   "laeufer_slot": 11
+  },
+  {
+   "match_id": 102443951,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 1023,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1023,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 102867836,
+   "team": "Team0",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 488,
+   "spieler_am_min": 6,
+   "max_zuwachs": 488,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 102867836,
+   "team": "Team0",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 721,
+   "spieler_am_min": 5,
+   "max_zuwachs": 2157,
+   "spieler_am_max": 1,
+   "laeufer_slot": 5
+  },
+  {
+   "match_id": 102867836,
+   "team": "Team0",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 1152,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1152,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 103552074,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 103552074,
+   "team": "Team1",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 469,
+   "spieler_am_min": 6,
+   "max_zuwachs": 469,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 103552074,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 728,
+   "spieler_am_min": 6,
+   "max_zuwachs": 728,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104064881,
+   "team": "Team0",
+   "stuetzstelle_s": 1500,
+   "min_zuwachs": 469,
+   "spieler_am_min": 5,
+   "max_zuwachs": 1548,
+   "spieler_am_max": 1,
+   "laeufer_slot": 5
+  },
+  {
+   "match_id": 104064881,
+   "team": "Team0",
+   "stuetzstelle_s": 1785,
+   "min_zuwachs": 728,
+   "spieler_am_min": 5,
+   "max_zuwachs": 2728,
+   "spieler_am_max": 1,
+   "laeufer_slot": 5
+  },
+  {
+   "match_id": 104064881,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 438,
+   "spieler_am_min": 6,
+   "max_zuwachs": 438,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104069018,
+   "team": "Team0",
+   "stuetzstelle_s": 720,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104069018,
+   "team": "Team0",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 691,
+   "spieler_am_min": 6,
+   "max_zuwachs": 691,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104069018,
+   "team": "Team0",
+   "stuetzstelle_s": 2400,
+   "min_zuwachs": 1209,
+   "spieler_am_min": 5,
+   "max_zuwachs": 3909,
+   "spieler_am_max": 1,
+   "laeufer_slot": 3
+  },
+  {
+   "match_id": 104069018,
+   "team": "Team1",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 839,
+   "spieler_am_min": 6,
+   "max_zuwachs": 839,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104069018,
+   "team": "Team1",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 1480,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1480,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104180206,
+   "team": "Team0",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 1299,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1299,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104180206,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 444,
+   "spieler_am_min": 6,
+   "max_zuwachs": 444,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104180206,
+   "team": "Team1",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 629,
+   "spieler_am_min": 6,
+   "max_zuwachs": 629,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104180206,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 728,
+   "spieler_am_min": 6,
+   "max_zuwachs": 728,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104862075,
+   "team": "Team0",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 81,
+   "spieler_am_min": 6,
+   "max_zuwachs": 81,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104862075,
+   "team": "Team0",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 691,
+   "spieler_am_min": 5,
+   "max_zuwachs": 2691,
+   "spieler_am_max": 1,
+   "laeufer_slot": 6
+  },
+  {
+   "match_id": 104862075,
+   "team": "Team0",
+   "stuetzstelle_s": 2215,
+   "min_zuwachs": 1024,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1024,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104862075,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 460,
+   "spieler_am_min": 6,
+   "max_zuwachs": 460,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104862075,
+   "team": "Team1",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 216,
+   "spieler_am_min": 5,
+   "max_zuwachs": 1107,
+   "spieler_am_max": 1,
+   "laeufer_slot": 11
+  },
+  {
+   "match_id": 104891982,
+   "team": "Team0",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 657,
+   "spieler_am_min": 6,
+   "max_zuwachs": 657,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104891982,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104891982,
+   "team": "Team1",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 1007,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1007,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104891982,
+   "team": "Team1",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 1189,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1189,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104978476,
+   "team": "Team0",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 728,
+   "spieler_am_min": 5,
+   "max_zuwachs": 2728,
+   "spieler_am_max": 1,
+   "laeufer_slot": 4
+  },
+  {
+   "match_id": 104978476,
+   "team": "Team0",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 987,
+   "spieler_am_min": 6,
+   "max_zuwachs": 987,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104978476,
+   "team": "Team0",
+   "stuetzstelle_s": 3000,
+   "min_zuwachs": 2076,
+   "spieler_am_min": 6,
+   "max_zuwachs": 2076,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104978476,
+   "team": "Team1",
+   "stuetzstelle_s": 720,
+   "min_zuwachs": 425,
+   "spieler_am_min": 5,
+   "max_zuwachs": 760,
+   "spieler_am_max": 1,
+   "laeufer_slot": 9
+  },
+  {
+   "match_id": 104978476,
+   "team": "Team1",
+   "stuetzstelle_s": 1200,
+   "min_zuwachs": 432,
+   "spieler_am_min": 6,
+   "max_zuwachs": 432,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 104978476,
+   "team": "Team1",
+   "stuetzstelle_s": 2700,
+   "min_zuwachs": 1246,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1246,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 105630023,
+   "team": "Team0",
+   "stuetzstelle_s": 1800,
+   "min_zuwachs": 1254,
+   "spieler_am_min": 6,
+   "max_zuwachs": 1254,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 105630023,
+   "team": "Team1",
+   "stuetzstelle_s": 900,
+   "min_zuwachs": 247,
+   "spieler_am_min": 6,
+   "max_zuwachs": 247,
+   "spieler_am_max": 6,
+   "laeufer_slot": null
+  },
+  {
+   "match_id": 105630023,
+   "team": "Team1",
+   "stuetzstelle_s": 2100,
+   "min_zuwachs": 950,
+   "spieler_am_min": 5,
+   "max_zuwachs": 3300,
+   "spieler_am_max": 1,
+   "laeufer_slot": 7
+  }
+ ]
+}

@@ -3,9 +3,11 @@
 Datenbasis: Deadlock-API-MCP-Server (`match_player`), Normal/Ranked/TeamWin, 2026-08-13 bis
 2026-09-15 UTC, 523.602 Matches (QB-Lauf; QD-Lauf kurz danach 523.747, siehe Unsicherheiten).
 Alle Werte je Rangstufe in `kapitel-1.json` bis `kapitel-6.json`, je Zeitklasse und Ranggruppe
-in `kapitel-7.json`, Definitionen in `methodik.json`, jede Abfrage in `queries.sql`. Siegquoten
+in `kapitel-7.json`, der Läufer-Blick je Abgabe und Ranggruppe in `kapitel-8.json`,
+Definitionen in `methodik.json` und für Kapitel 8 in `kapitel-8.json`, jede Abfrage in
+`queries.sql`. Siegquoten
 sind Beobachtungen ohne Kausalitätsaussage; Kapitel 6 schichtet zusätzlich nach Soul-Vorsprung,
-Kapitel 7 wertet nach Zeitpunkt aus.
+Kapitel 7 wertet nach Zeitpunkt aus, Kapitel 8 betrachtet die Läufer der Urnen-Abgaben.
 
 ## Kapitel 1: Midboss (Rejuvenator)
 
@@ -98,6 +100,45 @@ Raster). Frühe Midboss-Claims sind öfter umkämpft: Der Steal-Anteil am ersten
 niedrigen Rängen von 12,0 Prozent (vor Minute 20) auf 6,6 Prozent (ab Minute 35), bei hohen
 von 13,3 auf 11,8 Prozent.
 
+## Kapitel 8: Der Urnen-Läufer
+
+Wer die Urne getragen hat, ist nur in einer Minderheit der Abgaben sichtbar: In 38,5 Prozent
+aller 1.986.811 erkannten Abgaben erhielt genau ein Teammitglied mehr Gold als die übrigen fünf
+(niedrig 40,9, mittel 38,0, hoch 34,3 Prozent), in allen übrigen bekamen sechs Spieler
+denselben Zuwachs und der Läufer bleibt unbekannt; alle folgenden Läufer-Werte gelten nur für
+die erkennbaren Fälle. Der erkennbare Läufer gewinnt mit seinem Team in 69,8 (niedrig), 69,1
+(mittel) und 67,3 Prozent (hoch) der Fälle, liegt bei rund 63 Prozent der Abgaben über dem
+Median-Endvermögen seiner fünf Teamkollegen (Median-Differenz +3.367 bis +3.487 Seelen), hat
+häufiger Kills als der Kollegen-Median (49,1 gegen 42,1 Prozent auf niedrigen Rängen) und
+stirbt etwas seltener; im Team ist er häufiger reich als arm, Rang 1 oder 2 nach Net Worth
+stellen 35,3 bis 35,7 Prozent der Abgaben, Rang 5 oder 6 nur 30,3 bis 30,9 Prozent. Die
+Abgabe selbst läuft auffällig ruhig ab: Im Abgabe-Intervall stirbt der Läufer nur 6,5 bis 6,9
+Mal je Stunde gegen 10,1 bis 10,7 Mal in seinen übrigen Intervallen, und das Abgabe-Team
+verschiebt die Seelen-Differenz zum Gegner im Abgabe-Intervall um +6.723 bis +8.246 im Mittel
+(Median +4.715 bis +6.055), während die typische Verschiebung in Intervallen ohne Abgabe
+beider Teams nur bei einem Betrags-Median von 3.034 bis 3.129 Seelen liegt; ein Teil des
+Todes-Abstands ist Spielphasen-Effekt, weil Abgaben sich früh häufen. Beim Läufer-Profil sind
+Mobilitätshelden überrepräsentiert: Calico stellt auf hohen Rängen 6,9 Prozent der Läufer bei
+2,6 Prozent in der Gesamtheit (Faktor 2,6, mittel 2,0-fach), Drifter 1,2- bis 1,4-fach, auf
+niedrigen Rängen Celeste und Graves je 1,3- bis 1,5-fach. Nullbefunde: Die Lane-Verteilung
+der Läufer ist mit je rund 33 Prozent flach, es gibt keine Urnen-Lane, und der Rückgang der
+Läufer-Siegquote über die Ranggruppen (69,8 auf 67,3 Prozent) ist klein.
+
+Unsicherheiten zu Kapitel 8: Die Läufer-Erkennung ist ein Gold-Muster, keine Telemetrie; in
+61,5 Prozent der Abgaben ist kein Mehrzuwachs unterscheidbar (Gegenprobe an denselben 20
+Stichproben-Matches wie Paket A: 26 von 83 Abgaben mit sichtbarem Läufer,
+urn_lauefer_check.json), möglicherweise weil der Träger-Bonus in ein anderes Intervall fällt.
+Abgabe- und Todeszuordnung lösen nur aufs Checkpoint-Raster auf (180 s bis 900 s, dann 300 s),
+irreguläre Stützstellen sind wie in Kapitel 7 auf den nächsten Rasterpunkt gehoben. Der
+Todesvergleich ist über Spielphasen unverrechnet, die Todesrate steigt mit der Spielzeit und
+Abgaben häufen sich früh, der beobachtete Abstand ist also eine Obergrenze. Der Soul-Swing
+ist ein Beobachtungsvergleich ohne Wirkungsaussage und zählt die Kämpfe um die Abgabe mit;
+verglichen wird über den Betrag der Verschiebung, weil sich beide Teams in Intervallen ohne
+Abgabe spiegelsymmetrisch exakt aufheben (mittlere signierte Verschiebung dort 0). Die
+Helden-Anteile beziehen sich auf die erkennbaren Läufer, Gesamtanteil und Überrepräsentation
+je Held stehen in kapitel-8.json. Die Abgaben-Zahlen weichen um +0,029 bis +0,078 Prozent vom
+QD-Lauf ab (Daten-Drift, plausibilitaet-a3.json).
+
 ## Unsicherheiten
 
 - Daten-drift: Die Quelle schreibt nachträglich Zeilen. QA und QB liefen back-to-back und
@@ -160,3 +201,22 @@ Ergebnisse aus `plausibilitaet-a2.json` (Lauf 2026-09-18):
 - Histogramm-Konsistenz: Die je Rangstufe gelieferten Histogramme zählen je Ereignis exakt
   so viele Matches wie die Zeitklassen (517.643, 523.946, 511.307).
 - Tagesabdeckung: 34 Tages-Dateien ohne Lücken, je Tag alle sechs Auswertungszweige.
+
+## Plausibilitätsprüfungen (Paket A3)
+
+Ergebnisse aus `plausibilitaet-a3.json` (Lauf 2026-09-18):
+
+- Abgaben je Ranggruppe gegen Kapitel 2 (QD-Lauf vom 2026-09-17): 917.601 gegen 916.917
+  (+0,075 Prozent), 608.551 gegen 608.074 (+0,078 Prozent), 460.659 gegen 460.524 (+0,029
+  Prozent), Daten-Drift zum Vortag.
+- Läufer bekannt plus Läufer unbekannt = Abgaben je Ranggruppe; die Rang-Werte (1 bis 6 plus
+  unbekannt) summieren sich zu den bekannten Läufern, Siege plus Niederlagen = n.
+- Todes-Denominator: Die Abgabe-Intervalle der Läufer zählen je Ranggruppe exakt so viele wie
+  bekannte Läufer (keine Doppelzählung bei Mehrfach-Abgaben).
+- Soul-Swing: n plus Werte-fällt-aus-Fälle = Abgaben je Ranggruppe (0 Abweichung); in
+  Intervallen ohne Abgabe ist die mittlere signierte Verschiebung exakt 0, deshalb Vergleich
+  über den Betrag.
+- Helden: Anteile der Top 10 plus Übrige = 100 Prozent je Ranggruppe; die Gesamtanteile
+  kommen aus 6.297.416 Spielerzeilen derselben Grundgesamtheit (Wochenabfragen).
+- Tagesabdeckung: 34 Tages-Dateien ohne Lücken, je Tag alle Abfrage-Zweige (Läufer, Läufer
+  unbekannt, Soul-Swing je Stützstelle, Soul-Swing-Pools, Todesraten).
