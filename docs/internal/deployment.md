@@ -11,7 +11,8 @@ Website daher noch nicht.
 | Öffentlicher Pfad | Live-Ziel |
 |---|---|
 | `/` | `dl-landing/dist` |
-| `/patch/` | `dl-patch/dist` |
+| `/patch/` | `dl-patch/dist` (bestehende Balance-Timeline) |
+| `/patchnotes/` | `/home/nathanael/Documents/Runtime/patchnotes-web` (vom Patchnotes-Bot erzeugt) |
 | `/aktivitaet/` | `dl-activity/dist` |
 | `/coaching/` | `dl-coaching/dist` |
 | `/builds/` | `dl-tierlist/dist` |
@@ -104,3 +105,14 @@ dieses Live-Ziel gebaut und separat geprüft werden; das normale
 - geänderte Frontend-Routen liefern HTTP 200 und aktuelle Assets
 - keine Migration oder ignoriertes `dist`-Artefakt bleibt nur in einem anderen
   Worktree liegen
+
+
+## Deutsche Patchnotes: gemeinsamer Release aus drei Repositories
+
+Die neue Lesefassung ist bewusst **keine zweite Vite-Anwendung in diesem Repository**. `EarlySalty/Deadlock--Patchnotes-Bot` erzeugt aus den schon gespeicherten deutschen Übersetzungen statische Seiten unter `/home/nathanael/Documents/Runtime/patchnotes-web`. Dort liegen `index.html`, `patch-<ID>/index.html`, versionierte Assets und eine eigene `sitemap.xml`. Quellcode: `web_publish.py` und `web/`. Die Publikation und ihre Wiederholungen laufen im bestehenden Patchnotes-Dienst; das Website-Backend wird dafür nicht geändert oder neu gestartet.
+
+`EarlySalty/caddy-config`, `hosts/v50671/Caddyfile`, ergänzt die Auslieferung mit `handle_path /patchnotes/*` vor dem breiten Legacy-Matcher `/patch*`. Auch die CSP für Discord-Emoji-Bilder steht dort. `/patch/` bleibt als Balance-Timeline unverändert. Es wird weder dessen Vite-Basis geändert noch dessen bisherige API umbenannt.
+
+Die Navigation dieses Repositories darf **erst nach** der Caddy-Ergänzung, dem Publisher-Deploy und dem erfolgreichen öffentlichen Abruf von Archiv und Einzelpatch aktiviert werden. Danach werden `dl-brand/nav.js` und `deco-elevator-new/index.html` aus dem geprüften Stand übernommen, ohne andere Brand-Dateien oder `social-preview/` zu löschen. Auf `/patch/` bleibt die Patchnotes-Etage des Menüs aktiv.
+
+Die Prüfnachweise und konkreten Gegenstücke dieses Releases stehen in `.tasks/2026-09-20-patchnotes-web/CONTRACT.md`. Für die Patchnotes-Änderung ist kein Website-Rust-Build und keine Migration nötig.

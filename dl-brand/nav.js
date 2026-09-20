@@ -175,6 +175,8 @@ function activeFloor(links, currentPath) {
 function isActive(href, currentPath) {
   const target = normalizePath(href)
   if (target === '/') return currentPath === '/'
+  // The reading view and the existing balance timeline share the patch floor.
+  if (target === '/patchnotes/' && currentPath.startsWith('/patch/')) return true
   return currentPath === target || currentPath.startsWith(target)
 }
 
