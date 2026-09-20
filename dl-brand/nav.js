@@ -6,7 +6,7 @@
     { label: 'Mitspieler', href: '/mitspieler/', floor: 'M' },
     { label: 'Coaching', href: '/coaching/', floor: 'C' },
     { label: 'Aktivität & Ränge', href: '/aktivitaet/', floor: 'A' },
-    { label: 'Patchnotes', href: '/patch/', floor: 'P' },
+    { label: 'Patchnotes', href: '/patchnotes/', floor: 'P' },
     { label: 'Tierlist', href: '/builds/', floor: 'T' },
     { label: 'Helden', href: '/helden/', floor: 'H' },
     { label: 'Streamer', href: '/streamer/', floor: 'S' },
