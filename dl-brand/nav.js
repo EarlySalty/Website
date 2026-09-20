@@ -70,7 +70,9 @@
     const link = event.target.closest('.brand-floor-link')
     if (!link) return
 
-    if (link.getAttribute('aria-current') === 'page') {
+    // A highlighted floor can contain multiple pages. Only an exact match
+    // is already open; the archive must remain reachable from the timeline.
+    if (normalizePath(link.pathname) === currentPath) {
       event.preventDefault()
       setOpen(false)
       return
@@ -151,7 +153,7 @@
 function floorLink(link, currentPath) {
   const active = isActive(link.href, currentPath)
   return `
-    <a class="brand-floor-link" href="${link.href}"${active ? ' aria-current="page"' : ''}>
+    <a class="brand-floor-link" href="${link.href}"${active ? ` aria-current="${currentState(link.href, currentPath)}"` : ''}>
       <span>${link.floor}</span>
       <i aria-hidden="true"></i>
       <em>${link.label}</em>
@@ -163,9 +165,16 @@ function createFooter(links, currentPath) {
   const footer = document.createElement('footer')
   footer.className = 'brand-footer'
   footer.innerHTML = links
-    .map((link) => `<a href="${link.href}"${isActive(link.href, currentPath) ? ' aria-current="page"' : ''}>${link.label}</a>`)
+    .map((link) => `<a href="${link.href}"${isActive(link.href, currentPath) ? ` aria-current="${currentState(link.href, currentPath)}"` : ''}>${link.label}</a>`)
     .join('<span aria-hidden="true">·</span>')
   return footer
+}
+
+function currentState(href, currentPath) {
+  // The legacy timeline belongs to this section but is not the archive page.
+  return normalizePath(href) === '/patchnotes/' && currentPath.startsWith('/patch/')
+    ? 'location'
+    : 'page'
 }
 
 function activeFloor(links, currentPath) {
