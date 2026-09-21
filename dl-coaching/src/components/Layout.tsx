@@ -89,7 +89,7 @@ export default function Layout() {
               Deutsche Deadlock Community — Coaching
             </p>
             <p className="font-mono-data text-[10px] tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>
-              © {new Date().getFullYear()} DDC
+              © {new Date().getFullYear()} Deutsche Deadlock Community
             </p>
           </div>
         </div>
