@@ -995,8 +995,9 @@ pub async fn update_appointment(
         values,
     )
     .await?;
-    if body.get("status").and_then(Value::as_str) == Some("cancelled")
-        && previous_status.as_deref() != Some("cancelled")
+    if (body.get("status").and_then(Value::as_str) == Some("cancelled")
+        && previous_status.as_deref() != Some("cancelled"))
+        || body.get("scheduled_at").is_some()
     {
         discord_broker::spawn_coaching_notifications_nudge(
             state.http.clone(),
