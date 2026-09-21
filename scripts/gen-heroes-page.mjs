@@ -151,7 +151,8 @@ ${JSON.stringify(itemListJson, null, 2)}
               <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
             <a class="brand" href="/">
-              <img src="/ddc-logo.svg" alt="Deutsche Deadlock Community" class="brand-logo" height="40" />
+              <img src="/brand/logo/logo-192.png" alt="" class="brand-logo" />
+              <img src="/brand/logo/wordmark.svg" alt="" class="brand-wordmark-img" />
             </a>
           </div>
           <div class="header-actions">
