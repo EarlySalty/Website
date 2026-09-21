@@ -400,6 +400,46 @@ pub fn build_discord_add_reaction_request(
         .build()
 }
 
+pub fn build_coaching_notifications_nudge_request(
+    client: &Client,
+    base: &str,
+    token: &str,
+) -> Result<reqwest::Request, reqwest::Error> {
+    let url = format!(
+        "{}/internal/master/v1/coaching/notifications-nudge",
+        base.trim_end_matches('/')
+    );
+    client.post(url).header("X-Internal-Token", token).build()
+}
+
+pub fn spawn_coaching_notifications_nudge(client: Client, base: String, token: Option<String>) {
+    let Some(token) = token else {
+        return;
+    };
+    tokio::spawn(async move {
+        if let Err(detail) = send_coaching_notifications_nudge(&client, &base, &token).await {
+            tracing::warn!(%detail, "Coaching-Notifications-Nudge fehlgeschlagen");
+        }
+    });
+}
+
+async fn send_coaching_notifications_nudge(
+    client: &Client,
+    base: &str,
+    token: &str,
+) -> Result<(), String> {
+    let request = build_coaching_notifications_nudge_request(client, base, token)
+        .map_err(|err| err.to_string())?;
+    let response = client
+        .execute(request)
+        .await
+        .map_err(|err| err.to_string())?;
+    if response.status() != StatusCode::OK {
+        return Err(format!("HTTP {}", response.status()));
+    }
+    Ok(())
+}
+
 fn discord_idempotency_key(kind: &str, payload: &impl std::fmt::Debug) -> String {
     let digest = Sha256::digest(format!("{payload:?}").as_bytes());
     format!("website-discord-{kind}-{digest:x}")
@@ -755,5 +795,30 @@ mod tests {
         assert_eq!(body["channel_id"], 123);
         assert_eq!(body["message_id"], "456");
         assert_eq!(body["emoji"], "✅");
+    }
+
+    #[test]
+    fn coaching_notifications_nudge_request_sets_header_and_url() {
+        let client = Client::new();
+        let request = build_coaching_notifications_nudge_request(
+            &client,
+            "http://127.0.0.1:8770/",
+            "unit-token",
+        )
+        .expect("request builds");
+
+        assert_eq!(request.method(), Method::POST);
+        assert_eq!(
+            request.url().as_str(),
+            "http://127.0.0.1:8770/internal/master/v1/coaching/notifications-nudge"
+        );
+        assert_eq!(
+            request
+                .headers()
+                .get("X-Internal-Token")
+                .and_then(|value| value.to_str().ok()),
+            Some("unit-token")
+        );
+        assert!(request.body().is_none());
     }
 }

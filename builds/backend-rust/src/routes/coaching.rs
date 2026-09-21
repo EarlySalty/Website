@@ -13,7 +13,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     app::AppState,
-    auth, config,
+    auth, config, discord_broker,
     error::{AppError, AppResult},
     ids, rows,
 };
@@ -388,6 +388,13 @@ pub async fn create_coaching_request(
     .bind(body.get("preferred_coach_id").and_then(Value::as_str))
     .execute(&state.pool)
     .await?;
+    if website_request_id.is_some() {
+        discord_broker::spawn_coaching_notifications_nudge(
+            state.http.clone(),
+            state.cfg.master_broker_base.clone(),
+            state.cfg.master_broker_token.clone(),
+        );
+    }
 
     Ok(Json(json!({
         "id": response_id,

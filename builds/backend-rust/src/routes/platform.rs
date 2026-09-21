@@ -13,6 +13,7 @@ use sqlx::{Postgres, QueryBuilder};
 use crate::{
     app::AppState,
     auth::{self, User},
+    discord_broker,
     error::{AppError, AppResult},
     ids,
     routes::coaching::require_bot_token,
@@ -876,6 +877,11 @@ pub async fn create_appointment(
         .bind(body.get("note").and_then(Value::as_str))
         .execute(&state.pool)
         .await?;
+    discord_broker::spawn_coaching_notifications_nudge(
+        state.http.clone(),
+        state.cfg.master_broker_base.clone(),
+        state.cfg.master_broker_token.clone(),
+    );
     Ok(Json(json!({ "id": id })))
 }
 
@@ -948,6 +954,7 @@ pub async fn update_appointment(
         .fetch_optional(&state.pool)
         .await?
         .ok_or_else(|| AppError::not_found("Termin nicht gefunden"))?;
+    let previous_status = rows::string(&appt, "status");
     let acting = acting_coach_id(&state, &user).await?;
     if user.role != "admin" && rows::string(&appt, "coach_id") != acting {
         return Err(AppError::forbidden(
@@ -988,6 +995,15 @@ pub async fn update_appointment(
         values,
     )
     .await?;
+    if body.get("status").and_then(Value::as_str) == Some("cancelled")
+        && previous_status.as_deref() != Some("cancelled")
+    {
+        discord_broker::spawn_coaching_notifications_nudge(
+            state.http.clone(),
+            state.cfg.master_broker_base.clone(),
+            state.cfg.master_broker_token.clone(),
+        );
+    }
     Ok(Json(json!({ "ok": true })))
 }
 
