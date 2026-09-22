@@ -1,0 +1,23 @@
+WITH m AS MATERIALIZED (
+ SELECT match_id,arg_max(struct_pack(w:=winning_team,b:=average_badge,d:=duration_s,
+ n:="objectives.team_objective",o:="objectives.team",t:="objectives.destroyed_time_s"),created_at) AS p
+ FROM match_player WHERE match_id>=106000000 AND match_id<107000000
+ AND game_mode='Normal' AND match_mode='Ranked' AND match_outcome='TeamWin'
+ AND player_slot=1 GROUP BY match_id
+), e AS (
+ SELECT match_id,p.w AS w,p.b AS b,k,
+ list_filter(list_zip(p.n,p.o,p.t),x->x[1]=k AND x[3]>0 AND x[3]<=p.d
+ AND x[2] IN ('Team0','Team1')) AS ev
+ FROM m CROSS JOIN (VALUES ('Tier1Lane1'),('Tier1Lane3'),('Tier1Lane4'),
+ ('Tier2Lane1'),('Tier2Lane3'),('Tier2Lane4')) kinds(k)
+ WHERE len(p.n)=len(p.o) AND len(p.n)=len(p.t)
+), f AS (
+ SELECT *,list_min(list_transform(ev,x->x[3])) AS t FROM e
+), g AS (
+ SELECT *,list_distinct(list_transform(list_filter(ev,x->x[3]=t),x->x[2])) AS os FROM f
+), c AS (
+ SELECT *,CASE WHEN b BETWEEN 10 AND 49 THEN 'low' WHEN b BETWEEN 50 AND 79 THEN 'mid'
+ WHEN b BETWEEN 80 AND 119 THEN 'high' ELSE 'unknown' END AS elo FROM g WHERE len(os)=1
+)
+SELECT k,elo,count(*) AS n,count(*) FILTER(w<>os[1]) AS wins,median(t) AS median_s
+FROM c WHERE elo<>'unknown' GROUP BY GROUPING SETS ((k),(k,elo)) ORDER BY k,elo;

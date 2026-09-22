@@ -28,6 +28,7 @@ export default defineConfig({
         blogDeadlockStimmung2026: 'blog/deadlock-stimmung-2026/index.html',
         blogDeadlockSpiritSlop2026: 'blog/deadlock-spirit-slop-2026/index.html',
         blogDeadlockObjectives2026: 'blog/deadlock-objectives-2026/index.html',
+        blogDeadlockGuardianImpact2026: 'blog/deadlock-guardian-impact-2026/index.html',
       },
     },
   },

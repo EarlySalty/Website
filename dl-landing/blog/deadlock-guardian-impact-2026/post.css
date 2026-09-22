@@ -1,0 +1,16 @@
+@import url('../twitch-szene-2026/post.css');
+/* Article-local additions only: do not change shared dashboard dimensions. */
+.gi-report .bl-section .bl-p { max-width: 74ch; }
+.gi-report .bl-hero h1 { max-width: 24ch; }
+.gi-report .gi-table-wrap { margin: 1.8rem 0 1rem; overflow-x: auto; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--panel); }
+.gi-report .gi-table-wrap:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+.gi-report table { width: 100%; border-collapse: collapse; font-size: .87rem; line-height: 1.55; }
+.gi-report caption { padding: 1rem 1.1rem; text-align: left; color: var(--bone); font-weight: 600; }
+.gi-report th, .gi-report td { padding: .8rem 1.1rem; border-top: 1px solid var(--line-soft); vertical-align: top; }
+.gi-report thead th { color: var(--bone); text-align: right; font-size: .77rem; }
+.gi-report thead th:first-child, .gi-report tbody th { text-align: left; }
+.gi-report tbody th { color: var(--bone); font-weight: 500; min-width: 11rem; }
+.gi-report td { color: var(--bone-dim); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gi-report .gi-note { max-width: 90ch; color: var(--bone-faint); font-size: .82rem; line-height: 1.65; margin: .9rem 0 1.7rem; }
+.gi-report .bl-p { overflow-wrap: anywhere; }
+@media (max-width: 600px) { .gi-report th, .gi-report td { padding: .7rem .8rem; } .gi-report .bl-stamp { border-radius: 14px; } }

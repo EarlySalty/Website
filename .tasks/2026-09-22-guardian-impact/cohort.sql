@@ -1,0 +1,1 @@
+SELECT count(DISTINCT match_id) AS matches,min(start_time)::VARCHAR AS first_start,max(start_time)::VARCHAR AS last_start,min(match_id) AS first_id,max(match_id) AS last_id FROM match_player WHERE match_id>=106000000 AND match_id<107000000 AND game_mode='Normal' AND match_mode='Ranked' AND match_outcome='TeamWin' AND player_slot=1;
