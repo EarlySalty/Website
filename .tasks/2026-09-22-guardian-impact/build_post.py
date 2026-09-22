@@ -21,7 +21,7 @@ PUBLIC = SITE / 'public' / 'blog-data' / 'guardian-impact-2026'
 URL = 'https://deutsche-deadlock-community.de/blog/' + SLUG + '/'
 DATA_URL = '/blog-data/guardian-impact-2026/'
 TITLE = 'Win lane, lose game? Was ein früher Guardian über den Sieg verrät'
-DESC = '63.438 Ranked-Matches: Das Team mit dem ersten Guardian gewinnt 58,9 Prozent, mit dem ersten Walker 64,5. Guardian-Timing, Elo und Lane-Souls offen ausgewertet.'
+DESC = '63.438 Ranked-Matches: Das Team mit dem ersten Guardian gewinnt 58,9 Prozent, mit dem ersten Walker 64,5. Guardian-Timing, Elo und Lane-Souls offen ausgewertet. Zusätzlich: Base Guardians, wenn die eigene Basis erstmals fällt.'
 POST.mkdir(parents=True, exist_ok=True)
 PUBLIC.mkdir(parents=True, exist_ok=True)
 
@@ -34,7 +34,12 @@ def load(name: str) -> list[dict]:
 cohort = load('cohort')[0]
 objectives = load('first_objectives')
 souls = load('souls_at_9m')
+base_audit = load('base_audit')[0]
+base_first = load('base_first')
+base_miles = load('base_milestones')
+base_counts = load('base_counts')
 assert cohort['matches'] == 63438
+assert base_audit['invalid_milestones'] == 0 and base_audit['invalid_counts'] == 0
 
 def objective(kind: str, elo=None, timing=None) -> dict:
     found = [r for r in objectives if r['k'] == kind and r['elo'] == elo and r['timing'] == timing]
@@ -68,6 +73,12 @@ def ci(r: dict) -> str:
     lo, hi = interval(r)
     return f'{lo:.1f} bis {hi:.1f} %'.replace('.', ',')
 
+def share(wins: int, n: int) -> str:
+    return f'{100 * wins / n:.1f}'.replace('.', ',') + ' %'
+
+def flag(n: int) -> str:
+    return '' if n >= 200 else ' *'
+
 # Count reconciliation is checked before rendering, including all time/rank splits.
 for k in ('Tier1Lane', 'Tier2Lane'):
     total = objective(k)
@@ -92,6 +103,66 @@ G = objective('Tier1Lane')
 W = objective('Tier2Lane')
 LOSS = {'wins': G['n']-G['wins'], 'n': G['n']}
 T = soul('team')
+
+# Base-Guardian chapter: extraction and reconciliation on the stricter base filters.
+BASE_TIMINGS = [('00-15','Vor 15:00'),('15-20','15:00 bis vor 20:00'),('20-25','20:00 bis vor 25:00'),
+                ('25-30','25:00 bis vor 30:00'),('30-40','30:00 bis vor 40:00'),('40+','Ab 40:00')]
+BASE_RANKS = [('low','Initiate bis Arcanist'),('mid','Ritualist bis Archon'),('high','Oracle bis Eternus')]
+BA = base_audit
+mv_totals = {r['map_version']: r['matches'] for r in base_first
+             if r['elo']=='all' and r['timing']=='all' and r['soul_state']=='all'}
+assert mv_totals
+BASE_MV = max(mv_totals, key=mv_totals.get)
+BASE_MV_OTHERS = sorted(v for v in mv_totals if v != BASE_MV)
+
+def bfirst(elo=None, timing=None, soul=None):
+    found = [r for r in base_first if r['map_version']==BASE_MV
+             and r['elo']==(elo or 'all') and r['timing']==(timing or 'all')
+             and r['soul_state']==(soul or 'all')]
+    assert len(found) == 1, (elo, timing, soul)
+    return found[0]
+
+def bmile(milestone, elo=None, timing=None, soul=None):
+    found = [r for r in base_miles if r['map_version']==BASE_MV and r['milestone']==milestone
+             and r['elo']==(elo or 'all') and r['timing']==(timing or 'all')
+             and r['soul_state']==(soul or 'all')]
+    assert len(found) == 1, (milestone, elo, timing, soul)
+    return found[0]
+
+def bcount(minute, elo=None):
+    return [r for r in base_counts if r['map_version']==BASE_MV
+            and r['minute']==minute and r['elo']==(elo or 'all')]
+
+def bstate(rows, pred):
+    n = sum(r['team_observations'] for r in rows if pred(r))
+    w = sum(r['wins'] for r in rows if pred(r))
+    if n == 0:
+        return 'keine Beobachtung'
+    return share(w, n) + flag(n)
+
+BF = bfirst()
+assert BF['ended_with_attacker_win_by_5m'] + BF['ended_with_defender_win_by_5m'] + BF['still_playing_after_5m'] == BF['matches']
+for r in base_first:
+    assert r['attacker_wins'] + r['defender_wins'] == r['matches']
+for key, _ in BASE_RANKS:
+    assert sum(bfirst(key, t)['matches'] for t, _ in BASE_TIMINGS) == bfirst(key)['matches']
+    assert sum(bfirst(key, t)['attacker_wins'] for t, _ in BASE_TIMINGS) == bfirst(key)['attacker_wins']
+assert sum(bfirst(None, t)['matches'] for t, _ in BASE_TIMINGS) == BF['matches']
+assert sum(bfirst(None, t)['attacker_wins'] for t, _ in BASE_TIMINGS) == BF['attacker_wins']
+for s in ('ahead','even','behind','unknown'):
+    r = bfirst(soul=s)
+    assert r['ended_with_attacker_win_by_5m'] + r['ended_with_defender_win_by_5m'] + r['still_playing_after_5m'] == r['matches']
+for m in (1, 2, 3):
+    tot = bmile(m)
+    assert tot['attacker_wins'] + tot['defender_wins'] == tot['team_observations']
+    assert tot['distinct_matches'] <= tot['team_observations']
+    assert sum(bmile(m, e)['team_observations'] for e, _ in BASE_RANKS) == tot['team_observations']
+for r in base_counts:
+    assert r['wins'] + r['losses'] == r['team_observations']
+for minute in (15, 20, 25, 30, 35, 40):
+    total = sum(x['team_observations'] for x in bcount(minute))
+    per_rank = sum(sum(x['team_observations'] for x in bcount(minute, e)) for e, _ in BASE_RANKS)
+    assert total == per_rank
 
 class Document:
     def __init__(self):
@@ -166,10 +237,47 @@ d.paragraph(f'Ein <strong>teamweiter</strong> Soul-Vorsprung nach neun Minuten g
 d.paragraph('In der hohen Ranggruppe gewinnt das teamweit führende Team in 67,5 Prozent der Fälle, in der niedrigen in 65,4 Prozent. Die jeweils führenden Lane-Paare liegen oben bei rund 60 bis 61 Prozent. Auch dort bleibt ein lokaler Vorteil deutlich unsicherer als die Vorstellung eines schon gewonnenen Matches.')
 d.paragraph('Die Zuordnung verwendet die ursprüngliche Lane-Zuweisung der Spieler. Sie verrät nicht, wo diese Spieler bei 9:00 tatsächlich standen. Ihre Souls können auch durch Rotationen oder andere Aktionen entstanden sein. Wir messen den wirtschaftlichen Stand der zugewiesenen Lane-Paare, nicht neun Minuten ununterbrochenes Duell auf derselben Straße.')
 
+d.section('base', 'Base Guardians: Wie viel Verteidigung bleibt nach dem ersten Verlust?')
+d.paragraph(f'Nach Lane-Guardians und Walkern geht es um die letzte Verteidigungslinie: Base Guardians stehen vor dem eigenen Patron. Erfasst werden die Ereignisse mit den Gebäude-Kennungen 1, 3 und 4. Diese Abfragen stellen strengere Anforderungen als die Kapitel oben, deshalb ist der Ausschnitt kleiner: Von {num(BA["candidate_matches"])} Kandidaten-Matches bleiben {num(BA["eligible_matches"])} nach allen Prüfungen übrig; {num(BA["rejected_metadata_matches"])} scheitern an den Metadaten-Prüfungen und {num(BA["rejected_base_matches"])} an widersprüchlichen oder ungeeigneten Base-Ereignissen. Gemessen wird der erste eindeutig einem Besitzer-Team zuzuordnende Verlust und danach, wie das Match weitergeht.')
+btime_rows = []
+for t, label in BASE_TIMINGS:
+    r = bfirst(None, t)
+    btime_rows.append([label, share(r['attacker_wins'], r['matches']) + flag(r['matches']), num(r['matches']), ci({'wins': r['attacker_wins'], 'n': r['matches']}), clock(r['median_remaining_s'])])
+d.table('Siegquote des Angreifers nach dem ersten Base-Guardian-Verlust, nach Fallzeitpunkt', ['Erster Base-Verlust','Angreifer gewinnt','Matches','95%-Intervall','Restspielzeit im Median'], btime_rows, 'Blickrichtung: Team des zerstörten Gebäudes gegen Team des ersten Base-Kills, alle Matches mit eindeutigem ersten Verlust der Karten-Version ' + str(BASE_MV) + '. Restspielzeit = Median vom ersten Fall bis zum Matchende. Sternchen: unter 200 Matches. Quelle: base_first.json.')
+d.paragraph(f'Über alle Fallzeiten hinweg gewinnt der Angreifer des ersten Base Guardians in <strong>{share(BF["attacker_wins"], BF["matches"])}</strong> der Fälle, die verteidigende Seite noch in <strong>{share(BF["defender_wins"], BF["matches"])}</strong>. Späte erste Verluste sind dabei das schärfere Signal: ein Verlust nach Minute 40 fällt meist in ein Match, das ohnehin schon in eine Richtung gelaufen ist. Der Median der Restspielzeit zeigt das direkt: Nach einem frühen Verlust bleibt viel Zeit, nach einem späten kaum noch.')
+d.paragraph(f'Nach Ranggruppen liegt die Angreifer-Quote bei {share(bfirst("low")["attacker_wins"], bfirst("low")["matches"])} in der niedrigen, {share(bfirst("mid")["attacker_wins"], bfirst("mid")["matches"])} in der mittleren und {share(bfirst("high")["attacker_wins"], bfirst("high")["matches"])} in der hohen Gruppe. Matches ohne Rangwert fließen in die Base-Tabellen nicht ein und stehen im Audit.')
+bm_rows = []
+for m in (1, 2, 3):
+    r = bmile(m)
+    bm_rows.append(['Erster Verlust' if m == 1 else ('Zweiter Verlust' if m == 2 else 'Dritter Verlust'),
+                    share(r['attacker_wins'], r['team_observations']) + flag(r['team_observations']),
+                    share(r['defender_wins'], r['team_observations']),
+                    num(r['team_observations']), num(r['distinct_matches']), clock(r['median_fallen_s'])])
+d.table('Erster, zweiter und dritter eigener Base-Verlust: spätere Siege beider Seiten', ['Verluststufe','Angreifer gewinnt','Verteidiger gewinnt','Team-Sichten','Matches','Fallzeit im Median'], bm_rows, 'Team-Sichten zählen beide Seiten eines Matches gesondert; dasselbe Match kann mehrere Stufen beitragen, deshalb sind Team-Sichten und Matches verschieden. „Verteidiger gewinnt“ ist der spätere Matchsieg trotz dieses Verlusts, eine Beschreibung und keine Wirkungsaussage. Quelle: base_milestones.json.')
+d.paragraph('Der Vergleich der Stufen ist eine Beschreibung des Spielverlaufs und keine isolierte Wirkung des Verlusts: Ein Match kommt erst in die dritte Stufe, wenn zwei Verluste schon geschehen sind. Die Fallzeit-Spalte zeigt, wie spät das üblicherweise passiert, und die späten Stufen liegen meist in Matches, die ohnehin schon in eine Richtung gelaufen sind.')
+bc_rows = []
+for minute in (15, 20, 25, 30, 35, 40):
+    rows = bcount(minute)
+    bc_rows.append(['Bei ' + str(minute) + ':00', num(sum(r['team_observations'] for r in rows)),
+                    bstate(rows, lambda r: r['lost'] == 0), bstate(rows, lambda r: r['lost'] == 1),
+                    bstate(rows, lambda r: r['lost'] >= 2)])
+d.table('Team-Sichten auf noch laufende Matches: Siege nach Anzahl eigener Base-Verluste bis zur jeweiligen Minute', ['Spielminute','Team-Sichten','Sieg ohne eigenen Verlust','Sieg mit genau einem','Sieg mit zwei bis drei'], bc_rows, 'Beobachtungseinheit ist die Team-Sicht eines Matches, das zur jeweiligen Minute noch läuft; jedes Match zählt hier zweimal, einmal je Seite. Eigene und gegnerische Verluste werden getrennt gezählt, ein 1:0 wird also nicht mit einem 1:2 vermischt; die feinen Kombinationen stehen im Datenexport. Sternchen: unter 200 Beobachtungen. Quelle: base_counts.json.')
+d.paragraph('Die Spalten sind bewusst als Momentaufnahmen gelesen und nicht als Verlaufskurve desselben Matches: Ein Team mit zwei Verlusten bei 30:00 ist eine Auswahl besonders lange laufender, ungleicher Spiele. Gespiegelte Zustände wie ein beidseitiges 1:1 liegen durch die Konstruktion bei der halben Siegquote; dieser Konstruktionseffekt wird im Methodik-Kapitel eingeordnet und bringt keinen eigenen Befund.')
+bsoul_rows = []
+for key, label in [('ahead','Angreifer wirtschaftlich vorne'),('even','ungefähr gleichauf'),('behind','Angreifer wirtschaftlich hinten'),('unknown','ohne geeignete Soul-Messung')]:
+    r = bfirst(soul=key)
+    n = r['matches']
+    bsoul_rows.append([label, num(n), share(r['attacker_wins'], n) + flag(n),
+                       share(r['ended_with_attacker_win_by_5m'], n), share(r['ended_with_defender_win_by_5m'], n),
+                       share(r['still_playing_after_5m'], n)])
+d.table('Erster Base-Verlust nach Soul-Lage des Angreifers und Verlauf der nächsten fünf Minuten', ['Soul-Lage des Angreifers','Matches','Angreifer gewinnt','Ende in 5 Min: Angreifer','Ende in 5 Min: Verteidiger','läuft weiter'], bsoul_rows, 'Soul-Lage aus der letzten gemeinsamen Messung aller zwölf Spieler strikt vor dem Ereignis, höchstens 300 Sekunden alt; der größere Wert muss mehr als das 1,05-Fache des kleineren sein. Die drei Ausgangsspalten addieren sich zu 100 Prozent. Von den weiterlaufenden Matches stehen weitere Base-Verluste und Gegenangriffe im Export. Quelle: base_first.json.')
+d.paragraph(f'Von den Matches, in denen der Angreifer beim ersten Base-Verlust wirtschaftlich vorne lag, enden {share(bfirst(soul="ahead")["ended_with_attacker_win_by_5m"], bfirst(soul="ahead")["matches"])} schon in den folgenden fünf Minuten mit dem Matchsieg des Angreifers. Bei wirtschaftlichem Rückstand sind es {share(bfirst(soul="behind")["ended_with_attacker_win_by_5m"], bfirst(soul="behind")["matches"])}. Der Base-Verlust ist damit auch eine Frage, was die Angreifer mit dem Vorteil anfangen: Ein Teil der Spiele entscheidet sich direkt, ein Teil läuft weiter, und gerade dort kann die verteidigende Seite den Verlust noch überstehen.')
+d.paragraph('Zwei Grenzen gehören zu diesem Kapitel: Ob ein Base-Guardian-Eintrag einen einzelnen Gegner oder die Gruppe derselben Lane meint, ist an diesen Daten nicht geprüft, gezählt werden Einträge. Und alle Quoten sind beobachtete Grundraten ohne Kontrolle für Teamstärke, restliche Objectives oder Spielverlauf. Ein späterer Base-Verlust ist auch ein Merkmal eines bereits ungleichen Spiels.')
+
 d.section('verlauf', 'Was daraus für den weiteren Spielverlauf folgt, und was offenbleibt')
 d.paragraph('Für den späteren Ausgang liefert der erste Guardian ein positives, aber begrenztes Signal. Früh ist dieses Signal stärker, über die großen Ranggruppen hinweg bleibt es ähnlich. Der erste Walker hängt stärker mit dem Endergebnis zusammen, und ein teamweiter wirtschaftlicher Vorsprung ist informativer als die isolierte wirtschaftlich gewonnene Lane.')
 d.paragraph('Unsere spielerische Einordnung daraus ist bewusst vorsichtig: <strong>Behandle den gefallenen Guardian als erreichten Vorteil, nicht als Anspruch auf den Sieg.</strong> Der Spruch ist kein Argument dafür, einen sicher erreichbaren Guardian absichtlich stehen zu lassen. Ob danach Rotation, weiterer Druck oder Farm die beste Nutzung dieses Vorteils ist, wurde in dieser Auswertung nicht direkt verglichen.')
-d.paragraph('Für eine echte Entwicklungskurve müssten wir den Soul-Stand vor dem Guardian mit späteren Messpunkten vergleichen und ähnliche Ausgangslagen gegenüberstellen. Ebenso interessant wäre, wie oft innerhalb der nächsten fünf Minuten der Walker derselben Lane fällt oder der Gegner den Guardian-Vorteil ausgleicht. <strong>Für diese Anschlussfragen enthält dieser Report noch keine abgeschlossene Messung.</strong> Die publizierten Quoten beziehen sich auf den späteren Matchsieg, nicht auf gemessenen zusätzlichen Soul-Gewinn durch den Guardian.')
+d.paragraph('Für eine echte Entwicklungskurve müssten wir den Soul-Stand vor dem Guardian mit späteren Messpunkten vergleichen und ähnliche Ausgangslagen gegenüberstellen. <strong>Für diese Anschlussfrage enthält dieser Report weiterhin keine abgeschlossene Messung.</strong> Wie es nach dem ersten Verlust der eigenen Basis weitergeht, messen wir dagegen im Base-Guardian-Kapitel oben, einschließlich der folgenden fünf Minuten. Der Walker derselben Lane und der Ausgleich des Guardian-Vorteils bleiben dort genauso offen wie der Soul-Verlauf. Die publizierten Quoten beziehen sich auf den späteren Matchsieg, nicht auf gemessenen zusätzlichen Soul-Gewinn durch den Guardian.')
 d.paragraph('Auch eine Rangliste einzelner Guardian- und Walker-Lanes wäre derzeit verfrüht. Die Spielerdaten verwenden für Gelb, Blau und Lila die IDs 1, 4 und 6. Die Gebäudeereignisse tragen dagegen Bezeichnungen wie Tier1Lane1, Tier1Lane3 und Tier1Lane4. Ohne geprüfte Zuordnung und vollständigen Vergleich wäre eine farbige „Wichtigster Walker“-Tabelle Scheingenauigkeit. Die fast gleichen Soul-Lane-Quoten oben ersetzen diesen Gebäude-Vergleich ausdrücklich nicht.')
 d.paragraph('Der belastbare Zwischenstand ist deshalb konkreter als „Objectives sind wichtig“, aber schmaler als eine perfekte Handlungsanweisung: <strong>Win lane, lose game passiert häufig. Win lane, win game passiert trotzdem häufiger.</strong> Gerade das macht den Unterschied zwischen einem Vorteil und einer Entscheidung aus.')
 
@@ -178,14 +286,17 @@ d.paragraph('<strong>Quelle und Fenster.</strong> Read-only-Abfragen über das W
 d.paragraph('<strong>Datenabdeckung.</strong> Gemeint sind die öffentlich erfassten Matches dieser API, nicht ausschließlich deutsche Spieler, nicht ausschließlich Europa und nicht eine garantierte Vollerhebung des Spiels. Fehlende Rangwerte werden nicht geschätzt. Die Ergebnisse sind ein zeitlich begrenzter Datenbefund, keine universelle Aussage für jeden Patch. Region, Heldenauswahl und Patchunterschiede werden hier nicht separat kontrolliert. Abbrecher werden in diesen Abfragen nicht gesondert ausgeschlossen.')
 d.paragraph('<strong>Doppelzählungen.</strong> Für die Gebäude-Abfrage wird die Metadatenkopie von player_slot 1 verwendet und je match_id die zuletzt erfasste Version anhand von created_at ausgewählt. Die Datenbank verwendet Spieler-Slots 1 bis 12, nicht 0 bis 11. Für die Soul-Abfrage wird je Match und Spieler-Slot die letzte Version gewählt. So wird ein Gebäudeereignis nicht zwölfmal als unabhängiger Fall gezählt.')
 d.paragraph('<strong>Welches Team?</strong> objectives.team bezeichnet den Besitzer des gefallenen Gebäudes, nicht das Team, das es zerstört hat. Das Erst-Team ist daher die Gegenseite. Für Guardians werden Tier1Lane-Ereignisse verwendet, für Walker Tier2Lane-Ereignisse. Base Guardians werden nicht mit den Lane-Guardians vermischt. Nur positive Fallzeitpunkte innerhalb der Matchdauer und gültige Teamnamen werden berücksichtigt; die parallelen Ereignisarrays müssen gleich lang sein.')
+d.paragraph('<strong>Base Guardians: strenge Zählregeln.</strong> Das Base-Kapitel betrachtet BarrackBossLane-Ereignisse mit den Gebäude-Kennungen 1, 3 und 4, also die Verteidigungslinien vor dem Patron. Ob ein Zeitstempel einen einzelnen Gegner oder die komplette Base-Guardian-Gruppe derselben Lane abbildet, ist an diesen Daten ungeprüft; gezählt werden deshalb Einträge, ohne sie in eine Figurenanzahl umzurechnen. Ein Match fließt nur ein, wenn alle zwölf Spielerzeilen konsistent sind, die Metadaten übereinstimmen und der Datensatz den Core-Verlust des Verlierer-Teams enthält. Ein leerer Objective-Datensatz gilt damit als ungeeignet und nicht als Match ohne Base-Verlust. Widersprüchliche Fallzeiten für denselben Besitzer und dasselbe Gebäude führen zum Ausschluss, identische Dubletten werden zusammengefasst, Zeitstempel null gelten nicht als Zerstörung.')
+d.paragraph(f'<strong>Base Guardians: Nenner und Perspektiven.</strong> Von {num(BA["candidate_matches"])} Kandidaten-Matches bleiben {num(BA["eligible_matches"])} auswertbar, davon {num(BA["matches_with_abandon"])} mit Abbrecher-Meldung; die Grundgesamtheit von {num(cohort["matches"])} Matches ist hier bewusst kein Nenner, und ein Vergleich mit Guardian oder Walker müsste auf dieser geprüften Auswahl neu gerechnet werden. Die Soul-Einordnung nutzt die letzte gemeinsame Messung aller zwölf Spieler strikt vor dem Ereignis, höchstens 300 Sekunden alt; ohne geeignete Messung bleibt die Lage unbekannt. Abbrecher-Matches bleiben enthalten, der Datenexport zählt Siege zusätzlich ohne sie aus. Verluststufen und Momentaufnahmen zählen Team-Sichten, dasselbe Match kann beide Perspektiven beitragen; sie sind keine unabhängigen Match-Beobachtungen. Gespiegelte Zustände wie ein beidseitiges 1:1 liegen durch die Konstruktion bei der halben Siegquote; daraus wird kein Befund abgeleitet. Die Ausgaben je Karten-Version werden getrennt ausgewiesen, die Tabellen zeigen Version ' + str(BASE_MV) + ('; die übrigen Versionen stehen im Export.' if BASE_MV_OTHERS else '.'))
 d.paragraph('<strong>Gleichzeitige Erst-Ereignisse.</strong> Zerstören beide Teams in derselben Sekunde erstmals ein Gebäude dieser Kategorie, wird kein willkürliches Erst-Team gewählt. Mehrere gleichzeitige Erst-Fälle zugunsten desselben Teams bleiben eindeutig. Nach den Filtern sind 63.257 Guardian- und 63.284 Walker-Matches auswertbar. Die Differenz zur Grundgesamtheit darf nicht pauschal als Zahl gleichzeitiger Kills gelesen werden; auch andere Eignungsfilter können Fälle entfernen.')
 d.paragraph('<strong>Rang, Zeit und Souls.</strong> Ranggruppen beruhen auf average_badge, nicht auf einem einzelnen Account. Zeitwerte in den Rangtabellen sind Mediane. Zeitfenster sind links geschlossen und rechts offen. Bei der Soul-Messung wird der vorhandene Messpunkt bei exakt 540 Sekunden verwendet. Fehlende Werte sind unbekannt, nicht null Souls. Der größere Soul-Wert muss mehr als das 1,05-Fache des kleineren betragen.')
 d.paragraph('<strong>Unsicherheit und Ursache.</strong> Die 95-Prozent-Intervalle sind Wilson-Intervalle für die angezeigten Anteile. Sie berücksichtigen weder systematische Auswahlfehler der API noch mögliche Abhängigkeiten durch wiederkehrende Spieler. Die Haupttabellen sind deskriptiv und nicht um den Vorsprung vor dem Ereignis bereinigt. Deshalb sprechen wir von beobachteten Siegquoten und Signalen, nicht von bewiesenen zusätzlichen Siegen durch einen Tower-Kill.')
-d.paragraph('<strong>Reproduzierbarkeit.</strong> Die drei erfolgreich ausgeführten SQL-Abfragen, ihre vollständigen JSON-Aggregate und die daraus berechneten CSV-Tabellen sind archiviert. Abgeschnittene Rohdatenantworten sowie fehlgeschlagene oder unvollständige Zusatzabfragen sind keine Grundlage der veröffentlichten Zahlen. Ein späterer Live-Aufruf kann wegen neuer oder korrigierter API-Daten leicht andere Werte ergeben; für diesen Artikel gelten die archivierten Ergebnisse.')
+d.paragraph('<strong>Reproduzierbarkeit.</strong> Die sieben erfolgreich ausgeführten SQL-Abfragen (drei zur Erstauswertung, vier zur Base-Guardian-Ergänzung), ihre vollständigen JSON-Aggregate und die daraus berechneten CSV-Tabellen sind archiviert. Abgeschnittene Rohdatenantworten sowie fehlgeschlagene oder unvollständige Zusatzabfragen sind keine Grundlage der veröffentlichten Zahlen. Ein späterer Live-Aufruf kann wegen neuer oder korrigierter API-Daten leicht andere Werte ergeben; für diesen Artikel gelten die archivierten Ergebnisse.')
 
 d.section('quellen', 'Daten, Abfragen und Quellen')
 d.paragraph('<a href="https://www.deadlock-api.com/data-dumps">Deadlock-API: Datenzugang und MCP</a> beschreibt den öffentlichen Zugang. Der Quellcode des API-Projekts dokumentiert die <a href="https://github.com/deadlock-api/deadlock-api/blob/master/website/src/lib/tracker/objectives.ts">Perspektive bei Gebäudeereignissen</a>, den <a href="https://github.com/deadlock-api/deadlock-api/blob/master/website/src/lib/tracker/lane-matchup.ts">Neun-Minuten-Vergleich der Lanes</a> und die <a href="https://github.com/deadlock-api/deadlock-api/blob/master/website/src/lib/team-builder/lanes.ts">Spieler-Lane-IDs</a>. Die Auswertungsregeln dieses Artikels stehen oben und müssen nicht in jedem Detail denen des API-Trackers entsprechen.')
 d.paragraph(f'<a href="{DATA_URL}first_objectives.csv">Guardian-/Walker-Tabellen als CSV</a>, <a href="{DATA_URL}souls_at_9m.csv">Soul-Lane-Tabellen als CSV</a> und <a href="{DATA_URL}cohort.json">Grundgesamtheit als JSON</a>. Die SQL-Abfragen: <a href="{DATA_URL}cohort.sql">Grundgesamtheit</a>, <a href="{DATA_URL}first_objectives.sql">erste Gebäude</a> und <a href="{DATA_URL}souls_at_9m.sql">Souls bei 9:00</a>. Die vollständigen JSON-Aggregate liegen unter <a href="{DATA_URL}first_objectives.json">first_objectives.json</a> und <a href="{DATA_URL}souls_at_9m.json">souls_at_9m.json</a>.')
+d.paragraph(f'Zum Base-Guardian-Kapitel: <a href="{DATA_URL}base_first.csv">erste Verluste als CSV</a>, <a href="{DATA_URL}base_milestones.csv">Verluststufen als CSV</a> und <a href="{DATA_URL}base_counts.csv">Momentaufnahmen als CSV</a>. Die vollständigen JSON-Aggregate: <a href="{DATA_URL}base_first.json">base_first.json</a>, <a href="{DATA_URL}base_milestones.json">base_milestones.json</a>, <a href="{DATA_URL}base_counts.json">base_counts.json</a> und das Audit <a href="{DATA_URL}base_audit.json">base_audit.json</a>. Die SQL-Abfragen: <a href="{DATA_URL}base_audit.sql">Audit</a>, <a href="{DATA_URL}base_first.sql">erste Verluste</a>, <a href="{DATA_URL}base_milestones.sql">Verluststufen</a> und <a href="{DATA_URL}base_counts.sql">Momentaufnahmen</a>.')
 d.paragraph('Dieser Text ergänzt den <a href="/blog/deadlock-objectives-2026/">Objectives-Report über Urne, Midboss und Shrines</a>. Er beantwortet die Guardian-Frage mit einer eigenen aktuellen Stichprobe, ohne die alten Objective-Quoten als neue Guardian-Ergebnisse auszugeben.')
 
 lede = f'Du holst den ersten Guardian und verlierst trotzdem. Ein Blick auf {num(cohort["matches"])} Ranked-Matches zeigt: Das passiert oft, aber nicht öfter als der Sieg. Wie sich frühe und späte Guardians unterscheiden, was die Elo daran ändert und warum eine gewonnene Lane noch kein führendes Team ist.'
@@ -210,7 +321,7 @@ jsonld={
  'citation':['https://www.deadlock-api.com/data-dumps', 'https://github.com/deadlock-api/deadlock-api/blob/master/website/src/lib/tracker/objectives.ts']
 }
 tiles=''
-for value,label,sub in [(pct(G),'Siege mit dem ersten Guardian',f'{num(G["n"])} auswertbare Matches'),(pct(LOSS),'Trotz erstem Guardian verloren','Ein Vorteil ist keine Vorentscheidung'),(pct(W),'Siege mit dem ersten Walker',f'{num(W["n"])} auswertbare Matches'),(pct(T),'Siege mit Team-Soul-Vorsprung','Mehr als 5 % Vorsprung bei 9:00')]:
+for value,label,sub in [(pct(G),'Siege mit dem ersten Guardian',f'{num(G["n"])} auswertbare Matches'),(pct(LOSS),'Trotz erstem Guardian verloren','Ein Vorteil ist keine Vorentscheidung'),(pct(W),'Siege mit dem ersten Walker',f'{num(W["n"])} auswertbare Matches'),(pct(T),'Siege mit Team-Soul-Vorsprung','Mehr als 5 % Vorsprung bei 9:00'),(share(BF['defender_wins'],BF['matches']),'Verteidiger gewinnt trotz erstem Base-Verlust','Zusatzkapitel: Base Guardians')]:
     tiles+='<div class="bl-tile"><span class="bl-tile-num">'+html.escape(value)+'</span><span class="bl-tile-label">'+html.escape(label)+'</span><span class="bl-tile-sub">'+html.escape(sub)+'</span></div>'
 toc='<nav class="bl-toc" aria-label="Inhalt des Artikels"><h2>Inhalt</h2><ol>'+''.join(f'<li><a href="#{s["id"]}">{html.escape(s["title"])}</a></li>' for s in d.sections)+'</ol></nav>'
 page=f'''<!doctype html>
@@ -224,7 +335,7 @@ page=f'''<!doctype html>
 <meta property="og:description" content="{html.escape(DESC,quote=True)}"><meta property="og:url" content="{URL}">
 <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-logo.png">
 <meta property="og:image:alt" content="Logo der Deutschen Deadlock Community"><meta property="og:locale" content="de_DE">
-<meta property="og:site_name" content="Deutsche Deadlock Community"><meta property="article:published_time" content="2026-09-22">
+<meta property="og:site_name" content="Deutsche Deadlock Community"><meta property="article:published_time" content="2026-09-22"><meta property="article:modified_time" content="2026-09-22">
 <meta property="article:section" content="Daten-Report"><meta name="theme-color" content="#0b0b0b">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{html.escape(TITLE,quote=True)}">
 <meta name="twitter:description" content="{html.escape(DESC,quote=True)}"><meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-logo.png">
@@ -262,7 +373,7 @@ page=f'''<!doctype html>
 ''')
 
 # Public research exports contain only successful aggregates, not player accounts.
-for name in ('cohort','first_objectives','souls_at_9m'):
+for name in ('cohort','first_objectives','souls_at_9m','base_audit','base_first','base_milestones','base_counts'):
     for ext in ('json','sql'):
         shutil.copyfile(TASK/f'{name}.{ext}',PUBLIC/f'{name}.{ext}')
 for name,rows in [('first_objectives',objectives),('souls_at_9m',souls)]:
@@ -273,18 +384,33 @@ for name,rows in [('first_objectives',objectives),('souls_at_9m',souls)]:
         for r in rows:
             lo,hi=interval(r)
             writer.writerow(dict(r,win_rate_percent=round(100*r['wins']/r['n'],6),wilson_95_low_percent=round(lo,6),wilson_95_high_percent=round(hi,6)))
+for name,rows,wf,nf in [('base_first',base_first,'attacker_wins','matches'),('base_milestones',base_miles,'attacker_wins','team_observations'),('base_counts',base_counts,'wins','team_observations')]:
+    fields=list(rows[0])+['attacker_win_rate_percent','wilson_95_low_percent','wilson_95_high_percent']
+    with (PUBLIC/f'{name}.csv').open('w',newline='') as f:
+        writer=csv.DictWriter(f,fieldnames=fields,lineterminator='\n')
+        writer.writeheader()
+        for r in rows:
+            lo,hi=interval({'wins':r[wf],'n':r[nf]})
+            writer.writerow(dict(r,attacker_win_rate_percent=round(100*r[wf]/r[nf],6),wilson_95_low_percent=round(lo,6),wilson_95_high_percent=round(hi,6)))
 (PUBLIC/'article.md').write_text(md)
 manifest={'accessed':'2026-09-22','source':'https://api.deadlock-api.com/v1/mcp','tool':'execute_query',
  'scope':'Contiguous match-ID window [106000000,107000000), not random sampling or complete calendar days.',
- 'cohort':cohort,'files':{f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(PUBLIC.iterdir()) if f.name!='manifest.json'}}
+ 'cohort':cohort,'base_audit':base_audit,
+ 'base_scope':'Base-guardian chapter uses stricter quality filters; its denominators are smaller than the 63,438 cohort.',
+ 'files':{f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(PUBLIC.iterdir()) if f.name!='manifest.json'}}
 (PUBLIC/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 
+CARD_P='63.438 Ranked-Matches: Das Team mit dem ersten Guardian gewinnt 58,9 Prozent, mit dem ersten Walker 64,5. Frühe und späte Fallzeitpunkte, Elo-Gruppen, Lane-Souls und das Zusatzkapitel zu Base Guardians, mit Fallzahlen, Unsicherheit und offenen Anschlussfragen.'
+CARD_OLD_P='63.438 Ranked-Matches: Das Team mit dem ersten Guardian gewinnt 58,9 Prozent, mit dem ersten Walker 64,5. Frühe und späte Fallzeitpunkte, Elo-Gruppen und Lane-Souls im Vergleich, mit Fallzahlen, Unsicherheit und offenen Anschlussfragen.'
 card=f'''            <a class="bl-card" href="/blog/{SLUG}/">
               <p class="bl-card-meta">22. September 2026 · Daten-Report</p>
               <h2>{html.escape(TITLE)}</h2>
-              <p>63.438 Ranked-Matches: Das Team mit dem ersten Guardian gewinnt 58,9 Prozent, mit dem ersten Walker 64,5. Frühe und späte Falls, Elo-Gruppen und Lane-Souls im Vergleich, mit Fallzahlen, Unsicherheit und offenen Anschlussfragen.</p>
+              <p>{CARD_P}</p>
             </a>
-'''.replace('Frühe und späte Falls','Frühe und späte Fallzeitpunkte')
+'''
+if CARD_OLD_P in source_index:
+    source_index=source_index.replace(CARD_OLD_P,CARD_P,1)
+    (SITE/'blog/index.html').write_text(source_index)
 if f'href="/blog/{SLUG}/"' not in source_index:
     source_index=source_index.replace('          <div class="bl-list">','          <div class="bl-list">\n'+card,1)
     (SITE/'blog/index.html').write_text(source_index)
@@ -315,7 +441,7 @@ for anchor in re.findall(r'href="#([^"]+)"',page):
     assert anchor in ids, anchor
 for path in re.findall(r'href="(/blog-data/[^"#]+)"',page):
     assert (SITE/'public'/path.lstrip('/')).is_file(), path
-assert page.count('<h1>')==1 and page.count('<table>')==4
+assert page.count('<h1>')==1 and page.count('<table>')==8
 assert 'data-fill' not in page
 assert '\u2014' not in md
 json.loads(re.search(r'<script type="application/ld\+json">(.*?)</script>',page,re.S).group(1))
