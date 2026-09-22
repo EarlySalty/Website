@@ -1,0 +1,34 @@
+{
+  "status": "prepared_not_executed",
+  "date": "2026-09-22",
+  "github_file_write": "blocked_no_commit",
+  "github_actions_started": false,
+  "live_dataset_queried": false,
+  "sql_engine_tests_executed": false,
+  "synthetic_match_cases": 21,
+  "prepared_assertions": 31,
+  "static_checks": {
+    "query_assembly": true,
+    "test_assembly": true,
+    "assertion_count": 31,
+    "utf8_readable": true,
+    "no_typographic_dashes_in_prose": true,
+    "research_selects_only": true
+  },
+  "files": {
+    "ANALYSE-ERGAENZUNG.md": "0ed6369c2affb94bae4f44634f41635d0c5b2a05085dca081f43708bfe7bc89c",
+    "README.md": "f1f7e5bfd508ab54512a3d39a29544a08906305033e890e373e95052ed1a8e38",
+    "audit.sql": "dad87c0685301fff1599f0904df6b2a74fb12b85743eb2806756980f2cbe1f15",
+    "core.sql": "45fa06fc34b34a1727d14bca2072aa2185e2ef1e3a7973ccd00ae8a0fccfbf6a",
+    "counts.sql": "031ec619a4caaaec84f75a443f850b798ade9b8890257f1e924d86e893b436b1",
+    "first.sql": "a33a70f67f97ec4332f07946703e1a503a9430b3f119f4cb8e8904e80e574a74",
+    "milestones.sql": "9bcbd8b2e01fbb4413d4f1feea8906bdf64740b13203ed95a9d0d7d759117415",
+    "queries/audit.sql": "569b8c1933760190d3695700b2bc2859fb2c71db50664603619ad0ffe3779f41",
+    "queries/counts.sql": "5597bd78d3af5cebcb795d67e5ccb6cf08bdd95729e0d891a4f256d86e19d477",
+    "queries/first.sql": "e7abf329b3890a05c29e47b96a7fd2bcf652fb0045fc5471f78161b70e718399",
+    "queries/milestones.sql": "7512d419d1d5a5d58b89e1a873b93870ada757832e1b62a26fdca98d2e70554f",
+    "tests/assertions.sql": "87248a9ce588c256e6397364fffcb962d9114bc1ae5bec317e4e8dfa6dff8b25",
+    "tests/run.sql": "407a6841d2eab20677d809996f84a008f34f3571ee3672828f4c4362317a313b",
+    "tests/setup.sql": "d875939c519bd36d62bf5ba7216a6d24eb672c372d7a039dc0c1a91f9ff54255"
+  }
+}
