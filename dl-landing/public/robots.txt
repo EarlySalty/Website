@@ -1,6 +1,5 @@
 User-agent: *
 Disallow: /twitch/impressum
-Disallow: /twitch/datenschutz
 Disallow: /twitch/agb
 Allow: /
 
