@@ -1,7 +1,8 @@
 User-agent: *
-Disallow: /twitch/impressum
-Disallow: /twitch/agb
 Allow: /
+
+# Rechtstexte bleiben crawlbar, damit Suchmaschinen deren noindex-Header sehen.
+# Die Indexierung wird am HTTP-Response gesteuert, nicht über robots.txt.
 
 # OpenAI search discovery for ChatGPT Search / search surfaces.
 User-agent: OAI-SearchBot
