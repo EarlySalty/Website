@@ -9,7 +9,7 @@
  * aus der Source-Datei.
  */
 
-import { readFileSync, writeFileSync, statSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, statSync, existsSync, readdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -17,7 +17,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
 const SITE = 'https://deutsche-deadlock-community.de'
 const OUT = resolve(REPO_ROOT, 'dl-landing/public/sitemap.xml')
-const DOCS_ROOT = resolve(REPO_ROOT, '..', 'Deadlock-Docs')
+const DOCS_ROOT_CANDIDATES = [
+  process.env.DEADLOCK_DOCS_ROOT,
+  resolve(REPO_ROOT, '..', 'Deadlock-Docs'),
+  resolve(REPO_ROOT, '..', '..', 'Documents', 'Deadlock-Docs'),
+].filter(Boolean)
+const DOCS_ROOT =
+  DOCS_ROOT_CANDIDATES.find((candidate) => existsSync(resolve(candidate, 'public'))) ??
+  DOCS_ROOT_CANDIDATES[0]
 
 const ENTRIES = [
   { path: '/',                        src: resolve(REPO_ROOT, 'deco-elevator-new/index.html') },
@@ -62,9 +69,59 @@ function existingLocs(xmlPath) {
   return locs
 }
 
+function walkHtml(root) {
+  if (!existsSync(root)) return []
+  const found = []
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const absolute = resolve(root, entry.name)
+    if (entry.isDirectory()) {
+      found.push(...walkHtml(absolute))
+    } else if (entry.isFile() && entry.name.endsWith('.html')) {
+      found.push(absolute)
+    }
+  }
+  return found
+}
+
+function docsPath(absPath) {
+  const relative = absPath.slice(DOCS_ROOT.length + '/public/'.length).replaceAll('\\', '/')
+  if (relative === 'index.html') return '/docs/'
+  if (relative.endsWith('/index.html')) return `/docs/${relative.slice(0, -'index.html'.length)}`
+  return `/docs/${relative}`
+}
+
+function docsEntries() {
+  const publicRoot = resolve(DOCS_ROOT, 'public')
+  return walkHtml(publicRoot)
+    .map((src) => ({ path: docsPath(src), src }))
+    .filter(({ path }) => !path.startsWith('/docs/dokus/datenschutz/'))
+}
+
 const merged = existingLocs(OUT)
+
+// Docs werden aus dem aktuellen public/-Baum neu aufgebaut. So verschwinden
+// gelöschte Dokumente aus der Sitemap und neue Seiten landen ohne Handpflege
+// mit ihrem echten Änderungsdatum darin.
+for (const path of [...merged.keys()]) {
+  if (path === '/docs/' || path.startsWith('/docs/')) merged.delete(path)
+}
+for (const { path, src } of docsEntries()) {
+  merged.set(path, lastmodOf(src))
+}
+
 for (const { path, src } of ENTRIES) {
   merged.set(path, lastmodOf(src))
+}
+
+for (const noIndex of [
+  '/twitch/impressum',
+  '/twitch/impressum/',
+  '/twitch/datenschutz',
+  '/twitch/datenschutz/',
+  '/twitch/agb',
+  '/twitch/agb/',
+]) {
+  merged.delete(noIndex)
 }
 
 const urls = [...merged.entries()]
