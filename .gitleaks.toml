@@ -1,0 +1,13 @@
+title = "Website Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+# This commit added the already-public Cloudflare Web Analytics site identifier
+# to previously uncovered landing pages. The identifier is shipped to browsers
+# by design and is not an authentication credential.
+[allowlist]
+description = "Public Cloudflare Web Analytics site identifier additions"
+commits = [
+  "3e02a827e148408058eb02769c967012f5d7f9bf",
+]
