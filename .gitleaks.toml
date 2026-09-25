@@ -3,12 +3,11 @@ title = "Website Gitleaks configuration"
 [extend]
 useDefault = true
 
-# Cloudflare Web Analytics uses a public client-side site identifier that is
-# intentionally embedded in delivered HTML. It is not an authentication
-# credential and must remain consistent across all public pages.
-[[allowlists]]
-description = "Public Cloudflare Web Analytics site identifier"
-regexTarget = "line"
-regexes = [
-  '''243469fbeb3f43d995584a9e2e779ca6''',
+# This commit added the already-public Cloudflare Web Analytics site identifier
+# to previously uncovered landing pages. The identifier is shipped to browsers
+# by design and is not an authentication credential.
+[allowlist]
+description = "Public Cloudflare Web Analytics site identifier additions"
+commits = [
+  "3e02a827e148408058eb02769c967012f5d7f9bf",
 ]
