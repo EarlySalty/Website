@@ -8,7 +8,7 @@ useDefault = true
 # credential and must remain consistent across all public pages.
 [[allowlists]]
 description = "Public Cloudflare Web Analytics site identifier"
-regexTarget = "secret"
+regexTarget = "line"
 regexes = [
-  '''^243469fbeb3f43d995584a9e2e779ca6$''',
+  '''243469fbeb3f43d995584a9e2e779ca6''',
 ]
