@@ -77,13 +77,14 @@ fi
 
 SWITCH_STAGE="$(mktemp -d "$BASE/.switch-$SHA.XXXXXX")"
 ln -s "$RELEASE" "$SWITCH_STAGE/current"
+mv -Tf "$SWITCH_STAGE/current" "$BASE/current"
+rmdir "$SWITCH_STAGE"
+SWITCH_STAGE=""
+# Publish links only after the complete release is the active Caddy target.
 mv -f "$SITEMAP_NEXT" "$LANDING_DIST/sitemap.xml"
 SITEMAP_NEXT=""
 mv -f "$NAV_NEXT" "$LIVE_NAV"
 NAV_NEXT=""
-mv -Tf "$SWITCH_STAGE/current" "$BASE/current"
-rmdir "$SWITCH_STAGE"
-SWITCH_STAGE=""
 
 printf 'DevFeed Web deployed sha=%s
 ' "$SHA"
