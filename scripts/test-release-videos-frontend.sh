@@ -6,6 +6,17 @@ probe="$(mktemp -d)"
 trap 'rm -rf -- "$probe"' EXIT
 sha_one="1111111111111111111111111111111111111111"
 sha_two="2222222222222222222222222222222222222222"
+umask 077
+
+assert_caddy_can_read() {
+  local runtime="$1" release="$2" unreadable
+  unreadable="$(find "$runtime" "$runtime/releases" "$runtime/releases/$release" "$runtime/assets" \
+    -type d ! -perm -0005 -print -quit)"
+  test -z "$unreadable" || { echo "Caddy kann Verzeichnis nicht betreten: $unreadable" >&2; return 1; }
+  unreadable="$(find "$runtime/releases/$release" "$runtime/assets" \
+    -type f ! -perm -0004 -print -quit)"
+  test -z "$unreadable" || { echo "Caddy kann Datei nicht lesen: $unreadable" >&2; return 1; }
+}
 
 make_build() {
   local dir="$1" content="$2"
@@ -15,16 +26,23 @@ make_build() {
   printf 'body{color:#fff}\n' > "$dir/assets/app.css"
 }
 
-make_build "$probe/stage-one" first
-publish_video_build "$probe/stage-one" "$probe/runtime" "$sha_one"
+mkdir -p "$probe/runtime"
+stage_one="$(mktemp -d "$probe/runtime/.stage.XXXXXXXX")"
+make_build "$stage_one" first
+test "$(stat -c %a "$stage_one")" = 700
+publish_video_build "$stage_one" "$probe/runtime" "$sha_one"
+assert_caddy_can_read "$probe/runtime" "$sha_one"
 test "$(readlink "$probe/runtime/current")" = "releases/$sha_one"
 test -s "$probe/runtime/current/assets/app.css"
 test -s "$probe/runtime/assets/app.css"
 test -s "$probe/runtime/assets/app.js"
 
 make_build "$probe/retry" first
+chmod -R go-rX "$probe/runtime/releases/$sha_one" "$probe/runtime/assets"
+chmod go-rx "$probe/runtime" "$probe/runtime/releases"
 publish_video_build "$probe/retry" "$probe/runtime" "$sha_one"
 test ! -e "$probe/retry"
+assert_caddy_can_read "$probe/runtime" "$sha_one"
 
 make_build "$probe/changed" changed
 if publish_video_build "$probe/changed" "$probe/runtime" "$sha_one" 2>/dev/null; then
@@ -46,6 +64,7 @@ make_build "$probe/stage-two" second
 mv "$probe/stage-two/assets/app.js" "$probe/stage-two/assets/app-new.js"
 sed -i 's|assets/app.js|assets/app-new.js|' "$probe/stage-two/index.html"
 publish_video_build "$probe/stage-two" "$probe/runtime" "$sha_two"
+assert_caddy_can_read "$probe/runtime" "$sha_two"
 test "$(readlink "$probe/runtime/current")" = "releases/$sha_two"
 test -s "$probe/runtime/releases/$sha_one/index.html"
 test -s "$probe/runtime/assets/app.js"
