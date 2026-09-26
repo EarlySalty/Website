@@ -24,6 +24,7 @@ publish_video_build() {
   [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Ungültige Quell-SHA" >&2; return 1; }
   validate_video_build "$stage" || { echo "Video-Build ist unvollständig" >&2; return 1; }
   mkdir -p "$releases"
+  chmod a+rx -- "$release_root" "$releases"
   exec 9>"$release_root/.deploy.lock"
   flock -x 9
   if test -e "$target"; then
@@ -35,6 +36,9 @@ publish_video_build() {
   else
     mv -- "$stage" "$target"
   fi
+  # mktemp erzeugt .stage mit 0700. Auch bei Bootstrap und einem Retry muss
+  # Caddy den gesamten Release-Baum vor dem current-Wechsel lesen können.
+  chmod -R a+rX -- "$target"
   # Caddy liefert gehashte Assets unabhängig vom HTML-Symlink. Alte Browser
   # behalten ihre URLs auch nach Deploy und Rollback.
   mkdir -p "$release_root/assets"
@@ -52,6 +56,9 @@ publish_video_build() {
       mv -- "$shared.tmp.$$" "$shared"
     fi
   done < <(find "$target/assets" -type f -print0)
+  # Auch vorhandene Assets können von einem früheren Deploy oder einer
+  # restriktiven umask stammen. Alte Browser rufen sie nach dem Wechsel ab.
+  chmod -R a+rX -- "$release_root/assets"
   if test -e "$release_root/current" && ! test -L "$release_root/current"; then
     echo "current ist kein Symlink" >&2
     return 1
