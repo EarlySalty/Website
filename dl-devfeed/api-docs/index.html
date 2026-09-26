@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="index,follow">
+  <title>DevFeed API · Deutsche Deadlock Community</title>
+  <meta name="description" content="Dokumentation der öffentlichen und authentifizierten DevFeed API.">
+  <link rel="canonical" href="https://deutsche-deadlock-community.de/devfeed/api-docs/">
+  <link rel="icon" type="image/png" href="/brand/logo/favicon-64.png">
+  <link rel="stylesheet" href="/brand/tokens.css">
+  <link rel="stylesheet" href="/brand/nav.css">
+  <link rel="stylesheet" href="/devfeed/devfeed.css">
+  <script src="/brand/nav.js" defer></script>
+</head>
+<body class="brand-body">
+  <main class="feed-section">
+    <div class="devfeed-shell">
+      <p class="eyebrow">DevFeed API</p>
+      <h1 style="font-size:clamp(2.7rem,7vw,5.7rem)">Adressierung und Zugriff.</h1>
+      <p class="hero-lead">Die Website und die API liegen unter derselben Domain. Caddy terminiert TLS und leitet ausschließlich den API Teil an den lokalen DevFeed Dienst weiter.</p>
+
+      <section class="api-section" style="border-top:0;padding-top:3rem">
+        <div class="api-grid">
+          <div>
+            <h2>Öffentliche API</h2>
+            <p>Für Browser, Bots und Tools ohne Zugangsdaten. Sie enthält nur die bereinigte Lesesicht ohne Discord Rohpayload.</p>
+          </div>
+          <div class="api-card">
+            <span>Basis</span>
+            <code>https://deutsche-deadlock-community.de/devfeed/api/public/v1</code>
+            <span>Liste</span>
+            <code>GET /messages?limit=30</code>
+            <span>Eintrag</span>
+            <code>GET /messages/&lt;message_id&gt;</code>
+            <span>Kartenbild</span>
+            <code>GET /messages/&lt;message_id&gt;/card.svg</code>
+          </div>
+        </div>
+      </section>
+
+      <section class="api-section">
+        <div class="api-grid">
+          <div>
+            <h2>Authentifizierte API</h2>
+            <p>Für Server Integrationen mit höherem Limit und Cursor. Der Schlüssel gehört ausschließlich in einen Server Prozess oder Secret Store.</p>
+          </div>
+          <div class="api-card">
+            <span>Basis</span>
+            <code>https://deutsche-deadlock-community.de/devfeed/api/v1</code>
+            <span>Header</span>
+            <code>Authorization: Bearer &lt;API Schlüssel&gt;</code>
+            <span>Alternative</span>
+            <code>X-API-Key: &lt;API Schlüssel&gt;</code>
+            <span>Cursor</span>
+            <code>GET /messages?after=&lt;message_id&gt;&amp;limit=100</code>
+          </div>
+        </div>
+      </section>
+
+      <section class="api-section">
+        <div class="api-grid">
+          <div>
+            <h2>Datenmodell</h2>
+            <p>Ein Primäreintrag enthält die Entwickler Nachricht. <code>context</code> enthält nur bereinigte Nachrichten, die als Antwortkontext zu diesem Eintrag gespeichert wurden.</p>
+          </div>
+          <div class="api-card">
+            <code>{
+  "message_id": "…",
+  "author_name": "Yoshi",
+  "content": "…",
+  "sent_at": "…",
+  "caught_at": "…",
+  "jump_url": "https://discord.com/channels/…",
+  "attachment_count": 0,
+  "embed_count": 0,
+  "context": []
+}</code>
+          </div>
+        </div>
+      </section>
+
+      <section class="api-section">
+        <div>
+          <h2>Sicherheitsgrenze</h2>
+          <p class="hero-lead">Der öffentliche Host erhält keinen Zugriff auf Deadlock Brain oder die Deadlock Bots Datenbank. Der DevFeed läuft in der eigenen Datenbank <code>deadlock_devfeed</code>. Der Ingest besitzt nur INSERT Rechte auf die private Tabelle. Der API Dienst besitzt nur SELECT Rechte auf eine bereinigte View. Das vollständige Discord Rohpayload ist für den API Benutzer nicht lesbar.</p>
+          <p><a class="feed-open" href="/devfeed/">Zurück zum DevFeed</a></p>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
