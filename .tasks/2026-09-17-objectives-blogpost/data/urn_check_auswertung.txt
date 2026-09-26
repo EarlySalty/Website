@@ -1,0 +1,344 @@
+=== Match 99232887 ===
+  Team0 Slot  1: @720:+247 @1500:+93 @1800:+179
+  Team0 Slot  2: @720:+247 @1500:+90
+  Team0 Slot  3: @720:+247 @1500:+88
+  Team0 Slot  4: @720:+247 @900:+529 @1500:+88
+  Team0 Slot  5: @720:+247 @1500:+88
+  Team0 Slot  6: @720:+247 @1200:+1300 @1500:+88
+  Team1 Slot  7: @1500:+88 @1800:+977
+  Team1 Slot  8: @1500:+88 @1800:+977
+  Team1 Slot  9: @1500:+90 @1800:+977
+  Team1 Slot 10: @1500:+88 @1800:+977
+  Team1 Slot 11: @1500:+88 @1800:+977
+  Team1 Slot 12: @1500:+88 @1800:+977
+  REGEL-ABGABE Team0 @720: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1500: min +88, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @1800: min +977, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 99979932 ===
+  Team0 Slot  1: @2100:+3300 @2254:+2700
+  Team0 Slot  2: @2100:+950
+  Team0 Slot  3: @1200:+1300 @2100:+950
+  Team0 Slot  4: @2100:+950
+  Team0 Slot  5: @1800:+1008 @2100:+950
+  Team0 Slot  6: @2100:+950
+  Team1 Slot  7: @900:+247 @1200:+432 @1500:+427 @1800:+728
+  Team1 Slot  8: @900:+247 @1200:+432 @1800:+728
+  Team1 Slot  9: @900:+247 @1200:+432 @1800:+728
+  Team1 Slot 10: @900:+247 @1200:+432 @1500:+39 @1800:+728
+  Team1 Slot 11: @900:+247 @1200:+432 @1800:+728
+  Team1 Slot 12: @900:+247 @1200:+432 @1800:+728
+  REGEL-ABGABE Team0 @2100: min +950, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @900: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1200: min +432, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1800: min +728, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 100170059 ===
+  Team0 Slot  1: @1500:+2360 @1800:+765
+  Team0 Slot  2: @1500:+710 @1800:+765
+  Team0 Slot  3: @1500:+710 @1800:+765
+  Team0 Slot  4: @1500:+710 @1800:+957
+  Team0 Slot  5: @1500:+710 @1800:+765
+  Team0 Slot  6: @1500:+710 @1800:+765
+  Team1 Slot  7: @720:+855 @900:+436 @2100:+1378 @2527:+1485
+  Team1 Slot  8: @900:+436 @2100:+1378 @2527:+1485
+  Team1 Slot  9: @900:+436 @2100:+1378 @2527:+1485
+  Team1 Slot 10: @900:+436 @2100:+3587 @2527:+1485
+  Team1 Slot 11: @900:+436 @1200:+1300 @2100:+1378 @2527:+1485
+  Team1 Slot 12: @900:+436 @2100:+1378 @2527:+1485
+  REGEL-ABGABE Team0 @1500: min +710, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team0 @1800: min +765, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @900: min +436, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2100: min +1378, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @2527: min +1485, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 100328539 ===
+  Team0 Slot  1: @900:+483 @1200:+65 @3000:+1795
+  Team0 Slot  2: @900:+483 @3000:+1795
+  Team0 Slot  3: @900:+483 @3000:+1795
+  Team0 Slot  4: @720:+950 @900:+483 @1200:+845 @1500:+1555 @2400:+2700 @3000:+5195
+  Team0 Slot  5: @900:+483 @1800:+1400 @3000:+1795
+  Team0 Slot  6: @900:+483 @1800:+400 @3000:+1795
+  Team1 Slot  7: @1500:+641 @1800:+1046 @2100:+950 @2700:+1209
+  Team1 Slot  8: @1500:+641 @1800:+1046 @2100:+950 @2700:+1209
+  Team1 Slot  9: @1500:+641 @1800:+1046 @2100:+950 @2700:+1209
+  Team1 Slot 10: @1500:+641 @1800:+1046 @2100:+950 @2700:+1209
+  Team1 Slot 11: @1500:+641 @1800:+1046 @2100:+950 @2700:+1209
+  Team1 Slot 12: @1500:+641 @1800:+1046 @2100:+950 @2700:+1209
+  REGEL-ABGABE Team0 @900: min +483, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @3000: min +1795, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @1500: min +641, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1800: min +1046, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2100: min +950, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2700: min +1209, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 100925984 ===
+  Team0 Slot  1: @720:+950 @1500:+30 @1800:+1098
+  Team0 Slot  2: @1500:+29 @1800:+1098
+  Team0 Slot  3: @1500:+29 @1800:+1098
+  Team0 Slot  4: @1500:+29 @1800:+1098
+  Team0 Slot  5: @1500:+29 @1800:+1098 @2100:+2350
+  Team0 Slot  6: @1200:+1300 @1500:+29 @1800:+1098
+  Team1 Slot  7: @900:+418 @1500:+234 @2100:+987
+  Team1 Slot  8: @900:+418 @1500:+234 @2100:+987
+  Team1 Slot  9: @900:+418 @1500:+234 @2100:+987
+  Team1 Slot 10: @900:+418 @1500:+237 @2100:+987
+  Team1 Slot 11: @900:+418 @1500:+1753 @1800:+1041 @2100:+987
+  Team1 Slot 12: @900:+418 @1500:+234 @2100:+987
+  REGEL-ABGABE Team0 @1500: min +29, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team0 @1800: min +1098, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @900: min +418, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2100: min +987, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 100560817 ===
+  Team0 Slot  1: @900:+247 @1200:+636 @2700:+1506
+  Team0 Slot  2: @720:+48 @900:+247 @1200:+636 @2400:+1890 @2700:+1506
+  Team0 Slot  3: @720:+807 @900:+247 @1200:+636 @2700:+1935
+  Team0 Slot  4: @900:+247 @1200:+636 @1500:+1650 @2700:+1506
+  Team0 Slot  5: @900:+247 @1200:+636 @2700:+1506
+  Team0 Slot  6: @900:+247 @1200:+636 @2700:+1506
+  Team1 Slot  7: @1800:+728 @2100:+950
+  Team1 Slot  8: @1800:+2728 @2100:+950
+  Team1 Slot  9: @1800:+728 @2100:+2870
+  Team1 Slot 10: @1800:+728 @2100:+950
+  Team1 Slot 11: @1800:+728 @2100:+950
+  Team1 Slot 12: @1800:+728 @2100:+950
+  REGEL-ABGABE Team0 @900: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @1200: min +636, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @2700: min +1506, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @1800: min +728, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @2100: min +950, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+=== Match 101011537 ===
+  Team0 Slot  1: 
+  Team0 Slot  2: @2076:+3093
+  Team0 Slot  3: 
+  Team0 Slot  4: 
+  Team0 Slot  5: 
+  Team0 Slot  6: @1800:+1395
+  Team1 Slot  7: @900:+247 @1200:+1300 @1500:+2119 @1800:+728 @2076:+987
+  Team1 Slot  8: @900:+247 @1500:+469 @1800:+728 @2076:+987
+  Team1 Slot  9: @900:+247 @1500:+469 @1800:+728 @2076:+987
+  Team1 Slot 10: @900:+247 @1500:+469 @1800:+728 @2076:+987
+  Team1 Slot 11: @900:+247 @1500:+469 @1800:+728 @2076:+987
+  Team1 Slot 12: @900:+247 @1500:+469 @1800:+728 @2076:+987
+  REGEL-ABGABE Team1 @900: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1500: min +469, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @1800: min +728, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2076: min +987, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 101723148 ===
+  Team0 Slot  1: @900:+449 @1200:+1170 @2636:+1805
+  Team0 Slot  2: @900:+449 @2636:+1805
+  Team0 Slot  3: @900:+449 @2636:+1805
+  Team0 Slot  4: @900:+449 @1500:+1485 @2400:+183 @2636:+1805
+  Team0 Slot  5: @900:+449 @2636:+1805
+  Team0 Slot  6: @900:+449 @2400:+3110 @2636:+1805
+  Team1 Slot  7: @1500:+506 @1800:+691 @2100:+987
+  Team1 Slot  8: @1500:+506 @1800:+691 @2100:+987
+  Team1 Slot  9: @1500:+506 @1800:+691 @2100:+987
+  Team1 Slot 10: @1500:+506 @1800:+691 @2100:+3337 @2636:+3050
+  Team1 Slot 11: @720:+950 @1500:+506 @1800:+691 @2100:+987
+  Team1 Slot 12: @1500:+506 @1800:+691 @2100:+987
+  REGEL-ABGABE Team0 @900: min +449, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @2636: min +1805, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1500: min +506, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1800: min +691, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2100: min +987, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+=== Match 102443951 ===
+  Team0 Slot  1: @900:+247 @2100:+1024
+  Team0 Slot  2: @900:+247 @2100:+1024
+  Team0 Slot  3: @900:+247 @2100:+1024
+  Team0 Slot  4: @900:+247 @2100:+1024
+  Team0 Slot  5: @900:+247 @2100:+1024
+  Team0 Slot  6: @900:+247 @1800:+2000 @2100:+3374
+  Team1 Slot  7: @1200:+690 @1800:+1023
+  Team1 Slot  8: @1200:+690 @1800:+1023
+  Team1 Slot  9: @1200:+690 @1500:+1485 @1800:+1023
+  Team1 Slot 10: @1200:+690 @1800:+1023
+  Team1 Slot 11: @1200:+2565 @1800:+1023
+  Team1 Slot 12: @1200:+690 @1800:+1023
+  REGEL-ABGABE Team0 @900: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @2100: min +1024, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @1200: min +690, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @1800: min +1023, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 102867836 ===
+  Team0 Slot  1: @900:+488 @1200:+721 @1800:+1152
+  Team0 Slot  2: @900:+488 @1200:+721 @1800:+1152
+  Team0 Slot  3: @900:+488 @1200:+721 @1800:+1152
+  Team0 Slot  4: @900:+488 @1200:+721 @1800:+1152
+  Team0 Slot  5: @900:+488 @1200:+2157 @1800:+1152
+  Team0 Slot  6: @900:+488 @1200:+721 @1800:+1152
+  Team1 Slot  7: 
+  Team1 Slot  8: 
+  Team1 Slot  9: 
+  Team1 Slot 10: 
+  Team1 Slot 11: @720:+950 @1500:+1650
+  Team1 Slot 12: 
+  REGEL-ABGABE Team0 @900: min +488, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @1200: min +721, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team0 @1800: min +1152, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 101920654 ===
+  Team0 Slot  1: @1800:+1045 @2100:+111
+  Team0 Slot  2: @1800:+1045 @2100:+110
+  Team0 Slot  3: @720:+544 @900:+234 @1200:+520 @1800:+1045 @2100:+110
+  Team0 Slot  4: @1800:+1045 @2100:+110
+  Team0 Slot  5: @1800:+1045 @2100:+110
+  Team0 Slot  6: @1800:+1045 @2100:+110
+  Team1 Slot  7: @720:+498 @1200:+655 @2100:+438
+  Team1 Slot  8: @720:+498 @1200:+655 @1500:+1650 @2100:+441
+  Team1 Slot  9: @720:+498 @1200:+655 @2100:+438
+  Team1 Slot 10: @720:+498 @1200:+655 @1800:+2000 @2100:+438 @2400:+2635
+  Team1 Slot 11: @720:+498 @1200:+655 @2100:+438
+  Team1 Slot 12: @720:+498 @1200:+655 @2100:+2788
+  REGEL-ABGABE Team0 @1800: min +1045, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @2100: min +110, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @720: min +498, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1200: min +655, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 102223032 ===
+  Team0 Slot  1: @1500:+880
+  Team0 Slot  2: @1500:+880
+  Team0 Slot  3: @1500:+880
+  Team0 Slot  4: @1200:+1106 @1500:+1101
+  Team0 Slot  5: @720:+570 @900:+380 @1500:+880
+  Team0 Slot  6: @1500:+880
+  Team1 Slot  7: @900:+247 @1794:+765
+  Team1 Slot  8: @900:+247 @1794:+765
+  Team1 Slot  9: @900:+247 @1794:+1473
+  Team1 Slot 10: @900:+247 @1794:+765
+  Team1 Slot 11: @900:+247 @1794:+765
+  Team1 Slot 12: @900:+247 @1794:+765
+  REGEL-ABGABE Team0 @1500: min +880, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @900: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1794: min +765, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+=== Match 103552074 ===
+  Team0 Slot  1: 
+  Team0 Slot  2: 
+  Team0 Slot  3: 
+  Team0 Slot  4: @1200:+1842 @1800:+1083
+  Team0 Slot  5: 
+  Team0 Slot  6: 
+  Team1 Slot  7: @900:+247 @1200:+469 @1800:+728
+  Team1 Slot  8: @900:+247 @1200:+469 @1800:+728
+  Team1 Slot  9: @900:+247 @1200:+469 @1800:+728 @2027:+118
+  Team1 Slot 10: @900:+247 @1200:+469 @1800:+728
+  Team1 Slot 11: @900:+247 @1200:+469 @1500:+1650 @1800:+728 @2027:+2232
+  Team1 Slot 12: @720:+285 @900:+247 @1200:+469 @1800:+728
+  REGEL-ABGABE Team1 @900: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1200: min +469, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1800: min +728, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 104064881 ===
+  Team0 Slot  1: @1500:+469 @1785:+728
+  Team0 Slot  2: @1500:+469 @1785:+728
+  Team0 Slot  3: @1200:+129 @1500:+469 @1785:+728
+  Team0 Slot  4: @1500:+469 @1785:+728
+  Team0 Slot  5: @1500:+1548 @1785:+2728
+  Team0 Slot  6: @1500:+469 @1785:+728
+  Team1 Slot  7: @900:+438
+  Team1 Slot  8: @900:+438
+  Team1 Slot  9: @720:+855 @900:+438
+  Team1 Slot 10: @900:+438
+  Team1 Slot 11: @900:+438
+  Team1 Slot 12: @900:+438
+  REGEL-ABGABE Team0 @1500: min +469, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team0 @1785: min +728, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @900: min +438, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 104180206 ===
+  Team0 Slot  1: @2100:+1299
+  Team0 Slot  2: @1800:+1400 @2100:+1299
+  Team0 Slot  3: @720:+950 @1200:+1235 @2100:+1299
+  Team0 Slot  4: @2100:+1299
+  Team0 Slot  5: @1200:+65 @2100:+1299
+  Team0 Slot  6: @2100:+1299
+  Team1 Slot  7: @900:+444 @1200:+629 @1800:+728
+  Team1 Slot  8: @900:+444 @1200:+629 @1800:+728 @2100:+2350
+  Team1 Slot  9: @900:+444 @1200:+629 @1500:+1650 @1800:+728
+  Team1 Slot 10: @900:+444 @1200:+629 @1800:+728
+  Team1 Slot 11: @900:+444 @1200:+629 @1800:+728
+  Team1 Slot 12: @900:+444 @1200:+629 @1800:+728
+  REGEL-ABGABE Team0 @2100: min +1299, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @900: min +444, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1200: min +629, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1800: min +728, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 104069018 ===
+  Team0 Slot  1: @720:+247 @1800:+691 @2400:+1209
+  Team0 Slot  2: @720:+247 @1200:+305 @1800:+691 @2400:+1209
+  Team0 Slot  3: @720:+247 @1800:+691 @2400:+3909
+  Team0 Slot  4: @720:+247 @1800:+691 @2400:+1209
+  Team0 Slot  5: @720:+247 @1800:+691 @2400:+1209
+  Team0 Slot  6: @720:+247 @1800:+691 @2400:+1209
+  Team1 Slot  7: @1200:+839 @2100:+1480
+  Team1 Slot  8: @1200:+839 @2100:+1480
+  Team1 Slot  9: @1200:+839 @2100:+1480
+  Team1 Slot 10: @720:+414 @1200:+839 @1800:+1400 @2100:+1480
+  Team1 Slot 11: @1200:+839 @2100:+1480
+  Team1 Slot 12: @1200:+839 @1500:+1650 @2100:+1480
+  REGEL-ABGABE Team0 @720: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @1800: min +691, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @2400: min +1209, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @1200: min +839, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2100: min +1480, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 104862075 ===
+  Team0 Slot  1: @1200:+81 @1800:+691 @2215:+1024
+  Team0 Slot  2: @1200:+81 @1800:+691 @2215:+1024
+  Team0 Slot  3: @1200:+81 @1800:+691 @2215:+1024
+  Team0 Slot  4: @1200:+81 @1500:+1650 @1800:+691 @2215:+1024
+  Team0 Slot  5: @900:+950 @1200:+81 @1800:+691 @2215:+1024
+  Team0 Slot  6: @1200:+81 @1800:+2691 @2100:+2350 @2215:+1024
+  Team1 Slot  7: @900:+460 @1200:+216
+  Team1 Slot  8: @900:+460 @1200:+216
+  Team1 Slot  9: @900:+460 @1200:+216
+  Team1 Slot 10: @900:+460 @1200:+216
+  Team1 Slot 11: @900:+460 @1200:+1107
+  Team1 Slot 12: @900:+460 @1200:+216
+  REGEL-ABGABE Team0 @1200: min +81, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @1800: min +691, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team0 @2215: min +1024, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @900: min +460, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1200: min +216, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+=== Match 104891982 ===
+  Team0 Slot  1: @1200:+657 @2100:+2350
+  Team0 Slot  2: @720:+665 @1200:+657
+  Team0 Slot  3: @1200:+657
+  Team0 Slot  4: @1200:+657
+  Team0 Slot  5: @1200:+657 @1800:+2000
+  Team0 Slot  6: @1200:+657
+  Team1 Slot  7: @900:+247 @1800:+1007 @2100:+1189
+  Team1 Slot  8: @900:+247 @1500:+1650 @1800:+1007 @2100:+1189
+  Team1 Slot  9: @900:+247 @1800:+1007 @2100:+1189
+  Team1 Slot 10: @900:+247 @1200:+1300 @1800:+1007 @2100:+1189
+  Team1 Slot 11: @900:+247 @1800:+1007 @2100:+1189 @2334:+1278
+  Team1 Slot 12: @900:+247 @1800:+1007 @2100:+1189
+  REGEL-ABGABE Team0 @1200: min +657, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @900: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @1800: min +1007, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2100: min +1189, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 104978476 ===
+  Team0 Slot  1: @1800:+728 @2100:+987 @3000:+2076
+  Team0 Slot  2: @1800:+728 @2100:+987 @3000:+2076
+  Team0 Slot  3: @1800:+728 @2100:+987 @3000:+2076
+  Team0 Slot  4: @1800:+2728 @2100:+987 @3000:+2076
+  Team0 Slot  5: @1800:+728 @2100:+987 @3000:+2076
+  Team0 Slot  6: @1200:+650 @1800:+728 @2100:+987 @3000:+2076
+  Team1 Slot  7: @720:+425 @1200:+432 @2700:+1246
+  Team1 Slot  8: @720:+425 @1200:+432 @2700:+1246
+  Team1 Slot  9: @720:+760 @1200:+432 @2700:+1246
+  Team1 Slot 10: @720:+425 @1200:+432 @2400:+1984 @2700:+1246 @3000:+3400
+  Team1 Slot 11: @720:+425 @1200:+432 @2700:+1246
+  Team1 Slot 12: @720:+425 @1200:+432 @2700:+1246
+  REGEL-ABGABE Team0 @1800: min +728, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team0 @2100: min +987, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team0 @3000: min +2076, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @720: min +425, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+  REGEL-ABGABE Team1 @1200: min +432, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2700: min +1246, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+=== Match 105630023 ===
+  Team0 Slot  1: @1800:+1254
+  Team0 Slot  2: @1800:+1254
+  Team0 Slot  3: @1800:+1254
+  Team0 Slot  4: @1800:+1254
+  Team0 Slot  5: @1800:+1254
+  Team0 Slot  6: @1800:+1254
+  Team1 Slot  7: @900:+247 @1200:+927 @1500:+1650 @2100:+3300 @2215:+2700
+  Team1 Slot  8: @900:+247 @1200:+469 @2100:+950
+  Team1 Slot  9: @900:+247 @1200:+469 @2100:+950
+  Team1 Slot 10: @900:+247 @1200:+469 @2100:+950
+  Team1 Slot 11: @900:+247 @1200:+520 @1800:+2000 @2100:+950
+  Team1 Slot 12: @720:+950 @900:+247 @1200:+469 @2100:+950
+  REGEL-ABGABE Team0 @1800: min +1254, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @900: min +247, 6 von 6 Spielern, 6 positiv [alle 6 gleich]
+  REGEL-ABGABE Team1 @2100: min +950, 5 von 6 Spielern, 6 positiv [5 von 6 gleich, sechster hoeher (gleichzeitiges Idol)]
+Regel-Abgaben gesamt: 83, davon mit gleichem Zuwachs bei allen 6: 57, bei 5 von 6: 26

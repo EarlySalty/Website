@@ -1,0 +1,24 @@
+{
+  "accessed": "2026-09-22",
+  "source": "https://api.deadlock-api.com/v1/mcp",
+  "tool": "execute_query",
+  "scope": "Contiguous match-ID window [106000000,107000000), not random sampling or complete calendar days.",
+  "cohort": {
+    "matches": 63438,
+    "first_start": "2026-09-16 17:53:31+00",
+    "last_start": "2026-09-21 21:33:56+00",
+    "first_id": 106000001,
+    "last_id": 106999987
+  },
+  "files": {
+    "article.md": "39405debe88f8f14aa3979d4c969d100bb858d3d719cb0c7592a69051958b67c",
+    "cohort.json": "00b6818aa6abc55fcd46ff571f90d0f238bb8391a9995884126ea2f1e354155a",
+    "cohort.sql": "4feef6745cf852827e453b0c8617a1263fd2dc52fb683288a740477ba92c9960",
+    "first_objectives.csv": "e78040e170ab736b0f74eb8238ff8f1a0a6785013a59e4122cfd95530c5deae9",
+    "first_objectives.json": "366679f9e9f0c7aa5f1800a8c66d8abc4d3df8fb066f9cc26069ea6fc7be7866",
+    "first_objectives.sql": "ecb33332d19fc42c6cdc1af8cc2c049fe117caa5943191e320f6f3b290db263e",
+    "souls_at_9m.csv": "afd959c3686d4cc6c37dc2daf16a243748a819f94ffe2c6161ba5b1add9a7abd",
+    "souls_at_9m.json": "991f8ed77621e6bfd56f12344422f3436ce25187004ed5cecf925943cfd0948b",
+    "souls_at_9m.sql": "9845b466cbb64c6ce4198f4c9ec02ba62d3b4751760f2dc13f2cc9e786270477"
+  }
+}

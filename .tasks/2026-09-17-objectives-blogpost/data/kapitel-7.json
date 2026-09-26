@@ -1,0 +1,1746 @@
+{
+ "kapitel": 7,
+ "titel": "Siegquote nach Zeitpunkt der Erst-Objectives",
+ "einheit": "je Zeitklasse, Ranggruppe und Soul-Schicht",
+ "definition": {
+  "ereignisse": "erster Midboss-Claim, erste Urnen-Abgabe mit sichtbarem Sprung, erster Shrine-Fall; gleiche Definitionen wie Kapitel 1 bis 3, Ereignis-Team = Claim-Team, Zerstoerer-Team bzw. erstes Abgabe-Team",
+  "zeitklassen_midboss_shrine": "5-Minuten-Klassen der Spielzeit, linke Grenze inklusive, rechte exklusiv; duenne Randklassen (unter max(1000, 0,5 Prozent) Ereignissen) mit der Nachbarklasse verschmolzen, letzte Klasse offen",
+  "zeitklassen_urne": "Stuetzstellen-Raster der Urne (180 s bis 900 s in 180-s-Schritten, danach 300 s); Klasse = Intervall bis zum oberen Stuetzpunktwert (obere Grenze inklusive); wenige Matches mit unregelmaessigen Stuetzpunkten werden auf den naechsten Rasterpunkt gehoben; duenne Randklassen verschmolzen, letzte Klasse offen",
+  "ranggruppen": "niedrig = Stufen 1 bis 4, mittel = 5 bis 7, hoch = 8 bis 11 (Stufen 10 und 11 wie in Kapitel 1 bis 6 zusammen)",
+  "schichtung": "Soul-Vorsprung des Ereignis-Teams an der letzten Stuetzstelle vor dem Ereignis, Klassen wie Kapitel 6: vorn ueber 105 Prozent des Gegners, gleichauf 95 bis 105 Prozent, hinten unter 95 Prozent, unbekannt = vor erster Stuetzstelle oder fehlende Net-Worth-Werte",
+  "steals": "Anteil der Midboss-Erste-Claims mit team_killed ungleich team_claimed am ersten Eintrag",
+  "median": "Median des Ereigniszeitpunkts je Rangstufe, auf den Original-Stuetzpunkten; Midboss und Shrine aus 60-Sekunden-Histogrammen (innerhalb des Median-Bins linear interpoliert), Urne exakt",
+  "leseweise": "Beobachtung, keine Wirkung; die Zeitklassen sind nicht randomisiert"
+ },
+ "ranggruppen_zuordnung": {
+  "niedrig": "Stufen 1 bis 4",
+  "mittel": "Stufen 5 bis 7",
+  "hoch": "Stufen 8 bis 11"
+ },
+ "ereignisse": {
+  "midboss": {
+   "zeitklassen": [
+    {
+     "klasse": "300 bis 1200 s",
+     "von_s": 300,
+     "bis_s": 1200,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 6719,
+       "siege": 4985,
+       "siegquote_prozent": 74.2,
+       "schichtung": {
+        "vorn": {
+         "n": 3702,
+         "siege": 3294,
+         "siegquote_prozent": 89.0
+        },
+        "gleichauf": {
+         "n": 1918,
+         "siege": 1263,
+         "siegquote_prozent": 65.8
+        },
+        "hinten": {
+         "n": 1099,
+         "siege": 428,
+         "siegquote_prozent": 38.9
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 806,
+       "anteil_steals_prozent": 12.0
+      },
+      "mittel": {
+       "n": 13335,
+       "siege": 9740,
+       "siegquote_prozent": 73.0,
+       "schichtung": {
+        "vorn": {
+         "n": 6693,
+         "siege": 5868,
+         "siegquote_prozent": 87.7
+        },
+        "gleichauf": {
+         "n": 4420,
+         "siege": 2946,
+         "siegquote_prozent": 66.7
+        },
+        "hinten": {
+         "n": 2222,
+         "siege": 926,
+         "siegquote_prozent": 41.7
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 1589,
+       "anteil_steals_prozent": 11.9
+      },
+      "hoch": {
+       "n": 42421,
+       "siege": 30833,
+       "siegquote_prozent": 72.7,
+       "schichtung": {
+        "vorn": {
+         "n": 19815,
+         "siege": 17183,
+         "siegquote_prozent": 86.7
+        },
+        "gleichauf": {
+         "n": 15440,
+         "siege": 10454,
+         "siegquote_prozent": 67.7
+        },
+        "hinten": {
+         "n": 7166,
+         "siege": 3196,
+         "siegquote_prozent": 44.6
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 5649,
+       "anteil_steals_prozent": 13.3
+      }
+     },
+     "n_gesamt": 62475,
+     "siege_gesamt": 45558,
+     "siegquote_gesamt_prozent": 72.9
+    },
+    {
+     "klasse": "1200 bis 1500 s",
+     "von_s": 1200,
+     "bis_s": 1500,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 60550,
+       "siege": 45426,
+       "siegquote_prozent": 75.0,
+       "schichtung": {
+        "vorn": {
+         "n": 30689,
+         "siege": 27585,
+         "siegquote_prozent": 89.9
+        },
+        "gleichauf": {
+         "n": 19740,
+         "siege": 13593,
+         "siegquote_prozent": 68.9
+        },
+        "hinten": {
+         "n": 10121,
+         "siege": 4248,
+         "siegquote_prozent": 42.0
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 5996,
+       "anteil_steals_prozent": 9.9
+      },
+      "mittel": {
+       "n": 73163,
+       "siege": 54070,
+       "siegquote_prozent": 73.9,
+       "schichtung": {
+        "vorn": {
+         "n": 33760,
+         "siege": 29996,
+         "siegquote_prozent": 88.9
+        },
+        "gleichauf": {
+         "n": 26618,
+         "siege": 18387,
+         "siegquote_prozent": 69.1
+        },
+        "hinten": {
+         "n": 12785,
+         "siege": 5687,
+         "siegquote_prozent": 44.5
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 7415,
+       "anteil_steals_prozent": 10.1
+      },
+      "hoch": {
+       "n": 67969,
+       "siege": 49281,
+       "siegquote_prozent": 72.5,
+       "schichtung": {
+        "vorn": {
+         "n": 28304,
+         "siege": 24738,
+         "siegquote_prozent": 87.4
+        },
+        "gleichauf": {
+         "n": 27951,
+         "siege": 19163,
+         "siegquote_prozent": 68.6
+        },
+        "hinten": {
+         "n": 11714,
+         "siege": 5380,
+         "siegquote_prozent": 45.9
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 8302,
+       "anteil_steals_prozent": 12.2
+      }
+     },
+     "n_gesamt": 201682,
+     "siege_gesamt": 148777,
+     "siegquote_gesamt_prozent": 73.8
+    },
+    {
+     "klasse": "1500 bis 1800 s",
+     "von_s": 1500,
+     "bis_s": 1800,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 100125,
+       "siege": 76465,
+       "siegquote_prozent": 76.4,
+       "schichtung": {
+        "vorn": {
+         "n": 45943,
+         "siege": 41691,
+         "siegquote_prozent": 90.7
+        },
+        "gleichauf": {
+         "n": 38086,
+         "siege": 27402,
+         "siegquote_prozent": 71.9
+        },
+        "hinten": {
+         "n": 16096,
+         "siege": 7372,
+         "siegquote_prozent": 45.8
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 7848,
+       "anteil_steals_prozent": 7.8
+      },
+      "mittel": {
+       "n": 61041,
+       "siege": 46466,
+       "siegquote_prozent": 76.1,
+       "schichtung": {
+        "vorn": {
+         "n": 25859,
+         "siege": 23307,
+         "siegquote_prozent": 90.1
+        },
+        "gleichauf": {
+         "n": 25206,
+         "siege": 18319,
+         "siegquote_prozent": 72.7
+        },
+        "hinten": {
+         "n": 9976,
+         "siege": 4840,
+         "siegquote_prozent": 48.5
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 5153,
+       "anteil_steals_prozent": 8.4
+      },
+      "hoch": {
+       "n": 20416,
+       "siege": 15598,
+       "siegquote_prozent": 76.4,
+       "schichtung": {
+        "vorn": {
+         "n": 8167,
+         "siege": 7345,
+         "siegquote_prozent": 89.9
+        },
+        "gleichauf": {
+         "n": 9108,
+         "siege": 6710,
+         "siegquote_prozent": 73.7
+        },
+        "hinten": {
+         "n": 3141,
+         "siege": 1543,
+         "siegquote_prozent": 49.1
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 2027,
+       "anteil_steals_prozent": 9.9
+      }
+     },
+     "n_gesamt": 181582,
+     "siege_gesamt": 138529,
+     "siegquote_gesamt_prozent": 76.3
+    },
+    {
+     "klasse": "1800 bis 2100 s",
+     "von_s": 1800,
+     "bis_s": 2100,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 45596,
+       "siege": 35657,
+       "siegquote_prozent": 78.2,
+       "schichtung": {
+        "vorn": {
+         "n": 20274,
+         "siege": 18568,
+         "siegquote_prozent": 91.6
+        },
+        "gleichauf": {
+         "n": 18662,
+         "siege": 13858,
+         "siegquote_prozent": 74.3
+        },
+        "hinten": {
+         "n": 6660,
+         "siege": 3231,
+         "siegquote_prozent": 48.5
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 3261,
+       "anteil_steals_prozent": 7.2
+      },
+      "mittel": {
+       "n": 12667,
+       "siege": 9866,
+       "siegquote_prozent": 77.9,
+       "schichtung": {
+        "vorn": {
+         "n": 5047,
+         "siege": 4615,
+         "siegquote_prozent": 91.4
+        },
+        "gleichauf": {
+         "n": 5789,
+         "siege": 4327,
+         "siegquote_prozent": 74.7
+        },
+        "hinten": {
+         "n": 1831,
+         "siege": 924,
+         "siegquote_prozent": 50.5
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 1053,
+       "anteil_steals_prozent": 8.3
+      },
+      "hoch": {
+       "n": 1835,
+       "siege": 1425,
+       "siegquote_prozent": 77.7,
+       "schichtung": {
+        "vorn": {
+         "n": 643,
+         "siege": 588,
+         "siegquote_prozent": 91.4
+        },
+        "gleichauf": {
+         "n": 934,
+         "siege": 711,
+         "siegquote_prozent": 76.1
+        },
+        "hinten": {
+         "n": 258,
+         "siege": 126,
+         "siegquote_prozent": 48.8
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 210,
+       "anteil_steals_prozent": 11.4
+      }
+     },
+     "n_gesamt": 60098,
+     "siege_gesamt": 46948,
+     "siegquote_gesamt_prozent": 78.1
+    },
+    {
+     "klasse": "ab 2100 s",
+     "von_s": 2100,
+     "bis_s": null,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 10517,
+       "siege": 8209,
+       "siegquote_prozent": 78.1,
+       "schichtung": {
+        "vorn": {
+         "n": 4488,
+         "siege": 4087,
+         "siegquote_prozent": 91.1
+        },
+        "gleichauf": {
+         "n": 4618,
+         "siege": 3446,
+         "siegquote_prozent": 74.6
+        },
+        "hinten": {
+         "n": 1411,
+         "siege": 676,
+         "siegquote_prozent": 47.9
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 690,
+       "anteil_steals_prozent": 6.6
+      },
+      "mittel": {
+       "n": 1204,
+       "siege": 948,
+       "siegquote_prozent": 78.7,
+       "schichtung": {
+        "vorn": {
+         "n": 473,
+         "siege": 421,
+         "siegquote_prozent": 89.0
+        },
+        "gleichauf": {
+         "n": 579,
+         "siege": 443,
+         "siegquote_prozent": 76.5
+        },
+        "hinten": {
+         "n": 152,
+         "siege": 84,
+         "siegquote_prozent": 55.3
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 98,
+       "anteil_steals_prozent": 8.1
+      },
+      "hoch": {
+       "n": 85,
+       "siege": 69,
+       "siegquote_prozent": 81.2,
+       "schichtung": {
+        "vorn": {
+         "n": 30,
+         "siege": 27,
+         "siegquote_prozent": 90.0
+        },
+        "gleichauf": {
+         "n": 44,
+         "siege": 36,
+         "siegquote_prozent": 81.8
+        },
+        "hinten": {
+         "n": 11,
+         "siege": 6,
+         "siegquote_prozent": 54.5
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       },
+       "steals": 10,
+       "anteil_steals_prozent": 11.8
+      }
+     },
+     "n_gesamt": 11806,
+     "siege_gesamt": 9226,
+     "siegquote_gesamt_prozent": 78.1
+    }
+   ],
+   "median_ereigniszeitpunkt_je_rangstufe": [
+    {
+     "rang": "1",
+     "median_sekunden": 1714
+    },
+    {
+     "rang": "2",
+     "median_sekunden": 1666
+    },
+    {
+     "rang": "3",
+     "median_sekunden": 1614
+    },
+    {
+     "rang": "4",
+     "median_sekunden": 1566
+    },
+    {
+     "rang": "5",
+     "median_sekunden": 1526
+    },
+    {
+     "rang": "6",
+     "median_sekunden": 1484
+    },
+    {
+     "rang": "7",
+     "median_sekunden": 1442
+    },
+    {
+     "rang": "8",
+     "median_sekunden": 1348
+    },
+    {
+     "rang": "9",
+     "median_sekunden": 1225
+    },
+    {
+     "rang": "10+11",
+     "median_sekunden": 1127
+    }
+   ]
+  },
+  "shrine": {
+   "zeitklassen": [
+    {
+     "klasse": "0 bis 1200 s",
+     "von_s": 0,
+     "bis_s": 1200,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 1568,
+       "siege": 1562,
+       "siegquote_prozent": 99.6,
+       "schichtung": {
+        "vorn": {
+         "n": 1434,
+         "siege": 1429,
+         "siegquote_prozent": 99.7
+        },
+        "gleichauf": {
+         "n": 114,
+         "siege": 113,
+         "siegquote_prozent": 99.1
+        },
+        "hinten": {
+         "n": 20,
+         "siege": 20,
+         "siegquote_prozent": 100.0
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 1196,
+       "siege": 1182,
+       "siegquote_prozent": 98.8,
+       "schichtung": {
+        "vorn": {
+         "n": 1101,
+         "siege": 1097,
+         "siegquote_prozent": 99.6
+        },
+        "gleichauf": {
+         "n": 81,
+         "siege": 74,
+         "siegquote_prozent": 91.4
+        },
+        "hinten": {
+         "n": 14,
+         "siege": 11,
+         "siegquote_prozent": 78.6
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 2618,
+       "siege": 2569,
+       "siegquote_prozent": 98.1,
+       "schichtung": {
+        "vorn": {
+         "n": 2404,
+         "siege": 2381,
+         "siegquote_prozent": 99.0
+        },
+        "gleichauf": {
+         "n": 182,
+         "siege": 168,
+         "siegquote_prozent": 92.3
+        },
+        "hinten": {
+         "n": 32,
+         "siege": 20,
+         "siegquote_prozent": 62.5
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 5382,
+     "siege_gesamt": 5313,
+     "siegquote_gesamt_prozent": 98.7
+    },
+    {
+     "klasse": "1200 bis 1500 s",
+     "von_s": 1200,
+     "bis_s": 1500,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 8755,
+       "siege": 8601,
+       "siegquote_prozent": 98.2,
+       "schichtung": {
+        "vorn": {
+         "n": 7884,
+         "siege": 7802,
+         "siegquote_prozent": 99.0
+        },
+        "gleichauf": {
+         "n": 775,
+         "siege": 725,
+         "siegquote_prozent": 93.5
+        },
+        "hinten": {
+         "n": 96,
+         "siege": 74,
+         "siegquote_prozent": 77.1
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 12782,
+       "siege": 12393,
+       "siegquote_prozent": 97.0,
+       "schichtung": {
+        "vorn": {
+         "n": 10838,
+         "siege": 10645,
+         "siegquote_prozent": 98.2
+        },
+        "gleichauf": {
+         "n": 1677,
+         "siege": 1537,
+         "siegquote_prozent": 91.7
+        },
+        "hinten": {
+         "n": 267,
+         "siege": 211,
+         "siegquote_prozent": 79.0
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 21683,
+       "siege": 20650,
+       "siegquote_prozent": 95.2,
+       "schichtung": {
+        "vorn": {
+         "n": 17396,
+         "siege": 16875,
+         "siegquote_prozent": 97.0
+        },
+        "gleichauf": {
+         "n": 3676,
+         "siege": 3328,
+         "siegquote_prozent": 90.5
+        },
+        "hinten": {
+         "n": 611,
+         "siege": 447,
+         "siegquote_prozent": 73.2
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 43220,
+     "siege_gesamt": 41644,
+     "siegquote_gesamt_prozent": 96.4
+    },
+    {
+     "klasse": "1500 bis 1800 s",
+     "von_s": 1500,
+     "bis_s": 1800,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 45960,
+       "siege": 44246,
+       "siegquote_prozent": 96.3,
+       "schichtung": {
+        "vorn": {
+         "n": 36894,
+         "siege": 36089,
+         "siegquote_prozent": 97.8
+        },
+        "gleichauf": {
+         "n": 7715,
+         "siege": 7098,
+         "siegquote_prozent": 92.0
+        },
+        "hinten": {
+         "n": 1351,
+         "siege": 1059,
+         "siegquote_prozent": 78.4
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 48958,
+       "siege": 46387,
+       "siegquote_prozent": 94.7,
+       "schichtung": {
+        "vorn": {
+         "n": 37170,
+         "siege": 36016,
+         "siegquote_prozent": 96.9
+        },
+        "gleichauf": {
+         "n": 9732,
+         "siege": 8790,
+         "siegquote_prozent": 90.3
+        },
+        "hinten": {
+         "n": 2056,
+         "siege": 1581,
+         "siegquote_prozent": 76.9
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 49606,
+       "siege": 46126,
+       "siegquote_prozent": 93.0,
+       "schichtung": {
+        "vorn": {
+         "n": 36489,
+         "siege": 34976,
+         "siegquote_prozent": 95.9
+        },
+        "gleichauf": {
+         "n": 10293,
+         "siege": 9053,
+         "siegquote_prozent": 88.0
+        },
+        "hinten": {
+         "n": 2824,
+         "siege": 2097,
+         "siegquote_prozent": 74.3
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 144524,
+     "siege_gesamt": 136759,
+     "siegquote_gesamt_prozent": 94.6
+    },
+    {
+     "klasse": "1800 bis 2100 s",
+     "von_s": 1800,
+     "bis_s": 2100,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 75279,
+       "siege": 70936,
+       "siegquote_prozent": 94.2,
+       "schichtung": {
+        "vorn": {
+         "n": 56450,
+         "siege": 54551,
+         "siegquote_prozent": 96.6
+        },
+        "gleichauf": {
+         "n": 15654,
+         "siege": 13943,
+         "siegquote_prozent": 89.1
+        },
+        "hinten": {
+         "n": 3175,
+         "siege": 2442,
+         "siegquote_prozent": 76.9
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 55883,
+       "siege": 51723,
+       "siegquote_prozent": 92.6,
+       "schichtung": {
+        "vorn": {
+         "n": 39151,
+         "siege": 37457,
+         "siegquote_prozent": 95.7
+        },
+        "gleichauf": {
+         "n": 13683,
+         "siege": 11973,
+         "siegquote_prozent": 87.5
+        },
+        "hinten": {
+         "n": 3049,
+         "siege": 2293,
+         "siegquote_prozent": 75.2
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 39793,
+       "siege": 36220,
+       "siegquote_prozent": 91.0,
+       "schichtung": {
+        "vorn": {
+         "n": 26474,
+         "siege": 25098,
+         "siegquote_prozent": 94.8
+        },
+        "gleichauf": {
+         "n": 10600,
+         "siege": 9145,
+         "siegquote_prozent": 86.3
+        },
+        "hinten": {
+         "n": 2719,
+         "siege": 1977,
+         "siegquote_prozent": 72.7
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 170955,
+     "siege_gesamt": 158879,
+     "siegquote_gesamt_prozent": 92.9
+    },
+    {
+     "klasse": "2100 bis 2400 s",
+     "von_s": 2100,
+     "bis_s": 2400,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 58039,
+       "siege": 53851,
+       "siegquote_prozent": 92.8,
+       "schichtung": {
+        "vorn": {
+         "n": 39815,
+         "siege": 38233,
+         "siegquote_prozent": 96.0
+        },
+        "gleichauf": {
+         "n": 14936,
+         "siege": 13097,
+         "siegquote_prozent": 87.7
+        },
+        "hinten": {
+         "n": 3288,
+         "siege": 2521,
+         "siegquote_prozent": 76.7
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 31493,
+       "siege": 28700,
+       "siegquote_prozent": 91.1,
+       "schichtung": {
+        "vorn": {
+         "n": 20029,
+         "siege": 19067,
+         "siegquote_prozent": 95.2
+        },
+        "gleichauf": {
+         "n": 9436,
+         "siege": 8115,
+         "siegquote_prozent": 86.0
+        },
+        "hinten": {
+         "n": 2028,
+         "siege": 1518,
+         "siegquote_prozent": 74.9
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 15611,
+       "siege": 14014,
+       "siegquote_prozent": 89.8,
+       "schichtung": {
+        "vorn": {
+         "n": 9352,
+         "siege": 8794,
+         "siegquote_prozent": 94.0
+        },
+        "gleichauf": {
+         "n": 5120,
+         "siege": 4394,
+         "siegquote_prozent": 85.8
+        },
+        "hinten": {
+         "n": 1139,
+         "siege": 826,
+         "siegquote_prozent": 72.5
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 105143,
+     "siege_gesamt": 96565,
+     "siegquote_gesamt_prozent": 91.8
+    },
+    {
+     "klasse": "2400 bis 2700 s",
+     "von_s": 2400,
+     "bis_s": 2700,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 26755,
+       "siege": 24184,
+       "siegquote_prozent": 90.4,
+       "schichtung": {
+        "vorn": {
+         "n": 14956,
+         "siege": 14134,
+         "siegquote_prozent": 94.5
+        },
+        "gleichauf": {
+         "n": 9695,
+         "siege": 8423,
+         "siegquote_prozent": 86.9
+        },
+        "hinten": {
+         "n": 2104,
+         "siege": 1627,
+         "siegquote_prozent": 77.3
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 10098,
+       "siege": 9031,
+       "siegquote_prozent": 89.4,
+       "schichtung": {
+        "vorn": {
+         "n": 5202,
+         "siege": 4860,
+         "siegquote_prozent": 93.4
+        },
+        "gleichauf": {
+         "n": 4089,
+         "siege": 3544,
+         "siegquote_prozent": 86.7
+        },
+        "hinten": {
+         "n": 807,
+         "siege": 627,
+         "siegquote_prozent": 77.7
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 3646,
+       "siege": 3197,
+       "siegquote_prozent": 87.7,
+       "schichtung": {
+        "vorn": {
+         "n": 1828,
+         "siege": 1684,
+         "siegquote_prozent": 92.1
+        },
+        "gleichauf": {
+         "n": 1528,
+         "siege": 1301,
+         "siegquote_prozent": 85.1
+        },
+        "hinten": {
+         "n": 290,
+         "siege": 212,
+         "siegquote_prozent": 73.1
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 40499,
+     "siege_gesamt": 36412,
+     "siegquote_gesamt_prozent": 89.9
+    },
+    {
+     "klasse": "2700 bis 3000 s",
+     "von_s": 2700,
+     "bis_s": 3000,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 8561,
+       "siege": 7489,
+       "siegquote_prozent": 87.5,
+       "schichtung": {
+        "vorn": {
+         "n": 4110,
+         "siege": 3770,
+         "siegquote_prozent": 91.7
+        },
+        "gleichauf": {
+         "n": 3654,
+         "siege": 3115,
+         "siegquote_prozent": 85.2
+        },
+        "hinten": {
+         "n": 797,
+         "siege": 604,
+         "siegquote_prozent": 75.8
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 2033,
+       "siege": 1755,
+       "siegquote_prozent": 86.3,
+       "schichtung": {
+        "vorn": {
+         "n": 841,
+         "siege": 780,
+         "siegquote_prozent": 92.7
+        },
+        "gleichauf": {
+         "n": 995,
+         "siege": 817,
+         "siegquote_prozent": 82.1
+        },
+        "hinten": {
+         "n": 197,
+         "siege": 158,
+         "siegquote_prozent": 80.2
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 533,
+       "siege": 447,
+       "siegquote_prozent": 83.9,
+       "schichtung": {
+        "vorn": {
+         "n": 228,
+         "siege": 203,
+         "siegquote_prozent": 89.0
+        },
+        "gleichauf": {
+         "n": 256,
+         "siege": 205,
+         "siegquote_prozent": 80.1
+        },
+        "hinten": {
+         "n": 49,
+         "siege": 39,
+         "siegquote_prozent": 79.6
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 11127,
+     "siege_gesamt": 9691,
+     "siegquote_gesamt_prozent": 87.1
+    },
+    {
+     "klasse": "ab 3000 s",
+     "von_s": 3000,
+     "bis_s": null,
+     "ranggruppen": {
+      "niedrig": {
+       "n": 2648,
+       "siege": 2187,
+       "siegquote_prozent": 82.6,
+       "schichtung": {
+        "vorn": {
+         "n": 1089,
+         "siege": 953,
+         "siegquote_prozent": 87.5
+        },
+        "gleichauf": {
+         "n": 1253,
+         "siege": 1007,
+         "siegquote_prozent": 80.4
+        },
+        "hinten": {
+         "n": 306,
+         "siege": 227,
+         "siegquote_prozent": 74.2
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 371,
+       "siege": 315,
+       "siegquote_prozent": 84.9,
+       "schichtung": {
+        "vorn": {
+         "n": 122,
+         "siege": 105,
+         "siegquote_prozent": 86.1
+        },
+        "gleichauf": {
+         "n": 216,
+         "siege": 180,
+         "siegquote_prozent": 83.3
+        },
+        "hinten": {
+         "n": 33,
+         "siege": 30,
+         "siegquote_prozent": 90.9
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 77,
+       "siege": 65,
+       "siegquote_prozent": 84.4,
+       "schichtung": {
+        "vorn": {
+         "n": 25,
+         "siege": 24,
+         "siegquote_prozent": 96.0
+        },
+        "gleichauf": {
+         "n": 40,
+         "siege": 33,
+         "siegquote_prozent": 82.5
+        },
+        "hinten": {
+         "n": 12,
+         "siege": 8,
+         "siegquote_prozent": 66.7
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 3096,
+     "siege_gesamt": 2567,
+     "siegquote_gesamt_prozent": 82.9
+    }
+   ],
+   "median_ereigniszeitpunkt_je_rangstufe": [
+    {
+     "rang": "1",
+     "median_sekunden": 2119
+    },
+    {
+     "rang": "2",
+     "median_sekunden": 2063
+    },
+    {
+     "rang": "3",
+     "median_sekunden": 2002
+    },
+    {
+     "rang": "4",
+     "median_sekunden": 1959
+    },
+    {
+     "rang": "5",
+     "median_sekunden": 1928
+    },
+    {
+     "rang": "6",
+     "median_sekunden": 1893
+    },
+    {
+     "rang": "7",
+     "median_sekunden": 1864
+    },
+    {
+     "rang": "8",
+     "median_sekunden": 1796
+    },
+    {
+     "rang": "9",
+     "median_sekunden": 1726
+    },
+    {
+     "rang": "10+11",
+     "median_sekunden": 1687
+    }
+   ]
+  },
+  "urne": {
+   "zeitklassen": [
+    {
+     "klasse": "bis 720 s",
+     "stuetzpunkte_s": [
+      720
+     ],
+     "ranggruppen": {
+      "niedrig": {
+       "n": 33268,
+       "siege": 18335,
+       "siegquote_prozent": 55.1,
+       "schichtung": {
+        "vorn": {
+         "n": 10884,
+         "siege": 7565,
+         "siegquote_prozent": 69.5
+        },
+        "gleichauf": {
+         "n": 12220,
+         "siege": 6691,
+         "siegquote_prozent": 54.8
+        },
+        "hinten": {
+         "n": 10164,
+         "siege": 4079,
+         "siegquote_prozent": 40.1
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 23865,
+       "siege": 12841,
+       "siegquote_prozent": 53.8,
+       "schichtung": {
+        "vorn": {
+         "n": 7253,
+         "siege": 4976,
+         "siegquote_prozent": 68.6
+        },
+        "gleichauf": {
+         "n": 8803,
+         "siege": 4701,
+         "siegquote_prozent": 53.4
+        },
+        "hinten": {
+         "n": 7809,
+         "siege": 3164,
+         "siegquote_prozent": 40.5
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 19604,
+       "siege": 9298,
+       "siegquote_prozent": 47.4,
+       "schichtung": {
+        "vorn": {
+         "n": 4501,
+         "siege": 3014,
+         "siegquote_prozent": 67.0
+        },
+        "gleichauf": {
+         "n": 6765,
+         "siege": 3439,
+         "siegquote_prozent": 50.8
+        },
+        "hinten": {
+         "n": 8338,
+         "siege": 2845,
+         "siegquote_prozent": 34.1
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 76737,
+     "siege_gesamt": 40474,
+     "siegquote_gesamt_prozent": 52.7
+    },
+    {
+     "klasse": "720 bis 900 s",
+     "stuetzpunkte_s": [
+      900
+     ],
+     "ranggruppen": {
+      "niedrig": {
+       "n": 184644,
+       "siege": 105508,
+       "siegquote_prozent": 57.1,
+       "schichtung": {
+        "vorn": {
+         "n": 65474,
+         "siege": 47310,
+         "siegquote_prozent": 72.3
+        },
+        "gleichauf": {
+         "n": 67404,
+         "siege": 37852,
+         "siegquote_prozent": 56.2
+        },
+        "hinten": {
+         "n": 51766,
+         "siege": 20346,
+         "siegquote_prozent": 39.3
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 132302,
+       "siege": 74517,
+       "siegquote_prozent": 56.3,
+       "schichtung": {
+        "vorn": {
+         "n": 43245,
+         "siege": 31028,
+         "siegquote_prozent": 71.7
+        },
+        "gleichauf": {
+         "n": 50154,
+         "siege": 28078,
+         "siegquote_prozent": 56.0
+        },
+        "hinten": {
+         "n": 38903,
+         "siege": 15411,
+         "siegquote_prozent": 39.6
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 108627,
+       "siege": 57121,
+       "siegquote_prozent": 52.6,
+       "schichtung": {
+        "vorn": {
+         "n": 27562,
+         "siege": 20208,
+         "siegquote_prozent": 73.3
+        },
+        "gleichauf": {
+         "n": 40658,
+         "siege": 22761,
+         "siegquote_prozent": 56.0
+        },
+        "hinten": {
+         "n": 40407,
+         "siege": 14152,
+         "siegquote_prozent": 35.0
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 425573,
+     "siege_gesamt": 237146,
+     "siegquote_gesamt_prozent": 55.7
+    },
+    {
+     "klasse": "900 bis 1200 s",
+     "stuetzpunkte_s": [
+      1200
+     ],
+     "ranggruppen": {
+      "niedrig": {
+       "n": 2504,
+       "siege": 1475,
+       "siegquote_prozent": 58.9,
+       "schichtung": {
+        "vorn": {
+         "n": 926,
+         "siege": 691,
+         "siegquote_prozent": 74.6
+        },
+        "gleichauf": {
+         "n": 872,
+         "siege": 513,
+         "siegquote_prozent": 58.8
+        },
+        "hinten": {
+         "n": 706,
+         "siege": 271,
+         "siegquote_prozent": 38.4
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 1590,
+       "siege": 885,
+       "siegquote_prozent": 55.7,
+       "schichtung": {
+        "vorn": {
+         "n": 511,
+         "siege": 386,
+         "siegquote_prozent": 75.5
+        },
+        "gleichauf": {
+         "n": 567,
+         "siege": 322,
+         "siegquote_prozent": 56.8
+        },
+        "hinten": {
+         "n": 512,
+         "siege": 177,
+         "siegquote_prozent": 34.6
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 1161,
+       "siege": 604,
+       "siegquote_prozent": 52.0,
+       "schichtung": {
+        "vorn": {
+         "n": 285,
+         "siege": 230,
+         "siegquote_prozent": 80.7
+        },
+        "gleichauf": {
+         "n": 446,
+         "siege": 254,
+         "siegquote_prozent": 57.0
+        },
+        "hinten": {
+         "n": 430,
+         "siege": 120,
+         "siegquote_prozent": 27.9
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 5255,
+     "siege_gesamt": 2964,
+     "siegquote_gesamt_prozent": 56.4
+    },
+    {
+     "klasse": "über 1200 s",
+     "stuetzpunkte_s": [
+      1500,
+      1800,
+      2100,
+      2400,
+      2700
+     ],
+     "ranggruppen": {
+      "niedrig": {
+       "n": 1798,
+       "siege": 1091,
+       "siegquote_prozent": 60.7,
+       "schichtung": {
+        "vorn": {
+         "n": 683,
+         "siege": 570,
+         "siegquote_prozent": 83.5
+        },
+        "gleichauf": {
+         "n": 667,
+         "siege": 379,
+         "siegquote_prozent": 56.8
+        },
+        "hinten": {
+         "n": 448,
+         "siege": 142,
+         "siegquote_prozent": 31.7
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "mittel": {
+       "n": 1168,
+       "siege": 698,
+       "siegquote_prozent": 59.8,
+       "schichtung": {
+        "vorn": {
+         "n": 390,
+         "siege": 334,
+         "siegquote_prozent": 85.6
+        },
+        "gleichauf": {
+         "n": 447,
+         "siege": 262,
+         "siegquote_prozent": 58.6
+        },
+        "hinten": {
+         "n": 331,
+         "siege": 102,
+         "siegquote_prozent": 30.8
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      },
+      "hoch": {
+       "n": 776,
+       "siege": 453,
+       "siegquote_prozent": 58.4,
+       "schichtung": {
+        "vorn": {
+         "n": 248,
+         "siege": 218,
+         "siegquote_prozent": 87.9
+        },
+        "gleichauf": {
+         "n": 265,
+         "siege": 162,
+         "siegquote_prozent": 61.1
+        },
+        "hinten": {
+         "n": 263,
+         "siege": 73,
+         "siegquote_prozent": 27.8
+        },
+        "unbekannt": {
+         "n": 0,
+         "siege": 0,
+         "siegquote_prozent": null
+        }
+       }
+      }
+     },
+     "n_gesamt": 3742,
+     "siege_gesamt": 2242,
+     "siegquote_gesamt_prozent": 59.9
+    }
+   ],
+   "median_ereigniszeitpunkt_je_rangstufe": [
+    {
+     "rang": "1",
+     "median_sekunden": 900
+    },
+    {
+     "rang": "2",
+     "median_sekunden": 900
+    },
+    {
+     "rang": "3",
+     "median_sekunden": 900
+    },
+    {
+     "rang": "4",
+     "median_sekunden": 900
+    },
+    {
+     "rang": "5",
+     "median_sekunden": 900
+    },
+    {
+     "rang": "6",
+     "median_sekunden": 900
+    },
+    {
+     "rang": "7",
+     "median_sekunden": 900
+    },
+    {
+     "rang": "8",
+     "median_sekunden": 900
+    },
+    {
+     "rang": "9",
+     "median_sekunden": 900
+    },
+    {
+     "rang": "10+11",
+     "median_sekunden": 900
+    }
+   ]
+  }
+ },
+ "grundgesamtheit": "game_mode Normal, match_mode Ranked, match_outcome TeamWin, 2026-08-13 00:00 UTC bis 2026-09-15 23:59 UTC, tageweise 34 Chunks im A2-Lauf vom 2026-09-18, clientseitig gemergt; Werte koennen minimal vom QB/QD-Lauf vom 2026-09-17 abweichen (Daten-drift), Dedup je (match_id, account_id) ueber neueste created_at"
+}

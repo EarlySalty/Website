@@ -11,7 +11,7 @@ HOME_LINKS = {
     "/mitspieler/": "Mitspieler",
     "/coaching/": "Coaching",
     "/aktivitaet/": "Aktivität & Ränge",
-    "/patch/": "Patchnotes",
+    "/patchnotes/": "Patchnotes",
     "/helden/": "Helden",
     "/streamer/": "Streamer",
     "/twitch/dashboard": "Partner-Dashboard",

@@ -1,0 +1,74 @@
+{
+ "stand": "2026-09-18",
+ "lauf": "A3, tageweise 34 Chunks, clientseitig gemergt",
+ "tage": 34,
+ "abgaben_gegen_kapitel2": {
+  "niedrig": {
+   "a3": 917601,
+   "kapitel2": 916917,
+   "abweichung": 684,
+   "abweichung_prozent": 0.075
+  },
+  "mittel": {
+   "a3": 608551,
+   "kapitel2": 608074,
+   "abweichung": 477,
+   "abweichung_prozent": 0.078
+  },
+  "hoch": {
+   "a3": 460659,
+   "kapitel2": 460524,
+   "abweichung": 135,
+   "abweichung_prozent": 0.029
+  }
+ },
+ "helden_anteile": {
+  "niedrig": 40.1,
+  "mittel": 41.9,
+  "hoch": 44.8
+ },
+ "rang_summen": {
+  "niedrig": 375404,
+  "mittel": 231404,
+  "hoch": 157997
+ },
+ "sieg_plus_niederlagen": {
+  "niedrig": [
+   262129,
+   375404
+  ],
+  "mittel": [
+   159920,
+   231404
+  ],
+  "hoch": [
+   106381,
+   157997
+  ]
+ },
+ "tod_intervalle_gegen_laeufer": {
+  "niedrig": 375404,
+  "mittel": 231404,
+  "hoch": 157997
+ },
+ "swing_del_gegen_abgaben": {
+  "niedrig": {
+   "swing_n": 917601,
+   "abgaben": 917601,
+   "ohne_wert": 0,
+   "differenz": 0
+  },
+  "mittel": {
+   "swing_n": 608551,
+   "abgaben": 608551,
+   "ohne_wert": 0,
+   "differenz": 0
+  },
+  "hoch": {
+   "swing_n": 460659,
+   "abgaben": 460659,
+   "ohne_wert": 0,
+   "differenz": 0
+  }
+ }
+}

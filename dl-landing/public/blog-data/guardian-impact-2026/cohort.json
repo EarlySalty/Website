@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "columns": [
+    "matches",
+    "first_start",
+    "last_start",
+    "first_id",
+    "last_id"
+  ],
+  "columnTypes": [
+    "BIGINT",
+    "VARCHAR",
+    "VARCHAR",
+    "UBIGINT",
+    "UBIGINT"
+  ],
+  "rows": [
+    [
+      63438,
+      "2026-09-16 17:53:31+00",
+      "2026-09-21 21:33:56+00",
+      106000001,
+      106999987
+    ]
+  ],
+  "rowCount": 1
+}

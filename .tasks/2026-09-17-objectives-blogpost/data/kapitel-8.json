@@ -1,0 +1,1022 @@
+{
+ "kapitel": 8,
+ "titel": "Der Urnen-Laeufer",
+ "einheit": "je Abgabe (Team und Intervall) und Ranggruppe",
+ "definition": {
+  "grundlage": "gleiche Urnen-Abgaben wie Kapitel 2 (mindestens 5 von 6 Spielern eines Teams mit gleichem minimalem positiven Zuwachs von stats.gold_treasure im selben Intervall); jede erkannte Abgabe zaehlt",
+  "laeufer": "Spieler des Abgabe-Teams mit dem groessten Zuwachs von stats.gold_treasure im Abgabe-Intervall, sofern dieser ueber dem Team-Minimum liegt und eindeutig ist; bei Gleichstand oder fehlendem Mehrzuwachs gilt der Laeufer als unbekannt und wird getrennt gezaehlt",
+  "gegenprobe": "an denselben 20 Zufalls-Matches wie Paket A von Hand nachgerechnet (urn_lauefer_check.json): 83 Regel-Abgaben, 26 mit unterscheidbarem Laeufer; ein Laeufer ist genau dann sichtbar, wenn 5 von 6 Spielern gleichen Zuwachs haben und der sechste mehr erhaelt",
+  "rang_im_team": "Rang des Laeufers im Team nach stats.net_worth an der Stuetzstelle vor der Abgabe (1 = reichster, 6 = aermster); bei Gleichstand erhaelt beide der engere bessere Rang; ausgewiesen nur bei vollstaendigen Net-Worth-Werten aller sechs Teammitglieder",
+  "kosten": "Tode des Laeufers im Abgabe-Intervall (death_details.game_time_s zwischen den beiden Stuetzstellen) gegen die Tode desselben Laeufers in seinen uebrigen Checkpoint-Intervallen desselben Matches",
+  "nutzen": "Verschiebung der Net-Worth-Differenz des Abgabe-Teams zum Gegner zwischen der Stuetzstelle vor und nach der Abgabe; verglichen mit Intervallen ohne Abgabe beider Teams an derselben Stuetzstelle. Weil sich beide Teams in Intervallen ohne Abgabe spiegelsymmetrisch exakt aufheben, ist der Vergleich ueber den Betrag der Verschiebung gefuehrt; die signierten Werte der Abgabe-Intervalle zeigen die Richtung",
+  "ergebnis": "Siegquote der Laeufer sowie Endwerte net_worth, kills und deaths des Laeufers gegen den Median seiner fuenf Teamkollegen (drittkleinster der fuenf Werte)",
+  "ranggruppen": "niedrig = Stufen 1 bis 4, mittel = Stufen 5 bis 7, hoch = Stufen 8 bis 11 (Stufen 10 und 11 wie in Kapitel 1 bis 6 zusammen)",
+  "mediane": "aus Histogrammen, innerhalb des Korbs linear interpoliert; Soul-Swing-Korbs 2500 Seelen, Net-Worth-Differenz 5000 Seelen, Kills und Deaths je 1",
+  "heldennamen": "api.deadlock-api.com/v1/assets/heroes, Stand 2026-09-18",
+  "helden_vergleich": "anteil_gesamt_prozent ist der Anteil des Helden an allen Spielerzeilen der Grundgesamtheit (Basis ohne Läufer-Filter, wochenweise geladen); faktor_gegen_gesamt ist das Verhaeltnis von Läufer-Anteil zu Gesamtanteil, Werte ueber 1 bedeuten Ueberrepraesentation unter den Läufern",
+  "leseweise": "Beobachtung, keine Wirkung; die Läufer-Rolle und die Abgabezeitpunkte sind nicht randomisiert, und nur Abgaben mit unterscheidbarem Läufer tragen die Läufer-Werte"
+ },
+ "ranggruppen": {
+  "niedrig": {
+   "n_abgaben": 917601,
+   "n_laeufer_bekannt": 375404,
+   "n_laeufer_unbekannt": 542197,
+   "anteil_laeufer_bekannt_prozent": 40.9,
+   "siegquote_laeufer": {
+    "n": 375404,
+    "siege": 262129,
+    "prozent": 69.8
+   },
+   "rang_im_team": {
+    "1": 67354,
+    "2": 66620,
+    "3": 64215,
+    "4": 61364,
+    "5": 59042,
+    "6": 56809,
+    "unbekannt": 0
+   },
+   "top10_helden": [
+    {
+     "hero_id": 13,
+     "name": "Haze",
+     "n": 18746,
+     "anteil_prozent": 5.0,
+     "anteil_gesamt_prozent": 4.2,
+     "faktor_gegen_gesamt": 1.19
+    },
+    {
+     "hero_id": 64,
+     "name": "Drifter",
+     "n": 18226,
+     "anteil_prozent": 4.9,
+     "anteil_gesamt_prozent": 3.9,
+     "faktor_gegen_gesamt": 1.23
+    },
+    {
+     "hero_id": 15,
+     "name": "Bebop",
+     "n": 16636,
+     "anteil_prozent": 4.4,
+     "anteil_gesamt_prozent": 4.4,
+     "faktor_gegen_gesamt": 1.01
+    },
+    {
+     "hero_id": 31,
+     "name": "Lash",
+     "n": 15700,
+     "anteil_prozent": 4.2,
+     "anteil_gesamt_prozent": 4.4,
+     "faktor_gegen_gesamt": 0.94
+    },
+    {
+     "hero_id": 1,
+     "name": "Infernus",
+     "n": 14995,
+     "anteil_prozent": 4.0,
+     "anteil_gesamt_prozent": 4.2,
+     "faktor_gegen_gesamt": 0.95
+    },
+    {
+     "hero_id": 76,
+     "name": "Graves",
+     "n": 14013,
+     "anteil_prozent": 3.7,
+     "anteil_gesamt_prozent": 2.8,
+     "faktor_gegen_gesamt": 1.33
+    },
+    {
+     "hero_id": 81,
+     "name": "Celeste",
+     "n": 13464,
+     "anteil_prozent": 3.6,
+     "anteil_gesamt_prozent": 2.5,
+     "faktor_gegen_gesamt": 1.45
+    },
+    {
+     "hero_id": 16,
+     "name": "Calico",
+     "n": 13356,
+     "anteil_prozent": 3.6,
+     "anteil_gesamt_prozent": 2.6,
+     "faktor_gegen_gesamt": 1.36
+    },
+    {
+     "hero_id": 18,
+     "name": "Mo & Krill",
+     "n": 13101,
+     "anteil_prozent": 3.5,
+     "anteil_gesamt_prozent": 3.2,
+     "faktor_gegen_gesamt": 1.08
+    },
+    {
+     "hero_id": 72,
+     "name": "Billy",
+     "n": 12402,
+     "anteil_prozent": 3.3,
+     "anteil_gesamt_prozent": 2.8,
+     "faktor_gegen_gesamt": 1.17
+    }
+   ],
+   "n_helden_alle": 38,
+   "n_uebrige": 224765,
+   "anteil_uebrige_prozent": 59.9,
+   "lanes": {
+    "Yellow": {
+     "n": 127114,
+     "anteil_prozent": 33.9
+    },
+    "Purple": {
+     "n": 125712,
+     "anteil_prozent": 33.5
+    },
+    "Blue": {
+     "n": 122578,
+     "anteil_prozent": 32.7
+    }
+   },
+   "todesquote": {
+    "abgabe_intervalle": {
+     "n_intervalle": 375404,
+     "n_mit_tod": 162435,
+     "anteil_mit_tod_prozent": 43.3,
+     "tode": 192355,
+     "sekunden": 105851927,
+     "tode_je_stunde": 6.54
+    },
+    "uebrige_intervalle": {
+     "n_intervalle": 2841116,
+     "n_mit_tod": 1434129,
+     "anteil_mit_tod_prozent": 50.5,
+     "tode": 1828198,
+     "sekunden": 648351863,
+     "tode_je_stunde": 10.15
+    }
+   },
+   "soul_swing": {
+    "abgabe": {
+     "n": 917601,
+     "n_ohne_wert": 0,
+     "mittel": 8246.3,
+     "median": 6055,
+     "mittel_betrag": 11163.0,
+     "median_betrag": 7758
+    },
+    "ohne_abgabe": {
+     "n": 2418958,
+     "n_ohne_wert": 0,
+     "mittel_betrag": 5910.8,
+     "median_betrag": 3070
+    },
+    "je_stuetzstelle": [
+     {
+      "stuetzstelle_s": 360,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 455246,
+      "mittel_betrag_ohne": 1372.0
+     },
+     {
+      "stuetzstelle_s": 540,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 455246,
+      "mittel_betrag_ohne": 2208.3
+     },
+     {
+      "stuetzstelle_s": 720,
+      "n_abgabe": 33279,
+      "mittel_abgabe": 2386.4,
+      "n_ohne": 388688,
+      "mittel_betrag_ohne": 2996.4
+     },
+     {
+      "stuetzstelle_s": 900,
+      "n_abgabe": 194973,
+      "mittel_abgabe": 2908.2,
+      "n_ohne": 75532,
+      "mittel_betrag_ohne": 3469.5
+     },
+     {
+      "stuetzstelle_s": 1200,
+      "n_abgabe": 132568,
+      "mittel_abgabe": 4847.1,
+      "n_ohne": 191982,
+      "mittel_betrag_ohne": 5683.6
+     },
+     {
+      "stuetzstelle_s": 1500,
+      "n_abgabe": 81616,
+      "mittel_abgabe": 5540.7,
+      "n_ohne": 294830,
+      "mittel_betrag_ohne": 8323.8
+     },
+     {
+      "stuetzstelle_s": 1800,
+      "n_abgabe": 210454,
+      "mittel_abgabe": 10008.9,
+      "n_ohne": 31808,
+      "mittel_betrag_ohne": 13580.9
+     },
+     {
+      "stuetzstelle_s": 2100,
+      "n_abgabe": 154290,
+      "mittel_abgabe": 13973.4,
+      "n_ohne": 109054,
+      "mittel_betrag_ohne": 14829.6
+     },
+     {
+      "stuetzstelle_s": 2400,
+      "n_abgabe": 16387,
+      "mittel_abgabe": 11628.3,
+      "n_ohne": 284018,
+      "mittel_betrag_ohne": 14768.8
+     },
+     {
+      "stuetzstelle_s": 2700,
+      "n_abgabe": 63627,
+      "mittel_abgabe": 14156.1,
+      "n_ohne": 54586,
+      "mittel_betrag_ohne": 10779.6
+     },
+     {
+      "stuetzstelle_s": 3000,
+      "n_abgabe": 22957,
+      "mittel_abgabe": 15932.8,
+      "n_ohne": 38706,
+      "mittel_betrag_ohne": 10687.0
+     },
+     {
+      "stuetzstelle_s": 3300,
+      "n_abgabe": 3450,
+      "mittel_abgabe": 15604.2,
+      "n_ohne": 28220,
+      "mittel_betrag_ohne": 11878.4
+     },
+     {
+      "stuetzstelle_s": 3600,
+      "n_abgabe": 2511,
+      "mittel_abgabe": 11759.3,
+      "n_ohne": 7800,
+      "mittel_betrag_ohne": 10934.3
+     },
+     {
+      "stuetzstelle_s": 3900,
+      "n_abgabe": 1201,
+      "mittel_abgabe": 14884.8,
+      "n_ohne": 1874,
+      "mittel_betrag_ohne": 8373.7
+     },
+     {
+      "stuetzstelle_s": 4200,
+      "n_abgabe": 198,
+      "mittel_abgabe": 17399.1,
+      "n_ohne": 928,
+      "mittel_betrag_ohne": 9877.4
+     },
+     {
+      "stuetzstelle_s": 4500,
+      "n_abgabe": 32,
+      "mittel_abgabe": 14168.8,
+      "n_ohne": 322,
+      "mittel_betrag_ohne": 10701.1
+     },
+     {
+      "stuetzstelle_s": 4800,
+      "n_abgabe": 34,
+      "mittel_abgabe": 20268.3,
+      "n_ohne": 58,
+      "mittel_betrag_ohne": 8732.0
+     },
+     {
+      "stuetzstelle_s": 5100,
+      "n_abgabe": 11,
+      "mittel_abgabe": 16950.1,
+      "n_ohne": 26,
+      "mittel_betrag_ohne": 10979.3
+     },
+     {
+      "stuetzstelle_s": 5400,
+      "n_abgabe": 4,
+      "mittel_abgabe": 19294.2,
+      "n_ohne": 14,
+      "mittel_betrag_ohne": 17940.9
+     },
+     {
+      "stuetzstelle_s": 5700,
+      "n_abgabe": 2,
+      "mittel_abgabe": 4691.0,
+      "n_ohne": 10,
+      "mittel_betrag_ohne": 10180.0
+     },
+     {
+      "stuetzstelle_s": 6000,
+      "n_abgabe": 1,
+      "mittel_abgabe": -2823.0,
+      "n_ohne": 4,
+      "mittel_betrag_ohne": 16200.0
+     },
+     {
+      "stuetzstelle_s": 6300,
+      "n_abgabe": 1,
+      "mittel_abgabe": -8848.0,
+      "n_ohne": 0,
+      "mittel_betrag_ohne": null
+     },
+     {
+      "stuetzstelle_s": 6600,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 2,
+      "mittel_betrag_ohne": 22809.0
+     },
+     {
+      "stuetzstelle_s": 6900,
+      "n_abgabe": 1,
+      "mittel_abgabe": -2437.0,
+      "n_ohne": 0,
+      "mittel_betrag_ohne": null
+     },
+     {
+      "stuetzstelle_s": 7200,
+      "n_abgabe": 1,
+      "mittel_abgabe": 8091.0,
+      "n_ohne": 0,
+      "mittel_betrag_ohne": null
+     },
+     {
+      "stuetzstelle_s": 7500,
+      "n_abgabe": 1,
+      "mittel_abgabe": -10732.0,
+      "n_ohne": 0,
+      "mittel_betrag_ohne": null
+     },
+     {
+      "stuetzstelle_s": 7800,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 2,
+      "mittel_betrag_ohne": 24011.0
+     },
+     {
+      "stuetzstelle_s": 8100,
+      "n_abgabe": 1,
+      "mittel_abgabe": 54184.0,
+      "n_ohne": 0,
+      "mittel_betrag_ohne": null
+     },
+     {
+      "stuetzstelle_s": 8400,
+      "n_abgabe": 1,
+      "mittel_abgabe": 30529.0,
+      "n_ohne": 0,
+      "mittel_betrag_ohne": null
+     },
+     {
+      "stuetzstelle_s": 8700,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 2,
+      "mittel_betrag_ohne": 322.0
+     }
+    ]
+   },
+   "endstatistik": {
+    "net_worth": {
+     "n_ueber": 237105,
+     "n_gleich": 40,
+     "n_unter": 138259,
+     "median_differenz": 3487,
+     "mittel_differenz": 2859.7,
+     "mittel_laeufer": 51454.0,
+     "mittel_kollegen_median": 48594.3
+    },
+    "kills": {
+     "n_ueber": 184171,
+     "n_gleich": 33010,
+     "n_unter": 158223,
+     "median_differenz": 1,
+     "mittel_differenz": 0.87,
+     "mittel_laeufer": 7.96,
+     "mittel_kollegen_median": 7.08
+    },
+    "deaths": {
+     "n_ueber": 158768,
+     "n_gleich": 51362,
+     "n_unter": 165274,
+     "median_differenz": 0,
+     "mittel_differenz": 0.08,
+     "mittel_laeufer": 6.23,
+     "mittel_kollegen_median": 6.14
+    }
+   }
+  },
+  "mittel": {
+   "n_abgaben": 608551,
+   "n_laeufer_bekannt": 231404,
+   "n_laeufer_unbekannt": 377147,
+   "anteil_laeufer_bekannt_prozent": 38.0,
+   "siegquote_laeufer": {
+    "n": 231404,
+    "siege": 159920,
+    "prozent": 69.1
+   },
+   "rang_im_team": {
+    "1": 41020,
+    "2": 40649,
+    "3": 39571,
+    "4": 38764,
+    "5": 36384,
+    "6": 35016,
+    "unbekannt": 0
+   },
+   "top10_helden": [
+    {
+     "hero_id": 16,
+     "name": "Calico",
+     "n": 12231,
+     "anteil_prozent": 5.3,
+     "anteil_gesamt_prozent": 2.6,
+     "faktor_gegen_gesamt": 2.02
+    },
+    {
+     "hero_id": 15,
+     "name": "Bebop",
+     "n": 11736,
+     "anteil_prozent": 5.1,
+     "anteil_gesamt_prozent": 4.4,
+     "faktor_gegen_gesamt": 1.15
+    },
+    {
+     "hero_id": 31,
+     "name": "Lash",
+     "n": 11226,
+     "anteil_prozent": 4.9,
+     "anteil_gesamt_prozent": 4.4,
+     "faktor_gegen_gesamt": 1.09
+    },
+    {
+     "hero_id": 64,
+     "name": "Drifter",
+     "n": 11124,
+     "anteil_prozent": 4.8,
+     "anteil_gesamt_prozent": 3.9,
+     "faktor_gegen_gesamt": 1.22
+    },
+    {
+     "hero_id": 13,
+     "name": "Haze",
+     "n": 10714,
+     "anteil_prozent": 4.6,
+     "anteil_gesamt_prozent": 4.2,
+     "faktor_gegen_gesamt": 1.11
+    },
+    {
+     "hero_id": 18,
+     "name": "Mo & Krill",
+     "n": 9335,
+     "anteil_prozent": 4.0,
+     "anteil_gesamt_prozent": 3.2,
+     "faktor_gegen_gesamt": 1.25
+    },
+    {
+     "hero_id": 1,
+     "name": "Infernus",
+     "n": 7989,
+     "anteil_prozent": 3.5,
+     "anteil_gesamt_prozent": 4.2,
+     "faktor_gegen_gesamt": 0.82
+    },
+    {
+     "hero_id": 7,
+     "name": "Wraith",
+     "n": 7719,
+     "anteil_prozent": 3.3,
+     "anteil_gesamt_prozent": 3.7,
+     "faktor_gegen_gesamt": 0.89
+    },
+    {
+     "hero_id": 81,
+     "name": "Celeste",
+     "n": 7600,
+     "anteil_prozent": 3.3,
+     "anteil_gesamt_prozent": 2.5,
+     "faktor_gegen_gesamt": 1.33
+    },
+    {
+     "hero_id": 63,
+     "name": "Mina",
+     "n": 7388,
+     "anteil_prozent": 3.2,
+     "anteil_gesamt_prozent": 3.0,
+     "faktor_gegen_gesamt": 1.06
+    }
+   ],
+   "n_helden_alle": 38,
+   "n_uebrige": 134342,
+   "anteil_uebrige_prozent": 58.1,
+   "lanes": {
+    "Yellow": {
+     "n": 77895,
+     "anteil_prozent": 33.7
+    },
+    "Purple": {
+     "n": 77032,
+     "anteil_prozent": 33.3
+    },
+    "Blue": {
+     "n": 76477,
+     "anteil_prozent": 33.0
+    }
+   },
+   "todesquote": {
+    "abgabe_intervalle": {
+     "n_intervalle": 231404,
+     "n_mit_tod": 99368,
+     "anteil_mit_tod_prozent": 42.9,
+     "tode": 117473,
+     "sekunden": 65201977,
+     "tode_je_stunde": 6.49
+    },
+    "uebrige_intervalle": {
+     "n_intervalle": 1713110,
+     "n_mit_tod": 850527,
+     "anteil_mit_tod_prozent": 49.6,
+     "tode": 1074769,
+     "sekunden": 384323781,
+     "tode_je_stunde": 10.07
+    }
+   },
+   "soul_swing": {
+    "abgabe": {
+     "n": 608551,
+     "n_ohne_wert": 0,
+     "mittel": 7767.6,
+     "median": 5576,
+     "mittel_betrag": 11034.6,
+     "median_betrag": 7547
+    },
+    "ohne_abgabe": {
+     "n": 1687198,
+     "n_ohne_wert": 0,
+     "mittel_betrag": 5789.9,
+     "median_betrag": 3034
+    },
+    "je_stuetzstelle": [
+     {
+      "stuetzstelle_s": 360,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 325732,
+      "mittel_betrag_ohne": 1364.4
+     },
+     {
+      "stuetzstelle_s": 540,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 325732,
+      "mittel_betrag_ohne": 2265.1
+     },
+     {
+      "stuetzstelle_s": 720,
+      "n_abgabe": 23875,
+      "mittel_abgabe": 2126.7,
+      "n_ohne": 277982,
+      "mittel_betrag_ohne": 2974.8
+     },
+     {
+      "stuetzstelle_s": 900,
+      "n_abgabe": 139779,
+      "mittel_abgabe": 2861.2,
+      "n_ohne": 53518,
+      "mittel_betrag_ohne": 3447.6
+     },
+     {
+      "stuetzstelle_s": 1200,
+      "n_abgabe": 95227,
+      "mittel_abgabe": 4516.0,
+      "n_ohne": 136468,
+      "mittel_betrag_ohne": 5994.6
+     },
+     {
+      "stuetzstelle_s": 1500,
+      "n_abgabe": 57750,
+      "mittel_abgabe": 6033.0,
+      "n_ohne": 211584,
+      "mittel_betrag_ohne": 9691.4
+     },
+     {
+      "stuetzstelle_s": 1800,
+      "n_abgabe": 148128,
+      "mittel_abgabe": 10521.3,
+      "n_ohne": 24806,
+      "mittel_betrag_ohne": 13217.9
+     },
+     {
+      "stuetzstelle_s": 2100,
+      "n_abgabe": 94719,
+      "mittel_abgabe": 13453.3,
+      "n_ohne": 94832,
+      "mittel_betrag_ohne": 13712.0
+     },
+     {
+      "stuetzstelle_s": 2400,
+      "n_abgabe": 9158,
+      "mittel_abgabe": 10763.5,
+      "n_ohne": 172758,
+      "mittel_betrag_ohne": 14139.2
+     },
+     {
+      "stuetzstelle_s": 2700,
+      "n_abgabe": 30557,
+      "mittel_abgabe": 13914.6,
+      "n_ohne": 31792,
+      "mittel_betrag_ohne": 9850.1
+     },
+     {
+      "stuetzstelle_s": 3000,
+      "n_abgabe": 7744,
+      "mittel_abgabe": 15357.8,
+      "n_ohne": 19744,
+      "mittel_betrag_ohne": 9845.8
+     },
+     {
+      "stuetzstelle_s": 3300,
+      "n_abgabe": 816,
+      "mittel_abgabe": 15093.0,
+      "n_ohne": 9644,
+      "mittel_betrag_ohne": 10843.4
+     },
+     {
+      "stuetzstelle_s": 3600,
+      "n_abgabe": 585,
+      "mittel_abgabe": 12292.5,
+      "n_ohne": 1962,
+      "mittel_betrag_ohne": 9013.1
+     },
+     {
+      "stuetzstelle_s": 3900,
+      "n_abgabe": 182,
+      "mittel_abgabe": 12958.2,
+      "n_ohne": 450,
+      "mittel_betrag_ohne": 8364.5
+     },
+     {
+      "stuetzstelle_s": 4200,
+      "n_abgabe": 25,
+      "mittel_abgabe": 16463.2,
+      "n_ohne": 146,
+      "mittel_betrag_ohne": 10359.6
+     },
+     {
+      "stuetzstelle_s": 4500,
+      "n_abgabe": 1,
+      "mittel_abgabe": 16575.0,
+      "n_ohne": 36,
+      "mittel_betrag_ohne": 7458.6
+     },
+     {
+      "stuetzstelle_s": 4800,
+      "n_abgabe": 5,
+      "mittel_abgabe": 3641.8,
+      "n_ohne": 8,
+      "mittel_betrag_ohne": 10172.5
+     },
+     {
+      "stuetzstelle_s": 5100,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 4,
+      "mittel_betrag_ohne": 12902.0
+     }
+    ]
+   },
+   "endstatistik": {
+    "net_worth": {
+     "n_ueber": 145433,
+     "n_gleich": 18,
+     "n_unter": 85953,
+     "median_differenz": 3382,
+     "mittel_differenz": 2551.4,
+     "mittel_laeufer": 48037.3,
+     "mittel_kollegen_median": 45485.9
+    },
+    "kills": {
+     "n_ueber": 111521,
+     "n_gleich": 22311,
+     "n_unter": 97572,
+     "median_differenz": 1,
+     "mittel_differenz": 0.68,
+     "mittel_laeufer": 7.35,
+     "mittel_kollegen_median": 6.68
+    },
+    "deaths": {
+     "n_ueber": 94929,
+     "n_gleich": 34718,
+     "n_unter": 101757,
+     "median_differenz": 0,
+     "mittel_differenz": 0.01,
+     "mittel_laeufer": 5.8,
+     "mittel_kollegen_median": 5.79
+    }
+   }
+  },
+  "hoch": {
+   "n_abgaben": 460659,
+   "n_laeufer_bekannt": 157997,
+   "n_laeufer_unbekannt": 302662,
+   "anteil_laeufer_bekannt_prozent": 34.3,
+   "siegquote_laeufer": {
+    "n": 157997,
+    "siege": 106381,
+    "prozent": 67.3
+   },
+   "rang_im_team": {
+    "1": 27788,
+    "2": 28354,
+    "3": 27563,
+    "4": 26442,
+    "5": 24784,
+    "6": 23066,
+    "unbekannt": 0
+   },
+   "top10_helden": [
+    {
+     "hero_id": 16,
+     "name": "Calico",
+     "n": 10894,
+     "anteil_prozent": 6.9,
+     "anteil_gesamt_prozent": 2.6,
+     "faktor_gegen_gesamt": 2.64
+    },
+    {
+     "hero_id": 64,
+     "name": "Drifter",
+     "n": 8596,
+     "anteil_prozent": 5.4,
+     "anteil_gesamt_prozent": 3.9,
+     "faktor_gegen_gesamt": 1.38
+    },
+    {
+     "hero_id": 31,
+     "name": "Lash",
+     "n": 7918,
+     "anteil_prozent": 5.0,
+     "anteil_gesamt_prozent": 4.4,
+     "faktor_gegen_gesamt": 1.13
+    },
+    {
+     "hero_id": 15,
+     "name": "Bebop",
+     "n": 7830,
+     "anteil_prozent": 5.0,
+     "anteil_gesamt_prozent": 4.4,
+     "faktor_gegen_gesamt": 1.12
+    },
+    {
+     "hero_id": 13,
+     "name": "Haze",
+     "n": 7114,
+     "anteil_prozent": 4.5,
+     "anteil_gesamt_prozent": 4.2,
+     "faktor_gegen_gesamt": 1.08
+    },
+    {
+     "hero_id": 18,
+     "name": "Mo & Krill",
+     "n": 6197,
+     "anteil_prozent": 3.9,
+     "anteil_gesamt_prozent": 3.2,
+     "faktor_gegen_gesamt": 1.22
+    },
+    {
+     "hero_id": 7,
+     "name": "Wraith",
+     "n": 5882,
+     "anteil_prozent": 3.7,
+     "anteil_gesamt_prozent": 3.7,
+     "faktor_gegen_gesamt": 1.0
+    },
+    {
+     "hero_id": 10,
+     "name": "Paradox",
+     "n": 5808,
+     "anteil_prozent": 3.7,
+     "anteil_gesamt_prozent": 3.0,
+     "faktor_gegen_gesamt": 1.23
+    },
+    {
+     "hero_id": 63,
+     "name": "Mina",
+     "n": 5417,
+     "anteil_prozent": 3.4,
+     "anteil_gesamt_prozent": 3.0,
+     "faktor_gegen_gesamt": 1.14
+    },
+    {
+     "hero_id": 6,
+     "name": "Abrams",
+     "n": 5133,
+     "anteil_prozent": 3.2,
+     "anteil_gesamt_prozent": 3.0,
+     "faktor_gegen_gesamt": 1.1
+    }
+   ],
+   "n_helden_alle": 38,
+   "n_uebrige": 87208,
+   "anteil_uebrige_prozent": 55.2,
+   "lanes": {
+    "Purple": {
+     "n": 52887,
+     "anteil_prozent": 33.5
+    },
+    "Blue": {
+     "n": 52618,
+     "anteil_prozent": 33.3
+    },
+    "Yellow": {
+     "n": 52492,
+     "anteil_prozent": 33.2
+    }
+   },
+   "todesquote": {
+    "abgabe_intervalle": {
+     "n_intervalle": 157997,
+     "n_mit_tod": 70828,
+     "anteil_mit_tod_prozent": 44.8,
+     "tode": 85431,
+     "sekunden": 44387856,
+     "tode_je_stunde": 6.93
+    },
+    "uebrige_intervalle": {
+     "n_intervalle": 1143734,
+     "n_mit_tod": 587623,
+     "anteil_mit_tod_prozent": 51.4,
+     "tode": 754000,
+     "sekunden": 252747469,
+     "tode_je_stunde": 10.74
+    }
+   },
+   "soul_swing": {
+    "abgabe": {
+     "n": 460659,
+     "n_ohne_wert": 0,
+     "mittel": 6722.6,
+     "median": 4715,
+     "mittel_betrag": 10767.0,
+     "median_betrag": 7379
+    },
+    "ohne_abgabe": {
+     "n": 1346368,
+     "n_ohne_wert": 0,
+     "mittel_betrag": 5812.6,
+     "median_betrag": 3129
+    },
+    "je_stuetzstelle": [
+     {
+      "stuetzstelle_s": 360,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 267158,
+      "mittel_betrag_ohne": 1462.5
+     },
+     {
+      "stuetzstelle_s": 540,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 267156,
+      "mittel_betrag_ohne": 2421.0
+     },
+     {
+      "stuetzstelle_s": 720,
+      "n_abgabe": 19604,
+      "mittel_abgabe": 1461.7,
+      "n_ohne": 227916,
+      "mittel_betrag_ohne": 3016.3
+     },
+     {
+      "stuetzstelle_s": 900,
+      "n_abgabe": 115085,
+      "mittel_abgabe": 2797.3,
+      "n_ohne": 43292,
+      "mittel_betrag_ohne": 3604.5
+     },
+     {
+      "stuetzstelle_s": 1200,
+      "n_abgabe": 77952,
+      "mittel_abgabe": 3668.4,
+      "n_ohne": 111928,
+      "mittel_betrag_ohne": 7152.0
+     },
+     {
+      "stuetzstelle_s": 1500,
+      "n_abgabe": 47053,
+      "mittel_abgabe": 6142.3,
+      "n_ohne": 172984,
+      "mittel_betrag_ohne": 11189.2
+     },
+     {
+      "stuetzstelle_s": 1800,
+      "n_abgabe": 116124,
+      "mittel_abgabe": 9524.7,
+      "n_ohne": 24342,
+      "mittel_betrag_ohne": 12138.6
+     },
+     {
+      "stuetzstelle_s": 2100,
+      "n_abgabe": 60239,
+      "mittel_abgabe": 12428.2,
+      "n_ohne": 88502,
+      "mittel_betrag_ohne": 12677.3
+     },
+     {
+      "stuetzstelle_s": 2400,
+      "n_abgabe": 5466,
+      "mittel_abgabe": 10319.7,
+      "n_ohne": 109386,
+      "mittel_betrag_ohne": 13460.5
+     },
+     {
+      "stuetzstelle_s": 2700,
+      "n_abgabe": 15613,
+      "mittel_abgabe": 13337.0,
+      "n_ohne": 19174,
+      "mittel_betrag_ohne": 9140.6
+     },
+     {
+      "stuetzstelle_s": 3000,
+      "n_abgabe": 3028,
+      "mittel_abgabe": 15011.6,
+      "n_ohne": 9790,
+      "mittel_betrag_ohne": 9734.4
+     },
+     {
+      "stuetzstelle_s": 3300,
+      "n_abgabe": 245,
+      "mittel_abgabe": 15212.2,
+      "n_ohne": 3948,
+      "mittel_betrag_ohne": 10548.7
+     },
+     {
+      "stuetzstelle_s": 3600,
+      "n_abgabe": 210,
+      "mittel_abgabe": 10408.8,
+      "n_ohne": 614,
+      "mittel_betrag_ohne": 8659.8
+     },
+     {
+      "stuetzstelle_s": 3900,
+      "n_abgabe": 39,
+      "mittel_abgabe": 14547.3,
+      "n_ohne": 144,
+      "mittel_betrag_ohne": 7828.6
+     },
+     {
+      "stuetzstelle_s": 4200,
+      "n_abgabe": 1,
+      "mittel_abgabe": 12035.0,
+      "n_ohne": 32,
+      "mittel_betrag_ohne": 12181.0
+     },
+     {
+      "stuetzstelle_s": 4500,
+      "n_abgabe": 0,
+      "mittel_abgabe": null,
+      "n_ohne": 2,
+      "mittel_betrag_ohne": 7280.0
+     }
+    ]
+   },
+   "endstatistik": {
+    "net_worth": {
+     "n_ueber": 99635,
+     "n_gleich": 12,
+     "n_unter": 58350,
+     "median_differenz": 3367,
+     "mittel_differenz": 2492.7,
+     "mittel_laeufer": 45108.7,
+     "mittel_kollegen_median": 42616.1
+    },
+    "kills": {
+     "n_ueber": 76967,
+     "n_gleich": 15601,
+     "n_unter": 65429,
+     "median_differenz": 1,
+     "mittel_differenz": 0.73,
+     "mittel_laeufer": 7.34,
+     "mittel_kollegen_median": 6.61
+    },
+    "deaths": {
+     "n_ueber": 63922,
+     "n_gleich": 23784,
+     "n_unter": 70291,
+     "median_differenz": 0,
+     "mittel_differenz": -0.04,
+     "mittel_laeufer": 5.86,
+     "mittel_kollegen_median": 5.9
+    }
+   }
+  }
+ },
+ "grundgesamtheit": "game_mode Normal, match_mode Ranked, match_outcome TeamWin, 2026-08-13 00:00 UTC bis 2026-09-15 23:59 UTC, tageweise 34 Chunks im A3-Lauf vom 2026-09-18, clientseitig gemergt; Dedup je (match_id, account_id) ueber neueste created_at"
+}
