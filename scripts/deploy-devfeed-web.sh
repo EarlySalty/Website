@@ -137,7 +137,8 @@ if [[ "$(git -C "$LIVE_ROOT" rev-parse HEAD)" != "$SHA" ]] \
   || ! git -C "$LIVE_ROOT" diff --quiet \
   || ! git -C "$LIVE_ROOT" diff --cached --quiet \
   || ! cmp -s "$SOURCE_ROOT/dl-brand/nav.js" "$LIVE_NAV"; then
-  rollback_current
+  # After a successful fast-forward the navigation may already advertise the
+  # route. Keep the route available; a retry can finish sitemap publication.
   echo "DevFeed Web Deploy abgelehnt: Live-Checkout weicht vom freigegebenen SHA ab." >&2
   exit 3
 fi
