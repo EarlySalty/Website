@@ -99,7 +99,9 @@ Die Video-Anwendung ist ein Sonderfall: `/builds/` kommt aus `dl-tierlist/dist`,
 aus einem sauberen `main`, dessen SHA mit `origin/main` übereinstimmt. Es legt
 den vollständigen DDL-Build unter
 `/home/nathanael/Documents/Runtime/website-videos/releases/<SHA>` ab und
-wechselt `current` atomar per Symlink. Ein fehlgeschlagener Build oder ein
+kopiert gehashte Assets vor dem Wechsel in einen gemeinsamen, nur ergänzten
+Bestand und wechselt `current` atomar per Symlink. Damit bleiben alte HTML-Tabs
+und Rollbacks mit ihren bisherigen CSS-/JS-URLs funktionsfähig. Ein fehlgeschlagener Build oder ein
 abweichender Wiederholungsbuild derselben SHA lässt `current` unverändert.
 `npm run build:builds` prüft zusätzlich den zweiten Build-Modus, ändert aber
 keine `/builds/`-Live-Datei.

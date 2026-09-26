@@ -19,6 +19,8 @@ make_build "$probe/stage-one" first
 publish_video_build "$probe/stage-one" "$probe/runtime" "$sha_one"
 test "$(readlink "$probe/runtime/current")" = "releases/$sha_one"
 test -s "$probe/runtime/current/assets/app.css"
+test -s "$probe/runtime/assets/app.css"
+test -s "$probe/runtime/assets/app.js"
 
 make_build "$probe/retry" first
 publish_video_build "$probe/retry" "$probe/runtime" "$sha_one"
@@ -40,7 +42,15 @@ fi
 test "$(readlink "$probe/runtime/current")" = "releases/$sha_one"
 
 make_build "$probe/stage-two" second
+# Real Vite filenames are content-hashed; keep both names after the switch.
+mv "$probe/stage-two/assets/app.js" "$probe/stage-two/assets/app-new.js"
+sed -i 's|assets/app.js|assets/app-new.js|' "$probe/stage-two/index.html"
 publish_video_build "$probe/stage-two" "$probe/runtime" "$sha_two"
 test "$(readlink "$probe/runtime/current")" = "releases/$sha_two"
 test -s "$probe/runtime/releases/$sha_one/index.html"
+test -s "$probe/runtime/assets/app.js"
+test -s "$probe/runtime/assets/app-new.js"
+ln -s "releases/$sha_one" "$probe/runtime/.rollback"
+mv -Tf "$probe/runtime/.rollback" "$probe/runtime/current"
+test -s "$probe/runtime/assets/app-new.js"
 echo 'Video-Release-Tests: Veröffentlichung, Retry, Fail-closed und atomarer Wechsel bestanden'

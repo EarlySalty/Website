@@ -20,10 +20,12 @@ validate_video_build() {
 publish_video_build() {
   local stage="$1" release_root="$2" source_sha="$3"
   local releases="$release_root/releases" target="$release_root/releases/$source_sha"
-  local next_link="$release_root/.current.$source_sha.$$"
+  local next_link="$release_root/.current.$source_sha.$$" asset relative shared
   [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Ungültige Quell-SHA" >&2; return 1; }
   validate_video_build "$stage" || { echo "Video-Build ist unvollständig" >&2; return 1; }
   mkdir -p "$releases"
+  exec 9>"$release_root/.deploy.lock"
+  flock -x 9
   if test -e "$target"; then
     diff -qr "$stage" "$target" >/dev/null || {
       echo "Release-SHA existiert mit abweichenden Dateien: $source_sha" >&2
@@ -33,6 +35,23 @@ publish_video_build() {
   else
     mv -- "$stage" "$target"
   fi
+  # Caddy liefert gehashte Assets unabhängig vom HTML-Symlink. Alte Browser
+  # behalten ihre URLs auch nach Deploy und Rollback.
+  mkdir -p "$release_root/assets"
+  while IFS= read -r -d '' asset; do
+    relative="${asset#"$target/assets/"}"
+    shared="$release_root/assets/$relative"
+    mkdir -p "$(dirname "$shared")"
+    if test -e "$shared"; then
+      cmp -s "$asset" "$shared" || {
+        echo "Gleicher Asset-Name mit anderem Inhalt: $relative" >&2
+        return 1
+      }
+    else
+      cp -- "$asset" "$shared.tmp.$$"
+      mv -- "$shared.tmp.$$" "$shared"
+    fi
+  done < <(find "$target/assets" -type f -print0)
   if test -e "$release_root/current" && ! test -L "$release_root/current"; then
     echo "current ist kein Symlink" >&2
     return 1
@@ -57,8 +76,10 @@ main() {
       validate_video_build "$LIVE_DIST"
       mkdir -p "$RELEASE_ROOT"
       stage="$(mktemp -d "$RELEASE_ROOT/.stage.XXXXXXXX")"
+      trap 'rm -rf -- "$stage"' EXIT
       cp -a "$LIVE_DIST/." "$stage/"
       publish_video_build "$stage" "$RELEASE_ROOT" "$source_sha"
+      trap - EXIT
       ;;
     deploy)
       source_sha="$(git -C "$REPO_ROOT" rev-parse HEAD)"
