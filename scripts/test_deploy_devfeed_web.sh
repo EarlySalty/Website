@@ -111,4 +111,16 @@ test "$(cat "$live/dl-brand/social-preview/stay.txt")" = 'fremde Datei'
 test -z "$(git -C "$source" status --porcelain --untracked-files=all)"
 git -C "$live" diff --quiet
 git -C "$live" diff --cached --quiet
+
+# An active release must never be moved away while current points to it.
+ln -sfn "releases/$sha" "$runtime/current"
+printf 'verändert\n' >> "$runtime/releases/$sha/devfeed.js"
+if "$source/scripts/deploy-devfeed-web.sh" "$sha" 2>/dev/null; then
+  echo 'Deploy hat einen abweichenden aktiven Release ersetzt.' >&2
+  exit 1
+fi
+test "$(readlink -f "$runtime/current")" = "$runtime/releases/$sha"
+test -f "$runtime/releases/$sha/devfeed.js"
+grep -q 'verändert' "$runtime/releases/$sha/devfeed.js"
+test "$(find "$runtime/releases" -maxdepth 1 -name ".incomplete-$sha-*" | wc -l)" -eq 1
 printf 'DevFeed-Deploy in getrenntem Source-/Caddy-Root und SHA-Retry OK\n'

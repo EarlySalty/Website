@@ -94,7 +94,12 @@ printf '%s\n' "$SHA" > "$RELEASE_STAGE/.complete"
 if [[ -d "$RELEASE" ]] && diff -qr "$RELEASE_STAGE" "$RELEASE" >/dev/null; then
   rm -rf -- "$RELEASE_STAGE"
 else
-  if [[ -e "$RELEASE" ]]; then
+  if [[ -e "$RELEASE" || -L "$RELEASE" ]]; then
+    if [[ -L "$BASE/current" ]] \
+      && [[ "$(readlink -f "$BASE/current")" == "$(readlink -f "$RELEASE")" ]]; then
+      echo "DevFeed Web Deploy abgelehnt: aktiver Release weicht vom freigegebenen SHA ab." >&2
+      exit 3
+    fi
     mv -T "$RELEASE" "$RELEASES/.incomplete-$SHA-$(date +%s)-$$"
   fi
   mv -T "$RELEASE_STAGE" "$RELEASE"
