@@ -43,7 +43,7 @@
         <div class="api-grid">
           <div>
             <h2>Authentifizierte API</h2>
-            <p>Für Server Integrationen mit höherem Limit und Cursor. Der Schlüssel gehört ausschließlich in einen Server Prozess oder Secret Store.</p>
+            <p>Für Server-Integrationen mit höherem Limit und Cursor. Der Schlüssel gehört ausschließlich in einen Server-Prozess oder Secret Store.</p>
           </div>
           <div class="api-card">
             <span>Basis</span>
@@ -53,7 +53,8 @@
             <span>Alternative</span>
             <code>X-API-Key: &lt;API Schlüssel&gt;</code>
             <span>Cursor</span>
-            <code>GET /messages?after=&lt;message_id&gt;&amp;limit=100</code>
+            <code>GET /messages?after=&lt;timestamp:id&gt;&amp;limit=100</code>
+            <p class="api-help">Für die nächste Seite den Wert <code>next_after</code> aus der vorigen Antwort unverändert als <code>after</code> senden. Er besteht aus Unix-Mikrosekunden und Message-ID, getrennt durch einen Doppelpunkt.</p>
           </div>
         </div>
       </section>

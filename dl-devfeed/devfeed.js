@@ -7,6 +7,7 @@
   const count = document.getElementById('feed-count')
   const error = document.getElementById('feed-error')
   const refresh = document.getElementById('feed-refresh')
+  let hasLoadedMessages = false
 
   if (!list || !status || !count || !error || !refresh) return
 
@@ -23,18 +24,23 @@
       })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const data = await response.json()
-      const items = Array.isArray(data.items) ? data.items : []
+      if (!data || !Array.isArray(data.items)) throw new Error('DevFeed-Antwort ohne Nachrichtenliste')
+      const items = data.items
       render(items)
-      status.textContent = items.length ? 'Aktuell' : 'Noch keine Einträge'
+      hasLoadedMessages = items.length > 0
+      status.textContent = items.length ? 'Geladen' : 'Noch keine Einträge'
       count.textContent = items.length === 1 ? '1 Nachricht' : `${items.length} Nachrichten`
       error.hidden = true
     } catch (_err) {
-      list.replaceChildren()
+      const keepLastMessages = manual && hasLoadedMessages
+      if (!keepLastMessages) list.replaceChildren()
       list.setAttribute('aria-busy', 'false')
       refresh.disabled = false
       status.textContent = 'Vorübergehend nicht erreichbar'
-      count.textContent = 'Die Originalquellen bleiben unverändert.'
-      error.textContent = 'Der DevFeed konnte gerade nicht geladen werden. Bitte versuche es in Kürze erneut.'
+      if (!keepLastMessages) count.textContent = 'Die Originalquellen bleiben unverändert.'
+      error.textContent = keepLastMessages
+        ? 'Der DevFeed konnte gerade nicht neu geladen werden. Die angezeigten Nachrichten sind der letzte geladene Stand.'
+        : 'Der DevFeed konnte gerade nicht geladen werden. Bitte versuche es in Kürze erneut.'
       error.hidden = false
     }
   }
