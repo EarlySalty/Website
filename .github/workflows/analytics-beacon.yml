@@ -38,6 +38,7 @@ jobs:
           for projekt in dl-landing dl-activity dl-patch dl-tierlist dl-coaching; do
             (cd "$projekt" && npm ci && npm run build)
           done
+          (cd builds/frontend && npm ci && npm run build:builds && npm run build:ddl -- --outDir dist-ddl --emptyOutDir)
 
       # Der Live-Check gegen die echten HTTP-Antworten laeuft nicht in CI:
       # er braucht die ausgelieferte Seite samt CSP aus dem Caddy-Repo.

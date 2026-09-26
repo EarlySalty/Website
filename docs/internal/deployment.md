@@ -16,6 +16,7 @@ Website daher noch nicht.
 | `/aktivitaet/` | `dl-activity/dist` |
 | `/coaching/` | `dl-coaching/dist` |
 | `/builds/` | `dl-tierlist/dist` |
+| `/videos/` | `/home/naniadm/Documents/Runtime/website-videos/current` |
 | `/brand/` | direkt aus `dl-brand` |
 
 Das Rust-Backend unter `builds/backend-rust` läuft auf `127.0.0.1:8772` und
@@ -92,10 +93,35 @@ allein aktualisieren diese Artefakte nicht. `dl-brand` und
 `deco-elevator-new` werden ohne Build direkt ausgeliefert. Ein Caddy-Reload ist
 nur bei einer Konfigurationsänderung nötig.
 
-Die Video-Anwendung ist ein Sonderfall: Caddy liest
-`builds/frontend/dist-ddl`. Änderungen daran müssen deshalb gezielt gegen
-dieses Live-Ziel gebaut und separat geprüft werden; das normale
-`builds/frontend`-Build ist nicht das `/builds/`-Portal.
+Die Video-Anwendung ist ein Sonderfall: `/builds/` kommt aus `dl-tierlist/dist`,
+`/videos/` dagegen aus dem versionierten Runtime-Release des
+`builds/frontend`-Frontends. `scripts/release_videos_frontend.sh deploy` baut
+aus einem sauberen `main`, dessen SHA mit `origin/main` übereinstimmt. Es legt
+den vollständigen DDL-Build unter
+`/home/naniadm/Documents/Runtime/website-videos/releases/<SHA>` ab und
+kopiert gehashte Assets vor dem Wechsel in einen gemeinsamen, nur ergänzten
+Bestand und wechselt `current` atomar per Symlink. Damit bleiben alte HTML-Tabs
+und Rollbacks mit ihren bisherigen CSS-/JS-URLs funktionsfähig. Ein fehlgeschlagener Build oder ein
+abweichender Wiederholungsbuild derselben SHA lässt `current` unverändert.
+`npm run build:builds` prüft zusätzlich den zweiten Build-Modus, ändert aber
+keine `/builds/`-Live-Datei.
+
+Erstmaliger Umstieg von den früher getrackten `builds/frontend/dist-ddl`-Dateien:
+
+1. Den bereits ausgelieferten Stand mit `scripts/release_videos_frontend.sh bootstrap`
+   unter der aktuellen Main-SHA nach Runtime kopieren. HTML, CSS und JS prüfen.
+2. Den zugehörigen Caddy-PR `EarlySalty/caddy-config#4` auf
+   `Runtime/website-videos/current` und die separate Route
+   `/videos/assets/*` auf `Runtime/website-videos/assets` umstellen,
+   Caddy validieren und neu laden. `/videos/`, CSS, JS und API live prüfen.
+3. Erst dann diesen Website-PR mergen und den bisherigen getrackten
+   `dist-ddl`-Baum aus dem Live-Checkout entfernen. Fremde untracked Dateien,
+   insbesondere `dl-brand/social-preview/`, bleiben erhalten.
+4. `scripts/release_videos_frontend.sh deploy` auf dem neuen sauberen `main`
+   ausführen und erneut die öffentlichen HTML-/Asset-URLs prüfen.
+
+Rollback: `current` auf den vorhandenen vorherigen Release-Symlink zurücksetzen;
+Quell- und Zielverzeichnis müssen vor dem Wechsel vollständig geprüft sein.
 
 ## Abschlussprüfung
 

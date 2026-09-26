@@ -5,6 +5,7 @@ node_modules/
 
 # Build output
 dist/
+/builds/frontend/dist-ddl/
 build/
 *.local
 
