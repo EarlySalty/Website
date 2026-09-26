@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <title>DevFeed · Deutsche Deadlock Community</title>
+  <meta name="description" content="Öffentlicher Feed mit Nachrichten von Deadlock Entwicklern aus dem offiziellen Discord, inklusive Antwortkontext und Originalquelle.">
+  <link rel="canonical" href="https://deutsche-deadlock-community.de/devfeed/">
+  <meta name="theme-color" content="#0b0b0b">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://deutsche-deadlock-community.de/devfeed/">
+  <meta property="og:title" content="DevFeed · Deadlock Entwickler Nachrichten">
+  <meta property="og:description" content="Nachrichten ausgewählter Deadlock Entwickler mit Quelle und Antwortkontext.">
+  <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-logo.png">
+  <link rel="icon" type="image/png" href="/brand/logo/favicon-64.png">
+  <link rel="stylesheet" href="/brand/tokens.css">
+  <link rel="stylesheet" href="/brand/nav.css">
+  <link rel="stylesheet" href="/devfeed/devfeed.css">
+  <script src="/brand/nav.js" defer></script>
+  <script src="/devfeed/devfeed.js" defer></script>
+</head>
+<body class="brand-body">
+  <div class="brand-grain" aria-hidden="true"></div>
+  <div class="brand-vignette" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="devfeed-shell header-row">
+      <a class="brand-link" href="/" aria-label="Deutsche Deadlock Community">
+        <img src="/brand/logo/logo-192.png" alt="" class="brand-logo">
+        <img src="/brand/logo/wordmark.svg" alt="Deutsche Deadlock Community" class="brand-wordmark">
+      </a>
+      <a class="header-link" href="/devfeed/api-docs/">API Anleitung</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="devfeed-hero">
+      <div class="devfeed-shell hero-grid">
+        <div>
+          <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Deadlock DevFeed</p>
+          <h1>Direkt aus dem Entwickler Chat.</h1>
+          <p class="hero-lead">Öffentliche Nachrichten ausgewählter Deadlock Entwickler aus dem offiziellen Discord. Wenn auf eine Nutzer Nachricht geantwortet wurde, zeigt die Karte den gespeicherten Gesprächskontext direkt mit an.</p>
+          <div class="source-note">
+            <strong>Quelle, nicht Redaktion.</strong>
+            <span>Jeder Eintrag führt zur Discord Originalnachricht. Der DevFeed ist kein offizieller Valve Newsfeed und keine automatische Patchnote.</span>
+          </div>
+        </div>
+        <aside class="feed-status-card" aria-label="DevFeed Status">
+          <span class="status-label">Feed</span>
+          <strong id="feed-status">Verbindung wird aufgebaut</strong>
+          <span id="feed-count">–</span>
+          <button id="feed-refresh" type="button">Neu laden</button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="feed-section" aria-labelledby="feed-title">
+      <div class="devfeed-shell">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Original und Kontext</p>
+            <h2 id="feed-title">Neueste Nachrichten</h2>
+          </div>
+          <p>Die sichtbaren Karten werden serverseitig als Bild erzeugt. Der Browser erhält weder Discord Token noch Datenbank Zugang noch API Schlüssel.</p>
+        </div>
+
+        <div id="feed-error" class="feed-error" role="alert" hidden></div>
+        <div id="feed-list" class="feed-list" aria-live="polite" aria-busy="true">
+          <article class="feed-skeleton" aria-hidden="true"></article>
+          <article class="feed-skeleton" aria-hidden="true"></article>
+          <article class="feed-skeleton" aria-hidden="true"></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="api-section" aria-labelledby="api-title">
+      <div class="devfeed-shell api-grid">
+        <div>
+          <p class="eyebrow">Für Bots und Tools</p>
+          <h2 id="api-title">Öffentlich lesen. Integrationen authentifizieren.</h2>
+          <p>Die Website nutzt nur die begrenzte öffentliche Leseschnittstelle. Für Bots, Server und weitere Integrationen steht zusätzlich ein API Schlüssel geschützter Endpunkt bereit.</p>
+        </div>
+        <div class="api-card">
+          <span>Öffentliche Liste</span>
+          <code>GET /devfeed/api/public/v1/messages</code>
+          <span>Authentifizierte Liste</span>
+          <code>GET /devfeed/api/v1/messages</code>
+          <span>Authentifizierung</span>
+          <code>Authorization: Bearer &lt;API Schlüssel&gt;</code>
+          <a href="/devfeed/api-docs/">Vollständige API Anleitung</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="devfeed-footer">
+    <div class="devfeed-shell footer-row">
+      <span>Deutsche Deadlock Community</span>
+      <nav aria-label="DevFeed Footer">
+        <a href="/">Start</a>
+        <a href="/patchnotes/">Patchnotes</a>
+        <a href="/devfeed/api-docs/">API</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
