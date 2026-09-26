@@ -16,7 +16,7 @@ Website daher noch nicht.
 | `/aktivitaet/` | `dl-activity/dist` |
 | `/coaching/` | `dl-coaching/dist` |
 | `/builds/` | `dl-tierlist/dist` |
-| `/videos/` | `/home/nathanael/Documents/Runtime/website-videos/current` |
+| `/videos/` | `/home/naniadm/Documents/Runtime/website-videos/current` |
 | `/brand/` | direkt aus `dl-brand` |
 
 Das Rust-Backend unter `builds/backend-rust` läuft auf `127.0.0.1:8772` und
@@ -98,7 +98,7 @@ Die Video-Anwendung ist ein Sonderfall: `/builds/` kommt aus `dl-tierlist/dist`,
 `builds/frontend`-Frontends. `scripts/release_videos_frontend.sh deploy` baut
 aus einem sauberen `main`, dessen SHA mit `origin/main` übereinstimmt. Es legt
 den vollständigen DDL-Build unter
-`/home/nathanael/Documents/Runtime/website-videos/releases/<SHA>` ab und
+`/home/naniadm/Documents/Runtime/website-videos/releases/<SHA>` ab und
 kopiert gehashte Assets vor dem Wechsel in einen gemeinsamen, nur ergänzten
 Bestand und wechselt `current` atomar per Symlink. Damit bleiben alte HTML-Tabs
 und Rollbacks mit ihren bisherigen CSS-/JS-URLs funktionsfähig. Ein fehlgeschlagener Build oder ein

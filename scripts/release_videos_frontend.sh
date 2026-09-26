@@ -2,8 +2,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RELEASE_ROOT="/home/nathanael/Documents/Runtime/website-videos"
-LIVE_DIST="/home/nathanael/repos/Website/builds/frontend/dist-ddl"
+RELEASE_ROOT="/home/naniadm/Documents/Runtime/website-videos"
+LIVE_DIST="/home/naniadm/Documents/Website/builds/frontend/dist-ddl"
 
 validate_video_build() {
   local build_dir="$1" asset asset_path
