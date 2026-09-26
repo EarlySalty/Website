@@ -15,7 +15,7 @@ const queryClient = new QueryClient({
   },
 })
 
-const routerBase = import.meta.env.VITE_ROUTER_BASE || import.meta.env.BASE_URL
+const routerBase = import.meta.env.MODE === 'ddl' ? '/' : '/builds/'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

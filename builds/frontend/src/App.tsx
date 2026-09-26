@@ -19,7 +19,7 @@ import MyCoachingPage from './pages/MyCoachingPage'
 import VideosPage from './pages/VideosPage'
 import DdlShell from './components/DdlShell'
 
-const DDL_SHELL = import.meta.env.VITE_SHELL === 'ddl'
+const DDL_SHELL = import.meta.env.MODE === 'ddl'
 
 const videoRoutes = (
   <>

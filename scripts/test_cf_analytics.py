@@ -61,7 +61,7 @@ QUELLEN = [
     "dl-activity/index.html",
     "dl-coaching/index.html",
     "builds/frontend/index.html",
-    # Live-Ziel der Video-Anwendung, wird nicht vom Standard-Build erzeugt.
+    # Der Analytics-Workflow baut dieses ignorierte Live-Artefakt ausdrücklich.
     "builds/frontend/dist-ddl/index.html",
 ]
 
