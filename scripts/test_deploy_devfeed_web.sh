@@ -11,6 +11,22 @@ runtime="$fixture/runtime"
 remote="$fixture/remote.git"
 mkdir -p "$source/scripts" "$source/dl-brand" "$source/dl-devfeed/api-docs" \
   "$source/dl-landing/public" "$runtime/releases"
+assert_caddy_readable() {
+  python3 - "$runtime" "$1" <<'PY'
+from pathlib import Path
+import stat
+import sys
+
+runtime = Path(sys.argv[1])
+release = Path(sys.argv[2])
+for directory in (runtime, runtime / 'releases', release, *release.rglob('*')):
+    mode = directory.stat().st_mode
+    if directory.is_dir():
+        assert mode & stat.S_IROTH and mode & stat.S_IXOTH, directory
+    else:
+        assert mode & stat.S_IROTH, directory
+PY
+}
 cp "$repo/scripts/deploy-devfeed-web.sh" "$source/scripts/"
 cp "$repo/scripts/build-sitemap.mjs" "$source/scripts/"
 cp "$repo/dl-brand/nav.js" "$source/dl-brand/"
@@ -95,8 +111,19 @@ mkdir -p "$runtime/releases/$sha"
 printf 'unvollständig\n' > "$runtime/releases/$sha/broken.txt"
 printf '%s\n' "$sha" > "$runtime/releases/$sha/.complete"
 
-"$source/scripts/deploy-devfeed-web.sh" "$sha"
-"$source/scripts/deploy-devfeed-web.sh" "$sha"
+(
+  umask 077
+  "$source/scripts/deploy-devfeed-web.sh" "$sha"
+)
+assert_caddy_readable "$runtime/releases/$sha"
+# An older same-SHA release can have been published with unreadable modes.
+chmod 700 "$runtime/releases/$sha" "$runtime/releases/$sha/api-docs"
+chmod 600 "$runtime/releases/$sha/devfeed.js" "$runtime/releases/$sha/api-docs/index.html"
+(
+  umask 077
+  "$source/scripts/deploy-devfeed-web.sh" "$sha"
+)
+assert_caddy_readable "$runtime/releases/$sha"
 
 test "$(readlink -f "$runtime/current")" = "$runtime/releases/$sha"
 test "$(git -C "$live" rev-parse HEAD)" = "$sha"

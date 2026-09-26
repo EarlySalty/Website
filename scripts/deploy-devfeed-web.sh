@@ -80,6 +80,9 @@ grep -q '<loc>https://deutsche-deadlock-community.de/devfeed/api-docs/</loc>' "$
 chmod 644 "$SITEMAP_NEXT"
 
 mkdir -p "$RELEASES"
+# Caddy traverses both directories to reach current, including on a first deploy
+# started with a restrictive umask.
+chmod a+rx "$BASE" "$RELEASES"
 RELEASE_STAGE="$(mktemp -d "$RELEASES/.release-$SHA.XXXXXX")"
 # Export the approved Git tree, never ignored or untracked source files.
 git -C "$SOURCE_ROOT" archive --format=tar "$SHA" dl-devfeed \
@@ -91,6 +94,7 @@ for required in index.html devfeed.js devfeed.css api-docs/index.html; do
   fi
 done
 printf '%s\n' "$SHA" > "$RELEASE_STAGE/.complete"
+chmod -R a+rX "$RELEASE_STAGE"
 if [[ -d "$RELEASE" ]] && diff -qr "$RELEASE_STAGE" "$RELEASE" >/dev/null; then
   rm -rf -- "$RELEASE_STAGE"
 else
@@ -105,6 +109,9 @@ else
   mv -T "$RELEASE_STAGE" "$RELEASE"
 fi
 RELEASE_STAGE=""
+# A same-SHA retry may reuse a release written by an older deploy with 0700/0600
+# permissions. Repair that release before current can point to it.
+chmod -R a+rX "$RELEASE"
 
 if [[ -e "$BASE/current" && ! -L "$BASE/current" ]]; then
   echo "DevFeed Web Deploy abgelehnt: current ist kein Symlink." >&2
