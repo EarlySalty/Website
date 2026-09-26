@@ -110,7 +110,9 @@ Erstmaliger Umstieg von den früher getrackten `builds/frontend/dist-ddl`-Dateie
 
 1. Den bereits ausgelieferten Stand mit `scripts/release_videos_frontend.sh bootstrap`
    unter der aktuellen Main-SHA nach Runtime kopieren. HTML, CSS und JS prüfen.
-2. Den zugehörigen Caddy-PR auf `Runtime/website-videos/current` umstellen,
+2. Den zugehörigen Caddy-PR `EarlySalty/caddy-config#4` auf
+   `Runtime/website-videos/current` und die separate Route
+   `/videos/assets/*` auf `Runtime/website-videos/assets` umstellen,
    Caddy validieren und neu laden. `/videos/`, CSS, JS und API live prüfen.
 3. Erst dann diesen Website-PR mergen und den bisherigen getrackten
    `dist-ddl`-Baum aus dem Live-Checkout entfernen. Fremde untracked Dateien,

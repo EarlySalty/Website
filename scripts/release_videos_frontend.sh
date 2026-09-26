@@ -65,6 +65,16 @@ remote_main_sha() {
   git -C "$REPO_ROOT" ls-remote --exit-code --refs origin refs/heads/main | cut -f1
 }
 
+caddy_runtime_root_is_active() {
+  # Der Companion-PR im Caddy-Repo muss bereits geladen sein. Ohne dessen
+  # Asset-Route wäre ein Wechsel von current für offene Tabs nicht sicher.
+  curl -fsS --max-time 5 http://127.0.0.1:2019/config/ | jq -e '
+    [.. | strings] as $strings |
+    ($strings | index("/home/naniadm/Documents/Runtime/website-videos/current")) != null and
+    ($strings | index("/home/naniadm/Documents/Runtime/website-videos/assets")) != null
+  ' >/dev/null
+}
+
 main() {
   local mode="${1:-}" source_sha stage
   case "$mode" in
@@ -86,6 +96,10 @@ main() {
       test "$(git -C "$REPO_ROOT" branch --show-current)" = main
       test -z "$(git -C "$REPO_ROOT" status --porcelain --untracked-files=no)"
       test "$source_sha" = "$(remote_main_sha)"
+      caddy_runtime_root_is_active || {
+        echo "Caddy liefert den versionierten Video-Pfad noch nicht aus" >&2
+        return 1
+      }
       mkdir -p "$RELEASE_ROOT"
       stage="$(mktemp -d "$RELEASE_ROOT/.stage.XXXXXXXX")"
       trap 'rm -rf -- "$stage"' EXIT
