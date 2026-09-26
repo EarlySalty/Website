@@ -71,18 +71,6 @@ if [[ "$(git -C "$LIVE_ROOT" rev-parse FETCH_HEAD)" != "$SHA" ]]; then
   echo "DevFeed Web Deploy abgelehnt: Remote-main hat sich während der Prüfung geändert." >&2
   exit 3
 fi
-if ! git -C "$LIVE_ROOT" merge --ff-only "$SHA"; then
-  echo "DevFeed Web Deploy abgelehnt: Live-Checkout kann nicht sicher nachgezogen werden." >&2
-  exit 3
-fi
-if [[ "$(git -C "$LIVE_ROOT" rev-parse HEAD)" != "$SHA" ]] \
-  || ! git -C "$LIVE_ROOT" diff --quiet \
-  || ! git -C "$LIVE_ROOT" diff --cached --quiet \
-  || ! cmp -s "$SOURCE_ROOT/dl-brand/nav.js" "$LIVE_NAV"; then
-  echo "DevFeed Web Deploy abgelehnt: Live-Checkout weicht vom freigegebenen SHA ab." >&2
-  exit 3
-fi
-
 # Caddy serves /sitemap.xml from the landing build, not from dl-landing/public.
 # Generate from this main checkout without changing its tracked source sitemap.
 SITEMAP_NEXT="$(mktemp "$LANDING_DIST/.sitemap.xml.XXXXXX")"
@@ -92,22 +80,67 @@ grep -q '<loc>https://deutsche-deadlock-community.de/devfeed/api-docs/</loc>' "$
 chmod 644 "$SITEMAP_NEXT"
 
 mkdir -p "$RELEASES"
-if [[ ! -f "$RELEASE/.complete" ]] || [[ "$(cat "$RELEASE/.complete")" != "$SHA" ]]; then
-  RELEASE_STAGE="$(mktemp -d "$RELEASES/.release-$SHA.XXXXXX")"
-  cp -a "$SOURCE/." "$RELEASE_STAGE/"
-  printf '%s\n' "$SHA" > "$RELEASE_STAGE/.complete"
+RELEASE_STAGE="$(mktemp -d "$RELEASES/.release-$SHA.XXXXXX")"
+# Export the approved Git tree, never ignored or untracked source files.
+git -C "$SOURCE_ROOT" archive --format=tar "$SHA" dl-devfeed \
+  | tar -x -C "$RELEASE_STAGE" --strip-components=1
+for required in index.html devfeed.js devfeed.css api-docs/index.html; do
+  if [[ ! -f "$RELEASE_STAGE/$required" ]]; then
+    echo "DevFeed Web Deploy abgelehnt: freigegebener Release enthält $required nicht." >&2
+    exit 3
+  fi
+done
+printf '%s\n' "$SHA" > "$RELEASE_STAGE/.complete"
+if [[ -d "$RELEASE" ]] && diff -qr "$RELEASE_STAGE" "$RELEASE" >/dev/null; then
+  rm -rf -- "$RELEASE_STAGE"
+else
   if [[ -e "$RELEASE" ]]; then
     mv -T "$RELEASE" "$RELEASES/.incomplete-$SHA-$(date +%s)-$$"
   fi
   mv -T "$RELEASE_STAGE" "$RELEASE"
-  RELEASE_STAGE=""
 fi
+RELEASE_STAGE=""
 
+if [[ -e "$BASE/current" && ! -L "$BASE/current" ]]; then
+  echo "DevFeed Web Deploy abgelehnt: current ist kein Symlink." >&2
+  exit 3
+fi
+PREVIOUS_CURRENT="$(readlink "$BASE/current" 2>/dev/null || true)"
+rollback_current() {
+  if [[ "$(readlink "$BASE/current" 2>/dev/null || true)" != "$RELEASE" ]]; then
+    return
+  fi
+  if [[ -n "$PREVIOUS_CURRENT" ]]; then
+    SWITCH_STAGE="$(mktemp -d "$BASE/.rollback-$SHA.XXXXXX")"
+    ln -s "$PREVIOUS_CURRENT" "$SWITCH_STAGE/current"
+    mv -Tf "$SWITCH_STAGE/current" "$BASE/current"
+    rmdir "$SWITCH_STAGE"
+    SWITCH_STAGE=""
+  else
+    rm -f -- "$BASE/current"
+  fi
+}
+
+# The route exists before the live nav can advertise it. If fast-forwarding
+# fails, put the previous route back and leave the live checkout untouched.
 SWITCH_STAGE="$(mktemp -d "$BASE/.switch-$SHA.XXXXXX")"
 ln -s "$RELEASE" "$SWITCH_STAGE/current"
 mv -Tf "$SWITCH_STAGE/current" "$BASE/current"
 rmdir "$SWITCH_STAGE"
 SWITCH_STAGE=""
+if ! git -C "$LIVE_ROOT" merge --ff-only "$SHA"; then
+  rollback_current
+  echo "DevFeed Web Deploy abgelehnt: Live-Checkout kann nicht sicher nachgezogen werden." >&2
+  exit 3
+fi
+if [[ "$(git -C "$LIVE_ROOT" rev-parse HEAD)" != "$SHA" ]] \
+  || ! git -C "$LIVE_ROOT" diff --quiet \
+  || ! git -C "$LIVE_ROOT" diff --cached --quiet \
+  || ! cmp -s "$SOURCE_ROOT/dl-brand/nav.js" "$LIVE_NAV"; then
+  rollback_current
+  echo "DevFeed Web Deploy abgelehnt: Live-Checkout weicht vom freigegebenen SHA ab." >&2
+  exit 3
+fi
 # Publish the sitemap only after the complete release is the active Caddy target.
 mv -f "$SITEMAP_NEXT" "$LANDING_DIST/sitemap.xml"
 SITEMAP_NEXT=""

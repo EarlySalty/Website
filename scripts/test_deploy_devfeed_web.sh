@@ -18,7 +18,7 @@ cp "$repo/dl-devfeed/index.html" "$repo/dl-devfeed/devfeed.js" \
   "$repo/dl-devfeed/devfeed.css" "$source/dl-devfeed/"
 cp "$repo/dl-devfeed/api-docs/index.html" "$source/dl-devfeed/api-docs/"
 cp "$repo/dl-landing/public/sitemap.xml" "$source/dl-landing/public/"
-printf 'dl-landing/dist/\n' > "$source/.gitignore"
+printf 'dl-landing/dist/\ndl-devfeed/ignored.txt\n' > "$source/.gitignore"
 
 # The production paths remain fixed. Only this isolated fixture redirects them.
 python3 - "$source/scripts/deploy-devfeed-web.sh" "$live" "$runtime" <<'PY'
@@ -66,6 +66,7 @@ fi
 git -C "$source" remote add origin "$remote"
 git -C "$source" push -q origin main
 git -C "$source" checkout -q --detach "$sha"
+printf 'nicht freigegeben\n' > "$source/dl-devfeed/ignored.txt"
 
 printf 'lokale Änderung\n' >> "$live/dl-brand/nav.js"
 if "$source/scripts/deploy-devfeed-web.sh" "$sha" 2>/dev/null; then
@@ -74,8 +75,25 @@ if "$source/scripts/deploy-devfeed-web.sh" "$sha" 2>/dev/null; then
 fi
 git -C "$live" restore -- dl-brand/nav.js
 test "$(git -C "$live" rev-parse HEAD)" = "$old_sha"
-mkdir "$runtime/releases/$sha"
+
+# A divergent but clean live main reaches the switch, then must roll it back.
+mkdir "$runtime/releases/previous"
+ln -s "$runtime/releases/previous" "$runtime/current"
+printf '\n// Nur lokaler Commit\n' >> "$live/dl-brand/nav.js"
+git -C "$live" add dl-brand/nav.js
+git -C "$live" -c user.name=Test -c user.email=test@example.invalid commit -qm divergent
+divergent_sha="$(git -C "$live" rev-parse HEAD)"
+if "$source/scripts/deploy-devfeed-web.sh" "$sha" 2>/dev/null; then
+  echo 'Deploy mit divergentem Live-main wurde akzeptiert.' >&2
+  exit 1
+fi
+test "$(readlink "$runtime/current")" = "$runtime/releases/previous"
+test "$(git -C "$live" rev-parse HEAD)" = "$divergent_sha"
+git -C "$live" reset -q --hard "$old_sha"
+
+mkdir -p "$runtime/releases/$sha"
 printf 'unvollständig\n' > "$runtime/releases/$sha/broken.txt"
+printf '%s\n' "$sha" > "$runtime/releases/$sha/.complete"
 
 "$source/scripts/deploy-devfeed-web.sh" "$sha"
 "$source/scripts/deploy-devfeed-web.sh" "$sha"
@@ -83,6 +101,8 @@ printf 'unvollständig\n' > "$runtime/releases/$sha/broken.txt"
 test "$(readlink -f "$runtime/current")" = "$runtime/releases/$sha"
 test "$(git -C "$live" rev-parse HEAD)" = "$sha"
 test "$(cat "$runtime/releases/$sha/.complete")" = "$sha"
+test ! -e "$runtime/releases/$sha/broken.txt"
+test ! -e "$runtime/releases/$sha/ignored.txt"
 test "$(find "$runtime/releases" -maxdepth 1 -name ".incomplete-$sha-*" | wc -l)" -eq 1
 grep -q '<loc>https://deutsche-deadlock-community.de/devfeed/</loc>' "$live/dl-landing/dist/sitemap.xml"
 grep -q '<loc>https://deutsche-deadlock-community.de/devfeed/api-docs/</loc>' "$live/dl-landing/dist/sitemap.xml"
