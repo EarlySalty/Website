@@ -43,4 +43,4 @@ make_build "$probe/stage-two" second
 publish_video_build "$probe/stage-two" "$probe/runtime" "$sha_two"
 test "$(readlink "$probe/runtime/current")" = "releases/$sha_two"
 test -s "$probe/runtime/releases/$sha_one/index.html"
-echo 'Video-Release-Tests: Bootstrap, Retry, Fail-closed und atomarer Wechsel bestanden'
+echo 'Video-Release-Tests: Veröffentlichung, Retry, Fail-closed und atomarer Wechsel bestanden'
