@@ -9,8 +9,9 @@
  * aus der Source-Datei.
  */
 
-import { readFileSync, writeFileSync, statSync, existsSync, readdirSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -30,7 +31,10 @@ const DOCS_ROOT =
 const ENTRIES = [
   { path: '/',                        src: resolve(REPO_ROOT, 'deco-elevator-new/index.html') },
   { path: '/mitspieler/',             src: resolve(REPO_ROOT, 'dl-landing/mitspieler/index.html') },
-  { path: '/coaching/',               src: resolve(REPO_ROOT, 'dl-landing/coaching/index.html') },
+  { path: '/coaching/',               src: [
+    'dl-coaching/index.html', 'dl-coaching/src/pages/CoachesPage.tsx',
+    'dl-coaching/src/components/CoachingPublic.tsx', 'dl-coaching/src/seo.ts',
+  ].map((file) => resolve(REPO_ROOT, file)) },
   { path: '/streamer/',               src: resolve(REPO_ROOT, 'dl-landing/streamer/index.html') },
   { path: '/helden/',                 src: resolve(REPO_ROOT, 'dl-landing/helden/index.html') },
   { path: '/guides/anfaenger/',       src: resolve(REPO_ROOT, 'dl-landing/guides/anfaenger/index.html') },
@@ -47,15 +51,22 @@ const ENTRIES = [
   { path: '/docs/',                   src: resolve(DOCS_ROOT, 'public/index.html') },
 ]
 
-const todayIso = new Date().toISOString().slice(0, 10)
-
-function lastmodOf(absPath) {
-  if (!existsSync(absPath)) return todayIso
-  try {
-    return statSync(absPath).mtime.toISOString().slice(0, 10)
-  } catch {
-    return todayIso
-  }
+// File mtimes change on checkout/build and are not content publication dates.
+// Prefer committed source dates; preserve an existing date when no history is available.
+function lastmodOf(source, previous = null) {
+  const sources = Array.isArray(source) ? source : [source]
+  const dates = sources.flatMap((absPath) => {
+    if (!existsSync(absPath)) return []
+    try {
+      const date = execFileSync('git', [
+        '-C', dirname(absPath), 'log', '-1', '--format=%cs', '--', basename(absPath),
+      ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+      return /^\d{4}-\d{2}-\d{2}$/.test(date) ? [date] : []
+    } catch {
+      return []
+    }
+  })
+  return dates.sort().at(-1) ?? previous
 }
 
 function existingLocs(xmlPath) {
@@ -67,7 +78,7 @@ function existingLocs(xmlPath) {
   while ((match = re.exec(xml))) {
     const loc = match[1].trim()
     const path = loc.startsWith(SITE) ? loc.slice(SITE.length) || '/' : loc
-    locs.set(path, match[2] || todayIso)
+    locs.set(path, match[2] || null)
   }
   return locs
 }
@@ -102,18 +113,20 @@ function docsEntries() {
 
 const merged = existingLocs(SOURCE_SITEMAP)
 
-// Docs werden aus dem aktuellen public/-Baum neu aufgebaut. So verschwinden
-// gelöschte Dokumente aus der Sitemap und neue Seiten landen ohne Handpflege
-// mit ihrem echten Änderungsdatum darin.
-for (const path of [...merged.keys()]) {
-  if (path === '/docs/' || path.startsWith('/docs/')) merged.delete(path)
-}
-for (const { path, src } of docsEntries()) {
-  merged.set(path, lastmodOf(src))
+// Rebuild the Docs inventory only when its source actually exists.
+// An isolated worktree must not erase unrelated live URLs from the sitemap.
+if (DOCS_ROOT && existsSync(resolve(DOCS_ROOT, 'public'))) {
+  const previous = new Map(merged)
+  for (const path of [...merged.keys()]) {
+    if (path === '/docs/' || path.startsWith('/docs/')) merged.delete(path)
+  }
+  for (const { path, src } of docsEntries()) {
+    merged.set(path, lastmodOf(src, previous.get(path)))
+  }
 }
 
 for (const { path, src } of ENTRIES) {
-  merged.set(path, lastmodOf(src))
+  merged.set(path, lastmodOf(src, merged.get(path)))
 }
 
 for (const noIndex of [
@@ -133,7 +146,12 @@ const urls = [...merged.entries()]
     if (b[0] === '/') return 1
     return a[0].localeCompare(b[0], 'de')
   })
-  .map(([path, lastmod]) => `  <url>\n    <loc>${SITE}${path}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`)
+  .map(([path, lastmod]) => [
+    '  <url>',
+    `    <loc>${SITE}${path}</loc>`,
+    ...(lastmod ? [`    <lastmod>${lastmod}</lastmod>`] : []),
+    '  </url>',
+  ].join('\n'))
   .join('\n')
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?>

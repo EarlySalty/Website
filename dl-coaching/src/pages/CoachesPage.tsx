@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { coaching, type CoachProfile } from '@/api/client'
 import { Avatar, EmptyState } from '@/components/ui'
+import { CoachingHero, CoachingProcess, CoachingQuestions } from '@/components/CoachingPublic'
 
 function RatingBar({ rating, max = 10 }: { rating: number; max?: number }) {
   const filled = Math.round(rating)
@@ -83,54 +84,6 @@ function CoachCard({ coach, index }: { coach: CoachProfile; index: number }) {
   )
 }
 
-type StepIcon = 'request' | 'calendar' | 'growth'
-
-function ProcessIcon({ name }: { name: StepIcon }) {
-  if (name === 'request') {
-    return (
-      <svg className="process-icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M8 4.75h8M7 8.75h10M7 12.75h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-        <path d="M6.5 3.75h11A1.75 1.75 0 0 1 19.25 5.5v13A1.75 1.75 0 0 1 17.5 20.25h-11a1.75 1.75 0 0 1-1.75-1.75v-13A1.75 1.75 0 0 1 6.5 3.75Z" stroke="currentColor" strokeWidth="1.7" />
-        <path d="m14.75 16.25 1.45 1.45 3.05-3.45" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    )
-  }
-
-  if (name === 'calendar') {
-    return (
-      <svg className="process-icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M7.75 3.75v3M16.25 3.75v3M5 9.25h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-        <path d="M6.5 5.25h11A1.75 1.75 0 0 1 19.25 7v10.5a1.75 1.75 0 0 1-1.75 1.75h-11a1.75 1.75 0 0 1-1.75-1.75V7A1.75 1.75 0 0 1 6.5 5.25Z" stroke="currentColor" strokeWidth="1.7" />
-        <path d="M8.25 13.25h.01M12 13.25h.01M15.75 13.25h.01M8.25 16.25h.01M12 16.25h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      </svg>
-    )
-  }
-
-  return (
-    <svg className="process-icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M5 18.5h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <path d="M7 15.75 10.75 12l2.5 2.5L18 8.75" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M14.5 8.75H18v3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M7.25 8.5a2.25 2.25 0 1 0 4.5 0 2.25 2.25 0 0 0-4.5 0Z" stroke="currentColor" strokeWidth="1.7" />
-    </svg>
-  )
-}
-
-function ProcessStep({ nr, title, copy, icon }: { nr: string; title: string; copy: string; icon: StepIcon }) {
-  return (
-    <div className="process-step">
-      <span className="process-icon">
-        <ProcessIcon name={icon} />
-      </span>
-      <div>
-        <span className="process-number">{nr}</span>
-        <h3>{title}</h3>
-        <p>{copy}</p>
-      </div>
-    </div>
-  )
-}
-
 export default function CoachesPage() {
   const { data: coaches, isLoading } = useQuery({
     queryKey: ['coaches'],
@@ -142,19 +95,7 @@ export default function CoachesPage() {
 
   return (
     <div className="content-grid pb-16">
-      <div className="salon-hero relative mb-12 md:mb-16">
-        <div className="animate-in-left max-w-3xl">
-          <div className="eyebrow mb-4">Coaching-Etage</div>
-          <h1 className="hero-display">
-            Besser werden,<br />
-            <span style={{ color: 'var(--amber-light)' }}>ohne Chat-Chaos.</span>
-          </h1>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Link to="/anfrage" className="btn-amber">Coaching anfragen</Link>
-            <Link to="/me" className="btn-ghost">Meine Termine</Link>
-          </div>
-        </div>
-
+      <CoachingHero>
         <div className="salon-metrics animate-in" style={{ animationDelay: '160ms' }}>
           {[
             { label: 'Coaches im Roster', value: isLoading ? '…' : String(coaches?.length ?? 0) },
@@ -168,22 +109,12 @@ export default function CoachesPage() {
             </div>
           ))}
         </div>
-      </div>
+      </CoachingHero>
 
-      <div className="salon-process animate-in mb-12" style={{ animationDelay: '240ms' }}>
-        <div className="salon-section-title">
-          <span>So läuft’s</span>
-          <i />
-        </div>
-        <div className="process-line">
-          <ProcessStep nr="01" icon="request" title="Anfrage auf der Website" copy="Rank, Helden, Zeitfenster und Thema landen strukturiert im Coach-Cockpit." />
-          <ProcessStep nr="02" icon="calendar" title="Termin abstimmen" copy="Ein Coach übernimmt, schlägt Zeiten vor und hält den vereinbarten Termin fest." />
-          <ProcessStep nr="03" icon="growth" title="Fortschritt behalten" copy="Termine, Ziele, Meilensteine und Session-Protokolle bleiben unter „Mein Coaching“." />
-        </div>
-      </div>
+      <CoachingProcess />
 
-      <div className="salon-section-title mb-5">
-        <span>Coach-Salon</span>
+      <div id="coaches" className="salon-section-title mb-5">
+        <h2>Deadlock Coaches</h2>
         {!isLoading && (
           <b>
             {String(coaches?.length ?? 0).padStart(2, '0')}
@@ -208,6 +139,7 @@ export default function CoachesPage() {
           copy="Die Coaches werden automatisch aus den Community-Rollen synchronisiert. Schau in ein paar Minuten wieder vorbei."
         />
       )}
+      <CoachingQuestions />
     </div>
   )
 }

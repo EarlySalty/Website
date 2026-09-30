@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 5173"
+    "preview": "vite preview --port 5173",
+    "test:seo": "node --test ../scripts/test-seo-contracts.mjs"
   },
   "dependencies": {},
   "devDependencies": {

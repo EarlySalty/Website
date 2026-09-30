@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui'
+import CoachingMetadata from './CoachingMetadata'
 
 export default function Layout() {
   const { user, login, logout, isCoach } = useAuth()
@@ -12,6 +13,7 @@ export default function Layout() {
 
   return (
     <div className="page-shell flex min-h-screen flex-col">
+      <CoachingMetadata />
       {/* ── Header ──────────────────────────────── */}
       <header className="coaching-header sticky top-0 z-50">
         <div className="coaching-header-rule" />

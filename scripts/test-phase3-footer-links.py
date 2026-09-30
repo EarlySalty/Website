@@ -11,11 +11,11 @@ HOME_LINKS = {
     "/mitspieler/": "Mitspieler",
     "/coaching/": "Coaching",
     "/aktivitaet/": "Aktivität & Ränge",
-    "/patchnotes/": "Patchnotes",
+    "/patch/": "Patchnotes",
     "/helden/": "Helden",
     "/streamer/": "Streamer",
     "/twitch/dashboard": "Partner-Dashboard",
-    "/beitreten/": "Beitreten",
+    "/beitreten/": "Deutscher Deadlock Discord",
     "/builds/": "Builds",
     "/turnier/": "Turnier",
 }
