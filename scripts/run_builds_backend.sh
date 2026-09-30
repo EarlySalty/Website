@@ -5,9 +5,24 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # .../Website
-RUST_BACKEND_BIN="${RUST_BACKEND_BIN:-$ROOT_DIR/builds/backend-rust/target/release/ddc-website-backend}"
+RUST_BACKEND_BIN="${RUST_BACKEND_BIN:-/opt/deadlock/website-backend/current/ddc-website-backend}"
 INFISICAL_CONFIG_FILE="${INFISICAL_CONFIG_FILE:-$HOME/.config/deadlock-bots/infisical.conf}"
 DEPLOY_PREFLIGHT="${DEPLOY_PREFLIGHT:-$HOME/Documents/Admin-Scripts/deploy-preflight.sh}"
+
+# Die Freigabe gehört zum Deploy, nicht zum Wiederanlauf eines vorhandenen
+# Binaries. Medienvorschauen oder andere Arbeit im Checkout dürfen den bereits
+# ausgelieferten Dienst nach einem Neustart nicht stilllegen.
+if [[ "${1:-}" == "--check-deploy" && "$#" == "1" ]]; then
+  if [[ ! -x "$DEPLOY_PREFLIGHT" ]]; then
+    echo "FEHLER: deploy-preflight fehlt: $DEPLOY_PREFLIGHT" >&2
+    exit 1
+  fi
+  exec "$DEPLOY_PREFLIGHT" "$ROOT_DIR" main "website-backend" --deploy
+fi
+if [[ "$#" != "0" ]]; then
+  echo "Aufruf: $0 [--check-deploy]" >&2
+  exit 1
+fi
 
 if [[ ! -f "$INFISICAL_CONFIG_FILE" ]]; then
   echo "Missing Infisical config: $INFISICAL_CONFIG_FILE" >&2
@@ -39,17 +54,6 @@ if [[ "${DL_INFISICAL_READY:-0}" != "1" ]]; then
 fi
 unset DL_INFISICAL_READY
 unset INFISICAL_SERVICE_TOKEN
-
-_dp_parent_comm="$(ps -o comm= -p "$PPID" 2>/dev/null || true)"
-if [[ "$_dp_parent_comm" == "systemd" ]]; then
-  if [[ ! -x "$DEPLOY_PREFLIGHT" ]]; then
-    echo "FEHLER: deploy-preflight fehlt unter systemd-Start, breche ab: $DEPLOY_PREFLIGHT" >&2
-    exit 1
-  fi
-  DEPLOY_PREFLIGHT_SYSTEMD_PARENT=1 "$DEPLOY_PREFLIGHT" "$ROOT_DIR" main "website-backend"
-elif [[ -x "$DEPLOY_PREFLIGHT" ]]; then
-  "$DEPLOY_PREFLIGHT" "$ROOT_DIR" main "website-backend"
-fi
 
 # Eigene oeffentliche OAuth-Rueck-Adresse (redirect_after im delegierten Flow):
 # Der zentrale Broker (/callback/discord, 127.0.0.1:8766) leitet nach dem

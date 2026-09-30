@@ -75,7 +75,11 @@ andere Richtung gilt: nach der Migration laeuft das **alte** Binary nicht mehr
 also nicht; der Rueckweg steht im Kopf der Migrationsdatei.
 
 `scripts/run_builds_backend.sh` loads Infisical secrets first, then starts
-`builds/backend-rust/target/release/ddc-website-backend`. For the
+`/opt/deadlock/website-backend/current/ddc-website-backend`. Der Dienst startet
+ein veröffentlichtes Release; ein Wiederanlauf baut nichts und prüft keinen
+veränderlichen Arbeitsbaum. `scripts/deploy_builds_backend.sh` prüft dagegen
+zwingend vor und nach dem Build den sauberen, freigegebenen Remote-Stand und
+veröffentlicht ein neues Release, bevor es den Dienst neu startet. For the
 Rust backend, `DEADLOCK_CENTRAL_DSN` must be exported by Infisical; the wrapper
 fails fast when it is missing and never prints the value. There is no `DB_PATH`
 runtime mode for the Rust backend anymore.
@@ -92,7 +96,6 @@ cd builds/backend-rust
 cargo fmt --check
 cargo check
 cargo clippy --all-targets --all-features -- -D warnings
-cargo build --release
 ```
 
 Read-only database checks must use the throwaway Central test wrapper, for
@@ -102,7 +105,7 @@ Do not point verification commands at a live or production DSN.
 After review approval only:
 
 ```bash
-systemctl --user restart deadlock-website-backend.service
+./scripts/deploy_builds_backend.sh
 ```
 
 ## Verification
