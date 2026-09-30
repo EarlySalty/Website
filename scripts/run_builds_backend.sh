@@ -13,6 +13,10 @@ DEPLOY_PREFLIGHT="${DEPLOY_PREFLIGHT:-$HOME/Documents/Admin-Scripts/deploy-prefl
 # Binaries. Medienvorschauen oder andere Arbeit im Checkout dürfen den bereits
 # ausgelieferten Dienst nach einem Neustart nicht stilllegen.
 if [[ "${1:-}" == "--check-deploy" && "$#" == "1" ]]; then
+  if [[ "${DEPLOY_PREFLIGHT_ALLOW_DIRTY:-0}" == "1" ]]; then
+    echo "FEHLER: Deploy-Freigabe darf nicht mit ALLOW_DIRTY umgangen werden." >&2
+    exit 1
+  fi
   if [[ ! -x "$DEPLOY_PREFLIGHT" ]]; then
     echo "FEHLER: deploy-preflight fehlt: $DEPLOY_PREFLIGHT" >&2
     exit 1
