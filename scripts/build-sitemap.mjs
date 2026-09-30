@@ -35,6 +35,8 @@ const ENTRIES = [
   { path: '/guides/anfaenger/',       src: resolve(REPO_ROOT, 'dl-landing/guides/anfaenger/index.html') },
   { path: '/beitreten/',              src: resolve(REPO_ROOT, 'dl-landing/beitreten/index.html') },
   { path: '/patch/',                  src: resolve(REPO_ROOT, 'dl-patch/index.html') },
+  { path: '/devfeed/',                src: resolve(REPO_ROOT, 'dl-devfeed/index.html') },
+  { path: '/devfeed/api-docs/',       src: resolve(REPO_ROOT, 'dl-devfeed/api-docs/index.html') },
   { path: '/aktivitaet/',             src: resolve(REPO_ROOT, 'dl-activity/index.html') },
   { path: '/builds/',                 src: resolve(REPO_ROOT, 'dl-tierlist/index.html') },
   { path: '/transparenz/',            src: resolve(REPO_ROOT, 'dl-landing/transparenz/index.html') },

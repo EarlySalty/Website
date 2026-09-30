@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="index,follow">
+  <title>DevFeed API · Deutsche Deadlock Community</title>
+  <meta name="description" content="Dokumentation der öffentlichen und authentifizierten DevFeed-Leseschnittstellen.">
+  <link rel="canonical" href="https://deutsche-deadlock-community.de/devfeed/api-docs/">
+  <link rel="icon" type="image/png" href="/brand/logo/favicon-64.png">
+  <link rel="stylesheet" href="/brand/tokens.css">
+  <link rel="stylesheet" href="/brand/nav.css">
+  <link rel="stylesheet" href="/devfeed/devfeed.css">
+  <script src="/brand/nav.js" defer></script>
+</head>
+<body class="brand-body">
+  <div class="brand-grain" aria-hidden="true"></div>
+  <header class="site-header"><div class="container"><div class="header-row">
+    <a class="brand" href="/" aria-label="Deutsche Deadlock Community">
+      <img src="/brand/logo/logo-192.png" alt="" class="brand-logo">
+      <img src="/brand/logo/wordmark.svg" alt="Deutsche Deadlock Community" class="brand-wordmark-img">
+    </a>
+    <a class="header-link" href="/devfeed/">Zum Feed</a>
+  </div></div></header>
+  <main>
+    <section class="devfeed-hero">
+      <div class="devfeed-shell"><div class="hero-copy">
+        <p class="eyebrow">DevFeed API</p>
+        <h1>Leseschnittstelle für Integrationen.</h1>
+        <p class="hero-lead">Die API liefert ausschließlich bereinigte Feed-Daten. Das vollständige Discord-Rohpayload und Datenbankzugänge werden nicht veröffentlicht.</p>
+      </div></div>
+    </section>
+    <section class="api-section">
+      <div class="devfeed-shell api-grid">
+        <div>
+          <p class="eyebrow">Öffentlicher Browser-Pfad</p>
+          <h2>Ohne Schlüssel</h2>
+          <p>Für die Website und einfache öffentliche Leser. Maximal 50 Einträge pro Abruf.</p>
+        </div>
+        <div class="api-card">
+          <span>Liste, neueste zuerst</span>
+          <code>GET /devfeed/api/public/v1/devfeed/messages?limit=30</code>
+          <span>Eintrag</span>
+          <code>GET /devfeed/api/public/v1/devfeed/messages/&lt;message_id&gt;</code>
+          <span>Gerenderte PNG-Karte</span>
+          <code>GET /devfeed/api/public/v1/devfeed/messages/&lt;message_id&gt;/card.png</code>
+        </div>
+      </div>
+    </section>
+    <section class="api-section">
+      <div class="devfeed-shell api-grid">
+        <div>
+          <p class="eyebrow">Authentifizierte API</p>
+          <h2>Für Server-Clients</h2>
+          <p>Der API-Key wird als Bearer-Token oder über <code>X-API-Key</code> gesendet. Er gehört niemals in Browser-Code, öffentliche Repositories oder URLs.</p>
+        </div>
+        <div class="api-card">
+          <span>Basis</span>
+          <code>https://deutsche-deadlock-community.de/devfeed/api/v1/devfeed</code>
+          <span>Header</span>
+          <code>Authorization: Bearer &lt;API-Key&gt;</code>
+          <span>Liste</span>
+          <code>GET /devfeed/api/v1/devfeed/messages?limit=50&amp;after=&lt;message_id&gt;</code>
+          <span>Eintrag</span>
+          <code>GET /devfeed/api/v1/devfeed/messages/&lt;message_id&gt;</code>
+          <span>PNG-Karte</span>
+          <code>GET /devfeed/api/v1/devfeed/messages/&lt;message_id&gt;/card.png</code>
+        </div>
+      </div>
+    </section>
+    <section class="api-section">
+      <div class="devfeed-shell api-grid">
+        <div>
+          <p class="eyebrow">Antwortschema</p>
+          <h2>Sanitisiert</h2>
+          <p>Ein Feed-Eintrag enthält Autor, Discord-IDs, Zeitstempel, Text, Sprunglink, Attachment-/Embed-Zähler und gegebenenfalls die aufgelöste Antwortkette.</p>
+        </div>
+        <div class="api-card">
+          <span>Nicht enthalten</span>
+          <code>raw · Tokens · Datenbankzugang · interne Cursor</code>
+          <span>Quelle</span>
+          <code>https://discord.com/channels/&lt;guild&gt;/&lt;channel&gt;/&lt;message&gt;</code>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="devfeed-footer"><div class="devfeed-shell footer-row"><span>Deutsche Deadlock Community</span><nav><a href="/devfeed/">DevFeed</a><a href="/">Start</a></nav></div></footer>
+</body>
+</html>
