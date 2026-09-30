@@ -18,6 +18,8 @@ SITE = ROOT / 'dl-landing'
 SLUG = 'deadlock-guardian-impact-2026'
 POST = SITE / 'blog' / SLUG
 PUBLIC = SITE / 'public' / 'blog-data' / 'guardian-impact-2026'
+PUBLISHED = '2026-09-22'
+MODIFIED = '2026-09-23'
 URL = 'https://deutsche-deadlock-community.de/blog/' + SLUG + '/'
 DATA_URL = '/blog-data/guardian-impact-2026/'
 TITLE = 'Win lane, lose game? Was ein früher Guardian über den Sieg verrät'
@@ -122,6 +124,13 @@ def bfirst(elo=None, timing=None, soul=None):
     assert len(found) == 1, (elo, timing, soul)
     return found[0]
 
+def bfirst_opt(elo=None, timing=None, soul=None):
+    found = [r for r in base_first if r['map_version']==BASE_MV
+             and r['elo']==(elo or 'all') and r['timing']==(timing or 'all')
+             and r['soul_state']==(soul or 'all')]
+    assert len(found) <= 1, (elo, timing, soul)
+    return found[0] if found else None
+
 def bmile(milestone, elo=None, timing=None, soul=None):
     found = [r for r in base_miles if r['map_version']==BASE_MV and r['milestone']==milestone
              and r['elo']==(elo or 'all') and r['timing']==(timing or 'all')
@@ -150,8 +159,9 @@ for key, _ in BASE_RANKS:
 assert sum(bfirst(None, t)['matches'] for t, _ in BASE_TIMINGS) == BF['matches']
 assert sum(bfirst(None, t)['attacker_wins'] for t, _ in BASE_TIMINGS) == BF['attacker_wins']
 for s in ('ahead','even','behind','unknown'):
-    r = bfirst(soul=s)
-    assert r['ended_with_attacker_win_by_5m'] + r['ended_with_defender_win_by_5m'] + r['still_playing_after_5m'] == r['matches']
+    r = bfirst_opt(soul=s)
+    if r is not None:
+        assert r['ended_with_attacker_win_by_5m'] + r['ended_with_defender_win_by_5m'] + r['still_playing_after_5m'] == r['matches']
 for m in (1, 2, 3):
     tot = bmile(m)
     assert tot['attacker_wins'] + tot['defender_wins'] == tot['team_observations']
@@ -264,13 +274,15 @@ for minute in (15, 20, 25, 30, 35, 40):
 d.table('Team-Sichten auf noch laufende Matches: Siege nach Anzahl eigener Base-Verluste bis zur jeweiligen Minute', ['Spielminute','Team-Sichten','Sieg ohne eigenen Verlust','Sieg mit genau einem','Sieg mit zwei bis drei'], bc_rows, 'Beobachtungseinheit ist die Team-Sicht eines Matches, das zur jeweiligen Minute noch läuft; jedes Match zählt hier zweimal, einmal je Seite. Eigene und gegnerische Verluste werden getrennt gezählt, ein 1:0 wird also nicht mit einem 1:2 vermischt; die feinen Kombinationen stehen im Datenexport. Sternchen: unter 200 Beobachtungen. Quelle: base_counts.json.')
 d.paragraph('Die Spalten sind bewusst als Momentaufnahmen gelesen und nicht als Verlaufskurve desselben Matches: Ein Team mit zwei Verlusten bei 30:00 ist eine Auswahl besonders lange laufender, ungleicher Spiele. Gespiegelte Zustände wie ein beidseitiges 1:1 liegen durch die Konstruktion bei der halben Siegquote; dieser Konstruktionseffekt wird im Methodik-Kapitel eingeordnet und bringt keinen eigenen Befund.')
 bsoul_rows = []
-for key, label in [('ahead','Angreifer wirtschaftlich vorne'),('even','ungefähr gleichauf'),('behind','Angreifer wirtschaftlich hinten'),('unknown','ohne geeignete Soul-Messung')]:
+SOUL_KEYS = [('ahead','Angreifer wirtschaftlich vorne'),('even','ungefähr gleichauf'),('behind','Angreifer wirtschaftlich hinten'),('unknown','ohne geeignete Soul-Messung')]
+BSOUL_PRESENT = [k for k, _ in SOUL_KEYS if bfirst_opt(soul=k) is not None]
+for key, label in [(k, l) for k, l in SOUL_KEYS if k in BSOUL_PRESENT]:
     r = bfirst(soul=key)
     n = r['matches']
     bsoul_rows.append([label, num(n), share(r['attacker_wins'], n) + flag(n),
                        share(r['ended_with_attacker_win_by_5m'], n), share(r['ended_with_defender_win_by_5m'], n),
                        share(r['still_playing_after_5m'], n)])
-d.table('Erster Base-Verlust nach Soul-Lage des Angreifers und Verlauf der nächsten fünf Minuten', ['Soul-Lage des Angreifers','Matches','Angreifer gewinnt','Ende in 5 Min: Angreifer','Ende in 5 Min: Verteidiger','läuft weiter'], bsoul_rows, 'Soul-Lage aus der letzten gemeinsamen Messung aller zwölf Spieler strikt vor dem Ereignis, höchstens 300 Sekunden alt; der größere Wert muss mehr als das 1,05-Fache des kleineren sein. Die drei Ausgangsspalten addieren sich zu 100 Prozent. Von den weiterlaufenden Matches stehen weitere Base-Verluste und Gegenangriffe im Export. Quelle: base_first.json.')
+d.table('Erster Base-Verlust nach Soul-Lage des Angreifers und Verlauf der nächsten fünf Minuten', ['Soul-Lage des Angreifers','Matches','Angreifer gewinnt','Ende in 5 Min: Angreifer','Ende in 5 Min: Verteidiger','läuft weiter'], bsoul_rows, 'Soul-Lage aus der letzten gemeinsamen Messung aller zwölf Spieler strikt vor dem Ereignis, höchstens 300 Sekunden alt; der größere Wert muss mehr als das 1,05-Fache des kleineren sein. Die drei Ausgangsspalten addieren sich zu 100 Prozent. Von den weiterlaufenden Matches stehen weitere Base-Verluste und Gegenangriffe im Export.' + ('' if 'unknown' in BSOUL_PRESENT else ' Fehlende geeignete Soul-Messung trat beim ersten Verlust nicht auf.') + ' Quelle: base_first.json.')
 d.paragraph(f'Von den Matches, in denen der Angreifer beim ersten Base-Verlust wirtschaftlich vorne lag, enden {share(bfirst(soul="ahead")["ended_with_attacker_win_by_5m"], bfirst(soul="ahead")["matches"])} schon in den folgenden fünf Minuten mit dem Matchsieg des Angreifers. Bei wirtschaftlichem Rückstand sind es {share(bfirst(soul="behind")["ended_with_attacker_win_by_5m"], bfirst(soul="behind")["matches"])}. Der Base-Verlust ist damit auch eine Frage, was die Angreifer mit dem Vorteil anfangen: Ein Teil der Spiele entscheidet sich direkt, ein Teil läuft weiter, und gerade dort kann die verteidigende Seite den Verlust noch überstehen.')
 d.paragraph('Zwei Grenzen gehören zu diesem Kapitel: Ob ein Base-Guardian-Eintrag einen einzelnen Gegner oder die Gruppe derselben Lane meint, ist an diesen Daten nicht geprüft, gezählt werden Einträge. Und alle Quoten sind beobachtete Grundraten ohne Kontrolle für Teamstärke, restliche Objectives oder Spielverlauf. Ein späterer Base-Verlust ist auch ein Merkmal eines bereits ungleichen Spiels.')
 
@@ -287,7 +299,9 @@ d.paragraph('<strong>Datenabdeckung.</strong> Gemeint sind die öffentlich erfas
 d.paragraph('<strong>Doppelzählungen.</strong> Für die Gebäude-Abfrage wird die Metadatenkopie von player_slot 1 verwendet und je match_id die zuletzt erfasste Version anhand von created_at ausgewählt. Die Datenbank verwendet Spieler-Slots 1 bis 12, nicht 0 bis 11. Für die Soul-Abfrage wird je Match und Spieler-Slot die letzte Version gewählt. So wird ein Gebäudeereignis nicht zwölfmal als unabhängiger Fall gezählt.')
 d.paragraph('<strong>Welches Team?</strong> objectives.team bezeichnet den Besitzer des gefallenen Gebäudes, nicht das Team, das es zerstört hat. Das Erst-Team ist daher die Gegenseite. Für Guardians werden Tier1Lane-Ereignisse verwendet, für Walker Tier2Lane-Ereignisse. Base Guardians werden nicht mit den Lane-Guardians vermischt. Nur positive Fallzeitpunkte innerhalb der Matchdauer und gültige Teamnamen werden berücksichtigt; die parallelen Ereignisarrays müssen gleich lang sein.')
 d.paragraph('<strong>Base Guardians: strenge Zählregeln.</strong> Das Base-Kapitel betrachtet BarrackBossLane-Ereignisse mit den Gebäude-Kennungen 1, 3 und 4, also die Verteidigungslinien vor dem Patron. Ob ein Zeitstempel einen einzelnen Gegner oder die komplette Base-Guardian-Gruppe derselben Lane abbildet, ist an diesen Daten ungeprüft; gezählt werden deshalb Einträge, ohne sie in eine Figurenanzahl umzurechnen. Ein Match fließt nur ein, wenn alle zwölf Spielerzeilen konsistent sind, die Metadaten übereinstimmen und der Datensatz den Core-Verlust des Verlierer-Teams enthält. Ein leerer Objective-Datensatz gilt damit als ungeeignet und nicht als Match ohne Base-Verlust. Widersprüchliche Fallzeiten für denselben Besitzer und dasselbe Gebäude führen zum Ausschluss, identische Dubletten werden zusammengefasst, Zeitstempel null gelten nicht als Zerstörung.')
-d.paragraph(f'<strong>Base Guardians: Nenner und Perspektiven.</strong> Von {num(BA["candidate_matches"])} Kandidaten-Matches bleiben {num(BA["eligible_matches"])} auswertbar, davon {num(BA["matches_with_abandon"])} mit Abbrecher-Meldung; die Grundgesamtheit von {num(cohort["matches"])} Matches ist hier bewusst kein Nenner, und ein Vergleich mit Guardian oder Walker müsste auf dieser geprüften Auswahl neu gerechnet werden. Die Soul-Einordnung nutzt die letzte gemeinsame Messung aller zwölf Spieler strikt vor dem Ereignis, höchstens 300 Sekunden alt; ohne geeignete Messung bleibt die Lage unbekannt. Abbrecher-Matches bleiben enthalten, der Datenexport zählt Siege zusätzlich ohne sie aus. Verluststufen und Momentaufnahmen zählen Team-Sichten, dasselbe Match kann beide Perspektiven beitragen; sie sind keine unabhängigen Match-Beobachtungen. Gespiegelte Zustände wie ein beidseitiges 1:1 liegen durch die Konstruktion bei der halben Siegquote; daraus wird kein Befund abgeleitet. Die Ausgaben je Karten-Version werden getrennt ausgewiesen, die Tabellen zeigen Version ' + str(BASE_MV) + ('; die übrigen Versionen stehen im Export.' if BASE_MV_OTHERS else '.'))
+d.paragraph(f'<strong>Base Guardians: Nenner und Perspektiven.</strong> Von {num(BA["candidate_matches"])} Kandidaten-Matches bleiben {num(BA["eligible_matches"])} auswertbar, davon {num(BA["matches_with_abandon"])} mit Abbrecher-Meldung; die Grundgesamtheit von {num(cohort["matches"])} Matches ist hier bewusst kein Nenner, und ein Vergleich mit Guardian oder Walker müsste auf dieser geprüften Auswahl neu gerechnet werden. Die Base-Abfragen stammen aus dem Abruf am 23. September 2026, die Erstauswertung vom 22.; die Quelle aktualisiert Rohdaten nachträglich, deshalb stehen die Kapitel auf unterschiedlichen Abrufständen desselben Fensters. '
+ + ('In keinem auswertbaren Match fehlt die Base-Telemetrie vollständig.' if BA['matches_without_recorded_base_loss'] == 0 else f'{num(BA["matches_without_recorded_base_loss"])} auswertbare Matches enthalten keinen Base-Eintrag und zählen nur in den Momentaufnahmen.')
+ + f' Die Soul-Einordnung nutzt die letzte gemeinsame Messung aller zwölf Spieler strikt vor dem Ereignis, höchstens 300 Sekunden alt; ohne geeignete Messung bleibt die Lage unbekannt. Abbrecher-Matches bleiben enthalten, der Datenexport zählt Siege zusätzlich ohne sie aus. Verluststufen und Momentaufnahmen zählen Team-Sichten, dasselbe Match kann beide Perspektiven beitragen; sie sind keine unabhängigen Match-Beobachtungen. Gespiegelte Zustände wie ein beidseitiges 1:1 liegen durch die Konstruktion bei der halben Siegquote; daraus wird kein Befund abgeleitet. Die Ausgaben je Karten-Version werden getrennt ausgewiesen, die Tabellen zeigen Version ' + str(BASE_MV) + ('; die übrigen Versionen stehen im Export.' if BASE_MV_OTHERS else '.'))
 d.paragraph('<strong>Gleichzeitige Erst-Ereignisse.</strong> Zerstören beide Teams in derselben Sekunde erstmals ein Gebäude dieser Kategorie, wird kein willkürliches Erst-Team gewählt. Mehrere gleichzeitige Erst-Fälle zugunsten desselben Teams bleiben eindeutig. Nach den Filtern sind 63.257 Guardian- und 63.284 Walker-Matches auswertbar. Die Differenz zur Grundgesamtheit darf nicht pauschal als Zahl gleichzeitiger Kills gelesen werden; auch andere Eignungsfilter können Fälle entfernen.')
 d.paragraph('<strong>Rang, Zeit und Souls.</strong> Ranggruppen beruhen auf average_badge, nicht auf einem einzelnen Account. Zeitwerte in den Rangtabellen sind Mediane. Zeitfenster sind links geschlossen und rechts offen. Bei der Soul-Messung wird der vorhandene Messpunkt bei exakt 540 Sekunden verwendet. Fehlende Werte sind unbekannt, nicht null Souls. Der größere Soul-Wert muss mehr als das 1,05-Fache des kleineren betragen.')
 d.paragraph('<strong>Unsicherheit und Ursache.</strong> Die 95-Prozent-Intervalle sind Wilson-Intervalle für die angezeigten Anteile. Sie berücksichtigen weder systematische Auswahlfehler der API noch mögliche Abhängigkeiten durch wiederkehrende Spieler. Die Haupttabellen sind deskriptiv und nicht um den Vorsprung vor dem Ereignis bereinigt. Deshalb sprechen wir von beobachteten Siegquoten und Signalen, nicht von bewiesenen zusätzlichen Siegen durch einen Tower-Kill.')
@@ -306,13 +320,13 @@ footer = re.search(r'<footer class="footer">.*?</footer>', source_index, re.S).g
 article_sections=[]
 for i,s in enumerate(d.sections,1):
     article_sections.append(f'<section class="bl-section" id="{s["id"]}"><div class="container"><div class="bl-narrow"><p class="bl-eyebrow">Kapitel {i}</p><h2 class="bl-h2">{html.escape(s["title"])}</h2></div>'+''.join(s['html'])+'</div></section>')
-md = '# '+TITLE+'\n\nStand: 22. September 2026. Datenfenster: 16. bis 21. September 2026 (genaue UTC-Grenzen in der Methodik).\n\n'+lede+'\n\n'
+md = '# '+TITLE+'\n\nStand: 23. September 2026, ergänzt um das Base-Guardian-Kapitel. Datenfenster: 16. bis 21. September 2026 (genaue UTC-Grenzen in der Methodik).\n\n'+lede+'\n\n'
 md += '\n\n'.join('## '+s['title']+'\n\n'+'\n\n'.join(s['md']) for s in d.sections)+'\n'
 (TASK/'FINDINGS.md').write_text(md)
 word_count=len(re.findall(r'\S+', re.sub('<[^>]+>',' ', ''.join(article_sections))))
 jsonld={
  '@context':'https://schema.org', '@type':['Article','BlogPosting'],
- 'headline':TITLE,'description':DESC,'datePublished':'2026-09-22','dateModified':'2026-09-22',
+ 'headline':TITLE,'description':DESC,'datePublished':PUBLISHED,'dateModified':MODIFIED,
  'inLanguage':'de-DE','url':URL,'mainEntityOfPage':URL,
  'image':'https://deutsche-deadlock-community.de/images/og-logo.png',
  'isAccessibleForFree':True,'articleSection':'Daten-Report','wordCount':word_count,
@@ -335,7 +349,7 @@ page=f'''<!doctype html>
 <meta property="og:description" content="{html.escape(DESC,quote=True)}"><meta property="og:url" content="{URL}">
 <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-logo.png">
 <meta property="og:image:alt" content="Logo der Deutschen Deadlock Community"><meta property="og:locale" content="de_DE">
-<meta property="og:site_name" content="Deutsche Deadlock Community"><meta property="article:published_time" content="2026-09-22"><meta property="article:modified_time" content="2026-09-22">
+<meta property="og:site_name" content="Deutsche Deadlock Community"><meta property="article:published_time" content="{PUBLISHED}"><meta property="article:modified_time" content="{MODIFIED}">
 <meta property="article:section" content="Daten-Report"><meta name="theme-color" content="#0b0b0b">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{html.escape(TITLE,quote=True)}">
 <meta name="twitter:description" content="{html.escape(DESC,quote=True)}"><meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-logo.png">
@@ -348,7 +362,7 @@ page=f'''<!doctype html>
 <section class="bl-hero"><div class="container"><p class="bl-eyebrow">Objectives · Daten-Report</p>
 <h1>Win lane, lose game? <em>Was ein früher Guardian über den Sieg verrät</em></h1>
 <p class="bl-hero-lede">{html.escape(lede)}</p>
-<p class="bl-stamp"><b>Stand: 22. September 2026</b> · Matchstarts 16. bis 21. September · Deadlock-API, Ranked</p>
+<p class="bl-stamp"><b>Stand: 23. September 2026</b> · Matchstarts 16. bis 21. September · Deadlock-API, Ranked</p>
 <div class="bl-tiles">{tiles}</div>
 <p class="gi-note">Beobachtete Zusammenhänge, keine bewiesenen kausalen Effekte. Fallzahlen und Messregeln stehen bei den Tabellen.</p>
 {toc}</div></section>{''.join(article_sections)}</article></main>
@@ -393,12 +407,49 @@ for name,rows,wf,nf in [('base_first',base_first,'attacker_wins','matches'),('ba
             lo,hi=interval({'wins':r[wf],'n':r[nf]})
             writer.writerow(dict(r,attacker_win_rate_percent=round(100*r[wf]/r[nf],6),wilson_95_low_percent=round(lo,6),wilson_95_high_percent=round(hi,6)))
 (PUBLIC/'article.md').write_text(md)
-manifest={'accessed':'2026-09-22','source':'https://api.deadlock-api.com/v1/mcp','tool':'execute_query',
+manifest={'accessed':PUBLISHED,'base_accessed':MODIFIED,'source':'https://api.deadlock-api.com/v1/mcp','tool':'execute_query',
  'scope':'Contiguous match-ID window [106000000,107000000), not random sampling or complete calendar days.',
  'cohort':cohort,'base_audit':base_audit,
  'base_scope':'Base-guardian chapter uses stricter quality filters; its denominators are smaller than the 63,438 cohort.',
  'files':{f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(PUBLIC.iterdir()) if f.name!='manifest.json'}}
 (PUBLIC/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
+
+# llms.txt and llms-full.txt are maintained from the same data as the article.
+BATT=share(BF['attacker_wins'],BF['matches'])
+BDEF=share(BF['defender_wins'],BF['matches'])
+BM1=bmile(1)
+LLMS_SUMMARY=(f'Auswertung von {num(cohort["matches"])} Ranked-Matches aus dem öffentlichen MCP-Server der Deadlock-API '
+ f'(Tabelle match_player, nur lesende SQL), 16. bis 21. September 2026, mit Zusatzkapitel zu Base Guardians auf {num(BA["eligible_matches"])} geprüften Matches aus einem späteren Abruf desselben Match-ID-Fensters. '
+ f'Kernbefund: Der frühe Gebäudevorteil ist ein Signal, keine Vorentscheidung. Das Team mit dem ersten Guardian gewinnt {pct(G)}, mit dem ersten Walker {pct(W)}; ein teamweiter Soul-Vorsprung bei 9:00 geht mit {pct(T)} Siegen einher. '
+ f'Nach dem ersten Base-Guardian-Verlust (Median {clock(BM1["median_fallen_s"])}) gewinnt der Angreifer {BATT}, die verteidigende Seite noch {BDEF}. '
+ 'Alle Quoten sind beobachtete Grundraten ohne Kausalaussage und ohne Kontrolle für Teamstärke oder Spielverlauf; das Base-Kapitel nutzt strengere Qualitätsfilter und dadurch kleinere Nenner als die Erstauswertung. Der Text darf mit Quelle und Zeitraum zitiert werden.')
+llms=SITE/'public/llms.txt'
+llms_text=llms.read_text()
+if SLUG not in llms_text:
+    needle='## Blog\n\n'
+    assert llms_text.count(needle)==1
+    llms.write_text(llms_text.replace(needle,needle+f'- [{TITLE}]({URL}) (22. September 2026, ergänzt 23. September 2026)\n  {LLMS_SUMMARY}\n',1))
+llmsf=SITE/'public/llms-full.txt'
+llmsf_text=llmsf.read_text()
+if SLUG not in llmsf_text:
+    entry=f'- [{TITLE}]({URL}) (22. September 2026, ergänzt 23. September 2026)\n  {LLMS_SUMMARY}\n\n'
+    needle='## Blog\n\n'
+    assert llmsf_text.count(needle)==1
+    llmsf_text=llmsf_text.replace(needle,needle+entry,1)
+    kern_bullet=(f'- Grundgesamtheit: {num(cohort["matches"])} Ranked-Matches, Match-IDs [106000000, 107000000), 16. bis 21. September 2026; die Base-Guardian-Abfragen stammen aus einem späteren Abruf desselben Fensters und prüfen schärfer, deshalb sind ihre Nenner kleiner ({num(BA["eligible_matches"])} von {num(BA["candidate_matches"])} Kandidaten-Matches). '
+ 'Rang aus average_badge in drei Gruppen; fehlende Ränge werden nicht geschätzt. Alle Quoten sind Beobachtungen ohne Kausalaussage.\n'
+ f'- Kapitel Lane: Das Team mit dem ersten gegnerischen Guardian gewinnt {pct(G)} ({num(G["n"])} auswertbare Matches), verliert also noch {pct(LOSS)}. Gemeint ist der erste Guardian der Karte, nicht die eigene Lane.\n'
+ f'- Kapitel Elo: Der erste Guardian fällt in der hohen Gruppe im Median bei {clock(objective("Tier1Lane","high")["median_s"])} gegenüber {clock(objective("Tier1Lane","low")["median_s"])} in der niedrigen; die Siegquoten des Erst-Teams liegen bei {pct(objective("Tier1Lane","high"))}, {pct(objective("Tier1Lane","mid"))} und {pct(objective("Tier1Lane","low"))}. Zeitwerte sind Mediane, keine Siegversprechen.\n'
+ f'- Kapitel Timing: Die Siegquote des Erst-Teams sinkt von {pct(objective("Tier1Lane",timing="00-05"))} vor Minute fünf auf {pct(objective("Tier1Lane",timing="11-15"))} zwischen elf und fünfzehn Minuten; die Zeitfenster sind Auswertungsgrenzen. Ein später Fall kann für einen ausgeglichenen Verlauf stehen, die Uhrzeit ist auch ein Merkmal des bisherigen Spiels.\n'
+ f'- Kapitel Walker: Das Team mit dem ersten gegnerischen Walker gewinnt {pct(W)} aus {num(W["n"])} Fällen, ein stärkerer unbereinigter Zusammenhang als beim Guardian.\n'
+ f'- Kapitel Souls: Ein teamweiter Soul-Vorsprung bei 9:00 geht mit {pct(T)} Siegen einher, der Vorsprung der ursprünglich zugewiesenen Lane bei {pct(soul("1"))}, {pct(soul("4"))} und {pct(soul("6"))}. Gemessen wird der Stand zugewiesener Spieler, nicht ununterbrochene Lane-Duelle.\n'
+ f'- Kapitel Base Guardians: Nach dem ersten Base-Verlust (Median {clock(BM1["median_fallen_s"])}) gewinnt der Angreifer {BATT}, die Verteidiger noch {BDEF}; auf jeder Stufe sinkt die Verteidiger-Quote weiter. In {share(BF["ended_with_attacker_win_by_5m"], BF["matches"])} endet das Match schon in den folgenden fünf Minuten mit dem Angreifer-Sieg. Ob ein Eintrag einen einzelnen Gegner oder die Gruppe derselben Lane meint, ist ungeprüft, gezählt werden Einträge. Team-Sichten sind keine unabhängigen Match-Beobachtungen.\n'
+ '- Kapitel Verlauf: Win lane, lose game passiert häufig, win lane, win game trotzdem häufiger. Die Soul-Entwicklungskurve nach dem Guardian bleibt ohne abgeschlossene Messung.\n'
+ '- Methodik und Vorbehalte: Wilson-Intervalle ohne systematische Fehler; Abbrecher im Base-Kapitel enthalten und im Export zusätzlich ausgezählt; die Kapitel nutzen unterschiedliche Abrufstände desselben Fensters und werden nicht direkt verglichen.\n')
+    kern='### Kernzahlen des Guardian-Folgeartikels, Kapitel für Kapitel\n\n'+kern_bullet
+    needle2='### Kernzahlen des Objectives-Reports'
+    assert llmsf_text.count(needle2)==1
+    llmsf.write_text(llmsf_text.replace(needle2,kern+'\n'+needle2,1))
 
 CARD_P='63.438 Ranked-Matches: Das Team mit dem ersten Guardian gewinnt 58,9 Prozent, mit dem ersten Walker 64,5. Frühe und späte Fallzeitpunkte, Elo-Gruppen, Lane-Souls und das Zusatzkapitel zu Base Guardians, mit Fallzahlen, Unsicherheit und offenen Anschlussfragen.'
 CARD_OLD_P='63.438 Ranked-Matches: Das Team mit dem ersten Guardian gewinnt 58,9 Prozent, mit dem ersten Walker 64,5. Frühe und späte Fallzeitpunkte, Elo-Gruppen und Lane-Souls im Vergleich, mit Fallzahlen, Unsicherheit und offenen Anschlussfragen.'
@@ -424,7 +475,9 @@ sitemap=SITE/'public/sitemap.xml'
 sitemap_text=sitemap.read_text()
 if URL not in sitemap_text:
     assert sitemap_text.count('</urlset>')==1
-    sitemap.write_text(sitemap_text.replace('</urlset>',f'  <url><loc>{URL}</loc><lastmod>2026-09-22</lastmod></url>\n</urlset>'))
+    sitemap.write_text(sitemap_text.replace('</urlset>',f'  <url><loc>{URL}</loc><lastmod>{PUBLISHED}</lastmod></url>\n</urlset>'))
+elif f'<loc>{URL}</loc><lastmod>{PUBLISHED}</lastmod>' in sitemap_text:
+    sitemap.write_text(sitemap_text.replace(f'<loc>{URL}</loc><lastmod>{PUBLISHED}</lastmod>',f'<loc>{URL}</loc><lastmod>{MODIFIED}</lastmod>',1))
 # Add a contextual forward link; do not change the original report's statistics.
 oldpost=SITE/'blog/deadlock-objectives-2026/index.html'
 oldhtml=oldpost.read_text()
