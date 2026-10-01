@@ -4,6 +4,6 @@ Intent-Thread: aufrufende Orchestrator-Hauptsession; im Auftrag ist keine numeri
 Worker: dieser einzelne Thread, keine Unter-Threads.
 Worktree: `/home/nathanael/.worktrees/Website-coaching-redesign`
 Branch: `feat/coaching-redesign`
-Status: Implementierung und lokale Prüfung fertig. Merge-Gate Runde 1 BLOCK durch gpt-6.1-sol, high. Übergabe an Fix-Runde, siehe REVIEW.md und TODO.md. Worktree bleibt bestehen; Thread wartet und wird nicht gesettelt.
+Status: Abgeschlossen. Runde 1 BLOCK, Fix-Runde 1 ALLOW durch gpt-6.1-sol, high, auf `1a85a31`. Per Fast-Forward nach main gepusht, Frontend unter `dl-coaching/dist` veröffentlicht und live geprüft. Branch und Worktree werden danach entfernt.
 
 Umfang: Coaching-Navigation und Anfrageformular, gemeinsamer Rangbestand mit Scrim-Anmeldung. Keine Backend- oder Schemaänderung.
