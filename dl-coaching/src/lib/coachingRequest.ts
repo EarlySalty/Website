@@ -14,6 +14,45 @@ export interface TimeWindow {
   to: string
 }
 
+function segmentInput(raw: string, limits: number[], separator: string, padAbove: number[]): string {
+  const segments = limits.map(() => '')
+  let index = 0
+  for (const char of raw) {
+    if (/\d/.test(char)) {
+      if (segments[index].length === limits[index]) {
+        if (index === limits.length - 1) break
+        index++
+      }
+      segments[index] += char
+      if (segments[index].length === 1 && limits[index] === 2 && Number(char) > padAbove[index]) segments[index] = `0${char}`
+    } else if (segments[index] && index < limits.length - 1) {
+      index++
+    }
+  }
+  return segments.slice(0, index + 1).join(separator)
+}
+
+export function formatDateInput(raw: string): string {
+  const iso = /^\s*(\d{4})-(\d{2})-(\d{2})\s*$/.exec(raw)
+  if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`
+  return segmentInput(raw, [2, 2, 4], '.', [3, 1, 9])
+}
+
+export function formatTimeInput(raw: string): string {
+  return segmentInput(raw, [2, 2], ':', [2, 9])
+}
+
+export function finishDateInput(value: string): string {
+  const match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(value)
+  return match ? `${match[1].padStart(2, '0')}.${match[2].padStart(2, '0')}.${match[3]}` : value
+}
+
+export function finishTimeInput(value: string): string {
+  const match = /^(\d{1,2})(?::(\d{2})?)?$/.exec(value)
+  if (!match) return value
+  return `${match[1].padStart(2, '0')}:${(match[2] ?? '').padEnd(2, '0')}`
+}
+
 export function validateWindow(slot: TimeWindow, today = new Date()): string | null {
   if (!slot.date && !slot.from && !slot.to) return null
   const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(slot.date.trim())

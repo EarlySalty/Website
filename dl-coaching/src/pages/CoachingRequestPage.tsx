@@ -5,7 +5,7 @@ import { coaching, type CreateCoachingRequest } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar, PageSpinner } from '@/components/ui'
 import heroData from '../../../scripts/data/heroes.json'
-import { RANKS, RANK_IMAGES, TIERS, FOCUS_AREAS, availabilityText, validateWindow, type TimeWindow } from '@/lib/coachingRequest'
+import { RANKS, RANK_IMAGES, TIERS, FOCUS_AREAS, availabilityText, finishDateInput, finishTimeInput, formatDateInput, formatTimeInput, validateWindow, type TimeWindow } from '@/lib/coachingRequest'
 
 export default function CoachingRequestPage() {
   const { user, login, isLoading: authLoading } = useAuth()
@@ -22,41 +22,32 @@ export default function CoachingRequestPage() {
   const nextWindowId = useRef(1)
   const formRef = useRef<HTMLFormElement>(null)
   const [attempted, setAttempted] = useState(false)
+  const [, setCheckedAt] = useState(0)
   const preferredCoachId = searchParams.get('coach') ?? ''
   const toggle = (values: string[], value: string) => values.includes(value) ? values.filter(item => item !== value) : [...values, value]
   const problems = [...focus, notes.trim()].filter(Boolean).join('; ')
-  const time = availabilityText(presets, windows)
-  const errors: Record<string, string> = {}
-  if (!rank || (rank !== 'Unbekannt' && !tier)) errors.rank = 'Bitte Rang und Stufe wählen.'
-  if (!hero) errors.hero = 'Bitte deinen Main-Hero wählen.'
-  if (!time) errors.time = 'Bitte mindestens einen Zeitwunsch angeben.'
-  for (const slot of windows) {
-    const error = validateWindow(slot)
-    if (error) errors[`window-${slot.id}`] = error
+  const check = (now: Date) => {
+    const time = availabilityText(presets, windows, now)
+    const errors: Record<string, string> = {}
+    if (!rank || (rank !== 'Unbekannt' && !tier)) errors.rank = 'Bitte Rang und Stufe wählen.'
+    if (!hero) errors.hero = 'Bitte deinen Main-Hero wählen.'
+    for (const slot of windows) {
+      const error = validateWindow(slot, now)
+      if (error) errors[`window-${slot.id}`] = error
+    }
+    if (!time && !windows.some(slot => errors[`window-${slot.id}`])) errors.time = 'Bitte mindestens einen Zeitwunsch angeben.'
+    if (!experience.trim()) errors.experience = 'Bitte deine Games oder Spielstunden angeben.'
+    if (!problems) errors.problems = 'Bitte ein Thema wählen oder kurz beschreiben.'
+    return { time, errors }
   }
-  if (!experience.trim()) errors.experience = 'Bitte deine Games oder Spielstunden angeben.'
-  if (!problems) errors.problems = 'Bitte ein Thema wählen oder kurz beschreiben.'
+  const { errors } = check(new Date())
 
-  const submit = useMutation({
-    mutationFn: () => {
-      const payload: CreateCoachingRequest = {
-        display_name: user?.displayName,
-        rank,
-        subrank: rank === 'Unbekannt' ? undefined : tier,
-        hero,
-        availability: time,
-        games_played: experience.trim(),
-        hours_played: experience.trim(),
-        current_problems: problems,
-        preferred_coach_id: preferredCoachId || undefined,
-      }
-      return coaching.createRequest(payload)
-    },
-  })
+  const submit = useMutation({ mutationFn: (payload: CreateCoachingRequest) => coaching.createRequest(payload) })
 
   const errorMessage = (key: string) => attempted && errors[key] ? <p id={`${key}-error`} className="request-error" role="alert">{errors[key]}</p> : null
   const invalid = (key: string) => attempted && !!errors[key]
   const updateWindow = (id: number, key: 'date' | 'from' | 'to', value: string) => setWindows(current => current.map(slot => slot.id === id ? { ...slot, [key]: value } : slot))
+  const timeInput = (slot: TimeWindow, key: 'from' | 'to', label: string, placeholder: string) => <label className="request-field"><span>{label}</span><input inputMode="numeric" autoComplete="off" placeholder={placeholder} value={slot[key]} aria-invalid={invalid(`window-${slot.id}`)} onChange={event => updateWindow(slot.id, key, formatTimeInput(event.target.value))} onBlur={event => updateWindow(slot.id, key, finishTimeInput(event.target.value))} /></label>
 
   if (authLoading) return <PageSpinner />
   if (submit.isSuccess) return (
@@ -83,12 +74,25 @@ export default function CoachingRequestPage() {
       </section> : <form ref={formRef} className="request-form" noValidate onSubmit={event => {
         event.preventDefault()
         if (submit.isPending) return
+        const now = new Date()
+        const current = check(now)
         setAttempted(true)
-        if (Object.keys(errors).length) {
+        setCheckedAt(now.getTime())
+        if (Object.keys(current.errors).length) {
           requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
           return
         }
-        submit.mutate()
+        submit.mutate({
+          display_name: user.displayName,
+          rank,
+          subrank: rank === 'Unbekannt' ? undefined : tier,
+          hero,
+          availability: current.time,
+          games_played: experience.trim(),
+          hours_played: experience.trim(),
+          current_problems: problems,
+          preferred_coach_id: preferredCoachId || undefined,
+        })
       }}>
         <div className="request-user"><Avatar url={user.avatarUrl} name={user.displayName} size={38} /><div><strong>{user.displayName}</strong><span>Deine Coaching-Anfrage</span></div></div>
         {preferredCoachId && <p className="request-hint mb-4">Deine Coach-Auswahl wird mitgeschickt.</p>}
@@ -118,9 +122,9 @@ export default function CoachingRequestPage() {
           <div className="choice-row">{['Heute Abend', 'Morgen', 'Wochenende'].map(value => <button type="button" key={value} className={`choice-chip${presets.includes(value) ? ' is-selected' : ''}`} aria-pressed={presets.includes(value)} aria-invalid={invalid('time')} aria-describedby={invalid('time') ? 'time-error' : undefined} onClick={() => setPresets(toggle(presets, value))}>{value}</button>)}</div>
           {windows.map((slot, index) => <div key={slot.id} className="time-window">
             <div className="time-window-fields">
-              <label className="request-field"><span>Datum{windows.length > 1 ? ` ${index + 1}` : ''}</span><input inputMode="numeric" placeholder="TT.MM.JJJJ" maxLength={10} value={slot.date} aria-invalid={invalid(`window-${slot.id}`)} aria-describedby={invalid(`window-${slot.id}`) ? `window-${slot.id}-error` : undefined} onChange={event => updateWindow(slot.id, 'date', event.target.value)} /></label>
-              <label className="request-field"><span>Von</span><input inputMode="numeric" placeholder="18:00" maxLength={5} value={slot.from} onChange={event => updateWindow(slot.id, 'from', event.target.value)} /></label>
-              <label className="request-field"><span>Bis</span><input inputMode="numeric" placeholder="20:00" maxLength={5} value={slot.to} onChange={event => updateWindow(slot.id, 'to', event.target.value)} /></label>
+              <label className="request-field"><span>Datum{windows.length > 1 ? ` ${index + 1}` : ''}</span><input inputMode="numeric" autoComplete="off" placeholder="TT.MM.JJJJ" value={slot.date} aria-invalid={invalid(`window-${slot.id}`)} aria-describedby={invalid(`window-${slot.id}`) ? `window-${slot.id}-error` : undefined} onChange={event => updateWindow(slot.id, 'date', formatDateInput(event.target.value))} onBlur={event => updateWindow(slot.id, 'date', finishDateInput(event.target.value))} /></label>
+              {timeInput(slot, 'from', 'Von', '18:00')}
+              {timeInput(slot, 'to', 'Bis', '20:00')}
               <button type="button" className="remove-window" aria-label={`Zeitfenster ${index + 1} entfernen`} onClick={() => setWindows(current => current.filter(item => item.id !== slot.id))}>×</button>
             </div>{errorMessage(`window-${slot.id}`)}
           </div>)}
