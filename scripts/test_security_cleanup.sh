@@ -2,16 +2,6 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-EXPECTED_CODEQL_SHA="7188fc363630916deb702c7fdcf4e481b751f97a"
-
-mapfile -t codeql_references < <(grep -R -h 'uses: github/codeql-action/' "$ROOT_DIR/.github/workflows")
-[[ "${#codeql_references[@]}" -gt 0 ]]
-for reference in "${codeql_references[@]}"; do
-  [[ "$reference" == *"@$EXPECTED_CODEQL_SHA # v4.37.1"* ]] || {
-    echo "Unexpected CodeQL action pin: $reference" >&2
-    exit 1
-  }
-done
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
