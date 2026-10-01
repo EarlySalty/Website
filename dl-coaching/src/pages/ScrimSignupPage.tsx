@@ -7,6 +7,7 @@ import AvailabilityEditor from '@/components/AvailabilityEditor'
 import { Avatar, EmptyState, PageSpinner } from '@/components/ui'
 import { emptyWeekly, WEEKDAYS } from '@/lib/availability'
 import type { User } from '@/types'
+import { RANKS, TIERS } from '@/lib/coachingRequest'
 
 interface SignupForm {
   rankName: string
@@ -15,15 +16,6 @@ interface SignupForm {
   availability_slots: WeeklyAvailability
 }
 
-// Rangfolge wie im Spiel; identisch zur Rang-Auswahl im Discord-Onboarding.
-const RANKS = [
-  'Initiate', 'Seeker', 'Alchemist', 'Arcanist', 'Ritualist', 'Emissary',
-  'Archon', 'Oracle', 'Phantom', 'Ascendant', 'Eternus',
-] as const
-
-// Jede Stufe hat 6 Unterstufen. Ohne sie ist der Rang fuer Team-Balance wertlos —
-// im Scrim-Kanal nennen die Leute durchweg "Phantom 6" / "Oracle 4", nie nur "Phantom".
-const TIERS = ['1', '2', '3', '4', '5', '6'] as const
 
 /** "Phantom" + "3" -> "Phantom 3". Ohne Stufe nur der Name, ohne Namen leer. */
 function composeRank(name: string, tier: string): string {

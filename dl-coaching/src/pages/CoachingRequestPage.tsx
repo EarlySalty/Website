@@ -1,179 +1,140 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { coaching, type CreateCoachingRequest } from '@/api/client'
 import { useAuth } from '@/context/AuthContext'
-import { Avatar, EmptyState, PageSpinner } from '@/components/ui'
-
-interface RequestForm {
-  rank: string
-  hero: string
-  time: string
-  experience: string
-  problems: string
-}
-
-const initialForm: RequestForm = {
-  rank: '',
-  hero: '',
-  time: '',
-  experience: '',
-  problems: '',
-}
+import { Avatar, PageSpinner } from '@/components/ui'
+import heroData from '../../../scripts/data/heroes.json'
+import { RANKS, RANK_IMAGES, TIERS, FOCUS_AREAS, availabilityText, validateWindow, type TimeWindow } from '@/lib/coachingRequest'
 
 export default function CoachingRequestPage() {
   const { user, login, isLoading: authLoading } = useAuth()
   const [searchParams] = useSearchParams()
+  const [rank, setRank] = useState('')
+  const [tier, setTier] = useState('')
+  const [hero, setHero] = useState('')
+  const [heroSearch, setHeroSearch] = useState('')
+  const [experience, setExperience] = useState('')
+  const [focus, setFocus] = useState<string[]>([])
+  const [notes, setNotes] = useState('')
+  const [presets, setPresets] = useState<string[]>([])
+  const [windows, setWindows] = useState<TimeWindow[]>([{ id: 0, date: '', from: '', to: '' }])
+  const nextWindowId = useRef(1)
+  const formRef = useRef<HTMLFormElement>(null)
+  const [attempted, setAttempted] = useState(false)
   const preferredCoachId = searchParams.get('coach') ?? ''
-  const [form, setForm] = useState<RequestForm>(initialForm)
+  const toggle = (values: string[], value: string) => values.includes(value) ? values.filter(item => item !== value) : [...values, value]
+  const problems = [...focus, notes.trim()].filter(Boolean).join('; ')
+  const time = availabilityText(presets, windows)
+  const errors: Record<string, string> = {}
+  if (!rank || (rank !== 'Unbekannt' && !tier)) errors.rank = 'Bitte Rang und Stufe wählen.'
+  if (!hero) errors.hero = 'Bitte deinen Main-Hero wählen.'
+  if (!time) errors.time = 'Bitte mindestens einen Zeitwunsch angeben.'
+  for (const slot of windows) {
+    const error = validateWindow(slot)
+    if (error) errors[`window-${slot.id}`] = error
+  }
+  if (!experience.trim()) errors.experience = 'Bitte deine Games oder Spielstunden angeben.'
+  if (!problems) errors.problems = 'Bitte ein Thema wählen oder kurz beschreiben.'
 
   const submit = useMutation({
     mutationFn: () => {
       const payload: CreateCoachingRequest = {
         display_name: user?.displayName,
-        rank: form.rank.trim(),
-        hero: form.hero.trim(),
-        availability: form.time.trim(),
-        games_played: form.experience.trim(),
-        hours_played: form.experience.trim(),
-        current_problems: form.problems.trim(),
+        rank,
+        subrank: rank === 'Unbekannt' ? undefined : tier,
+        hero,
+        availability: time,
+        games_played: experience.trim(),
+        hours_played: experience.trim(),
+        current_problems: problems,
         preferred_coach_id: preferredCoachId || undefined,
       }
       return coaching.createRequest(payload)
     },
   })
 
-  const update = (key: keyof RequestForm, value: string) => {
-    setForm((current) => ({ ...current, [key]: value }))
-  }
+  const errorMessage = (key: string) => attempted && errors[key] ? <p id={`${key}-error`} className="request-error" role="alert">{errors[key]}</p> : null
+  const invalid = (key: string) => attempted && !!errors[key]
+  const updateWindow = (id: number, key: 'date' | 'from' | 'to', value: string) => setWindows(current => current.map(slot => slot.id === id ? { ...slot, [key]: value } : slot))
 
   if (authLoading) return <PageSpinner />
-
-  if (!user) {
-    return (
-      <div className="request-page content-grid">
-        <section className="request-intro">
-          <p className="eyebrow mb-4">Coaching anfragen</p>
-          <h1 className="section-title">Kurz einloggen, Anfrage stellen.</h1>
-          <p className="section-copy mt-3 max-w-xl">
-            Die Anfrage läuft über deinen Website-Login. Discord bleibt für Rückfragen, Voice und Erinnerungen.
-          </p>
-          <button onClick={login} className="btn-amber mt-6">Mit Discord einloggen</button>
-        </section>
-      </div>
-    )
-  }
-
-  if (submit.isSuccess) {
-    return (
-      <div className="content-grid pb-16 pt-10 md:pt-14">
-        <EmptyState
-          title="Anfrage ist drin"
-          copy="Die Coaches sehen deine Anfrage jetzt im Cockpit. Sobald jemand übernimmt, tauchen Termine und Notizen in deinem Coaching-Bereich auf."
-        >
-          <div className="flex flex-wrap justify-center gap-2">
-            <Link to="/me" className="btn-amber">Mein Coaching</Link>
-            <Link to="/" className="btn-ghost">Coaches ansehen</Link>
-          </div>
-        </EmptyState>
-      </div>
-    )
-  }
-
-  const canSubmit = form.rank.trim() && form.hero.trim() && form.time.trim() && form.experience.trim() && form.problems.trim()
-  const submitError = submit.error instanceof Error && submit.error.message
-    ? submit.error.message
-    : 'Konnte nicht gespeichert werden. Bitte später erneut versuchen.'
+  if (submit.isSuccess) return (
+    <div className="content-grid request-success" role="status">
+      <span className="success-check" aria-hidden="true">✓</span>
+      <p className="eyebrow">Gespeichert</p><h1 className="section-title">Deine Anfrage ist drin.</h1>
+      <p className="section-copy">Die Coaches können sie jetzt sehen. Dein Coaching-Bereich zeigt dir Termine und Notizen, sobald es weitergeht.</p>
+      <div className="flex flex-wrap justify-center gap-3"><Link to="/me" className="btn-amber">Mein Coaching</Link><Link to="/" className="btn-ghost">Coaches ansehen</Link></div>
+    </div>
+  )
 
   return (
     <div className="request-page content-grid">
       <section className="request-intro">
-        <p className="eyebrow mb-4">Website-Anfrage</p>
-        <h1 className="section-title">Deadlock Coaching</h1>
-        <p className="section-copy mt-3 max-w-xl">
-          Wenige Angaben reichen. Ein Coach sieht deine Anfrage, stimmt den Termin mit dir ab und hält danach die Notizen fest.
-        </p>
+        <p className="eyebrow mb-4">Dein nächster Schritt</p>
+        <h1 className="section-title">Besser spielen.<br /><span className="request-title-accent">Zusammen.</span></h1>
+        <p className="section-copy mt-4">Woran willst du arbeiten? Sag uns, wo du stehst und wann du Zeit hast.</p>
+        <div className="request-intro-detail"><span aria-hidden="true">01</span><p>Du stellst die Anfrage.</p><span aria-hidden="true">02</span><p>Ein Coach übernimmt und stimmt den Termin mit dir ab.</p></div>
+        <Link to="/" className="request-coaches-link">Coaches kennenlernen →</Link>
       </section>
-
-      <form
-        className="request-form"
-        onSubmit={(event) => {
-          event.preventDefault()
-          if (canSubmit) submit.mutate()
-        }}
-      >
-        <div className="request-user">
-          <Avatar url={user.avatarUrl} name={user.displayName} size={38} />
-          <div>
-            <strong>{user.displayName}</strong>
-            <span>Discord-Login aktiv</span>
+      {!user ? <section className="request-form request-login">
+        <h2>Coaching anfragen</h2><p>Melde dich mit Discord an, damit die Coaches deine Anfrage zuordnen können.</p>
+        <button onClick={login} className="btn-amber">Mit Discord einloggen</button>
+      </section> : <form ref={formRef} className="request-form" noValidate onSubmit={event => {
+        event.preventDefault()
+        if (submit.isPending) return
+        setAttempted(true)
+        if (Object.keys(errors).length) {
+          requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
+          return
+        }
+        submit.mutate()
+      }}>
+        <div className="request-user"><Avatar url={user.avatarUrl} name={user.displayName} size={38} /><div><strong>{user.displayName}</strong><span>Deine Coaching-Anfrage</span></div></div>
+        {preferredCoachId && <p className="request-hint mb-4">Deine Coach-Auswahl wird mitgeschickt.</p>}
+        <fieldset className="request-section"><legend>Dein Rang</legend>
+          <p className="request-hint">Wähle deinen aktuellen Rang und die Stufe.</p>
+          <div className="rank-grid" role="group" aria-label="Aktueller Rang" aria-describedby={invalid('rank') ? 'rank-error' : undefined}>
+            {RANKS.map((name, index) => <button key={name} type="button" className={`rank-option${rank === name ? ' is-selected' : ''}`} aria-pressed={rank === name} aria-invalid={invalid('rank')} onClick={() => setRank(name)}>
+              <img src={RANK_IMAGES[index]} alt="" loading="lazy" /><span>{name}</span>
+            </button>)}
+            <button type="button" className={`rank-option${rank === 'Unbekannt' ? ' is-selected' : ''}`} aria-pressed={rank === 'Unbekannt'} onClick={() => { setRank('Unbekannt'); setTier('') }}><span className="unknown-rank" aria-hidden="true">?</span><span>Noch kein Rang</span></button>
           </div>
-        </div>
-
-        <div className="request-fields">
-          <label className="request-field">
-            <span>Aktueller Rang <b>*</b></span>
-            <input
-              value={form.rank}
-              onChange={(event) => update('rank', event.target.value)}
-              placeholder="z. B. Archon 3"
-              required
-            />
-          </label>
-
-          <label className="request-field">
-            <span>Main-Hero <b>*</b></span>
-            <input
-              value={form.hero}
-              onChange={(event) => update('hero', event.target.value)}
-              placeholder="z. B. Haze"
-              required
-            />
-          </label>
-
-          <label className="request-field">
-            <span>Wunschzeit <b>*</b></span>
-            <input
-              type="datetime-local"
-              value={form.time}
-              onChange={(event) => update('time', event.target.value)}
-              required
-            />
-          </label>
-
-          <label className="request-field">
-            <span>Games / Stunden <b>*</b></span>
-            <input
-              value={form.experience}
-              onChange={(event) => update('experience', event.target.value)}
-              placeholder="z. B. 300 Games / 150 Stunden"
-              required
-            />
-          </label>
-
-          <label className="request-field request-field-full">
-            <span>Was willst du verbessern? <b>*</b></span>
-            <textarea
-              value={form.problems}
-              onChange={(event) => update('problems', event.target.value)}
-              placeholder="z. B. Laning, Farming, Teamfights, Build-Entscheidungen, Replay anschauen..."
-              rows={4}
-              required
-            />
-          </label>
-        </div>
-
-        {submit.isError && (
-          <p className="request-error">{submitError}</p>
-        )}
-
-        <div className="request-actions">
-          <Link to="/" className="btn-ghost">Abbrechen</Link>
-          <button type="submit" className="btn-amber" disabled={!canSubmit || submit.isPending}>
-            Anfrage senden
-          </button>
-        </div>
-      </form>
+          {rank && rank !== 'Unbekannt' && <div className="tier-row" role="group" aria-label="Rangstufe"><span>Stufe</span>{TIERS.map(value => <button key={value} type="button" className={`choice-chip${tier === value ? ' is-selected' : ''}`} aria-pressed={tier === value} onClick={() => setTier(value)}>{value}</button>)}</div>}
+          {errorMessage('rank')}
+        </fieldset>
+        <fieldset className="request-section"><legend>Dein Main-Hero</legend>
+          <label className="request-field hero-search"><span className="sr-only">Helden suchen</span><input type="search" value={heroSearch} onChange={event => setHeroSearch(event.target.value)} placeholder="Helden suchen …" /></label>
+          <div className="hero-grid" role="group" aria-label="Main-Hero" aria-describedby={invalid('hero') ? 'hero-error' : undefined}>
+            {heroData.heroes.filter(item => item.name.toLocaleLowerCase('de').includes(heroSearch.trim().toLocaleLowerCase('de'))).map(item => <button type="button" key={item.slug} className={`hero-option${hero === item.name ? ' is-selected' : ''}`} aria-pressed={hero === item.name} aria-invalid={invalid('hero')} onClick={() => setHero(item.name)}>
+              <img src={`/heroes/${item.slug}.png`} alt="" loading="lazy" /><span>{item.name}</span>{hero === item.name && <b aria-hidden="true">✓</b>}
+            </button>)}
+          </div>
+          {!heroData.heroes.some(item => item.name.toLowerCase().includes(heroSearch.trim().toLowerCase())) && <p className="request-hint">Kein Held gefunden. Versuch einen anderen Namen.</p>}
+          {hero && <p className="request-hint mt-2">Ausgewählt: <strong>{hero}</strong></p>}{errorMessage('hero')}
+        </fieldset>
+        <fieldset className="request-section"><legend>Wann passt es dir?</legend>
+          <p className="request-hint">Mehrere Zeitwünsche sind möglich. Den Termin stimmt ihr gemeinsam ab.</p>
+          <div className="choice-row">{['Heute Abend', 'Morgen', 'Wochenende'].map(value => <button type="button" key={value} className={`choice-chip${presets.includes(value) ? ' is-selected' : ''}`} aria-pressed={presets.includes(value)} aria-invalid={invalid('time')} aria-describedby={invalid('time') ? 'time-error' : undefined} onClick={() => setPresets(toggle(presets, value))}>{value}</button>)}</div>
+          {windows.map((slot, index) => <div key={slot.id} className="time-window">
+            <div className="time-window-fields">
+              <label className="request-field"><span>Datum{windows.length > 1 ? ` ${index + 1}` : ''}</span><input inputMode="numeric" placeholder="TT.MM.JJJJ" maxLength={10} value={slot.date} aria-invalid={invalid(`window-${slot.id}`)} aria-describedby={invalid(`window-${slot.id}`) ? `window-${slot.id}-error` : undefined} onChange={event => updateWindow(slot.id, 'date', event.target.value)} /></label>
+              <label className="request-field"><span>Von</span><input inputMode="numeric" placeholder="18:00" maxLength={5} value={slot.from} onChange={event => updateWindow(slot.id, 'from', event.target.value)} /></label>
+              <label className="request-field"><span>Bis</span><input inputMode="numeric" placeholder="20:00" maxLength={5} value={slot.to} onChange={event => updateWindow(slot.id, 'to', event.target.value)} /></label>
+              <button type="button" className="remove-window" aria-label={`Zeitfenster ${index + 1} entfernen`} onClick={() => setWindows(current => current.filter(item => item.id !== slot.id))}>×</button>
+            </div>{errorMessage(`window-${slot.id}`)}
+          </div>)}
+          <button type="button" className="add-window" onClick={() => setWindows(current => [...current, { id: nextWindowId.current++, date: '', from: '', to: '' }])}>+ Zeitfenster hinzufügen</button>
+          {errorMessage('time')}
+        </fieldset>
+        <div className="request-section"><label className="request-field"><span>Games / Stunden</span><input value={experience} onChange={event => setExperience(event.target.value)} placeholder="z. B. 300 Games / 150 Stunden" required aria-invalid={invalid('experience')} aria-describedby={invalid('experience') ? 'experience-error' : undefined} /></label>{errorMessage('experience')}</div>
+        <fieldset className="request-section"><legend>Was willst du verbessern?</legend>
+          <div className="choice-row">{FOCUS_AREAS.map(value => <button type="button" key={value} className={`choice-chip${focus.includes(value) ? ' is-selected' : ''}`} aria-pressed={focus.includes(value)} aria-invalid={invalid('problems')} aria-describedby={invalid('problems') ? 'problems-error' : undefined} onClick={() => setFocus(toggle(focus, value))}>{value}</button>)}</div>
+          <label className="request-field mt-4"><span>Noch etwas dazu? <small>Optional</small></span><textarea rows={3} value={notes} onChange={event => setNotes(event.target.value)} placeholder="Zum Beispiel eine Situation, in der du oft hängen bleibst …" /></label>{errorMessage('problems')}
+        </fieldset>
+        {submit.isError && <p className="request-error" role="alert">{submit.error instanceof Error ? submit.error.message : 'Deine Anfrage konnte nicht gespeichert werden. Versuch es bitte erneut.'}</p>}
+        <div className="request-actions"><Link to="/" className="btn-ghost">Abbrechen</Link><button type="submit" className="btn-amber" aria-disabled={submit.isPending} aria-busy={submit.isPending}>{submit.isPending ? 'Wird gesendet …' : 'Anfrage senden'}<span aria-hidden="true">→</span></button></div>
+      </form>}
     </div>
   )
 }
