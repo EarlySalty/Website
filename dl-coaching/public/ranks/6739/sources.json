@@ -1,7 +1,7 @@
 {
   "retrieved": "2026-10-03",
-  "clientVersion": 6731,
-  "metadataSource": "https://api.deadlock-api.com/v1/assets/ranks?client_version=6731",
+  "clientVersion": 6739,
+  "metadataSource": "https://api.deadlock-api.com/v1/assets/ranks?client_version=6739",
   "versionSource": "https://api.deadlock-api.com/v1/assets/client-versions",
   "images": [
     {
