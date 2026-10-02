@@ -1299,10 +1299,7 @@ img { display: block; max-width: 100%; }
   .hero-display > span,
   .section-title,
   .process-step h3 {
-    background: var(--gold-sheen);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--amber-light);
   }
 
   .panel,

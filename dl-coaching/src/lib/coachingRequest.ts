@@ -1,9 +1,9 @@
 export const RANKS = [
-  'Initiate', 'Seeker', 'Alchemist', 'Arcanist', 'Ritualist', 'Emissary',
-  'Archon', 'Oracle', 'Phantom', 'Ascendant', 'Eternus',
+  'Initiate', 'Seeker', 'Acolyte', 'Sentinel', 'Mystic', 'Ritualist',
+  'Emissary', 'Oracle', 'Phantom', 'Ascendant', 'Eternus',
 ] as const
 
-export const RANK_IMAGES = RANKS.map(name => `/images/ranks/${['Archon', 'Emissary', 'Eternus'].includes(name) ? name : name.toLowerCase()}.png`)
+export const RANK_IMAGES = RANKS.map((_, index) => `/coaching/ranks/6731/rank${String(index + 1).padStart(2, '0')}.webp`)
 export const TIERS = ['1', '2', '3', '4', '5', '6'] as const
 export const FOCUS_AREAS = ['Laning', 'Farming', 'Teamfights', 'Build-Entscheidungen', 'Replay anschauen'] as const
 

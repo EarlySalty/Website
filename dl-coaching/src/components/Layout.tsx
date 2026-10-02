@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui'
+import communityWordmark from '@/assets/brand/community-wordmark.svg'
 
 export default function Layout() {
   const { user, login, logout, isCoach } = useAuth()
@@ -55,7 +56,7 @@ export default function Layout() {
         <div className="content-grid header-row">
           <Link to="/" className="brand-wordmark" aria-label="Deutsche Deadlock Community">
             <img src="/brand/logo/logo-192.png" className="brand-logo" alt="" />
-            <img src="/brand/logo/wordmark.svg" className="brand-wordmark-img" alt="" />
+            <img src={communityWordmark} className="brand-wordmark-img" alt="" />
           </Link>
           <nav className="public-navigation" aria-label="Coaching">
             <NavLink to="/" active={isActive('/', true)}>Coaches</NavLink>
