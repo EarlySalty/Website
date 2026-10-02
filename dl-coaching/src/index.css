@@ -1326,7 +1326,11 @@ img { display: block; max-width: 100%; }
 .nav-link.is-active { color: var(--amber-light); }
 .header-actions { display: flex; align-items: center; justify-self: end; gap: 12px; flex-shrink: 0; }
 .account-wrapper { position: relative; }
-.account-toggle { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-soft); border-radius: 8px; padding: 6px 9px; color: var(--text-primary); background: rgba(255,255,255,.04); cursor: pointer; }
+.account-toggle { display: flex; align-items: center; gap: 8px; min-height: 44px; border: 1px solid var(--amber-border); border-radius: 8px; padding: 6px 0 6px 6px; color: var(--text-primary); background: rgba(255,255,255,.04); cursor: pointer; }
+.account-chevron { display: flex; align-items: center; justify-content: center; align-self: stretch; flex: 0 0 36px; margin-block: -6px; border-left: 1px solid var(--amber-border); border-radius: 0 7px 7px 0; color: var(--amber-light); background: var(--amber-glow); }
+.account-chevron svg { width: 20px; height: 20px; transition: transform .18s ease; }
+.account-toggle[aria-expanded="true"] .account-chevron svg { transform: rotate(180deg); }
+.account-toggle:hover .account-chevron { background: rgba(201, 168, 106, .24); }
 .account-name { max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
 .account-panel { position: absolute; right: 0; top: calc(100% + 12px); width: 248px; max-width: calc(100vw - 32px); border: 1px solid var(--amber-border); border-radius: 12px; background: #171614; box-shadow: var(--shadow-card); padding: 8px; max-height: calc(100dvh - 100px); overflow: auto; }
 .account-panel .nav-link { display: flex; padding: 13px 12px; border-radius: 6px; }
@@ -1415,9 +1419,10 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--amber-light); o
   .header-row .brand-wordmark-img { display: none; }
   .header-row .brand-logo { width: 44px; height: 44px; }
   .header-actions { gap: 8px; }
-  .account-toggle { padding: 4px; gap: 4px; }
+  .account-toggle { padding: 4px 0 4px 4px; gap: 4px; }
+  .account-chevron { flex-basis: 32px; margin-block: -4px; }
   .account-toggle .avatar-frame { width: 28px !important; height: 28px !important; }
-  .account-toggle > span { display: none; }
+  .account-toggle .account-name { display: none; }
   .account-panel { position: fixed; right: 16px; top: 74px; }
   .request-form { padding: 20px 16px; border-radius: 12px; }
   .rank-grid, .hero-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }

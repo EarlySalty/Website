@@ -67,7 +67,10 @@ export default function Layout() {
             {user ? <div className="account-wrapper">
               <button ref={accountButton} className="account-toggle" aria-label={`Konto von ${user.displayName}`} aria-expanded={open === 'account'} aria-controls="account-navigation" onClick={() => setOpen(open === 'account' ? null : 'account')}>
                 <Avatar url={user.avatarUrl} name={user.displayName} size={32} />
-                <span className="account-name">{user.displayName}</span><span aria-hidden="true">⌄</span>
+                <span className="account-name">{user.displayName}</span>
+                <span className="account-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 20 20" fill="none"><path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </span>
               </button>
               {open === 'account' && <nav id="account-navigation" className="account-panel" aria-label="Mein Bereich">
                 <p className="account-heading">{user.displayName}</p>{personalLinks}
