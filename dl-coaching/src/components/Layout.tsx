@@ -47,7 +47,7 @@ export default function Layout() {
 
   return (
     <div className="page-shell flex min-h-screen flex-col">
-      <header ref={header} className="coaching-header sticky top-0 z-50" onClick={(event) => {
+      <header ref={header} className="coaching-header z-50" onClick={(event) => {
         if ((event.target as Element).closest('a')) setOpen(null)
       }} onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node)) setOpen(null)

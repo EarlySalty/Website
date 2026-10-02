@@ -147,7 +147,7 @@ export default function CoachesPage() {
           <div className="eyebrow mb-4">Coaching-Etage</div>
           <h1 className="hero-display">
             Besser werden,<br />
-            <span style={{ color: 'var(--amber-light)' }}>ohne Chat-Chaos.</span>
+            <span>ohne Chat-Chaos.</span>
           </h1>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link to="/anfrage" className="btn-amber">Coaching anfragen</Link>
