@@ -731,7 +731,7 @@ img { display: block; max-width: 100%; }
     position: absolute;
     width: 28px;
     height: 28px;
-    border: 1px solid var(--amber-border);
+    border: 1px solid var(--amber);
     pointer-events: none;
   }
 
