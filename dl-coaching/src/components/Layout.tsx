@@ -63,7 +63,6 @@ export default function Layout() {
             <NavLink to="/scrims/signup" active={isActive('/scrims/signup')}>Scrims</NavLink>
           </nav>
           <div className="header-actions">
-            <Link to="/anfrage" className="btn-amber header-cta">Coaching anfragen</Link>
             {user ? <div className="account-wrapper">
               <button ref={accountButton} className="account-toggle" aria-label={`Konto von ${user.displayName}`} aria-expanded={open === 'account'} aria-controls="account-navigation" onClick={() => setOpen(open === 'account' ? null : 'account')}>
                 <Avatar url={user.avatarUrl} name={user.displayName} size={32} />
