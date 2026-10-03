@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{PAGE_TITLE}} | Deadlock Wiki</title>
+<meta name="description" content="{{META_DESCRIPTION}}">
+<link rel="canonical" href="{{CANONICAL_URL}}">
+<link rel="icon" href="/brand/logo/favicon-64.png">
+<link rel="stylesheet" href="/brand/tokens.css">
+<link rel="stylesheet" href="/brand/nav.css">
+<link rel="stylesheet" href="/wiki/assets/wiki.css">
+<script src="/brand/nav.js" defer data-footer="false"></script>
+</head>
+<body class="wiki {{PAGE_CLASS}}">
+<a class="wiki-skip" href="#wiki-content">Zum Inhalt</a>
+<header class="wiki-header">
+<a class="wiki-brand" href="/wiki/" aria-label="Deadlock Wiki Startseite"><img src="/brand/logo/deadlock-d-logo.png" alt="" width="42" height="42"><span>DEADLOCK <strong>WIKI</strong><small>Deutsche Deadlock Community</small></span></a>
+<nav class="wiki-header-links" aria-label="Community"><a href="/">Community</a><a href="/updates/">Große Updates</a><a href="/helden/">Heldenübersicht</a></nav>
+</header>
+<div class="wiki-layout">
+<aside class="wiki-sidebar">
+<nav aria-label="Wiki-Bereiche"><a class="wiki-home" href="/wiki/">Wiki entdecken</a><h2>Im Spiel</h2><a href="/wiki/helden/">Helden</a><a href="/wiki/items/">Gegenstände</a><a href="/wiki/faehigkeiten/">Fähigkeiten</a><a href="/wiki/mechaniken/">Spielmechaniken</a><a href="/wiki/karte/">Karte und Orte</a><h2>Nachschlagen</h2><a href="/wiki/updates/">Updates im Wiki</a><a href="/wiki/wissen/">Weitere Themen</a><a href="/updates/">Große Patch-Seiten</a></nav>
+<div class="wiki-sidebar-note"><span>Wissen aus Deadlock Brain</span><p>Helden, Gegenstände und Zusammenhänge zum Nachschlagen.</p><small>Datenstand: {{DATA_DATE}}</small></div>
+</aside>
+<div class="wiki-center">
+<form class="wiki-search" action="/wiki/" method="get" role="search"><label for="wiki-query">Im Wiki suchen</label><div class="wiki-search-controls"><input type="search" id="wiki-query" name="q" value="{{SEARCH_QUERY}}" placeholder="Held, Gegenstand oder Spielmechanik" maxlength="160"><button type="submit">Suchen</button></div></form>
+<main id="wiki-content" class="wiki-content" tabindex="-1">{{MAIN_CONTENT}}</main>
+</div>
+<aside class="wiki-aside" aria-label="Artikelübersicht">{{ASIDE_CONTENT}}</aside>
+</div>
+<footer class="wiki-footer"><a href="/wiki/">Deadlock Wiki</a><a href="/">Zur Community</a><a href="/twitch/impressum">Impressum</a><a href="/twitch/datenschutz">Datenschutz</a><p>Eine Community-Seite zu Deadlock. Deadlock und die Spielgrafiken gehören Valve.</p></footer>
+</body>
+</html>

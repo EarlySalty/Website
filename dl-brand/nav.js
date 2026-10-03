@@ -6,6 +6,8 @@
     { label: 'Mitspieler', href: '/mitspieler/', floor: 'M' },
     { label: 'Coaching', href: '/coaching/', floor: 'C' },
     { label: 'Aktivität & Ränge', href: '/aktivitaet/', floor: 'A' },
+    { label: 'Große Updates', href: '/updates/', floor: 'U' },
+    { label: 'Wiki', href: '/wiki/', floor: 'I' },
     { label: 'Patchnotes', href: '/patchnotes/', floor: 'P' },
     { label: 'DevFeed', href: '/devfeed/', floor: 'V' },
     { label: 'Tierlist', href: '/builds/', floor: 'T' },
