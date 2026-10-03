@@ -6,7 +6,7 @@ use axum::{
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fs,
     path::PathBuf,
     sync::{Arc, Mutex, OnceLock},
@@ -25,24 +25,31 @@ const CATEGORIES: &[(&str, &str)] = &[
     ("updates", "Updates"),
     ("wissen", "Weiteres Spielwissen"),
 ];
-const SHARDS: &[(&str, &str)] = &[
-    ("deadlock-data", "hero"),
-    ("deadlock-data", "hero-dossier"),
-    ("deadlock-data", "item"),
-    ("deadlock-data", "item-card"),
-    ("deadlock-data", "item-special"),
-    ("deadlock-data", "ability"),
-    ("deadlock-data", "ability-card"),
-    ("deadlock-data", "item-component-tree"),
-    ("deadlock-data", "json-attribute-data"),
-    ("deadlock-data", "json-generic-data"),
-    ("deadlock-data", "json-midtown-metadata"),
-    ("deadlock-data", "json-misc-data"),
-    ("deadlock-data", "json-soul-unlock-data"),
-    ("deadlock-data", "patchnote-structured"),
-    ("deadlock-data", "patchnote-wikitext"),
-    ("deadlock-data", "resource-lookup"),
-    ("deadlock-wiki", "wiki-page"),
+// Dieselbe Quellen- und Typmenge wie der bestehende Markdownwriter.
+const SOURCES: &[&str] = &["deadlock-data", "deadlock-wiki"];
+const SHARDS: &[&str] = &[
+    "hero",
+    "hero-dossier",
+    "item",
+    "item-special",
+    "ability",
+    "ability-card",
+    "item-card",
+    "npc-data",
+    "objective",
+    "objective-entity",
+    "patchnote",
+    "patchnote-structured",
+    "patchnote-wikitext",
+    "resource-lookup",
+    "supporting-doc",
+    "wiki-page",
+    "json-attribute-data",
+    "json-generic-data",
+    "json-misc-data",
+    "json-soul-unlock-data",
+    "json-midtown-metadata",
+    "item-component-tree",
 ];
 
 #[derive(Deserialize)]
@@ -66,6 +73,7 @@ struct Entry {
     source_url: Option<String>,
     fetched_at: Option<String>,
     search_text: String,
+    german_descriptions: BTreeSet<String>,
 }
 struct Snapshot {
     root: PathBuf,
@@ -171,6 +179,30 @@ fn category(kind: &str) -> &'static str {
         _ => "wissen",
     }
 }
+fn json_payload(block: &str) -> Result<String, String> {
+    let mut lines = block.lines();
+    while let Some(line) = lines.next() {
+        let Some(fence) = line.strip_suffix("json") else {
+            continue;
+        };
+        if fence.len() < 4 || !fence.bytes().all(|b| b == b'`') {
+            continue;
+        }
+        let mut payload = Vec::new();
+        for line in lines.by_ref() {
+            if line == fence {
+                return Ok(payload.join("\n"));
+            }
+            // Der Writer wählt eine Fence länger als jede Backtickfolge im JSON.
+            if line.contains(fence) {
+                return Err("payload-fence".into());
+            }
+            payload.push(line);
+        }
+        return Err("payload-fence".into());
+    }
+    Err("payload".into())
+}
 fn parse_shard(content: &str) -> Result<Vec<Entry>, String> {
     let mut entries = Vec::new();
     for block in content.split("<!-- game-wiki-entry ").skip(1) {
@@ -182,11 +214,8 @@ fn parse_shard(content: &str) -> Result<Vec<Entry>, String> {
         }
         let title = attribute(marker, "title").ok_or("title")?;
         let external_id = attribute(marker, "external_id").ok_or("external_id")?;
-        let payload = block
-            .split_once("````json\n")
-            .and_then(|(_, s)| s.split_once("\n````").map(|(p, _)| p))
-            .ok_or("payload")?;
-        let data: Value = serde_json::from_str(payload).map_err(|_| "json")?;
+        let payload = json_payload(block)?;
+        let data: Value = serde_json::from_str(&payload).map_err(|_| "json")?;
         if !data.is_object() {
             return Err("payload-object".into());
         }
@@ -196,7 +225,8 @@ fn parse_shard(content: &str) -> Result<Vec<Entry>, String> {
             slug: format!("{}-{}", slug(&kind), slug(&external_id)),
             external_id,
             kind,
-            data,
+            german_descriptions: german_descriptions(&data),
+            data: public_data(&data),
             source_url: metadata(block, "Source URL").and_then(|u| safe_url(&u)),
             fetched_at: metadata(block, "Fetched At"),
             search_text: String::new(),
@@ -212,6 +242,11 @@ fn load_snapshot() -> Result<Arc<Snapshot>, String> {
     if let Some(snapshot) = guard.as_ref().filter(|s| s.root == root) {
         return Ok(snapshot.clone());
     }
+    let snapshot = read_snapshot(root.clone())?;
+    *guard = Some(snapshot.clone());
+    Ok(snapshot)
+}
+fn read_snapshot(root: PathBuf) -> Result<Arc<Snapshot>, String> {
     let status: Value =
         serde_json::from_slice(&fs::read(root.join("status.json")).map_err(|_| "status")?)
             .map_err(|_| "status-json")?;
@@ -219,7 +254,10 @@ fn load_snapshot() -> Result<Arc<Snapshot>, String> {
         return Err("not-ready".into());
     }
     let mut entries = Vec::new();
-    for (source, shard) in SHARDS {
+    for (source, shard) in SOURCES
+        .iter()
+        .flat_map(|source| SHARDS.iter().map(move |shard| (*source, *shard)))
+    {
         let count_key = format!("{}/{}", source.replace('-', "_"), shard.replace('-', "_"));
         let expected = status["counts"][&count_key].as_u64().unwrap_or(0) as usize;
         let path = root.join("pages").join(source).join(format!("{shard}.md"));
@@ -247,6 +285,8 @@ fn load_snapshot() -> Result<Arc<Snapshot>, String> {
     for entry in entries {
         let key = (entry.category.clone(), entry.external_id.clone());
         if let Some(existing) = grouped.get_mut(&key) {
+            let mut languages = existing.german_descriptions.clone();
+            languages.extend(entry.german_descriptions.iter().cloned());
             if entry.kind == "hero_dossier" {
                 let stats = existing.data.clone();
                 *existing = entry;
@@ -264,6 +304,7 @@ fn load_snapshot() -> Result<Arc<Snapshot>, String> {
             } else {
                 existing.data[format!("zusatz_{}", entry.kind)] = entry.data;
             }
+            existing.german_descriptions = languages;
         } else {
             grouped.insert(key, entry);
         }
@@ -284,7 +325,6 @@ fn load_snapshot() -> Result<Arc<Snapshot>, String> {
         status,
         entries,
     });
-    *guard = Some(snapshot.clone());
     Ok(snapshot)
 }
 fn label(key: &str) -> String {
@@ -326,7 +366,7 @@ fn value_text(value: &Value) -> Option<String> {
         _ => None,
     }
 }
-fn description(data: &Value) -> Option<(String, bool)> {
+fn description(data: &Value, german: &BTreeSet<String>) -> Option<(String, bool)> {
     let text = data
         .get("Description")
         .or_else(|| data.get("description"))?
@@ -334,12 +374,7 @@ fn description(data: &Value) -> Option<(String, bool)> {
     if text.trim().is_empty() {
         return None;
     }
-    Some((
-        clean_text(text),
-        data.pointer("/_wiki_description_source/language")
-            .and_then(Value::as_str)
-            == Some("german"),
-    ))
+    Some((clean_text(text), german.contains(text)))
 }
 fn render_fields(data: &Value) -> String {
     let Some(object) = data.as_object() else {
@@ -424,27 +459,61 @@ fn render_fields(data: &Value) -> String {
         format!("<div class=\"wiki-table-wrap\"><table class=\"wiki-table\"><caption>Werte aus den Spieldaten</caption><tbody>{rows}</tbody></table></div>")
     }
 }
-fn render_description(data: &Value) -> String {
-    description(data).map(|(text, german)| format!("{}<p class=\"wiki-description\"{}>{}</p>", if german { "" } else { "<p class=\"wiki-card-meta\">Originalbeschreibung; eine deutsche Fassung fehlt in dieser Quelle.</p>" }, if german { "" } else { " lang=\"en\"" }, escape(&text))).unwrap_or_default()
+fn render_description(data: &Value, german: &BTreeSet<String>) -> String {
+    description(data, german).map(|(text, german)| format!("{}<p class=\"wiki-description\"{}>{}</p>", if german { "" } else { "<p class=\"wiki-card-meta\">Originalbeschreibung; eine deutsche Fassung fehlt in dieser Quelle.</p>" }, if german { "" } else { " lang=\"en\"" }, escape(&text))).unwrap_or_default()
+}
+// Nur die Sprachinformation wird getrennt übernommen, niemals interne Metadaten.
+fn german_descriptions(data: &Value) -> BTreeSet<String> {
+    let mut descriptions = BTreeSet::new();
+    match data {
+        Value::Object(object) => {
+            if data
+                .pointer("/_wiki_description_source/language")
+                .and_then(Value::as_str)
+                == Some("german")
+            {
+                if let Some(text) = data
+                    .get("Description")
+                    .or_else(|| data.get("description"))
+                    .and_then(Value::as_str)
+                {
+                    descriptions.insert(text.to_string());
+                }
+            }
+            for (key, value) in object {
+                if public_key(key) {
+                    descriptions.extend(german_descriptions(value));
+                }
+            }
+        }
+        Value::Array(values) => {
+            for value in values {
+                descriptions.extend(german_descriptions(value));
+            }
+        }
+        _ => {}
+    }
+    descriptions
+}
+fn public_key(key: &str) -> bool {
+    !key.starts_with('_')
+        && !matches!(
+            key,
+            "raw_path"
+                | "source_raw_path"
+                | "root"
+                | "snapshot"
+                | "snapshot_id"
+                | "source_document_id"
+                | "payload_hash"
+        )
 }
 fn public_data(data: &Value) -> Value {
     match data {
         Value::Object(object) => Value::Object(
             object
                 .iter()
-                .filter(|(key, _)| {
-                    !key.starts_with('_')
-                        && !matches!(
-                            key.as_str(),
-                            "raw_path"
-                                | "source_raw_path"
-                                | "root"
-                                | "snapshot"
-                                | "snapshot_id"
-                                | "source_document_id"
-                                | "payload_hash"
-                        )
-                })
+                .filter(|(key, _)| public_key(key))
                 .map(|(key, value)| (key.clone(), public_data(value)))
                 .collect(),
         ),
@@ -470,7 +539,7 @@ fn original_text(text: &str) -> String {
     }
     out
 }
-fn render_nested(data: &Value, depth: usize) -> String {
+fn render_nested(data: &Value, depth: usize, german: &BTreeSet<String>) -> String {
     if depth > 8 {
         return String::new();
     }
@@ -485,9 +554,9 @@ fn render_nested(data: &Value, depth: usize) -> String {
                 continue;
             }
             if value.is_object() {
-                let content = render_description(value)
+                let content = render_description(value, german)
                     + &render_fields(value)
-                    + &render_nested(value, depth + 1);
+                    + &render_nested(value, depth + 1, german);
                 if !content.is_empty() {
                     out.push_str(&format!(
                         "<section class=\"wiki-section\"><h3>{}</h3>{}</section>",
@@ -506,8 +575,8 @@ fn render_nested(data: &Value, depth: usize) -> String {
                         out.push_str(&format!(
                             "<section class=\"wiki-section\"><h3>{}</h3>{}{}</section>",
                             escape(&label(title)),
-                            render_description(item) + &render_fields(item),
-                            render_nested(item, depth + 1)
+                            render_description(item, german) + &render_fields(item),
+                            render_nested(item, depth + 1, german)
                         ));
                     } else if let Some(text) = value_text(item) {
                         out.push_str(&format!(
@@ -672,7 +741,16 @@ async fn page(params: Params, category: Option<String>, detail: Option<String>) 
         Ok(Ok(s)) => s,
         _ => return unavailable(),
     };
-    let mut aside = sidebar(&snapshot, category.as_deref());
+    render_snapshot(&snapshot, query, page_number, category, detail)
+}
+fn render_snapshot(
+    snapshot: &Snapshot,
+    query: String,
+    page_number: usize,
+    category: Option<String>,
+    detail: Option<String>,
+) -> Response {
+    let mut aside = sidebar(snapshot, category.as_deref());
     let data_date = date(
         snapshot
             .status
@@ -708,7 +786,7 @@ async fn page(params: Params, category: Option<String>, detail: Option<String>) 
         main.push_str(&portrait_html(entry));
         aside = format!("<nav class=\"wiki-toc\" aria-label=\"Artikelinhalt\"><h2>In diesem Artikel</h2><a href=\"#werte\">Werte</a><a href=\"#spielwissen\">Spielwissen</a><a href=\"#quelle\">Quelle und Stand</a></nav>{aside}");
         main.push_str("<nav class=\"wiki-toc\" aria-label=\"Artikelabschnitte\"><a href=\"#werte\">Werte</a><a href=\"#spielwissen\">Spielwissen</a><a href=\"#quelle\">Quelle und Stand</a></nav>");
-        main.push_str(&render_description(&entry.data));
+        main.push_str(&render_description(&entry.data, &entry.german_descriptions));
         main.push_str("<section class=\"wiki-infobox\" id=\"werte\"><h2>Werte</h2>");
         main.push_str(&render_fields(
             entry.data.get("stats").unwrap_or(&entry.data),
@@ -727,18 +805,18 @@ async fn page(params: Params, category: Option<String>, detail: Option<String>) 
                 main.push_str(&format!(
                     "<section class=\"wiki-section\"><h2>{}</h2>{}{}{}</section>",
                     escape(name),
-                    render_description(data),
+                    render_description(data, &entry.german_descriptions),
                     render_fields(data),
-                    render_nested(data, 0)
+                    render_nested(data, 0, &entry.german_descriptions)
                 ));
             }
         }
-        main.push_str(&render_nested(&entry.data, 0));
+        main.push_str(&render_nested(&entry.data, 0, &entry.german_descriptions));
         if let Some(card) = entry.data.get("card") {
             main.push_str(&format!(
                 "<section class=\"wiki-section\"><h2>Weitere Werte</h2>{}{}</section>",
                 render_fields(card),
-                render_nested(card, 0)
+                render_nested(card, 0, &entry.german_descriptions)
             ));
         }
         if entry.kind == "wiki_page" {
@@ -841,7 +919,7 @@ async fn page(params: Params, category: Option<String>, detail: Option<String>) 
         }
         main.push_str("<div class=\"wiki-grid\">");
         for entry in found.iter().skip((page_number - 1) * 36).take(36) {
-            let summary = description(&entry.data)
+            let summary = description(&entry.data, &entry.german_descriptions)
                 .map(|(s, _)| s.chars().take(145).collect::<String>())
                 .unwrap_or_default();
             main.push_str(&format!("<a class=\"wiki-card{}\" href=\"{}\">{}<h2 class=\"wiki-card-title\">{}</h2><p class=\"wiki-card-meta\">{}</p><p>{}</p></a>",if entry.category == "helden" { " wiki-portrait-card" } else { "" },entry_url(entry),portrait_html(entry),escape(&entry.title),title_for_category(&entry.category).unwrap_or("Wissen"),escape(&summary)));
@@ -893,6 +971,181 @@ pub async fn stylesheet() -> impl IntoResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
+    struct Fixture(PathBuf);
+    impl Fixture {
+        fn new() -> Self {
+            static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+            let root = PathBuf::from("/tmp").join(format!(
+                "ddc-wiki-reader-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            ));
+            fs::create_dir(&root).expect("neuer isolierter Testordner");
+            Self(root)
+        }
+        fn write(&self, source: &str, kind: &str, payload: Value, fence: &str) {
+            let directory = self.0.join("pages").join(source.replace('_', "-"));
+            fs::create_dir_all(&directory).expect("Testshardordner");
+            fs::write(directory.join(format!("{}.md", kind.replace('_', "-"))), format!("<!-- game-wiki-entry source={source:?} entity_type={kind:?} external_id=\"fixture\" title=\"Testartikel\" -->\n{fence}json\n{}\n{fence}\n", payload)).expect("Testshard");
+            let status_path = self.0.join("status.json");
+            let mut status = fs::read(&status_path).ok().map(|bytes| serde_json::from_slice::<Value>(&bytes).expect("Teststatus")).unwrap_or_else(|| serde_json::json!({"schema_version":1,"state":"ready","entries":0,"counts":{}}));
+            status["entries"] = (status["entries"].as_u64().expect("Anzahl") + 1).into();
+            status["counts"][format!("{source}/{kind}")] = 1.into();
+            fs::write(
+                status_path,
+                serde_json::to_vec(&status).expect("Teststatus serialisieren"),
+            )
+            .expect("Teststatus schreiben");
+        }
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            fs::remove_dir_all(&self.0).expect("eigenen Testordner entfernen");
+        }
+    }
+    async fn html(response: Response) -> String {
+        assert_eq!(response.status(), StatusCode::OK);
+        String::from_utf8(
+            axum::body::to_bytes(response.into_body(), 8 * 1024 * 1024)
+                .await
+                .expect("Handlerbody")
+                .to_vec(),
+        )
+        .expect("HTML")
+    }
+    #[tokio::test]
+    async fn handler_html_and_search_use_only_public_fields() {
+        let fixture = Fixture::new();
+        let mut payload = serde_json::json!({"Description":"Öffentliches Spielwissen","_wiki_description_source":{"language":"german"},"MaxHealth":600,"stats":{"MaxHealth":600},"nested":{"Value":25},"abilities":[{"name":"Testfähigkeit","mechanics":{"Damage":45}}],"card":{"Cost":1000},"array":[{"Name":"Unterwert","Damage":5}]});
+        for key in [
+            "raw_path",
+            "source_raw_path",
+            "root",
+            "snapshot",
+            "snapshot_id",
+            "source_document_id",
+            "payload_hash",
+            "_internal",
+        ] {
+            payload[key] =
+                serde_json::json!({"Description":"VERTRAULICHMARKER","Value":"VERTRAULICHMARKER"});
+            for target in ["stats", "nested", "card"] {
+                payload[target][key] = "VERTRAULICHMARKER".into();
+            }
+            payload["abilities"][0]["mechanics"][key] = "VERTRAULICHMARKER".into();
+            payload["array"][0][key] = "VERTRAULICHMARKER".into();
+        }
+        fixture.write("deadlock_data", "hero", payload, "````");
+        let snapshot = read_snapshot(fixture.0.clone()).expect("Testgeneration");
+        let body = html(render_snapshot(
+            &snapshot,
+            String::new(),
+            1,
+            Some("helden".into()),
+            Some("hero-fixture".into()),
+        ))
+        .await;
+        assert!(body.contains("Öffentliches Spielwissen"));
+        assert!(body.contains("Lebenspunkte"));
+        assert!(body.contains("Testfähigkeit"));
+        assert!(!body.contains("VERTRAULICHMARKER"));
+        assert!(!body.contains("Originalbeschreibung; eine deutsche Fassung fehlt"));
+        for key in [
+            "raw_path",
+            "source_raw_path",
+            "root",
+            "snapshot_id",
+            "source_document_id",
+            "payload_hash",
+            "_internal",
+        ] {
+            assert!(!body.contains(key), "internes Feld {key}");
+        }
+        assert!(!snapshot.entries[0]
+            .search_text
+            .contains("vertraulichmarker"));
+        let results = html(render_snapshot(
+            &snapshot,
+            "VERTRAULICHMARKER".into(),
+            1,
+            None,
+            None,
+        ))
+        .await;
+        assert!(results.contains("Keine passenden Einträge gefunden"));
+        assert!(!results.contains("wiki-card-title"));
+        let results = html(render_snapshot(
+            &snapshot,
+            "Öffentliches".into(),
+            1,
+            None,
+            None,
+        ))
+        .await;
+        assert!(results.contains("Testartikel"));
+    }
+    #[test]
+    fn writer_shards_are_covered_for_both_sources() {
+        let fixture = Fixture::new();
+        for source in ["deadlock_data", "deadlock_wiki"] {
+            for kind in [
+                "npc_data",
+                "objective",
+                "objective_entity",
+                "patchnote",
+                "supporting_doc",
+            ] {
+                fixture.write(
+                    source,
+                    kind,
+                    serde_json::json!({"Name":"Öffentlicher Eintrag"}),
+                    "````",
+                );
+            }
+        }
+        let snapshot =
+            read_snapshot(fixture.0.clone()).expect("alle vorhandenen Writer-Shards lesen");
+        assert_eq!(snapshot.status["entries"], 10);
+        // Zusammenführung vorhandener externer Kennungen bleibt unverändert.
+        assert!(!snapshot.entries.is_empty());
+    }
+    #[test]
+    fn positive_missing_shard_fails_and_zero_missing_shards_are_optional() {
+        let fixture = Fixture::new();
+        fixture.write(
+            "deadlock_data",
+            "supporting_doc",
+            serde_json::json!({"Name":"Eintrag"}),
+            "````",
+        );
+        assert!(read_snapshot(fixture.0.clone()).is_ok());
+        fs::remove_file(fixture.0.join("pages/deadlock-data/supporting-doc.md"))
+            .expect("eigenen Testshard entfernen");
+        assert!(matches!(read_snapshot(fixture.0.clone()), Err(error) if error == "missing-shard"));
+    }
+    #[test]
+    fn longer_writer_fences_preserve_backticks_and_require_exact_closing_line() {
+        let fixture = Fixture::new();
+        fixture.write(
+            "deadlock_data",
+            "hero",
+            serde_json::json!({"Description":"Text mit `````` Backticks"}),
+            "```````",
+        );
+        let snapshot = read_snapshot(fixture.0.clone()).expect("lange Writer-Fence");
+        assert!(snapshot.entries[0].data["Description"]
+            .as_str()
+            .expect("Beschreibung")
+            .contains("``````"));
+        for block in [
+            "````json\n{}\n```",
+            "````json\n{}\n`````",
+            "```json\n{}\n```",
+            "````json\n{}\n````suffix",
+        ] {
+            assert!(json_payload(block).is_err());
+        }
+    }
     #[test]
     fn source_markup_is_text_and_links_are_checked() {
         assert_eq!(
