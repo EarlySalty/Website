@@ -1019,3 +1019,8 @@
     padding-left: max(65px, env(safe-area-inset-left));
   }
 }
+@media (max-width: 640px) {
+  body:has(.city-hero) .wrap {
+    padding-left: max(65px, env(safe-area-inset-left));
+  }
+}
