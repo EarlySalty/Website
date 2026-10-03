@@ -10,7 +10,7 @@ Website daher noch nicht.
 
 | Öffentlicher Pfad | Live-Ziel |
 |---|---|
-| `/` | `dl-landing/dist` |
+| `/` | `deco-elevator-new/index.html` (statische Startseite) |
 | `/patch/` | `dl-patch/dist` (bestehende Balance-Timeline) |
 | `/patchnotes/` | `/home/nathanael/Documents/Runtime/patchnotes-web` (vom Patchnotes-Bot erzeugt) |
 | `/aktivitaet/` | `dl-activity/dist` |
@@ -142,3 +142,11 @@ Die neue Lesefassung ist bewusst **keine zweite Vite-Anwendung in diesem Reposit
 Die Navigation dieses Repositories darf **erst nach** der Caddy-Ergänzung, dem Publisher-Deploy und dem erfolgreichen öffentlichen Abruf von Archiv und Einzelpatch aktiviert werden. Danach werden `dl-brand/nav.js` und `deco-elevator-new/index.html` aus dem geprüften Stand übernommen, ohne andere Brand-Dateien oder `social-preview/` zu löschen. Auf `/patch/` bleibt die Patchnotes-Etage des Menüs aktiv.
 
 Die Prüfnachweise und konkreten Gegenstücke dieses Releases stehen in `.tasks/2026-09-20-patchnotes-web/CONTRACT.md`. Für die Patchnotes-Änderung ist kein Website-Rust-Build und keine Migration nötig.
+
+## Große Update-Seiten
+
+Die Startseite und die großen Update-Seiten liegen statisch unter `deco-elevator-new`. Für `/updates/`, `/updates/city-never-sleeps/` und `/updates/old-gods-new-blood/` ist kein Frontend-Build nötig. Caddy liefert `/updates/*` aus `deco-elevator-new/updates` mit einem echten 404 für fehlende Seiten. Bilder und Stylesheets kommen weiterhin über `/new/`.
+
+Die beiden Update-Seiten fassen die offiziellen Valve-Seiten zusammen und verlinken ihre Quellen. Der Broker wird als damalige zeitlich begrenzte Aktion beschrieben. Die laufenden deutschen Patchnotes unter `/patchnotes/` bleiben eigenständig.
+
+Beim Übernehmen nur die geprüften statischen Dateien und benötigten Assets kopieren. Fremde Dateien und laufende Änderungen im Live-Checkout erhalten. Neue Routen zuerst freischalten und öffentlich prüfen, bevor Links auf der Startseite live gehen.

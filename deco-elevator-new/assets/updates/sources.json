@@ -1,0 +1,177 @@
+{
+  "retrievedAt": "2026-10-03",
+  "sources": [
+    "https://www.playdeadlock.com/cityneversleeps",
+    "https://www.playdeadlock.com/oldgods"
+  ],
+  "assets": [
+    {
+      "path": "cityneversleeps/deadlock_city_never_sleeps_update.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/deadlock_city_never_sleeps_update.png",
+      "originalName": "deadlock_city_never_sleeps_update.png",
+      "bytes": 528696,
+      "dimensions": "800x450"
+    },
+    {
+      "path": "cityneversleeps/header_city.webp",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/header_city.webp",
+      "originalName": "header_city.webp",
+      "bytes": 356200,
+      "dimensions": "2440x1987"
+    },
+    {
+      "path": "cityneversleeps/header_portraits.webp",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/header_portraits.webp",
+      "originalName": "header_portraits.webp",
+      "bytes": 182192,
+      "dimensions": "1748x819"
+    },
+    {
+      "path": "cityneversleeps/times_square_05.jpg",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/times_square_05.jpg",
+      "originalName": "times_square_05.jpg",
+      "bytes": 214429,
+      "dimensions": "1920x1080"
+    },
+    {
+      "path": "cityneversleeps/theater_03.jpg",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/theater_03.jpg",
+      "originalName": "theater_03.jpg",
+      "bytes": 120054,
+      "dimensions": "1920x1080"
+    },
+    {
+      "path": "cityneversleeps/chinatown_01.jpg",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/chinatown_01.jpg",
+      "originalName": "chinatown_01.jpg",
+      "bytes": 204704,
+      "dimensions": "1920x1080"
+    },
+    {
+      "path": "cityneversleeps/haunted_slums_01.jpg",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/haunted_slums_01.jpg",
+      "originalName": "haunted_slums_01.jpg",
+      "bytes": 206971,
+      "dimensions": "1920x1080"
+    },
+    {
+      "path": "cityneversleeps/fairfax_plaza_01.jpg",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/fairfax_plaza_01.jpg",
+      "originalName": "fairfax_plaza_01.jpg",
+      "bytes": 211007,
+      "dimensions": "1920x1080"
+    },
+    {
+      "path": "cityneversleeps/hero_deadman_danny.webp",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/hero_deadman_danny.webp",
+      "originalName": "hero_deadman_danny.webp",
+      "bytes": 233180,
+      "dimensions": "1745x1333"
+    },
+    {
+      "path": "cityneversleeps/hero_nurse_harrow.webp",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/hero_nurse_harrow.webp",
+      "originalName": "hero_nurse_harrow.webp",
+      "bytes": 156252,
+      "dimensions": "1663x1253"
+    },
+    {
+      "path": "cityneversleeps/hero_solomon.webp",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/hero_solomon.webp",
+      "originalName": "hero_solomon.webp",
+      "bytes": 175976,
+      "dimensions": "1883x1435"
+    },
+    {
+      "path": "cityneversleeps/hero_baba.webp",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/hero_baba.webp",
+      "originalName": "hero_baba.webp",
+      "bytes": 287802,
+      "dimensions": "1658x1346"
+    },
+    {
+      "path": "cityneversleeps/hero_violet.webp",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/hero_violet.webp",
+      "originalName": "hero_violet.webp",
+      "bytes": 267876,
+      "dimensions": "1767x1322"
+    },
+    {
+      "path": "cityneversleeps/hero_rat_king.webp",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/cityneversleeps/hero_rat_king.webp",
+      "originalName": "hero_rat_king.webp",
+      "bytes": 266108,
+      "dimensions": "1934x1431"
+    },
+    {
+      "path": "oldgods/deadlock_old_gods_update.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/deadlock_old_gods_update.png",
+      "originalName": "deadlock_old_gods_update.png",
+      "bytes": 795533,
+      "dimensions": "1200x630"
+    },
+    {
+      "path": "oldgods/brawl_primary.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/brawl_primary.png",
+      "originalName": "brawl_primary.png",
+      "bytes": 1477573,
+      "dimensions": "1600x900"
+    },
+    {
+      "path": "oldgods/patron_hidden_king.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/patron_hidden_king.png",
+      "originalName": "patron_hidden_king.png",
+      "bytes": 534749,
+      "dimensions": "1600x1200"
+    },
+    {
+      "path": "oldgods/patron_archmother.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/patron_archmother.png",
+      "originalName": "patron_archmother.png",
+      "bytes": 295472,
+      "dimensions": "1600x1200"
+    },
+    {
+      "path": "oldgods/splash_silver.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/splash_silver.png",
+      "originalName": "splash_silver.png",
+      "bytes": 1146768,
+      "dimensions": "932x932"
+    },
+    {
+      "path": "oldgods/splash_rem.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/splash_rem.png",
+      "originalName": "splash_rem.png",
+      "bytes": 1096017,
+      "dimensions": "932x932"
+    },
+    {
+      "path": "oldgods/splash_graves.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/splash_graves.png",
+      "originalName": "splash_graves.png",
+      "bytes": 1225950,
+      "dimensions": "932x932"
+    },
+    {
+      "path": "oldgods/splash_apollo.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/splash_apollo.png",
+      "originalName": "splash_apollo.png",
+      "bytes": 1221676,
+      "dimensions": "932x932"
+    },
+    {
+      "path": "oldgods/splash_celeste.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/splash_celeste.png",
+      "originalName": "splash_celeste.png",
+      "bytes": 1256077,
+      "dimensions": "932x932"
+    },
+    {
+      "path": "oldgods/splash_venator.png",
+      "url": "https://cdn.fastly.steamstatic.com/apps/deadlock/images/react/oldgods/splash_venator.png",
+      "originalName": "splash_venator.png",
+      "bytes": 1064762,
+      "dimensions": "932x932"
+    }
+  ]
+}
