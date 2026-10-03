@@ -1010,3 +1010,12 @@
     transition: none !important;
   }
 }
+@media (max-width: 640px) {
+  body:has(.city-hero) .city-hero .hero-content {
+    padding-left: max(65px, env(safe-area-inset-left));
+  }
+  .update-page .patch-masthead,
+  .update-page .patch-content {
+    padding-left: max(65px, env(safe-area-inset-left));
+  }
+}

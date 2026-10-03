@@ -674,3 +674,10 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--gold-bright); 
 @media (prefers-reduced-motion: reduce) { .update-cover img { transition: none; } .update-cover:hover img { transform: none; } }
 .patch-skip { position: fixed; top: -100px; left: 1rem; z-index: 200; padding: .8rem 1rem; background: var(--bone); color: var(--ink); }
 .patch-skip:focus { top: 1rem; }
+@media (min-width: 801px) {
+  .city-hero { padding-left: max(80px, var(--gutter)); }
+  .city-hero .hero-content { max-width: 650px; padding: 1.5rem 1.5rem 2rem 0; background: linear-gradient(90deg, #090705f5, #090705d9 82%, transparent); }
+  .city-hero h1 { font-size: clamp(3.8rem, 6vw, 6.8rem); }
+  .city-hero .hero-copy { max-width: 39ch; }
+  .city-hero .city-cast { width: 52%; right: -5%; }
+}
