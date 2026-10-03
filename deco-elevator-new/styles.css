@@ -651,11 +651,15 @@ footer { border-top: 1px solid var(--line); background: #080604; position: relat
 .patch-archive .update-cover img { aspect-ratio: 1.6; }
 a:focus-visible, summary:focus-visible { outline: 3px solid var(--gold-bright); outline-offset: 5px; }
 @media (max-width: 800px) {
-  .city-hero { min-height: 860px; padding: 23rem 1.3rem 4.5rem; align-items: end; }
-  .city-cast { width: 125%; height: 53%; top: 2.5rem; right: -12%; bottom: auto; }
-  .city-hero .hero-art { background: linear-gradient(0deg,#090705 12%,transparent 75%),url("/new/assets/updates/cityneversleeps/header_city.webp") center / cover; }
-  .city-hero .hero-content { padding: 0; }
-  .city-hero h1 { font-size: clamp(3.5rem,12vw,6rem); }
+  .city-hero { min-height: 0; padding: 78px 0 0; display: flex; flex-direction: column; align-items: stretch; }
+  .city-cast { position: relative; width: 100%; height: 220px; top: auto; right: auto; bottom: auto; object-fit: contain; object-position: bottom center; z-index: 1; }
+  .city-hero .hero-art { top: 78px; bottom: auto; height: 220px; background: linear-gradient(0deg,#090705,transparent 45%),url("/new/assets/updates/cityneversleeps/header_city.webp") center / cover; }
+  .city-hero .hero-content { padding: 1.2rem 1.3rem 2rem; background: #090705; width: 100%; }
+  .city-hero .overline { font-size: .6rem; letter-spacing: .24em; }
+  .city-hero .hero-copy { margin-top: 1rem; }
+  .city-hero .hero-actions { margin-top: 1.3rem; }
+  .city-hero .scroll-cue { display: none; }
+  .city-hero h1 { font-size: clamp(3.2rem,11vw,5.4rem); margin-top: .7rem; }
   .city-hero .hero-copy { font-size: 1rem; }
   .hero-wiki { font-size: .88rem; }
   .update-grid, .patch-split { grid-template-columns: 1fr; }
@@ -666,7 +670,7 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--gold-bright); 
   .patch-masthead h1 { font-size: clamp(3.2rem,12vw,6rem); overflow-wrap: anywhere; }
   .patch-section { padding: 3rem 0; }
 }
-@media (max-width: 480px) { .district-grid,.patch-details { grid-template-columns: 1fr; } .city-hero { min-height: 830px; } .update-cover-copy { padding: 1.4rem; } }
+@media (max-width: 480px) { .district-grid,.patch-details { grid-template-columns: 1fr; } .update-cover-copy { padding: 1.4rem; } }
 @media (prefers-reduced-motion: reduce) { .update-cover img { transition: none; } .update-cover:hover img { transform: none; } }
 .patch-skip { position: fixed; top: -100px; left: 1rem; z-index: 200; padding: .8rem 1rem; background: var(--bone); color: var(--ink); }
 .patch-skip:focus { top: 1rem; }
