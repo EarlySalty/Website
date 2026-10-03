@@ -165,6 +165,13 @@ impl std::ops::Deref for AppState {
 
 pub fn router(state: AppState) -> Router {
     Router::new()
+        .route("/wiki", get(routes::wiki::index))
+        .route("/wiki/", get(routes::wiki::index))
+        .route("/wiki/assets/wiki.css", get(routes::wiki::stylesheet))
+        .route("/wiki/{category}", get(routes::wiki::category_page))
+        .route("/wiki/{category}/", get(routes::wiki::category_page))
+        .route("/wiki/{category}/{slug}", get(routes::wiki::article))
+        .route("/wiki/{category}/{slug}/", get(routes::wiki::article))
         .route("/api/videos", get(crate::video::public_feed))
         .route("/api/videos/taxonomy", get(crate::video::list_taxonomy))
         .route(

@@ -9,6 +9,7 @@ pub mod platform;
 pub mod public;
 pub mod scrim;
 pub mod scrim_proxy;
+pub mod wiki;
 
 pub async fn health() -> Json<serde_json::Value> {
     Json(json!({ "status": "ok" }))
