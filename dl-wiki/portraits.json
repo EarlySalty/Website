@@ -1,0 +1,222 @@
+[
+  {
+    "key": "hero_atlas",
+    "title": "Abrams",
+    "url": "/new/assets/heroes/abrams.png"
+  },
+  {
+    "key": "hero_fencer",
+    "title": "Apollo",
+    "url": "/heroes/apollo.png"
+  },
+  {
+    "key": "hero_baba",
+    "title": "Baba",
+    "url": "/new/assets/updates/cityneversleeps/hero_baba.webp"
+  },
+  {
+    "key": "hero_bebop",
+    "title": "Bebop",
+    "url": "/new/assets/heroes/bebop.png"
+  },
+  {
+    "key": "hero_punkgoat",
+    "title": "Billy",
+    "url": "/heroes/billy.png"
+  },
+  {
+    "key": "hero_nano",
+    "title": "Calico",
+    "url": "/heroes/calico.png"
+  },
+  {
+    "key": "hero_unicorn",
+    "title": "Celeste",
+    "url": "/heroes/celeste.png"
+  },
+  {
+    "key": "hero_deadpack",
+    "title": "Deadman Danny",
+    "url": "/new/assets/updates/cityneversleeps/hero_deadman_danny.webp"
+  },
+  {
+    "key": "hero_drifter",
+    "title": "Drifter",
+    "url": "/heroes/drifter.png"
+  },
+  {
+    "key": "hero_dynamo",
+    "title": "Dynamo",
+    "url": "/new/assets/heroes/dynamo.png"
+  },
+  {
+    "key": "hero_necro",
+    "title": "Graves",
+    "url": "/heroes/graves.png"
+  },
+  {
+    "key": "hero_orion",
+    "title": "Grey Talon",
+    "url": "/heroes/grey_talon.png"
+  },
+  {
+    "key": "hero_haze",
+    "title": "Haze",
+    "url": "/new/assets/heroes/haze.png"
+  },
+  {
+    "key": "hero_astro",
+    "title": "Holliday",
+    "url": "/heroes/holliday.png"
+  },
+  {
+    "key": "hero_inferno",
+    "title": "Infernus",
+    "url": "/new/assets/heroes/infernus.png"
+  },
+  {
+    "key": "hero_tengu",
+    "title": "Ivy",
+    "url": "/new/assets/heroes/ivy.png"
+  },
+  {
+    "key": "hero_kelvin",
+    "title": "Kelvin",
+    "url": "/new/assets/heroes/kelvin.png"
+  },
+  {
+    "key": "hero_ghost",
+    "title": "Lady Geist",
+    "url": "/heroes/lady_geist.png"
+  },
+  {
+    "key": "hero_lash",
+    "title": "Lash",
+    "url": "/new/assets/heroes/lash.png"
+  },
+  {
+    "key": "hero_forge",
+    "title": "McGinnis",
+    "url": "/heroes/mcginnis.png"
+  },
+  {
+    "key": "hero_vampirebat",
+    "title": "Mina",
+    "url": "/heroes/mina.png"
+  },
+  {
+    "key": "hero_mirage",
+    "title": "Mirage",
+    "url": "/new/assets/heroes/mirage.png"
+  },
+  {
+    "key": "hero_krill",
+    "title": "Mo & Krill",
+    "url": "/heroes/mo_and_krill.png"
+  },
+  {
+    "key": "hero_nurse",
+    "title": "Nurse Harrow",
+    "url": "/new/assets/updates/cityneversleeps/hero_nurse_harrow.webp"
+  },
+  {
+    "key": "hero_bookworm",
+    "title": "Paige",
+    "url": "/heroes/paige.png"
+  },
+  {
+    "key": "hero_chrono",
+    "title": "Paradox",
+    "url": "/new/assets/heroes/paradox.png"
+  },
+  {
+    "key": "hero_synth",
+    "title": "Pocket",
+    "url": "/new/assets/heroes/pocket.png"
+  },
+  {
+    "key": "hero_ratking",
+    "title": "Rat King",
+    "url": "/new/assets/updates/cityneversleeps/hero_rat_king.webp"
+  },
+  {
+    "key": "hero_familiar",
+    "title": "Rem",
+    "url": "/heroes/rem.png"
+  },
+  {
+    "key": "hero_gigawatt",
+    "title": "Seven",
+    "url": "/new/assets/heroes/seven.png"
+  },
+  {
+    "key": "hero_shiv",
+    "title": "Shiv",
+    "url": "/heroes/shiv.png"
+  },
+  {
+    "key": "hero_werewolf",
+    "title": "Silver",
+    "url": "/heroes/silver.png"
+  },
+  {
+    "key": "hero_magician",
+    "title": "Sinclair",
+    "url": "/heroes/sinclair.png"
+  },
+  {
+    "key": "hero_chessmaster",
+    "title": "Solomon",
+    "url": "/new/assets/updates/cityneversleeps/hero_solomon.webp"
+  },
+  {
+    "key": "hero_doorman",
+    "title": "The Doorman",
+    "url": "/heroes/the_doorman.png"
+  },
+  {
+    "key": "hero_priest",
+    "title": "Venator",
+    "url": "/heroes/venator.png"
+  },
+  {
+    "key": "hero_frank",
+    "title": "Victor",
+    "url": "/heroes/victor.png"
+  },
+  {
+    "key": "hero_hornet",
+    "title": "Vindicta",
+    "url": "/heroes/vindicta.png"
+  },
+  {
+    "key": "hero_artist",
+    "title": "Violet",
+    "url": "/new/assets/updates/cityneversleeps/hero_violet.webp"
+  },
+  {
+    "key": "hero_viscous",
+    "title": "Viscous",
+    "url": "/heroes/viscous.png"
+  },
+  {
+    "key": "hero_viper",
+    "title": "Vyper",
+    "url": "/heroes/vyper.png"
+  },
+  {
+    "key": "hero_warden",
+    "title": "Warden",
+    "url": "/heroes/warden.png"
+  },
+  {
+    "key": "hero_wraith",
+    "title": "Wraith",
+    "url": "/heroes/wraith.png"
+  },
+  {
+    "key": "hero_yamato",
+    "title": "Yamato",
+    "url": "/heroes/yamato.png"
+  }
+]
