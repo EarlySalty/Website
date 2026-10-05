@@ -2,7 +2,7 @@
 /**
  * Generiert dl-landing/public/sitemap.xml.
  *
- * Aufruf: node scripts/build-sitemap.mjs [ausgabedatei]
+ * Aufruf: node scripts/build-sitemap.mjs [ausgabedatei] [öffentlicher-dokumentationssnapshot]
  *
  * Bestehende locs aus der aktuellen sitemap.xml bleiben erhalten. Der Generator
  * darf Docs, Blog und FAQ nicht löschen. Bekannte Hauptseiten bekommen lastmod
@@ -20,13 +20,7 @@ const REPO_ROOT = resolve(__dirname, '..')
 const SITE = 'https://deutsche-deadlock-community.de'
 const SOURCE_SITEMAP = resolve(REPO_ROOT, 'dl-landing/public/sitemap.xml')
 const OUT = process.argv[2] ? resolve(process.argv[2]) : SOURCE_SITEMAP
-const DOCS_ROOT_CANDIDATES = [
-  resolve(REPO_ROOT, '..', 'Deadlock-Docs'),
-  resolve(REPO_ROOT, '..', '..', 'Documents', 'Deadlock-Docs'),
-].filter(Boolean)
-const DOCS_ROOT =
-  DOCS_ROOT_CANDIDATES.find((candidate) => existsSync(resolve(candidate, 'public'))) ??
-  DOCS_ROOT_CANDIDATES[0]
+const DOCS_ROOT = process.argv[3] ? resolve(process.argv[3]) : '/opt/deadlock-docs-web/current'
 
 const ENTRIES = [
   { path: '/',                        src: resolve(REPO_ROOT, 'deco-elevator-new/index.html') },
@@ -45,7 +39,6 @@ const ENTRIES = [
   { path: '/blog/',                   src: resolve(REPO_ROOT, 'dl-landing/blog/index.html') },
   { path: '/blog/twitch-szene-2026/', src: resolve(REPO_ROOT, 'dl-landing/blog/twitch-szene-2026/index.html') },
   { path: '/faq/',                    src: resolve(DOCS_ROOT, 'site/index.html') },
-  { path: '/docs/',                   src: resolve(DOCS_ROOT, 'public/index.html') },
 ]
 
 const todayIso = new Date().toISOString().slice(0, 10)
@@ -56,7 +49,7 @@ function lastmodOf(absPath) {
     const date = execFileSync('git', ['-C', dirname(absPath), 'log', '-1', '--format=%cs', '--', basename(absPath)], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
     return date || statSync(absPath).mtime.toISOString().slice(0, 10)
   } catch {
-    return todayIso
+    return statSync(absPath).mtime.toISOString().slice(0, 10)
   }
 }
 
@@ -119,7 +112,7 @@ for (const { path, src } of ENTRIES) {
 }
 
 for (const path of [...merged.keys()]) {
-  if (excludedFromSitemap(path) || path === '/blog/discord-zukunft/') merged.delete(path)
+  if (path === '/docs/' || excludedFromSitemap(path) || path === '/blog/discord-zukunft/') merged.delete(path)
 }
 
 for (const noIndex of [
