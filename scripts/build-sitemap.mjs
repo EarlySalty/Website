@@ -96,6 +96,10 @@ function docsEntries() {
 }
 
 const merged = existingLocs(SOURCE_SITEMAP)
+if (merged.has('/streamer/onboarding/')) {
+  merged.set('/twitch/onboarding', merged.get('/streamer/onboarding/'))
+  merged.delete('/streamer/onboarding/')
+}
 
 // Docs werden aus dem aktuellen public/-Baum neu aufgebaut. So verschwinden
 // gelöschte Dokumente aus der Sitemap und neue Seiten landen ohne Handpflege
