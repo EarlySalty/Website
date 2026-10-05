@@ -29,6 +29,7 @@ PY
 }
 cp "$repo/scripts/deploy-devfeed-web.sh" "$source/scripts/"
 cp "$repo/scripts/build-sitemap.mjs" "$source/scripts/"
+cp "$repo/scripts/crawler-policy.mjs" "$source/scripts/"
 cp "$repo/dl-brand/nav.js" "$source/dl-brand/"
 cp "$repo/dl-devfeed/index.html" "$repo/dl-devfeed/devfeed.js" \
   "$repo/dl-devfeed/devfeed.css" "$source/dl-devfeed/"
