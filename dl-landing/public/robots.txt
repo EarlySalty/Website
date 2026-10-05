@@ -1,51 +1,152 @@
+# Öffentliche Inhalte dürfen von allen Such- und Trainingscrawlern gelesen werden.
+# Rechtstexte, persönliche Seiten und geschützte Bereiche bleiben ausgeschlossen.
 User-agent: *
 Allow: /
-
-# Rechtstexte bleiben crawlbar, damit Suchmaschinen deren noindex-Header sehen.
-# Die Indexierung wird am HTTP-Response gesteuert, nicht über robots.txt.
-
-# OpenAI search discovery for ChatGPT Search / search surfaces.
-User-agent: OAI-SearchBot
-Allow: /
-
-# Anthropic search/user fetchers stay allowed for public discovery.
-User-agent: Claude-SearchBot
-Allow: /
-
-User-agent: Claude-User
-Allow: /
-
-# ── Modell-Trainings-Crawler ────────────────────────────────────
-# GPTBot und ClaudeBot bleiben fuer die Site gesperrt, mit Ausnahme von
-# /blog/twitch-szene-2026/, /blog/spam-bots-2026/, /blog/deadlock-stimmung-2026/, /blog/deadlock-spirit-slop-2026/, /blog/deadlock-objectives-2026/, /blog/discord-zukunft/, /wohin/ und den
-# llms-Dateien: diese Texte sind eigene Auswertungen,
-# die bewusst zitierbar und in Modellen auffindbar sein soll. Alle anderen
-# Crawler (auch Google-Extended, CCBot, Applebot-Extended) fallen unter
-# "User-agent: *" und duerfen wie bisher die ganze Site lesen.
-# Nach RFC 9309 gewinnt die laengste passende Regel, die Reihenfolge ist egal.
-
-User-agent: GPTBot
-Allow: /blog/twitch-szene-2026/
-Allow: /blog/spam-bots-2026/
-Allow: /blog/deadlock-stimmung-2026/
-Allow: /blog/deadlock-spirit-slop-2026/
-Allow: /blog/deadlock-objectives-2026/
-Allow: /wohin/
-Allow: /blog/discord-zukunft/
-Allow: /llms.txt
-Allow: /llms-full.txt
-Disallow: /
-
-User-agent: ClaudeBot
-Allow: /blog/twitch-szene-2026/
-Allow: /blog/spam-bots-2026/
-Allow: /blog/deadlock-stimmung-2026/
-Allow: /blog/deadlock-spirit-slop-2026/
-Allow: /blog/deadlock-objectives-2026/
-Allow: /wohin/
-Allow: /blog/discord-zukunft/
-Allow: /llms.txt
-Allow: /llms-full.txt
-Disallow: /
+Disallow: /impressum
+Disallow: /*/impressum
+Disallow: /datenschutz
+Disallow: /*/datenschutz
+Disallow: /agb
+Disallow: /*/agb
+Disallow: /privacy
+Disallow: /*/privacy
+Disallow: /imprint
+Disallow: /*/imprint
+Disallow: /terms
+Disallow: /*/terms
+Disallow: /legal
+Disallow: /*/legal
+Disallow: /admin$
+Disallow: /admin/
+Disallow: /admin?
+Disallow: /api$
+Disallow: /api/
+Disallow: /api?
+Disallow: /auth$
+Disallow: /auth/
+Disallow: /auth?
+Disallow: /oauth$
+Disallow: /oauth/
+Disallow: /oauth?
+Disallow: /callback$
+Disallow: /callback/
+Disallow: /callback?
+Disallow: /login$
+Disallow: /login/
+Disallow: /login?
+Disallow: /logout$
+Disallow: /logout/
+Disallow: /logout?
+Disallow: /internal$
+Disallow: /internal/
+Disallow: /internal?
+Disallow: /dashboard$
+Disallow: /dashboard/
+Disallow: /dashboard?
+Disallow: /analyse$
+Disallow: /analyse/
+Disallow: /analyse?
+Disallow: /social-media$
+Disallow: /social-media/
+Disallow: /social-media?
+Disallow: /social-media-admin$
+Disallow: /social-media-admin/
+Disallow: /social-media-admin?
+Disallow: /ai-bridge$
+Disallow: /ai-bridge/
+Disallow: /ai-bridge?
+Disallow: /hermes$
+Disallow: /hermes/
+Disallow: /hermes?
+Disallow: /me$
+Disallow: /me/
+Disallow: /me?
+Disallow: /survey$
+Disallow: /survey/
+Disallow: /survey?
+Disallow: /demo$
+Disallow: /demo/
+Disallow: /demo?
+Disallow: /twitch/api$
+Disallow: /twitch/api/
+Disallow: /twitch/api?
+Disallow: /twitch/auth$
+Disallow: /twitch/auth/
+Disallow: /twitch/auth?
+Disallow: /twitch/dashboard$
+Disallow: /twitch/dashboard/
+Disallow: /twitch/dashboard?
+Disallow: /twitch/dashboard-v2$
+Disallow: /twitch/dashboard-v2/
+Disallow: /twitch/dashboard-v2?
+Disallow: /twitch/uplink$
+Disallow: /twitch/uplink/
+Disallow: /twitch/uplink?
+Disallow: /twitch/titel$
+Disallow: /twitch/titel/
+Disallow: /twitch/titel?
+Disallow: /twitch/analyse$
+Disallow: /twitch/analyse/
+Disallow: /twitch/analyse?
+Disallow: /twitch/verwaltung$
+Disallow: /twitch/verwaltung/
+Disallow: /twitch/verwaltung?
+Disallow: /twitch/hilfe$
+Disallow: /twitch/hilfe/
+Disallow: /twitch/hilfe?
+Disallow: /twitch/feedback$
+Disallow: /twitch/feedback/
+Disallow: /twitch/feedback?
+Disallow: /twitch/overlay$
+Disallow: /twitch/overlay/
+Disallow: /twitch/overlay?
+Disallow: /twitch/pause-loop$
+Disallow: /twitch/pause-loop/
+Disallow: /twitch/pause-loop?
+Disallow: /twitch/caster-overlay$
+Disallow: /twitch/caster-overlay/
+Disallow: /twitch/caster-overlay?
+Disallow: /twitch/kategorie$
+Disallow: /twitch/kategorie/
+Disallow: /twitch/kategorie?
+Disallow: /twitch/legal$
+Disallow: /twitch/legal/
+Disallow: /twitch/legal?
+Disallow: /twitch/raid/auth$
+Disallow: /twitch/raid/auth/
+Disallow: /twitch/raid/auth?
+Disallow: /twitch/raid/callback$
+Disallow: /twitch/raid/callback/
+Disallow: /twitch/raid/callback?
+Disallow: /twitch/discord_link$
+Disallow: /twitch/discord_link/
+Disallow: /twitch/discord_link?
+Disallow: /uplink/dock$
+Disallow: /uplink/dock/
+Disallow: /uplink/dock?
+Disallow: /uplink/v1$
+Disallow: /uplink/v1/
+Disallow: /uplink/v1?
+Disallow: /uplink/v2$
+Disallow: /uplink/v2/
+Disallow: /uplink/v2?
+Disallow: /uplink/auth$
+Disallow: /uplink/auth/
+Disallow: /uplink/auth?
+Disallow: /streamer/v1$
+Disallow: /streamer/v1/
+Disallow: /streamer/v1?
+Disallow: /streamer/v2$
+Disallow: /streamer/v2/
+Disallow: /streamer/v2?
+Disallow: /twitch$
+Disallow: /twitch/$
+Disallow: /twitch?
+Disallow: /*/api$
+Disallow: /*/api/
+Disallow: /*/api?
+Disallow: /*/admin$
+Disallow: /*/admin/
+Disallow: /*/admin?
 
 Sitemap: https://deutsche-deadlock-community.de/sitemap.xml

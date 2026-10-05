@@ -10,8 +10,10 @@
  */
 
 import { readFileSync, writeFileSync, statSync, existsSync, readdirSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { dirname, basename, resolve } from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { excludedFromSitemap } from './crawler-policy.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
@@ -19,7 +21,6 @@ const SITE = 'https://deutsche-deadlock-community.de'
 const SOURCE_SITEMAP = resolve(REPO_ROOT, 'dl-landing/public/sitemap.xml')
 const OUT = process.argv[2] ? resolve(process.argv[2]) : SOURCE_SITEMAP
 const DOCS_ROOT_CANDIDATES = [
-  process.env.DEADLOCK_DOCS_ROOT,
   resolve(REPO_ROOT, '..', 'Deadlock-Docs'),
   resolve(REPO_ROOT, '..', '..', 'Documents', 'Deadlock-Docs'),
 ].filter(Boolean)
@@ -52,7 +53,8 @@ const todayIso = new Date().toISOString().slice(0, 10)
 function lastmodOf(absPath) {
   if (!existsSync(absPath)) return todayIso
   try {
-    return statSync(absPath).mtime.toISOString().slice(0, 10)
+    const date = execFileSync('git', ['-C', dirname(absPath), 'log', '-1', '--format=%cs', '--', basename(absPath)], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    return date || statSync(absPath).mtime.toISOString().slice(0, 10)
   } catch {
     return todayIso
   }
@@ -114,6 +116,10 @@ for (const { path, src } of docsEntries()) {
 
 for (const { path, src } of ENTRIES) {
   merged.set(path, lastmodOf(src))
+}
+
+for (const path of [...merged.keys()]) {
+  if (excludedFromSitemap(path) || path === '/blog/discord-zukunft/') merged.delete(path)
 }
 
 for (const noIndex of [

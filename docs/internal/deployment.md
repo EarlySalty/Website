@@ -142,3 +142,11 @@ Die neue Lesefassung ist bewusst **keine zweite Vite-Anwendung in diesem Reposit
 Die Navigation dieses Repositories darf **erst nach** der Caddy-Ergänzung, dem Publisher-Deploy und dem erfolgreichen öffentlichen Abruf von Archiv und Einzelpatch aktiviert werden. Danach werden `dl-brand/nav.js` und `deco-elevator-new/index.html` aus dem geprüften Stand übernommen, ohne andere Brand-Dateien oder `social-preview/` zu löschen. Auf `/patch/` bleibt die Patchnotes-Etage des Menüs aktiv.
 
 Die Prüfnachweise und konkreten Gegenstücke dieses Releases stehen in `.tasks/2026-09-20-patchnotes-web/CONTRACT.md`. Für die Patchnotes-Änderung ist kein Website-Rust-Build und keine Migration nötig.
+
+## Suchindexierung und Trainingscrawler
+
+`node scripts/build-robots.mjs` erzeugt die gemeinsame Regel für alle Crawler. Öffentliche Community-Inhalte sind freigegeben. Rechtstexte, Authentifizierung, APIs, Dashboards und persönliche Seiten sind ausgeschlossen. `scripts/crawler-policy.mjs` enthält die gemeinsamen Ausschlüsse für robots.txt und Sitemap. Die Freigabe ermöglicht den Abruf; über Indexierung und Aufnahme in Trainingsdaten entscheidet der jeweilige Anbieter.
+
+`node scripts/build-sitemap.mjs` erzeugt die öffentliche Sitemap aus den Website-Einstiegen und dem committeten Dokumentationsbaum. Rechtstexte, private Pfade und die alte weitergeleitete Blogadresse gehören nicht hinein. Änderungsdaten stammen aus Git statt vom Anlegen des Build-Worktrees.
+
+Der öffentliche Dokumentationssnapshot liegt unter `/opt/deadlock-docs-web/current/public`. Er wird mit `Deadlock-Docs/tools/deploy_corpus.sh <commit> /opt/deadlock-docs-web` veröffentlicht. Der Brain-Release unter `/opt/deadlock-docs/current` bleibt unabhängig. Caddy liefert fehlende Dokumentationspfade als 404 aus.
