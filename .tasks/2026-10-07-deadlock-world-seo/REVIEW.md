@@ -8,7 +8,7 @@ Der lokale `gate_hook.py --review` ist der einzige Reviewer. Es wurden keine zus
 
 Geprüfter Commit: `05de267`. Exit 0. Urteil: `[gpt-6.1-sol] ALLOW: No confirmed merge-blocking defect in the supplied diff.`
 
-Nicht blockierende Hinweise: Die Deep-Route-noindex-Regel wird durch JavaScript gesetzt; das gemeinsame HTTP-Fallback-HTML bleibt öffentlich. Der Gate hat die Screenshots nicht selbst gesehen, weil kein Sichtprüfungsprojekt registriert ist. Die eigene isolierte Browserprüfung liefert deshalb den getrennten Darstellungsbeleg. Kein BLOCK, keine Fixerrunde.
+Nicht blockierende Hinweise: Die Deep-Route-noindex-Regel wird durch JavaScript gesetzt; die Live-HTTP-Prüfung von `/coaching/anfrage` bestätigt das öffentliche Fallback-HTML, Canonical `/coaching/` und keinen X-Robots-Tag. Der Gate hat die Screenshots nicht selbst gesehen, weil kein Sichtprüfungsprojekt registriert ist. Die eigene isolierte Browserprüfung liefert deshalb den getrennten Darstellungsbeleg. Kein BLOCK, keine Fixerrunde.
 
 ## Eigene Funktions- und Sichtprüfung
 

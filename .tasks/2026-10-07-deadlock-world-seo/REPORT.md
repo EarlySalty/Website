@@ -2,7 +2,7 @@
 
 ## Stand
 
-Die fünf öffentlichen Einstiege sind umgesetzt und lokal geprüft. Merge-Gate, Push, Auslieferung und Liveprüfung stehen noch aus. Dieser Zwischenstand ist keine Fertigmeldung.
+Die fünf öffentlichen Einstiege sind umgesetzt, zentral freigegeben, nach main gepusht, statisch ausgeliefert und live geprüft. Produktstand: `6b217488cb5c85b169ce7afbd43a5521adc4d036`, Implementierungscommit `05de267`. Die abschließende Berichtssicherung und das anschließende Entfernen des eigenen Branches/Worktrees erfolgen nach den unten dokumentierten Nachweisen.
 
 ## Änderungen und Suchintentionen
 
@@ -53,4 +53,32 @@ Viewportbelege unter `/tmp/deadlock-world-confirm-20261007/`: `home-390-js-top.p
 
 Der zentrale Gate hat Implementierungscommit `05de267` gegen `origin/main` geprüft: `[gpt-6.1-sol] ALLOW: No confirmed merge-blocking defect in the supplied diff.`, Exit 0. Keine blockierenden Funde, keine Fixerrunde. Nicht blockierende Grenzen stehen in `REVIEW.md`. Die zusätzliche Artefaktprüfung bestätigt je eine H1, Canonical und Description in den fünf ausgelieferten HTML-Dateien. Sitemap und robots sind bytegleich mit ihren Quellen; die Sitemap enthält die fünf Einstiege.
 
-Push, statische Auslieferung des aktuellen Remote-main und Liveprüfung folgen erst nach dieser Freigabe. Kein Bot-Neustart ist erforderlich. Mergeprotokoll und LIVEBEWEIS werden nach tatsächlichem Abschluss ergänzt.
+## Integration und Auslieferung
+
+Die erste Integration erfolgte ausschließlich mit einzelnen Git-Aufrufen: Fetch, gezieltes Add und Implementierungscommit, Add und Belegcommit, `git push origin HEAD:main`, Fast-Forward des sauberen kanonischen main-Checkouts. Ein vorheriger Pushaufruf wurde vom Rollenlade-Hook vor der Git-Ausführung angehalten; nach dem vorgeschriebenen Lesen der Merge-Schleuse gelang der Push. Kein BLOCK, kein Override, keine PR, keine GitHub Actions.
+
+MERGEPROTOKOLL[MS-1]: 7 Git-Schritte einzeln | Anläufe: 2 | Gate: [gpt-6.1-sol] ALLOW
+
+Diese Zahl protokolliert die erste Produktintegration. Berichtssicherung und abschließende Bereinigung folgen separat, ebenfalls mit einzelnen Git-Aufrufen.
+
+Caddy liefert die bestehende Startseite und Marke direkt aus `/home/nathanael/repos/Website`; der konfigurierte Pfad `/home/naniadm/Documents/Website` ist derselbe Checkout. Die drei Frontends werden aus ihren bisherigen `dist`-Verzeichnissen geliefert. Es wurde kein allgemeiner Website-Publisher gefunden; `scripts/deploy-devfeed-web.sh` veröffentlicht nur DevFeed und wurde nicht zweckentfremdet.
+
+Deshalb wurde der bestehende statische Build-/Kopierweg mit einem auf diesen Auftrag begrenzten, kurz laufenden Shell-Publisher serialisiert: `/tmp/deadlock-world-publish-20261007.sh`, Lock `/home/nathanael/Documents/Runtime/website-public.deploy.lock`. Der Wrapper prüft saubere getrackte Quellen, exakte HEAD-/Live-SHA und aktuellen Remote-main vor Build und Veröffentlichung. Builds entstehen im eigenen Worktree. `rsync -a --delay-updates` veröffentlicht in die bestehenden Caddy-Ziele; alte gehashte Assets bleiben erhalten. Fremde ungetrackte `dl-brand/social-preview/` wurden nicht angefasst. Keine Caddy-Änderung, kein Bot-/Backend-Neustart, keine Datenbankänderung.
+
+`bash /tmp/deadlock-world-publish-20261007.sh`: Exit 0, erneute tatsächliche Vite-Builds 868 ms / 2,96 s / 253 ms, veröffentlichter SHA `6b217488cb5c85b169ce7afbd43a5521adc4d036`. Log: `/tmp/deadlock-world-deploy-20261007.log`. Homepage, world.css und die drei Buildindizes haben zwischen eigenem Build und Live-Dateisystem identische SHA-256-Werte. Nach dem reinen Berichtscommit wird der dann aktuelle Remote-main nochmals durch denselben Wrapper gebaut und geprüft; die Produktquellen bleiben dabei unverändert.
+
+## Liveprüfung
+
+`WORLD_LIVE=1 WORLD_OUT=/tmp/deadlock-world-live-20261007 xvfb-run -a node /tmp/deadlock-world-browser-20261007.cjs`: Exit 0. 20 Livekombinationen und sechs Nachbarseitenprüfungen. Kein Dokument-Overflow, genau eine H1, keine Anwendungsausnahmen, keine Console-Fehler, geprüfte Bilder geladen. Menü 10/10; Turm und Patchfilter jeweils 2/2. Vier tatsächliche Coachprofile sichtbar auf beiden Breiten. Anfrage und Rücknavigation funktionieren; noindex und Gestaltungsscope wechseln entsprechend. Patchstatus: „PATCHDATEN GELADEN“. Die bekannten Analytics-/Google-Prüfausnahmen gelten auch hier.
+
+HTTP-Prüfung: fünf Einstiege, `/brand/world.css`, `/brand/world/city-960.avif`, `/robots.txt` und `/sitemap.xml` jeweils 200, passender Content-Type und bytegleich mit dem gemergten Build. Beispielsweise Homepage SHA-256 `058eb77f80dc692f0eb0bbde67cc049c68dd102f9b0237f549e0b5a44e33f697`, Coaching-HTML `807f7bf3e6270322991cf9a639c8f79deb8e7ae2568a4e582b029b5e3904376d`, world.css `c8d0d584e2eb5e781cdfb34ff4e1a8a4b5b9cb321e4fc10d8621c15e6a89f828`.
+
+Livebilder: `/tmp/deadlock-world-live-20261007/home-1440-js-top.png`, `home-390-js-top.png`, `home-1440-js-coaching.png`, die weiteren fünf Routen jeweils mit Top-/Middle-Ansichten und JS-/No-JS-Topansichten. Messergebnisse: `results.json`. Dies ist ein Auslieferungsnachweis, keine weitere Gestaltungsschleife.
+
+LIVEBEWEIS[DV-1]: PID unverändert (statisches Frontend) | exe nicht zutreffend | journal nicht zutreffend | Anker "world-poster" im HTTP-HTML | Funktion: fünf Einstiege sichtbar, Menü, Turm, Coach-Anfrage und Patchfilter geprüft | Ort: https://deutsche-deadlock-community.de/ und /mitspieler/, /beitreten/, /coaching/, /patch/
+
+## Grenzen und Bereinigung
+
+Die Deep-Route `/coaching/anfrage` hat im initialen HTTP-Fallback weiterhin den öffentlichen Übersichtstitel, Canonical `/coaching/` und keinen X-Robots-Tag. Die spezifischen Metadaten werden nach dem JavaScriptstart gesetzt. Der Gate hat dies als nicht blockierenden Hinweis benannt. Die Anfrage funktioniert ohne JavaScript nicht; der sichtbare Discordweg bleibt verfügbar. Für ein serverseitiges Metadatenrouting wurde kein neuer Backendpfad angelegt.
+
+Die Originalbilder, fremden Worktrees und fremden ungetrackten Dateien bleiben erhalten. Nach Sicherung dieses Berichts werden HEAD gegen aktuellen origin/main als Vorfahr geprüft, der eigene Worktree entfernt, der eigene Branch gelöscht und Worktrees gepruned. Screenshots und Logs liegen außerhalb des zu entfernenden Worktrees. Die Hauptsession besitzt weiterhin `REGISTER.md`; dieser Bericht überschreibt dessen Status nicht.
