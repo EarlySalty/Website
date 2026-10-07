@@ -415,7 +415,7 @@ async function fetchDiscordWidget() {
     data = await res.json()
   } catch {
     if (lanesList) {
-      lanesList.innerHTML = '<li class="lane-empty">Live-Daten gerade nicht erreichbar — schau direkt im Discord.</li>'
+      lanesList.innerHTML = '<li class="lane-empty">Live-Daten sind gerade nicht erreichbar. Schau direkt im Discord nach.</li>'
     }
     if (lanesCount) lanesCount.textContent = ''
     if (presenceGrid) presenceGrid.innerHTML = ''

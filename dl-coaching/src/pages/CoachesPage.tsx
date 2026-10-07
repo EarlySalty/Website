@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { coaching, type CoachProfile } from '@/api/client'
 import { Avatar, EmptyState } from '@/components/ui'
+import { CoachingHero } from '@/components/CoachingPublic'
 
 function RatingBar({ rating, max = 10 }: { rating: number; max?: number }) {
   const filled = Math.round(rating)
@@ -132,43 +133,14 @@ function ProcessStep({ nr, title, copy, icon }: { nr: string; title: string; cop
 }
 
 export default function CoachesPage() {
-  const { data: coaches, isLoading } = useQuery({
+  const { data: coaches, isLoading, isError, refetch } = useQuery({
     queryKey: ['coaches'],
     queryFn: () => coaching.listCoaches(),
   })
 
-  const totalSessions = (coaches ?? []).reduce((sum, c) => sum + (c.total_sessions || 0), 0)
-  const totalReviews = (coaches ?? []).reduce((sum, c) => sum + (c.total_reviews || 0), 0)
-
   return (
-    <div className="content-grid pb-16">
-      <div className="salon-hero relative mb-12 md:mb-16">
-        <div className="animate-in-left max-w-3xl">
-          <div className="eyebrow mb-4">Coaching-Etage</div>
-          <h1 className="hero-display">
-            Besser werden,<br />
-            <span>ohne Chat-Chaos.</span>
-          </h1>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Link to="/anfrage" className="btn-amber">Coaching anfragen</Link>
-            <Link to="/me" className="btn-ghost">Meine Termine</Link>
-          </div>
-        </div>
-
-        <div className="salon-metrics animate-in" style={{ animationDelay: '160ms' }}>
-          {[
-            { label: 'Coaches im Roster', value: isLoading ? '…' : String(coaches?.length ?? 0) },
-            { label: 'Sessions gespielt', value: isLoading ? '…' : String(totalSessions) },
-            { label: 'Bewertungen', value: isLoading ? '…' : String(totalReviews) },
-            { label: 'Kosten', value: 'Gratis' },
-          ].map((s) => (
-            <div key={s.label}>
-              <p>{s.value}</p>
-              <span>{s.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="coaching-world pb-16">
+      <CoachingHero />
 
       <div className="salon-process animate-in mb-12" style={{ animationDelay: '240ms' }}>
         <div className="salon-section-title">
@@ -182,8 +154,8 @@ export default function CoachesPage() {
         </div>
       </div>
 
-      <div className="salon-section-title mb-5">
-        <span>Coach-Salon</span>
+      <div id="coaches" className="salon-section-title mb-5">
+        <span>Deutschsprachige Coaches</span>
         {!isLoading && (
           <b>
             {String(coaches?.length ?? 0).padStart(2, '0')}
@@ -193,9 +165,9 @@ export default function CoachesPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="spinner h-9 w-9" />
-        </div>
+        <p className="world-status" role="status">Coaches werden geladen.</p>
+      ) : isError ? (
+        <div className="world-status" role="status"><p>Die Coachliste ist gerade nicht erreichbar. Deine Anfrage kannst du trotzdem stellen.</p><button className="world-button" onClick={() => refetch()}>Erneut laden</button></div>
       ) : coaches && coaches.length > 0 ? (
         <div className="coach-list">
           {coaches.map((coach, i) => (
@@ -204,8 +176,8 @@ export default function CoachesPage() {
         </div>
       ) : (
         <EmptyState
-          title="Roster wird geladen"
-          copy="Die Coaches werden automatisch aus den Community-Rollen synchronisiert. Schau in ein paar Minuten wieder vorbei."
+          title="Noch keine Coaches sichtbar"
+          copy="Du kannst dein Lernziel trotzdem in einer Coaching-Anfrage nennen oder auf Discord nachfragen."
         />
       )}
     </div>

@@ -86,18 +86,18 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 async function loadDashboard() {
-  setStatus('Lade Brain Timeline')
+  setStatus('Patchdaten werden geladen')
 
   try {
     const timeline = await fetchJson(TIMELINE_API_URL)
     applyTimelinePayload(timeline)
-    setStatus('Live aus PG Brain')
+    setStatus('Patchdaten geladen')
   } catch (error) {
     console.warn('[patch] Timeline-Endpunkt nicht erreichbar, nutze Fallback:', error)
     try {
       const fallback = await fetchJson(PATCH_NOTES_API_URL)
       applyPatchNotesFallback(fallback)
-      setStatus('Patchnotes Fallback')
+      setStatus('Patchnotes geladen')
     } catch (fallbackError) {
       console.error('[patch] Fehler beim Laden:', fallbackError)
       state.error = 'Patchdaten konnten nicht geladen werden.'

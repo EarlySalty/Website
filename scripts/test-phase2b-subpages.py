@@ -14,10 +14,12 @@ class Phase2bSubpagesContractTest(unittest.TestCase):
             with self.subTest(path=path.relative_to(ROOT)):
                 self.assertNotRegex(path.read_text(), EMOJI)
 
-    def test_mitspieler_uses_deco_backgrounds(self) -> None:
+    def test_mitspieler_uses_responsive_game_backgrounds(self) -> None:
         html = (ROOT / "dl-landing/mitspieler/index.html").read_text()
-        self.assertIn("/images/hero-mitspieler-deco.png", html)
-        self.assertIn("/new/assets/deco/fight-posters.png", html)
+        self.assertIn('<picture class="world-picture">', html)
+        self.assertIn('/brand/world/alley-960.avif 960w', html)
+        self.assertIn('/brand/world/alley-1920.webp 1920w', html)
+        self.assertIn('fetchpriority="high"', html)
         self.assertNotIn("hero-rooftops.png", html)
         self.assertNotIn("hotel-hall-dark", html)
 

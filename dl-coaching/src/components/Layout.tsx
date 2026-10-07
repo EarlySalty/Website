@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui'
 import communityWordmark from '@/assets/brand/community-wordmark.svg'
+import { coachingPageMetadata } from '@/seo'
 
 export default function Layout() {
   const { user, login, logout, isCoach } = useAuth()
@@ -13,6 +14,23 @@ export default function Layout() {
   const menuButton = useRef<HTMLButtonElement>(null)
   const isActive = (path: string, exact = false) =>
     exact ? location.pathname === path : location.pathname === path || location.pathname.startsWith(path + '/')
+
+  useEffect(() => {
+    const metadata = coachingPageMetadata(location.pathname)
+    document.body.classList.toggle('deadlock-world', metadata.isPublicOverview)
+    document.title = metadata.title
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', metadata.canonical)
+    for (const [selector, value] of [
+      ['meta[name="description"]', metadata.description],
+      ['meta[name="robots"]', metadata.robots],
+      ['meta[property="og:title"]', metadata.title],
+      ['meta[property="og:description"]', metadata.description],
+      ['meta[property="og:url"]', metadata.canonical],
+      ['meta[name="twitter:title"]', metadata.title],
+      ['meta[name="twitter:description"]', metadata.description],
+    ]) document.querySelector(selector)?.setAttribute('content', value)
+    return () => document.body.classList.remove('deadlock-world')
+  }, [location.pathname])
 
   useEffect(() => {
     const close = (event: PointerEvent) => {
@@ -91,6 +109,8 @@ export default function Layout() {
       <footer className="relative z-10 mt-auto py-8" style={{ borderTop: '1px solid var(--border-dim)' }}>
         <div className="content-grid flex flex-wrap justify-between gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
           <p>Deutsche Deadlock Community · Coaching</p><p>© {new Date().getFullYear()} DDC</p>
+          <nav className="flex flex-wrap gap-4" aria-label="Community und Rechtliches"><a href="/">Start</a><a href="/mitspieler/">Mitspieler</a><a href="/patch/">Patch-Verlauf</a><a href="/beitreten/">Discord</a><a href="/twitch/impressum">Impressum</a><a href="/twitch/datenschutz">Datenschutz</a></nav>
+          <p>Inoffizielles Community-Projekt. Nicht mit Valve verbunden.</p>
         </div>
       </footer>
     </div>

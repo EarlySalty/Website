@@ -4,16 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-  <title>Patch Timeline · Deutsche Deadlock Community</title>
-  <meta name="description" content="Deadlock Patch Timeline mit Brain-Daten, Balance-Verlauf, Hero- und Item-Änderungen." />
+  <title>Deadlock Patchnotes auf Deutsch | Patch-Verlauf</title>
+  <meta name="description" content="Deadlock Patchnotes auf Deutsch: Verfolge Änderungen an Helden, Items und Balance in der Timeline. Mit Suchfiltern und Links zu den Originalquellen." />
   <link rel="canonical" href="https://deutsche-deadlock-community.de/patch/" />
   <link rel="alternate" hreflang="de" href="https://deutsche-deadlock-community.de/patch/" />
   <link rel="alternate" hreflang="x-default" href="https://deutsche-deadlock-community.de/patch/" />
   <meta name="theme-color" content="#0b0b0b" />
-  <meta name="keywords" content="Deadlock Patch Timeline, Deadlock Patchnotes, Deadlock Balance Verlauf, Deadlock Hero Changes, Deadlock Items Patch, Deadlock Brain" />
+  <link rel="stylesheet" href="/brand/world.css" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://deutsche-deadlock-community.de/patch/" />
-  <meta property="og:title" content="Patch Timeline – Deutsche Deadlock Community" />
+  <meta property="og:title" content="Deadlock Patchnotes auf Deutsch | Patch-Verlauf" />
   <meta property="og:description" content="Deadlock-Patchdaten als Timeline mit Hero-, Item- und Balance-Analysen." />
   <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-logo.png" />
   <meta property="og:image:width" content="1200" />
@@ -22,7 +22,7 @@
   <meta property="og:locale" content="de_DE" />
   <meta property="og:site_name" content="Deutsche Deadlock Community" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Patch Timeline – Deutsche Deadlock Community" />
+  <meta name="twitter:title" content="Deadlock Patchnotes auf Deutsch | Patch-Verlauf" />
   <meta name="twitter:description" content="Deadlock-Patchdaten als Timeline mit Hero-, Item- und Balance-Analysen." />
   <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-logo.png" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
@@ -57,7 +57,7 @@
   </script>
   <script type="module" src="/src/patch.js"></script>
 </head>
-<body>
+<body class="deadlock-world">
   <div class="site-shell">
 
     <header class="site-header">
@@ -79,12 +79,17 @@
     <main id="main">
 
       <section class="patch-dashboard-hero">
+        <div class="world-hero world-small-hero">
+          <picture class="world-picture"><source type="image/avif" srcset="/brand/world/ghost-960.avif 960w, /brand/world/ghost-1920.avif 1920w" sizes="100vw"><img src="/brand/world/ghost-1920.webp" srcset="/brand/world/ghost-960.webp 960w, /brand/world/ghost-1920.webp 1920w" sizes="100vw" width="1920" height="1080" fetchpriority="high" alt="Blau leuchtender Geist in einer dunklen Ladenpassage"></picture>
+          <div class="world-wrap"><div class="world-copy"><h1>Deadlock<br>Patchnotes.</h1><p>Deadlock Patchnotes auf Deutsch: Verfolge Änderungen an Helden, Items und Balance. Die Originalquellen bleiben direkt erreichbar.</p><div class="world-actions"><a class="world-button" href="#patch-dashboard">Patch-Verlauf ansehen</a><a class="world-button world-button--outline" href="/patchnotes/">Patchnotes lesen</a></div></div></div>
+        </div>
+        <noscript><div class="world-wrap"><p>Die interaktive Timeline braucht JavaScript. Du kannst die <a href="/patchnotes/">deutschen Patchnotes</a> auch ohne JavaScript lesen.</p></div></noscript>
         <div class="container">
           <div class="patch-hero-layout" data-reveal>
             <div class="patch-hero-content">
               <div class="patch-hero-eyebrow">Deadlock Brain</div>
-              <h1 class="patch-hero-title">Patch Timeline</h1>
-              <p class="patch-hero-desc">Historische Patchdaten aus dem Brain, sortiert von alt nach neu, mit Hero-, Item-, Wert- und Quellenbezug.</p>
+              <h2 class="patch-hero-title">Patch-Verlauf</h2>
+              <p class="patch-hero-desc">Historische Änderungen, von alt nach neu. Suche nach einem Helden oder Item und öffne die passende Quelle.</p>
             </div>
             <aside class="latest-patch-card" aria-label="Neuester Patch">
               <span class="live-pill"><i></i><span id="data-status">Initialisiere</span></span>
@@ -191,8 +196,11 @@
             <a href="/streamer/">Streamer</a>
             <a href="/beitreten/">Beitreten</a>
             <a href="/builds/">Builds</a>
+            <a href="/twitch/impressum">Impressum</a>
+            <a href="/twitch/datenschutz">Datenschutz</a>
             <a href="/turnier/">Turnier</a>
           </nav>
+          <p>Inoffizielles Community-Projekt. Nicht mit Valve verbunden.</p>
         </div>
       </div>
     </footer>

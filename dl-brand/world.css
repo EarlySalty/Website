@@ -1,0 +1,236 @@
+@font-face {
+  font-family: "Skranji";
+  src: url("/brand/fonts/skranji-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  src: url("/brand/fonts/barlow-condensed-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.deadlock-world {
+  --world-paper: #f7e9d5;
+  --world-ink: #101415;
+  --world-gold: #e5bc73;
+  background: var(--world-ink);
+  margin: 0;
+  color: var(--world-paper);
+  font-family: var(--font-body, "Sora", sans-serif);
+  scrollbar-color: #b99b68 #101415;
+  caret-color: var(--world-gold);
+}
+.deadlock-world *, .deadlock-world *::before, .deadlock-world *::after { box-sizing: border-box; }
+.deadlock-world ::selection { color: #101415; background: #e5bc73; }
+.deadlock-world a { color: inherit; text-underline-offset: .25em; }
+.deadlock-world :focus-visible { outline: 3px solid #e5bc73; outline-offset: 5px; }
+.deadlock-world h1, .deadlock-world h2, .deadlock-world .world-title {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -.015em;
+  line-height: .94;
+  text-wrap: balance;
+  color: inherit;
+}
+.deadlock-world h1 { font-size: clamp(3.4rem, 6.5vw, 6rem); margin: 0 0 26px; }
+.deadlock-world h2 { font-size: clamp(2.8rem, 5vw, 4.8rem); margin: 0 0 24px; }
+.deadlock-world h3 { font-size: 1.25rem; line-height: 1.35; }
+.deadlock-world p { line-height: 1.75; text-wrap: pretty; }
+.deadlock-world .world-wrap { width: min(1240px, calc(100% - 96px)); margin-inline: auto; }
+.deadlock-world .world-header { position: relative; z-index: 60; background: #101415; border-bottom: 1px solid #e5bc7340; padding: 16px 48px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.deadlock-world .world-header .brand { display: flex; align-items: center; gap: 14px; }
+.deadlock-world .world-header .brand-logo { width: 54px; height: 54px; }
+.deadlock-world .world-header .brand-wordmark-img { width: 220px; height: 48px; object-fit: contain; }
+.deadlock-world .world-nav { display: flex; gap: 24px; align-items: center; font-size: .83rem; }
+.deadlock-world .world-nav a { text-decoration: none; padding: 12px 0; }
+.deadlock-world .world-nav a:hover { color: var(--world-gold); }
+.deadlock-world .world-button, .deadlock-world .world-button:visited {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 15px 25px; background: var(--world-gold); color: #101415; font-size: .9rem; font-weight: 700; text-decoration: none; border: 1px solid var(--world-gold); border-radius: 2px;
+  transition: background .2s ease, transform .2s ease;
+}
+.deadlock-world .world-button:hover { background: #f3d496; transform: translateY(-2px); }
+.deadlock-world .world-button--outline { color: var(--world-paper); background: #101415b3; border-color: #f7e9d580; }
+.deadlock-world .world-button--outline:hover { background: #252a2a; }
+.deadlock-world .world-actions { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 28px; }
+.deadlock-world .world-hero, .deadlock-world .world-scene { position: relative; isolation: isolate; min-height: 680px; display: flex; align-items: center; }
+.deadlock-world .world-hero { min-height: min(760px, calc(100svh - 86px)); }
+.deadlock-world .world-picture { display: block; position: absolute; inset: 0; z-index: -2; }
+.deadlock-world .world-picture img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.deadlock-world .world-hero::before, .deadlock-world .world-scene::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #0b1216ed 0%, #0b1216a3 34%, #0b12162b 62%, transparent 100%); }
+.deadlock-world .world-hero::after, .deadlock-world .world-scene::after { content: ""; position: absolute; bottom: -1px; left: 0; right: 0; height: 28px; background: var(--world-ink); clip-path: polygon(0 65%, 8% 35%, 17% 70%, 28% 40%, 41% 58%, 54% 30%, 70% 65%, 84% 35%, 95% 60%, 100% 42%, 100% 100%, 0 100%); }
+.deadlock-world .world-copy { width: min(580px, 52%); padding-block: 64px; }
+.deadlock-world .world-copy p { max-width: 48ch; font-size: 1rem; margin: 0; }
+.deadlock-world .world-invitation { font-size: 1.35rem !important; color: var(--world-gold); margin-bottom: 14px !important; }
+.deadlock-world .world-paper { background: var(--world-paper); color: var(--world-ink); padding-block: 100px; }
+.deadlock-world .world-paper :focus-visible { outline-color: #6a441a; }
+.deadlock-world .world-editorial { display: grid; grid-template-columns: 1.1fr 1fr; gap: 80px; align-items: start; }
+.deadlock-world .world-editorial p { margin: 0 0 20px; max-width: 65ch; }
+.deadlock-world .world-link { font-weight: 700; display: inline-block; padding-block: 12px; }
+.deadlock-world .world-scene--club { min-height: 720px; }
+.deadlock-world .world-scene--alley { min-height: 650px; }
+.deadlock-world .world-scene--ghost { min-height: 530px; }
+.deadlock-world .world-scene--ghost::before { background: linear-gradient(90deg, #0b1216ed, #0b121688 45%, transparent 75%); }
+.deadlock-world .world-index { padding-block: 85px; }
+.deadlock-world .world-index-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 60px; }
+.deadlock-world .world-index-links a { display: flex; justify-content: space-between; gap: 24px; align-items: baseline; text-decoration: none; padding: 24px 0; border-bottom: 1px solid #f7e9d540; }
+.deadlock-world .world-index-links strong { font-family: "Barlow Condensed", sans-serif; text-transform: uppercase; font-size: 2.2rem; }
+.deadlock-world .world-index-links span { color: var(--world-gold); font-size: .85rem; }
+.deadlock-world .world-footer { padding: 52px 48px 28px; border-top: 1px solid #f7e9d533; background: #0b0f10; }
+.deadlock-world .world-footer-top { display: flex; justify-content: space-between; gap: 48px; flex-wrap: wrap; }
+.deadlock-world .world-footer p { max-width: 54ch; font-size: .82rem; }
+.deadlock-world .world-footer nav { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 24px; max-width: 520px; font-size: .85rem; }
+.deadlock-world .world-footer-note { margin-top: 40px; padding-top: 20px; border-top: 1px solid #f7e9d526; color: #d4c5ae; font-size: .75rem; }
+.deadlock-world .world-steps { list-style: decimal; padding-left: 24px; max-width: 70ch; }
+.deadlock-world .world-steps li { margin-bottom: 26px; padding-left: 12px; line-height: 1.75; }
+.deadlock-world .world-steps h3 { margin: 0 0 6px; }
+.deadlock-world .world-steps p { margin: 0; }
+.deadlock-world .world-small-hero { min-height: 540px; }
+.deadlock-world .world-small-hero h1 { font-size: clamp(3.3rem, 5.5vw, 5.5rem); }
+.deadlock-world [data-reveal], .deadlock-world .reveal { opacity: 1 !important; transform: none !important; }
+.deadlock-world .hero--mitspieler { min-height: 660px; padding: 0; background: #101415; }
+.deadlock-world .hero--mitspieler .hero-bg::after { background: linear-gradient(90deg, #101415eb, #10141599 37%, transparent 68%); }
+.deadlock-world .hero--mitspieler .hero-bg img { opacity: 1; filter: none; }
+.deadlock-world .hero--mitspieler .hero-content { max-width: 580px; padding: 64px 0; }
+.deadlock-world .hero--mitspieler h1 { color: var(--world-paper); }
+.deadlock-world .hero--mitspieler .hero-stats, .deadlock-world .rank-float { display: none; }
+.deadlock-world .hero--mitspieler .hero-content > p { color: var(--world-paper); }
+.deadlock-world .tower-intro { max-width: 70ch; }
+.deadlock-world .tower-section { background: #101415; }
+.deadlock-world .tower-live { border: 1px solid #e5bc7340; }
+.deadlock-world .steps-grid--deco { background: none; }
+.deadlock-world .step-card, .deadlock-world .usp-card { background: transparent; box-shadow: none; border: 0; border-radius: 0; }
+.deadlock-world .section--glow { background: #f7e9d5; color: #101415; }
+.deadlock-world .section--glow h2, .deadlock-world .section--glow h3, .deadlock-world .section--glow p { color: #101415; }
+.deadlock-world .cta-section { background: #101415; }
+.deadlock-world .footer { background: #0b0f10; }
+.deadlock-world .patch-dashboard-hero { padding-top: 0; }
+.deadlock-world .patch-dashboard-hero .world-hero { margin-bottom: 48px; }
+.deadlock-world .patch-hero-layout { padding-block: 20px; }
+.deadlock-world .patch-dashboard-hero .patch-hero-title { display: none; }
+.deadlock-world .patch-hero-eyebrow { display: none; }
+.deadlock-world .coaching-world { width: 100%; }
+.deadlock-world .coaching-world .world-hero { margin-bottom: 60px; }
+.deadlock-world .coaching-world .salon-process, .deadlock-world .coaching-world .salon-section-title, .deadlock-world .coaching-world .coach-list, .deadlock-world .coaching-world .world-status { width: min(1120px, calc(100% - 64px)); margin-inline: auto; }
+.deadlock-world .coaching-world .world-status { padding: 28px 0 50px; }
+.deadlock-world .coaching-world .salon-section-title { font-family: var(--font-body); }
+.deadlock-world .coaching-world .process-step { background: transparent; }
+.deadlock-world .coaching-world .coach-row-index { display: none; }
+.deadlock-world .coaching-world .coach-row { grid-template-columns: 82px 1fr 180px; }
+.deadlock-world .coaching-world .animate-in, .deadlock-world .coaching-world .animate-in-left { animation: none; opacity: 1; transform: none; }
+.deadlock-world .coaching-header { border-radius: 0; border: 0; border-bottom: 1px solid #e5bc7340; background: #101415; }
+.deadlock-world .coaching-world .salon-process { margin-bottom: 48px; }
+.deadlock-world .step-card::before, .deadlock-world .step-card::after, .deadlock-world .usp-card::before, .deadlock-world .usp-card::after { display: none; }
+.deadlock-world .steps-grid .step-card { background: transparent; border: 0; color: #101415; box-shadow: none; }
+.deadlock-world .steps-grid .step-card h3, .deadlock-world .steps-grid .step-card p { color: #101415; }
+.deadlock-world .patch-dashboard, .deadlock-world .patch-dashboard .container, .deadlock-world .timeline-panel, .deadlock-world .analysis-panel { min-width: 0; max-width: 100%; }
+.deadlock-world .patch-dashboard h2 { font-family: var(--font-body); font-size: 1.25rem; text-transform: none; line-height: 1.35; margin: 0; }
+.deadlock-world .timeline-track { max-width: 100%; overflow-x: auto; }
+.deadlock-world .patch-hero-layout { min-width: 0; }
+.deadlock-world .patch-hero-content, .deadlock-world .latest-patch-card { min-width: 0; }
+.deadlock-world .patch-filter-bar { flex-wrap: wrap; }
+.deadlock-world .site-header .button-primary { background: #e5bc73; color: #101415; box-shadow: none; border-radius: 2px; }
+.deadlock-world .site-header .brand { max-width: none; }
+.deadlock-world .world-skip { position: fixed; top: -100px; left: 16px; z-index: 100; padding: 14px; background: #e5bc73; color: #101415; }
+.deadlock-world .world-skip:focus { top: 12px; }
+
+.deadlock-world h1, .deadlock-world h2, .deadlock-world .world-title { font-family: "Skranji", "Barlow Condensed", sans-serif; }
+.deadlock-world .world-poster .world-copy { width: min(820px, 73%); padding: 62px 0 100px; }
+.deadlock-world .world-poster h1 { font-size: clamp(3.7rem, 6.3vw, 6.7rem); transform: rotate(-4deg); transform-origin: left center; line-height: 1.07; text-shadow: 3px 5px 0 #101415; }
+.deadlock-world .world-poster h1 span, .deadlock-world .world-poster h1 strong { display: block; }
+.deadlock-world .world-poster h1 strong { font-size: 1.3em; font-weight: 700; }
+.deadlock-world .world-poster h1 span:last-child { font-size: .76em; margin-left: 4%; }
+.deadlock-world .world-poster .world-invitation { display: inline-block; padding: 9px 16px; background: #d95d2f; color: #101415; font-weight: 700; transform: rotate(-2deg); }
+.deadlock-world .world-poster::before { background: linear-gradient(90deg, #10141599 0%, #1014153d 45%, transparent 78%); }
+.deadlock-world .world-paper, .deadlock-world .world-chapter, .deadlock-world .world-index { position: relative; isolation: isolate; }
+.deadlock-world .world-paper::before, .deadlock-world .world-chapter::before, .deadlock-world .world-index::before { content: ""; position: absolute; inset: 0; background: url("/brand/world/grain.svg"); opacity: .4; pointer-events: none; z-index: -1; }
+.deadlock-world .world-stamp { display: inline-block; padding: 8px 14px 14px; color: #101415; background: #db683b; transform: rotate(-3deg); }
+.deadlock-world .world-portraits { display: flex; gap: 14px; width: min(1260px, calc(100% - 64px)); margin: -62px auto 48px; position: relative; z-index: 2; }
+.deadlock-world .world-portraits a { flex: 1; min-width: 0; background: #293e49; border: 5px solid #c9bda7; transform: rotate(-3deg); box-shadow: 0 12px 24px #0007; }
+.deadlock-world .world-portraits a:nth-child(even) { transform: rotate(3deg) translateY(12px); background: #482a24; }
+.deadlock-world .world-portraits a:nth-child(3n) { background: #3b4932; }
+.deadlock-world .world-portraits img { display: block; width: 100%; height: 200px; object-fit: cover; object-position: top; }
+.deadlock-world .world-chapter { padding: 92px 0 120px; }
+.deadlock-world .world-chapter::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 18px; background: #101415; clip-path: polygon(0 60%, 8% 25%, 17% 72%, 25% 42%, 38% 66%, 48% 24%, 60% 63%, 70% 38%, 80% 62%, 92% 30%, 100% 70%, 100% 100%, 0 100%); }
+.deadlock-world .world-chapter--blue { background: #143740; }
+.deadlock-world .world-chapter--rust { background: #ddac31; color: #101415; }
+.deadlock-world .world-chapter--rust .world-stamp { background: #f7e9d5; }
+.deadlock-world .world-chapter--rust .world-collage-copy { color: #f7e9d5; background: #151917; }
+.deadlock-world .world-chapter-title { text-align: center; margin-bottom: 70px; transform: rotate(-2deg); }
+.deadlock-world .world-collage { display: grid; grid-template-columns: 1.45fr 1fr; gap: 0; align-items: center; }
+.deadlock-world .world-framed { display: block; transform: rotate(-4deg); border: 9px solid #cfc0a5; box-shadow: 8px 18px 32px #0007; margin: 0 -50px 0 -20px; }
+.deadlock-world .world-framed img { display: block; width: 100%; height: auto; }
+.deadlock-world .world-collage-copy { position: relative; padding: 34px 32px; margin-left: 24px; background: #123038; transform: rotate(2deg); }
+.deadlock-world .world-collage-copy h3 { font-size: 2.7rem; margin: 0 0 20px; }
+.deadlock-world .world-collage-copy p { font-size: .95rem; margin: 0 0 24px; }
+.deadlock-world .world-collage--reverse { grid-template-columns: 1fr 1.45fr; }
+.deadlock-world .world-collage--reverse .world-framed { grid-column: 2; grid-row: 1; transform: rotate(4deg); margin: 0 -20px 0 -50px; }
+.deadlock-world .world-collage--reverse .world-collage-copy { grid-column: 1; grid-row: 1; background: #382720; transform: rotate(-2deg); margin: 0 24px 0 0; }
+@media (max-width: 600px) {
+  .deadlock-world .world-poster .world-copy { width: 100%; padding: 24px 0 74px; }
+  .deadlock-world .world-poster h1 { font-size: 2.55rem; line-height: 1.1; margin-bottom: 16px; }
+  .deadlock-world .world-poster h1 strong { font-size: 1.3em; }
+  .deadlock-world .world-poster .world-invitation { font-size: .9rem !important; padding: 6px 10px; }
+  .deadlock-world .world-portraits { width: calc(100% - 30px); gap: 6px; margin: -40px auto 35px; }
+  .deadlock-world .world-portraits a { border-width: 3px; }
+  .deadlock-world .world-portraits img { height: 90px; }
+  .deadlock-world .world-chapter { padding: 56px 0 70px; }
+  .deadlock-world .world-chapter-title { font-size: 2.5rem; margin-bottom: 38px; }
+  .deadlock-world .world-collage, .deadlock-world .world-collage--reverse { display: flex; flex-direction: column; }
+  .deadlock-world .world-framed, .deadlock-world .world-collage--reverse .world-framed { width: 95%; margin: 0; border-width: 5px; }
+  .deadlock-world .world-collage-copy, .deadlock-world .world-collage--reverse .world-collage-copy { margin: -4px 0 0; padding: 26px 18px; width: 94%; }
+  .deadlock-world .world-collage-copy h3 { font-size: 2.3rem; }
+}
+
+@media (max-width: 900px) {
+  .deadlock-world .world-header { padding: 12px 24px; }
+  .deadlock-world .world-nav { gap: 14px; }
+  .deadlock-world .world-nav a:not(.world-button) { display: none; }
+  .deadlock-world .world-wrap { width: calc(100% - 48px); }
+  .deadlock-world .world-editorial { gap: 36px; }
+}
+@media (max-width: 600px) {
+  .deadlock-world .world-header { padding: 12px 20px; gap: 12px; }
+  .deadlock-world .world-header .brand { gap: 8px; }
+  .deadlock-world .world-header .brand-logo { width: 40px; height: 40px; }
+  .deadlock-world .world-header .brand-wordmark-img { width: 138px; height: 36px; }
+  .deadlock-world .world-nav .world-button { padding: 10px 14px; min-height: 44px; font-size: .75rem; }
+  .deadlock-world .world-wrap { width: calc(100% - 40px); }
+  .deadlock-world .world-hero, .deadlock-world .world-scene, .deadlock-world .world-small-hero { display: block; min-height: 0; }
+  .deadlock-world .world-picture { position: relative; z-index: 0; aspect-ratio: 16 / 10; }
+  .deadlock-world .world-picture img { object-position: 65% center; }
+  .deadlock-world .world-hero::before, .deadlock-world .world-scene::before { display: none; }
+  .deadlock-world .world-hero::after, .deadlock-world .world-scene::after { display: none; }
+  .deadlock-world .world-copy { width: 100%; padding: 30px 0 48px; }
+  .deadlock-world h1 { font-size: 3.5rem; }
+  .deadlock-world .world-small-hero h1 { font-size: 2.7rem; }
+  .deadlock-world .brand-elevator-call { position: fixed; left: auto; right: 16px; top: auto; bottom: 16px; width: 88px; min-height: 48px; padding: 8px; transform: none; flex-direction: row; }
+  .deadlock-world .brand-call-label { writing-mode: horizontal-tb; transform: none; }
+  .deadlock-world .brand-call-arrow { display: none; }
+  .deadlock-world h2 { font-size: 3rem; }
+  .deadlock-world .world-copy p { font-size: .88rem; }
+  .deadlock-world .world-invitation { font-size: 1.1rem !important; }
+  .deadlock-world .world-actions { gap: 12px; margin-top: 22px; }
+  .deadlock-world .world-button { min-height: 48px; padding: 12px 18px; font-size: .82rem; }
+  .deadlock-world .world-paper { padding-block: 58px; }
+  .deadlock-world .world-editorial { display: block; }
+  .deadlock-world .world-index { padding-block: 50px; }
+  .deadlock-world .world-index-links { grid-template-columns: 1fr; }
+  .deadlock-world .world-index-links strong { font-size: 1.9rem; }
+  .deadlock-world .world-footer { padding: 40px 20px 24px; }
+  .deadlock-world .world-footer-top { gap: 24px; }
+  .deadlock-world .hero--mitspieler .hero-bg { position: relative; height: auto; aspect-ratio: 16 / 10; }
+  .deadlock-world .hero--mitspieler .hero-bg::after { display: none; }
+  .deadlock-world .hero--mitspieler { min-height: 0; }
+  .deadlock-world .hero--mitspieler .hero-content { padding: 30px 0 48px; }
+  .deadlock-world .coaching-world .coach-row { grid-template-columns: 58px 1fr; }
+  .deadlock-world .coaching-world .coach-row-side { grid-column: 2; }
+  .deadlock-world .coaching-world .world-hero { margin-bottom: 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deadlock-world *, .deadlock-world *::before, .deadlock-world *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

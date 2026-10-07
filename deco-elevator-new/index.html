@@ -3,240 +3,120 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b0b0b">
+  <meta name="theme-color" content="#101415">
   <meta name="robots" content="index, follow, max-image-preview:large">
-  <title>Deutsche Deadlock Community | Mitspieler, Coaching & Streamer auf Deutsch</title>
-  <meta name="description" content="Die aktivste deutsche Deadlock-Community: Finde Mitspieler, werde durch Coaching besser und werde als Streamer sichtbar – alles auf einem Discord.">
+  <title>Deutsche Deadlock Community | Deadlock auf Deutsch</title>
+  <meta name="description" content="Deadlock auf Deutsch spielen: Finde Mitspieler auf unserem Discord, entdecke kostenloses Coaching und lies die Patchnotes der Deutschen Deadlock Community.">
   <link rel="canonical" href="https://deutsche-deadlock-community.de/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Deutsche Deadlock Community | Mitspieler, Coaching & Streamer">
-  <meta property="og:description" content="Die aktivste deutsche Deadlock-Community: Mitspieler, Coaching und Streamer-Support auf Deutsch.">
+  <meta property="og:title" content="Deutsche Deadlock Community | Deadlock auf Deutsch">
+  <meta property="og:description" content="Zusammen in die nächste Runde. Deutschsprachige Mitspieler, Discord und kostenloses Deadlock Coaching.">
   <meta property="og:url" content="https://deutsche-deadlock-community.de/">
-  <meta property="og:image" content="https://deutsche-deadlock-community.de/images/og-logo.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Logo der Deutschen Deadlock Community">
+  <meta property="og:image" content="https://deutsche-deadlock-community.de/brand/world/city-1920.webp">
+  <meta property="og:image:width" content="1920">
+  <meta property="og:image:height" content="1080">
+  <meta property="og:image:alt" content="Deadlocks nächtliche Stadt mit einer großen Rattenfigur vor beleuchteten Häusern">
+  <meta property="og:locale" content="de_DE">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://deutsche-deadlock-community.de/images/og-logo.png">
+  <meta name="twitter:title" content="Deutsche Deadlock Community | Deadlock auf Deutsch">
+  <meta name="twitter:description" content="Mitspieler auf Discord finden, Coaching anfragen und Deadlock auf Deutsch spielen.">
+  <meta name="twitter:image" content="https://deutsche-deadlock-community.de/brand/world/city-1920.webp">
   <link rel="icon" type="image/png" href="/brand/logo/favicon-64.png">
-  <link rel="stylesheet" href="/new/styles.css">
-  <script src="/new/script.js" defer></script>
-  <!-- Einheitliche Brand-Aufzug-Nav (verlinkt die echten Unterseiten) -->
   <link rel="stylesheet" href="/brand/tokens.css">
   <link rel="stylesheet" href="/brand/nav.css">
+  <link rel="stylesheet" href="/brand/world.css">
   <script src="/brand/nav.js" defer></script>
 </head>
-<body>
-  <div class="grain" aria-hidden="true"></div>
-  <div class="vignette" aria-hidden="true"></div>
-
-  <header class="site-header">
+<body class="deadlock-world">
+  <a class="world-skip" href="#main">Zum Inhalt springen</a>
+  <header class="world-header">
     <a class="brand" href="/" aria-label="Deutsche Deadlock Community">
-      <img src="/brand/logo/logo-192.png" class="brand-logo" alt="">
-      <img src="/brand/logo/wordmark.svg" class="brand-wordmark-img" alt="">
+      <img src="/brand/logo/logo-192.png" class="brand-logo" alt="" width="54" height="54">
+      <img src="/brand/logo/wordmark.svg" class="brand-wordmark-img" alt="" width="220" height="48">
     </a>
-    <a class="nav-cta" href="https://discord.gg/PhkP3WgY7w" target="_blank" rel="noopener">Beitreten</a>
+    <nav class="world-nav" aria-label="Community-Wege">
+      <a href="/mitspieler/">Mitspieler</a><a href="/coaching/">Coaching</a><a href="/patch/">Patch-Verlauf</a>
+      <a class="world-button" href="/beitreten/">Beitreten</a>
+    </nav>
   </header>
-
-  <main id="top">
-    <section class="hero">
-      <div class="hero-art" aria-hidden="true"></div>
-      <div class="hero-emblem" aria-hidden="true">
-        <img src="/brand/logo/logo-192.png" alt="">
-      </div>
-      <div class="hero-content">
-        <p class="overline reveal">Dein Team wartet in der nächsten Lane</p>
-        <h1 class="reveal">
-          Deadlock ist besser<br>
-          <span>mit den richtigen Leuten.</span>
-        </h1>
-        <p class="hero-copy reveal">
-          Finde deutschsprachige Mitspieler für deine Queue, lerne von erfahrenen
-          Spielern und bleib bei Builds, Helden und Patches auf dem Laufenden.
-        </p>
-        <div class="hero-actions reveal">
-          <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w">
-            Mitspieler auf Discord finden <span aria-hidden="true">→</span>
-          </a>
-          <a class="button button-ghost" href="#community">Warum diese Community?</a>
-        </div>
-      </div>
-      <a class="scroll-cue" href="#community">
-        <span>Entdecken</span>
-        <i></i>
-      </a>
-    </section>
-
-    <section class="signal-strip" aria-label="Community Vorteile">
-      <div><span class="signal-dot"></span> Gruppen statt Solo-Queue</div>
-      <div>Deadlock komplett auf Deutsch</div>
-      <div>Platz für Spieler & Creator</div>
-    </section>
-
-    <section class="section intro" id="community">
-      <div class="wrap">
-        <div class="chapter reveal">
-          <div class="chapter-number"><i></i><span>01</span><i></i></div>
-          <p class="overline">Mehr als ein weiterer Discord</p>
-          <h2>Aus einer Runde wird<br>deine Stammgruppe.</h2>
-          <p>Egal ob erste Matches, entspannte Abende oder der nächste Ranked-Push: Bei uns findest du Leute, die Deadlock genauso ernst oder locker spielen wie du.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section services-section" id="angebote">
-      <div class="wrap wrap-wide">
-        <div class="section-head reveal">
-          <div>
-            <p class="overline">Deine Etagen in der Community</p>
-            <h2>Alles, was dir in Deadlock<br>wirklich weiterhilft.</h2>
+  <main id="main">
+    <section class="world-hero world-poster">
+      <picture class="world-picture">
+        <source type="image/avif" srcset="/brand/world/city-960.avif 960w, /brand/world/city-1920.avif 1920w" sizes="100vw">
+        <img src="/brand/world/city-1920.webp" srcset="/brand/world/city-960.webp 960w, /brand/world/city-1920.webp 1920w" sizes="100vw" width="1920" height="1080" fetchpriority="high" alt="Nächtliche Stadt, eine große Rattenfigur rechts vor warm beleuchteten Häusern">
+      </picture>
+      <div class="world-wrap">
+        <div class="world-copy">
+          <h1><span>Deutsche</span><strong>Deadlock</strong><span>Community</span></h1>
+          <p class="world-invitation">Zusammen in die nächste Runde.</p>
+          <p>Deadlock auf Deutsch. Mitspieler für deine Queue, Coaching für deinen nächsten Schritt.</p>
+          <div class="world-actions">
+            <a class="world-button" href="https://discord.gg/PhkP3WgY7w">Discord beitreten</a>
+            <a class="world-button world-button--outline" href="/mitspieler/">Mitspieler finden</a>
           </div>
-          <p>Vom ersten Hero-Pick bis zur festen Ranked-Gruppe: Du bekommst Antworten, Mitspieler und konkrete Hilfe an einem Ort.</p>
-        </div>
-
-        <div class="service-grid">
-          <a class="service-card service-card-large reveal" id="mitspieler" href="https://deutsche-deadlock-community.de/mitspieler/">
-            <img src="/new/assets/deco/mitspieler.png" alt="" loading="lazy">
-            <div class="card-shade"></div>
-            <div class="card-index">01</div>
-            <div class="card-content">
-              <p class="overline">Nie wieder fünf Randoms</p>
-              <h3>Finde Spieler, die zu dir passen</h3>
-              <p>Ranked, Casual oder erste Matches: Wähle deine Lane, lerne dein Team kennen und geh gemeinsam in die Queue.</p>
-              <span class="text-link">Meine Gruppe finden <b>→</b></span>
-            </div>
-          </a>
-
-          <a class="service-card reveal" id="coaching" href="https://deutsche-deadlock-community.de/coaching/">
-            <img src="/new/assets/deco/coaching.png" alt="" loading="lazy">
-            <div class="card-shade"></div>
-            <div class="card-index">02</div>
-            <div class="card-content">
-              <p class="overline">Verstehen statt nur verlieren</p>
-              <h3>Kostenloses Coaching</h3>
-              <p>Replay-Analyse, Lane-Grundlagen und ehrliches Feedback von Spielern, die dir konkrete nächste Schritte zeigen.</p>
-              <span class="text-link">Coaching anfragen <b>→</b></span>
-            </div>
-          </a>
-
-          <a class="service-card reveal" href="https://deutsche-deadlock-community.de/helden/">
-            <img src="/new/assets/deco/helden.png" alt="" loading="lazy">
-            <div class="card-shade"></div>
-            <div class="card-index">03</div>
-            <div class="card-content">
-              <p class="overline">Dein nächster Main wartet</p>
-              <h3>Helden verstehen. Builds verbessern.</h3>
-              <p>Rollen, Fähigkeiten und Einstiegshilfen auf Deutsch – damit du im Match Entscheidungen triffst statt Tooltips zu übersetzen.</p>
-              <span class="text-link">Helden entdecken <b>→</b></span>
-            </div>
-          </a>
-
-          <a class="service-card service-card-wide reveal" href="https://deutsche-deadlock-community.de/streamer/">
-            <img src="/new/assets/deco/streamer.png" alt="" loading="lazy">
-            <div class="card-shade"></div>
-            <div class="card-index">04</div>
-            <div class="card-content">
-              <p class="overline">Deadlock live auf Deutsch</p>
-              <h3>Wachse mit anderen Creatorn</h3>
-              <p>Automatische Raids, gemeinsame Sichtbarkeit und direkter Kontakt zu einer Community, die Deadlock-Inhalte sehen will.</p>
-              <span class="text-link">Streamer-Netzwerk ansehen <b>→</b></span>
-            </div>
-          </a>
         </div>
       </div>
     </section>
-
-    <section class="section ranks-section">
-      <div class="rank-backdrop" aria-hidden="true"></div>
-      <div class="wrap">
-        <div class="split-copy">
-          <div class="chapter chapter-left reveal">
-            <div class="chapter-number"><i></i><span>02</span><i></i></div>
-            <p class="overline">Jeder Rank hat hier eine Etage</p>
-            <h2>Du musst nicht Eternus sein.<br>Du musst nur Deadlock mögen.</h2>
-          </div>
-          <p class="reveal">Neu im Spiel oder mitten im Ranked-Grind: Du findest Spieler auf deinem Niveau, kannst Fragen stellen und ohne Leistungsdruck besser werden.</p>
-        </div>
-
-        <div class="rank-track reveal" aria-label="Deadlock Ränge">
-          <div><img src="/new/assets/deco/ranks/initiate.png" alt=""><span>Initiate</span></div>
-          <div><img src="/new/assets/deco/ranks/seeker.png" alt=""><span>Seeker</span></div>
-          <div><img src="/new/assets/deco/ranks/arcanist.png" alt=""><span>Arcanist</span></div>
-          <div><img src="/new/assets/deco/ranks/ritualist.png" alt=""><span>Ritualist</span></div>
-          <div><img src="/new/assets/deco/ranks/emissary.png" alt=""><span>Emissary</span></div>
-          <div><img src="/new/assets/deco/ranks/archon.png" alt=""><span>Archon</span></div>
-          <div><img src="/new/assets/deco/ranks/oracle.png" alt=""><span>Oracle</span></div>
-          <div><img src="/new/assets/deco/ranks/phantom.png" alt=""><span>Phantom</span></div>
-          <div><img src="/new/assets/deco/ranks/ascendant.png" alt=""><span>Ascendant</span></div>
-          <div><img src="/new/assets/deco/ranks/eternus.png" alt=""><span>Eternus</span></div>
+    <div class="world-portraits" aria-label="Helden entdecken">
+      <a href="/helden/"><img src="/new/assets/heroes/abrams.png" alt="Abrams" width="300" height="380" loading="lazy"></a>
+      <a href="/helden/"><img src="/new/assets/heroes/haze.png" alt="Haze" width="300" height="380" loading="lazy"></a>
+      <a href="/helden/"><img src="/new/assets/heroes/ivy.png" alt="Ivy" width="300" height="380" loading="lazy"></a>
+      <a href="/helden/"><img src="/new/assets/heroes/lash.png" alt="Lash" width="300" height="380" loading="lazy"></a>
+      <a href="/helden/"><img src="/new/assets/heroes/paradox.png" alt="Paradox" width="300" height="380" loading="lazy"></a>
+      <a href="/helden/"><img src="/new/assets/heroes/pocket.png" alt="Pocket" width="300" height="380" loading="lazy"></a>
+    </div>
+    <section class="world-paper">
+      <div class="world-wrap world-editorial">
+        <h2>Eine Stadt.<br><span class="world-stamp">Deine Leute.</span></h2>
+        <div><p>Erste Matches oder Ranked-Abende: Auf unserem deutschen Deadlock Discord kannst du nach einer Gruppe suchen und dich im Voice absprechen.</p><a class="world-link" href="/beitreten/">So kommst du dazu</a></div>
+      </div>
+    </section>
+    <section class="world-chapter world-chapter--blue" id="mitspieler">
+      <div class="world-wrap">
+        <h2 class="world-chapter-title">Raus aus der Solo-Queue.</h2>
+        <div class="world-collage">
+          <picture class="world-framed">
+            <source type="image/avif" srcset="/brand/world/club-960.avif 960w, /brand/world/club-1920.avif 1920w" sizes="(max-width: 600px) 100vw, 70vw">
+            <img src="/brand/world/club-1920.webp" srcset="/brand/world/club-960.webp 960w, /brand/world/club-1920.webp 1920w" sizes="(max-width: 600px) 100vw, 70vw" alt="Ein Held vor einem nächtlichen Club mit Neonlicht und Mondschein" width="1920" height="1080" loading="lazy">
+          </picture>
+          <div class="world-collage-copy"><h3 class="world-title">Wer kommt mit?</h3><p>Deadlock LFG auf Deutsch: Such nach Mitspielern oder öffne eine Voice-Lane für deine Runde.</p><a class="world-button" href="/mitspieler/">Mitspieler finden</a></div>
         </div>
       </div>
     </section>
-
-    <section class="section heroes-section" id="helden">
-      <div class="wrap wrap-wide">
-        <div class="section-head reveal">
-          <div>
-            <p class="overline">Weniger raten. Mehr Wirkung.</p>
-            <h2>Finde den Helden,<br>der zu deinem Spielstil passt.</h2>
-          </div>
-          <p>Verstehe Rollen, Fähigkeiten und Synergien schneller – und finde einen Main, mit dem du deinem Team wirklich hilfst.</p>
-        </div>
-        <div class="hero-roster reveal">
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/abrams.png" alt="Abrams"><span>Abrams</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/haze.png" alt="Haze"><span>Haze</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/ivy.png" alt="Ivy"><span>Ivy</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/lash.png" alt="Lash"><span>Lash</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/paradox.png" alt="Paradox"><span>Paradox</span></a>
-          <a href="https://deutsche-deadlock-community.de/helden/"><img src="/new/assets/heroes/pocket.png" alt="Pocket"><span>Pocket</span></a>
-        </div>
-        <div class="center reveal">
-          <a class="button button-ghost" href="https://deutsche-deadlock-community.de/helden/">Alle Helden ansehen <span>→</span></a>
+    <section class="world-chapter world-chapter--rust" id="coaching">
+      <div class="world-wrap">
+        <h2 class="world-chapter-title"><span class="world-stamp">Dein nächster Schritt.</span></h2>
+        <div class="world-collage world-collage--reverse">
+          <picture class="world-framed">
+            <source type="image/avif" srcset="/brand/world/alley-960.avif 960w, /brand/world/alley-1920.avif 1920w" sizes="(max-width: 600px) 100vw, 70vw">
+            <img src="/brand/world/alley-1920.webp" srcset="/brand/world/alley-960.webp 960w, /brand/world/alley-1920.webp 1920w" sizes="(max-width: 600px) 100vw, 70vw" alt="Schnauzbärtiger Held in einer warm beleuchteten Industriegasse" width="1920" height="1080" loading="lazy">
+          </picture>
+          <div class="world-collage-copy"><h3 class="world-title">Zusammen besser werden.</h3><p>Deutsche Deadlock Coaches schauen mit dir auf deine Matches. Kostenloses Coaching, konkrete Fragen und Zeit zum Üben.</p><a class="world-button" href="/coaching/">Coaches kennenlernen</a></div>
         </div>
       </div>
     </section>
-
-    <section class="final-cta" id="beitreten">
-      <div class="final-art" aria-hidden="true"></div>
-      <div class="final-content reveal">
-        <img src="/brand/logo/logo-192.png" alt="" class="final-mark">
-        <p class="overline">Die Aufzugtür ist offen</p>
-        <h2>Deine nächste gute Runde<br><span>beginnt mit den richtigen Leuten.</span></h2>
-        <p>Discord öffnen, Rank und Spielstil auswählen und deine erste Gruppe finden. Kein Bewerbungsprozess. Einfach Deadlock.</p>
-        <a class="button button-primary" href="https://discord.gg/PhkP3WgY7w">Jetzt der Community beitreten <span>→</span></a>
+    <section class="world-index">
+      <div class="world-wrap"><h2>Die Stadt bleibt in Bewegung.</h2>
+        <nav class="world-index-links" aria-label="Deadlock entdecken">
+          <a href="/patch/"><strong>Patch-Verlauf</strong><span>Änderungen nachlesen</span></a>
+          <a href="/helden/"><strong>Helden</strong><span>Deinen Main finden</span></a>
+          <a href="/guides/anfaenger/"><strong>Neu in Deadlock?</strong><span>Zum Einstieg</span></a>
+          <a href="/streamer/"><strong>Deadlock live</strong><span>Deutsche Streamer</span></a>
+        </nav>
       </div>
+    </section>
+    <section class="world-scene world-scene--ghost">
+      <picture class="world-picture"><source type="image/avif" srcset="/brand/world/ghost-960.avif 960w, /brand/world/ghost-1920.avif 1920w" sizes="100vw"><img src="/brand/world/ghost-1920.webp" srcset="/brand/world/ghost-960.webp 960w, /brand/world/ghost-1920.webp 1920w" sizes="100vw" width="1920" height="1080" loading="lazy" alt="Ein leuchtender blauer Geist in einer dunklen Ladenpassage"></picture>
+      <div class="world-wrap"><div class="world-copy"><h2>Bis zur nächsten Runde.</h2><a class="world-button" href="https://discord.gg/PhkP3WgY7w">Zum deutschen Discord</a></div></div>
     </section>
   </main>
-
-  <footer>
-    <div class="footer-main">
-      <div class="footer-brand">
-        <img src="/brand/logo/logo-192.png" class="brand-logo" alt="">
-        <img src="/brand/logo/wordmark.svg" class="brand-wordmark-img" alt="Deutsche Deadlock Community">
-      </div>
-      <p>Dein deutschsprachiges Zuhause für Deadlock. Bei einer YouTube-Verbindung erklären wir Zugriff, Speicherung, Weitergabe und Widerruf der Google-Daten in unserer Datenschutzerklärung.</p>
-      <div class="footer-links">
-        <a href="https://deutsche-deadlock-community.de/twitch/impressum">Impressum</a>
-        <a href="https://deutsche-deadlock-community.de/twitch/datenschutz">Datenschutz</a>
-        <a href="https://discord.gg/PhkP3WgY7w">Discord</a>
-      </div>
-      <nav class="footer-links footer-pages" aria-label="Seiten">
-        <a href="/mitspieler/">Mitspieler</a>
-        <a href="/coaching/">Coaching</a>
-        <a href="/aktivitaet/">Aktivität &amp; Ränge</a>
-        <a href="/patchnotes/">Patchnotes</a>
-        <a href="/helden/">Helden</a>
-        <a href="/streamer/">Streamer</a>
-        <a href="/twitch/dashboard">Partner-Dashboard</a>
-        <a href="/beitreten/">Beitreten</a>
-        <a href="/builds/">Builds</a>
-        <a href="/turnier/">Turnier</a>
-      </nav>
+  <footer class="world-footer">
+    <div class="world-footer-top">
+      <div><strong>Deutsche Deadlock Community</strong><p>Mitspieler, Coaching und Deadlock auf Deutsch. Betrieben von EarlySalty.</p></div>
+      <nav aria-label="Seiten"><a href="/mitspieler/">Mitspieler</a><a href="/coaching/">Coaching</a><a href="/aktivitaet/">Aktivität &amp; Ränge</a><a href="/patchnotes/">Patchnotes</a><a href="/helden/">Helden</a><a href="/streamer/">Streamer</a><a href="/twitch/dashboard">Partner-Dashboard</a><a href="/beitreten/">Beitreten</a><a href="/builds/">Builds</a><a href="/turnier/">Turnier</a></nav>
+      <nav aria-label="Weitere Links"><a href="https://discord.gg/PhkP3WgY7w">Discord</a><a href="/patch/">Patch-Verlauf</a><a href="/blog/">Blog</a><a href="/twitch/impressum">Impressum</a><a href="/twitch/datenschutz">Datenschutz</a></nav>
     </div>
-    <div class="footer-bottom">
-      <span>Deutsche Deadlock Community</span>
-      <span>Inoffizielles Community-Projekt · Nicht mit Valve verbunden</span>
-    </div>
+    <p class="world-footer-note">Inoffizielles Community-Projekt. Nicht mit Valve verbunden. Deadlock und die Spielbilder gehören Valve. Informationen zur YouTube-Verbindung und zu Google-Daten stehen in der Datenschutzerklärung.</p>
   </footer>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "243469fbeb3f43d995584a9e2e779ca6"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
