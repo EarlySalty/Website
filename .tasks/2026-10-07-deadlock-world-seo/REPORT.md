@@ -14,7 +14,7 @@ Die fünf öffentlichen Einstiege sind umgesetzt und lokal geprüft. Merge-Gate,
 | `/coaching/` | Deadlock Coaching, deutschsprachiger Coach | Gemeinsamer Hero in statischem Build-HTML und React, bestehende Coachliste und Anfrage, ehrliche Zustände |
 | `/patch/` | Deadlock Patchnotes auf Deutsch | Geister-Hero, vorhandener Verlauf, Filter und Originalquellen |
 
-Individuelle Titles, Beschreibungen und Canonicals sind im gebauten HTML vorhanden. Keine neuen Meta-Keywords oder erfundenen strukturierten Daten. Private Coaching-Routen setzen noindex und verlassen den Gestaltungsscope. Sitemap und robots wurden nicht geändert. Kein neuer Backend-, Datenbank- oder Produktionslaufzeitpfad.
+Individuelle Titles, Beschreibungen und Canonicals sind im gebauten HTML vorhanden. Keine neuen Meta-Keywords oder erfundenen strukturierten Daten. Private Coaching-Routen setzen nach dem JavaScriptstart noindex und verlassen den Gestaltungsscope; das gemeinsame HTTP-Fallback-HTML hat weiterhin den öffentlichen Übersichtstitel und Canonical. Sitemap und robots wurden nicht geändert. Kein neuer Backend-, Datenbank- oder Produktionslaufzeitpfad.
 
 ## Quellen und Nutzungsbasis
 
@@ -49,6 +49,8 @@ TEXTNACHWEIS[DR-1]: Gedankenstriche 0 | ae/oe/ue/ss-Ersatz 0 | Absolutwörter 0 
 
 Viewportbelege unter `/tmp/deadlock-world-confirm-20261007/`: `home-390-js-top.png`, `home-1440-js-top.png`, `home-1440-js-coaching.png`, `coaching-390-nojs-top.png`, `desktop-overview.png`, `mobile-overview.png`, weitere routebezogene Top-/Middle-Ansichten. Messergebnisse: `results.json`. Zwei gebündelte Sichtprüfungsrunden beendet, keine zusätzliche Polierschleife.
 
-## Noch offen
+## Gate und verbleibender Abschluss
 
-Der zentrale Gate muss den committed Stand freigeben. Erst danach folgt der autorisierte Fast-Forward-Push und die statische Auslieferung des aktuellen Remote-main. Kein Bot-Neustart ist erforderlich. Mergeprotokoll und LIVEBEWEIS werden nach tatsächlichem Abschluss ergänzt.
+Der zentrale Gate hat Implementierungscommit `05de267` gegen `origin/main` geprüft: `[gpt-6.1-sol] ALLOW: No confirmed merge-blocking defect in the supplied diff.`, Exit 0. Keine blockierenden Funde, keine Fixerrunde. Nicht blockierende Grenzen stehen in `REVIEW.md`. Die zusätzliche Artefaktprüfung bestätigt je eine H1, Canonical und Description in den fünf ausgelieferten HTML-Dateien. Sitemap und robots sind bytegleich mit ihren Quellen; die Sitemap enthält die fünf Einstiege.
+
+Push, statische Auslieferung des aktuellen Remote-main und Liveprüfung folgen erst nach dieser Freigabe. Kein Bot-Neustart ist erforderlich. Mergeprotokoll und LIVEBEWEIS werden nach tatsächlichem Abschluss ergänzt.

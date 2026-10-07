@@ -4,7 +4,11 @@ Der lokale `gate_hook.py --review` ist der einzige Reviewer. Es wurden keine zus
 
 ## Runde 1
 
-Noch nicht ausgeführt. Der vollständige Implementierungsstand wird zuerst mit den Prüfbelegen committed und anschließend gegen den aktuellen Remote-main geprüft.
+`python3 /home/nathanael/Documents/.claude/gpt-workers/gate_hook.py --review --repo /home/nathanael/.worktrees/website-deadlock-world-20261007 --base origin/main --head HEAD`
+
+Geprüfter Commit: `05de267`. Exit 0. Urteil: `[gpt-6.1-sol] ALLOW: No confirmed merge-blocking defect in the supplied diff.`
+
+Nicht blockierende Hinweise: Die Deep-Route-noindex-Regel wird durch JavaScript gesetzt; das gemeinsame HTTP-Fallback-HTML bleibt öffentlich. Der Gate hat die Screenshots nicht selbst gesehen, weil kein Sichtprüfungsprojekt registriert ist. Die eigene isolierte Browserprüfung liefert deshalb den getrennten Darstellungsbeleg. Kein BLOCK, keine Fixerrunde.
 
 ## Eigene Funktions- und Sichtprüfung
 
