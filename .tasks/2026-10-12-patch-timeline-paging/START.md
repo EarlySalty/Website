@@ -1,0 +1,1 @@
+[Orchestrator] Package A: read /home/nathanael/.worktrees/Website-patch-timeline-paging/.tasks/2026-10-12-patch-timeline-paging/AUFTRAG.md and execute it. Worktree /home/nathanael/.worktrees/Website-patch-timeline-paging, branch fix/patch-timeline-paging-20261012. Handover point: branch pushed + gate ALLOW, no merge/deploy.
