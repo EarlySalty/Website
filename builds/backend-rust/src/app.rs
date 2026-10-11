@@ -38,6 +38,7 @@ pub struct AppInner {
     /// "nicht abrufbar".
     pub twitch_pool: Option<PgPool>,
     pub auth: Auth,
+    pub patch_timeline_cache: routes::public::PatchTimelineCache,
 }
 
 impl AppState {
@@ -65,6 +66,7 @@ impl AppState {
                 discord_role_connections,
                 twitch_pool,
                 auth,
+                patch_timeline_cache: routes::public::PatchTimelineCache::default(),
             }),
         };
         // Nicht awaiten: der Pool ist lazy, eine nicht erreichbare Twitch-DB
@@ -106,6 +108,7 @@ impl AppState {
                 discord_role_connections,
                 twitch_pool: None,
                 auth,
+                patch_timeline_cache: routes::public::PatchTimelineCache::default(),
             }),
         }
     }
@@ -150,6 +153,7 @@ impl AppState {
                 discord_role_connections,
                 twitch_pool,
                 auth,
+                patch_timeline_cache: routes::public::PatchTimelineCache::default(),
             }),
         }
     }
@@ -212,6 +216,10 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/public/patch-timeline",
             get(routes::public::patch_timeline),
+        )
+        .route(
+            "/api/public/patch-timeline/events",
+            get(routes::public::patch_timeline_events),
         )
         .route("/api/public/patch-notes", get(routes::public::patch_notes))
         .route("/api/auth/discord/login", get(routes::auth::discord_login))
@@ -1057,6 +1065,131 @@ mod tests {
             )
             .expect("coach session");
         (db, state, token)
+    }
+
+    #[tokio::test]
+    async fn patch_timeline_pages_filters_and_invalidates_overview() {
+        let (_db, state) = test_state().await;
+        sqlx::query(
+            "INSERT INTO brain.patch_events \
+             (legacy_patch_snapshot_id, patch_external_id, patch_title, source_kind, posted_at, \
+              line_index, entity_type, entity_name, change_type, raw_line, normalized_line, \
+              confidence, event_hash, created_at) \
+             SELECT 1, 'test-patch', 'Patch Test', 'forum', '2026-10-01'::timestamptz, \
+                    n, 'hero', 'Shiv', 'buff', 'Damage 10%', 'Damage 10%', 1, 'test-' || n, now() \
+             FROM generate_series(1, 75) n",
+        )
+        .execute(&state.pool)
+        .await
+        .expect("seed patch events");
+        let app = router(state.clone());
+        let overview = to_json(
+            app.clone()
+                .oneshot(request(Method::GET, "/api/public/patch-timeline", None))
+                .await
+                .expect("overview"),
+        )
+        .await;
+        assert!(overview.get("events").is_none());
+        assert_eq!(overview["summary"]["total_events"], 75);
+        let warm = to_json(
+            app.clone()
+                .oneshot(request(Method::GET, "/api/public/patch-timeline", None))
+                .await
+                .expect("warm overview"),
+        )
+        .await;
+        assert_eq!(warm, overview);
+        let first = to_json(
+            app.clone()
+                .oneshot(request(
+                    Method::GET,
+                    "/api/public/patch-timeline/events?entity=Shiv",
+                    None,
+                ))
+                .await
+                .expect("first page"),
+        )
+        .await;
+        assert_eq!(first["events"].as_array().expect("events").len(), 20);
+        assert_eq!(first["next_offset"], 20);
+        let second = to_json(
+            app.clone()
+                .oneshot(request(
+                    Method::GET,
+                    "/api/public/patch-timeline/events?entity=Shiv&offset=20&limit=999",
+                    None,
+                ))
+                .await
+                .expect("second page"),
+        )
+        .await;
+        assert_eq!(second["events"].as_array().expect("events").len(), 50);
+        assert_eq!(second["next_offset"], 70);
+        for event in second["events"].as_array().expect("events") {
+            assert!(!first["events"]
+                .as_array()
+                .expect("events")
+                .iter()
+                .any(|item| item["id"] == event["id"]));
+        }
+        let last = to_json(
+            app.clone()
+                .oneshot(request(
+                    Method::GET,
+                    "/api/public/patch-timeline/events?entity=Shiv&offset=70&limit=50",
+                    None,
+                ))
+                .await
+                .expect("last page"),
+        )
+        .await;
+        assert_eq!(last["events"].as_array().expect("events").len(), 5);
+        assert!(last["next_offset"].is_null());
+        let filtered = to_json(app.clone().oneshot(request(Method::GET, "/api/public/patch-timeline/events?search=10%25&entity_type=hero&change_type=buff&source=forum&entity=Shiv&patch=test-patch", None)).await.expect("filters")).await;
+        assert_eq!(filtered["events"].as_array().expect("events").len(), 20);
+        for query in [
+            "search=missing",
+            "entity_type=item",
+            "change_type=nerf",
+            "source=steam",
+            "entity=Abrams",
+            "patch=missing",
+            "search=%25%25",
+        ] {
+            let uri = format!("/api/public/patch-timeline/events?{query}");
+            let response = to_json(
+                app.clone()
+                    .oneshot(request(Method::GET, &uri, None))
+                    .await
+                    .expect("empty filter"),
+            )
+            .await;
+            assert!(response["events"].as_array().expect("events").is_empty());
+        }
+        sqlx::query("UPDATE brain.patch_events SET change_type = 'nerf' WHERE line_index = 1")
+            .execute(&state.pool)
+            .await
+            .expect("update existing event");
+        let updated = to_json(
+            app.clone()
+                .oneshot(request(Method::GET, "/api/public/patch-timeline", None))
+                .await
+                .expect("updated overview"),
+        )
+        .await;
+        assert_eq!(updated["summary"]["change_types"]["nerf"], 1);
+        sqlx::query("DELETE FROM brain.patch_events WHERE line_index = 1")
+            .execute(&state.pool)
+            .await
+            .expect("delete event");
+        let deleted = to_json(
+            app.oneshot(request(Method::GET, "/api/public/patch-timeline", None))
+                .await
+                .expect("deleted overview"),
+        )
+        .await;
+        assert_eq!(deleted["summary"]["total_events"], 74);
     }
 
     #[tokio::test]
@@ -5165,6 +5298,7 @@ mod tests {
                 discord_role_connections,
                 twitch_pool: None,
                 auth,
+                patch_timeline_cache: routes::public::PatchTimelineCache::default(),
             }),
         };
         (db, state)

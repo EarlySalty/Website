@@ -1,9 +1,57 @@
-use axum::{extract::State, Json};
+use axum::{
+    body::Bytes,
+    extract::{Query, State},
+    http::header,
+    response::IntoResponse,
+    Json,
+};
+use serde::Deserialize;
 use serde_json::{json, Value};
+use sqlx::PgConnection;
+use tokio::sync::Mutex;
 
-use crate::{app::AppState, error::AppResult, rows};
+use crate::{
+    app::AppState,
+    error::{AppError, AppResult},
+    rows,
+};
 
-pub async fn patch_timeline(State(state): State<AppState>) -> AppResult<Json<Value>> {
+type ChangeMarker = (i64, i64, String);
+
+#[derive(Default)]
+pub struct PatchTimelineCache(Mutex<Option<(ChangeMarker, Bytes)>>);
+
+async fn change_marker(conn: &mut PgConnection) -> Result<ChangeMarker, sqlx::Error> {
+    sqlx::query_as(
+        "SELECT COUNT(*)::bigint, COALESCE(MAX(id), 0)::bigint, \
+         COALESCE(SUM(xmin::text::bigint), 0)::text FROM brain.patch_events",
+    )
+    .fetch_one(conn)
+    .await
+}
+
+pub async fn patch_timeline(State(state): State<AppState>) -> AppResult<impl IntoResponse> {
+    let mut cache = state.patch_timeline_cache.0.lock().await;
+    let mut tx = state.pool.begin().await?;
+    sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+        .execute(&mut *tx)
+        .await?;
+    let marker = change_marker(&mut tx).await?;
+    if let Some((cached_marker, body)) = cache.as_ref() {
+        if cached_marker == &marker {
+            let body = body.clone();
+            tx.commit().await?;
+            return Ok(([(header::CONTENT_TYPE, "application/json")], body));
+        }
+    }
+    let overview = build_overview(&mut tx).await?;
+    let body = Bytes::from(serde_json::to_vec(&overview)?);
+    tx.commit().await?;
+    *cache = Some((marker, body.clone()));
+    Ok(([(header::CONTENT_TYPE, "application/json")], body))
+}
+
+async fn build_overview(conn: &mut PgConnection) -> AppResult<Value> {
     let summary = sqlx::query(
         r#"
         SELECT
@@ -34,7 +82,7 @@ pub async fn patch_timeline(State(state): State<AppState>) -> AppResult<Json<Val
         FROM brain.patch_events
         "#,
     )
-    .fetch_one(&state.pool)
+    .fetch_one(&mut *conn)
     .await?;
 
     let patch_rows = sqlx::query(
@@ -98,7 +146,7 @@ pub async fn patch_timeline(State(state): State<AppState>) -> AppResult<Json<Val
         ORDER BY base.posted_at ASC NULLS FIRST, base.patch_id ASC
         "#,
     )
-    .fetch_all(&state.pool)
+    .fetch_all(&mut *conn)
     .await?;
 
     let entity_rows = sqlx::query(
@@ -162,9 +210,56 @@ pub async fn patch_timeline(State(state): State<AppState>) -> AppResult<Json<Val
         LIMIT 220
         "#,
     )
-    .fetch_all(&state.pool)
+    .fetch_all(&mut *conn)
     .await?;
 
+    Ok(json!({
+        "summary": rows::row_json(&summary),
+        "patches": patch_rows.iter().map(rows::row_json).collect::<Vec<_>>(),
+        "entities": entity_rows.iter().map(rows::row_json).collect::<Vec<_>>(),
+    }))
+}
+
+#[derive(Default, Deserialize)]
+pub struct PatchEventsQuery {
+    search: Option<String>,
+    entity_type: Option<String>,
+    change_type: Option<String>,
+    source: Option<String>,
+    entity: Option<String>,
+    patch: Option<String>,
+    limit: Option<u32>,
+    offset: Option<u32>,
+}
+
+impl PatchEventsQuery {
+    fn validate(&self) -> AppResult<()> {
+        for value in [
+            &self.search,
+            &self.entity_type,
+            &self.change_type,
+            &self.source,
+            &self.entity,
+            &self.patch,
+        ]
+        .into_iter()
+        .flatten()
+        {
+            if value.len() > 512 {
+                return Err(AppError::bad_request("Der Filter ist zu lang."));
+            }
+        }
+        Ok(())
+    }
+}
+
+pub async fn patch_timeline_events(
+    State(state): State<AppState>,
+    Query(query): Query<PatchEventsQuery>,
+) -> AppResult<Json<Value>> {
+    query.validate()?;
+    let limit = query.limit.unwrap_or(20).clamp(1, 50);
+    let offset = query.offset.unwrap_or(0);
     let event_rows = sqlx::query(
         r#"
         SELECT
@@ -177,7 +272,7 @@ pub async fn patch_timeline(State(state): State<AppState>) -> AppResult<Json<Val
           line_index,
           section,
           entity_type,
-          COALESCE(NULLIF(entity_name, ''), NULLIF(subject, '')) AS entity_name,
+          COALESCE(NULLIF(entity_name, ''), NULLIF(subject, ''), 'General') AS entity_name,
           subject,
           change_type,
           normalized_line,
@@ -185,17 +280,45 @@ pub async fn patch_timeline(State(state): State<AppState>) -> AppResult<Json<Val
           new_value,
           confidence
         FROM brain.patch_events
-        ORDER BY posted_at ASC NULLS LAST, patch_external_id ASC, line_index ASC
+        WHERE ($1::text IS NULL OR strpos(lower(concat_ws(' ',
+          patch_title, COALESCE(NULLIF(entity_name, ''), NULLIF(subject, ''), 'General'),
+          subject, section, change_type, normalized_line, old_value, new_value
+        )), lower($1)) > 0)
+          AND ($2::text IS NULL OR $2 = 'all' OR entity_type = $2)
+          AND ($3::text IS NULL OR $3 = 'all' OR change_type = $3)
+          AND ($4::text IS NULL OR $4 = 'all' OR source_kind = $4)
+          AND ($5::text IS NULL OR COALESCE(NULLIF(entity_name, ''), NULLIF(subject, ''), 'General') = $5)
+          AND ($6::text IS NULL OR patch_external_id = $6)
+        ORDER BY posted_at DESC NULLS LAST, patch_external_id ASC, line_index DESC, id DESC
+        LIMIT $7 OFFSET $8
         "#,
     )
+    .bind(query.search.as_deref())
+    .bind(query.entity_type.as_deref())
+    .bind(query.change_type.as_deref())
+    .bind(query.source.as_deref())
+    .bind(query.entity.as_deref())
+    .bind(query.patch.as_deref())
+    .bind(i64::from(limit) + 1)
+    .bind(i64::from(offset))
     .fetch_all(&state.pool)
     .await?;
 
+    let has_more = event_rows.len() > limit as usize;
+    let events = event_rows
+        .iter()
+        .take(limit as usize)
+        .map(rows::row_json)
+        .collect::<Vec<_>>();
+    let next_offset = if has_more {
+        Some(u64::from(offset) + events.len() as u64)
+    } else {
+        None
+    };
     Ok(Json(json!({
-        "summary": rows::row_json(&summary),
-        "patches": patch_rows.iter().map(rows::row_json).collect::<Vec<_>>(),
-        "entities": entity_rows.iter().map(rows::row_json).collect::<Vec<_>>(),
-        "events": event_rows.iter().map(rows::row_json).collect::<Vec<_>>(),
+        "events": events,
+        "next_offset": next_offset,
+        "has_more": has_more,
     })))
 }
 

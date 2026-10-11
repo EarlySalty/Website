@@ -60,6 +60,12 @@ const state = {
   patches: [],
   entities: [],
   events: [],
+  timelineAvailable: false,
+  eventsLoading: false,
+  eventsError: '',
+  nextOffset: null,
+  eventsRequest: 0,
+  eventsController: null,
   assets: {
     hero: new Map(),
     item: new Map(),
@@ -110,6 +116,7 @@ async function loadDashboard() {
   state.loading = false
   primeSelection()
   render()
+  loadEvents()
   window.setTimeout(() => loadAssetCatalog().then(render), 0)
 }
 
@@ -154,8 +161,7 @@ async function loadAssetCatalog() {
   }
 }
 
-async function fetchJson(url, timeoutMs = 12000) {
-  const controller = new AbortController()
+async function fetchJson(url, timeoutMs = 12000, controller = new AbortController()) {
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
   try {
     const response = await fetch(url, { signal: controller.signal })
@@ -170,7 +176,8 @@ function applyTimelinePayload(payload) {
   state.summary = payload?.summary ?? {}
   state.patches = normalizePatches(payload?.patches ?? [])
   state.entities = normalizeEntities(payload?.entities ?? [])
-  state.events = normalizeEvents(payload?.events ?? [])
+  state.timelineAvailable = true
+  state.events = []
 }
 
 function applyPatchNotesFallback(payload) {
@@ -280,13 +287,67 @@ function normalizeEvents(events) {
     .filter((event) => event.patch_id)
 }
 
+async function loadEvents(append = false) {
+  if (!state.timelineAvailable || (append && (state.eventsLoading || state.nextOffset == null))) return
+  const restoreFocus = Boolean(document.activeElement?.hasAttribute('data-load-events'))
+  state.eventsController?.abort()
+  const controller = new AbortController()
+  state.eventsController = controller
+  const request = ++state.eventsRequest
+  const offset = append ? state.nextOffset : 0
+  if (!append) {
+    state.events = []
+    state.nextOffset = null
+  }
+  state.eventsLoading = true
+  state.eventsError = ''
+  render()
+  const params = new URLSearchParams({ limit: String(append ? 50 : 20), offset: String(offset) })
+  const { entityType, changeType, source, search } = state.filters
+  if (entityType !== 'all') params.set('entity_type', entityType)
+  if (changeType !== 'all') params.set('change_type', changeType)
+  if (source !== 'all') params.set('source', source)
+  if (search) params.set('search', search)
+  if (state.selectedPatchId) params.set('patch', state.selectedPatchId)
+  const selected = state.entities.find((entity) => entityKey(entity.entity_type, entity.entity_name) === state.selectedEntityKey)
+  if (selected) {
+    params.set('entity', selected.entity_name)
+    params.set('entity_type', selected.entity_type)
+  }
+  try {
+    const payload = await fetchJson(`${TIMELINE_API_URL}/events?${params}`, 12000, controller)
+    if (request !== state.eventsRequest) return
+    if (!Array.isArray(payload?.events)) throw new Error('Invalid events response')
+    const events = normalizeEvents(payload.events)
+    state.events = append ? [...state.events, ...events] : events
+    state.nextOffset = Number.isSafeInteger(payload.next_offset) && payload.next_offset > offset
+      ? payload.next_offset : null
+  } catch (error) {
+    if (request !== state.eventsRequest) return
+    console.warn('[patch] Events konnten nicht geladen werden:', error)
+    state.eventsError = 'Änderungen konnten nicht geladen werden. Bitte erneut versuchen.'
+  } finally {
+    if (request === state.eventsRequest) {
+      state.eventsLoading = false
+      render()
+      if (restoreFocus) {
+        const target = document.querySelector('[data-load-events]') || document.getElementById('event-count')
+        if (target) {
+          target.tabIndex = target.hasAttribute('data-load-events') ? 0 : -1
+          target.focus({ preventScroll: true })
+        }
+      }
+    }
+  }
+}
+
 function setupControls() {
   document.querySelectorAll('[data-entity-filter]').forEach((button) => {
     button.addEventListener('click', () => {
       state.filters.entityType = button.dataset.entityFilter || 'all'
       state.selectedEntityKey = ''
       syncActiveButtons('[data-entity-filter]', state.filters.entityType)
-      render()
+      loadEvents()
     })
   })
 
@@ -294,14 +355,14 @@ function setupControls() {
     button.addEventListener('click', () => {
       state.filters.changeType = button.dataset.changeFilter || 'all'
       syncActiveButtons('[data-change-filter]', state.filters.changeType)
-      render()
+      loadEvents()
     })
   })
 
   const sourceSelect = document.getElementById('patch-source-filter')
   sourceSelect?.addEventListener('change', () => {
     state.filters.source = sourceSelect.value || 'all'
-    render()
+    loadEvents()
   })
 
   const searchInput = document.getElementById('patch-search')
@@ -311,7 +372,8 @@ function setupControls() {
       window.clearTimeout(timer)
       timer = window.setTimeout(() => {
         state.filters.search = searchInput.value.trim().toLowerCase()
-        render()
+        state.selectedEntityKey = ''
+        loadEvents()
       }, 160)
     })
   }
@@ -344,17 +406,11 @@ function render() {
     return
   }
 
-  const filteredEvents = getFilteredEvents()
-  const filteredMode = hasActiveFilters()
-  const patchStats = filteredEvents.length || !filteredMode ? buildPatchStats(filteredEvents) : []
-  const entityStats = buildEntityStats(filteredEvents)
-  const visibleEntities = filteredEvents.length || filteredMode ? entityStats : state.entities
-
-  renderKpis(filteredEvents, patchStats, visibleEntities)
-  renderTimeline(patchStats)
-  renderEntityGrid(visibleEntities)
-  renderDetailPanel(visibleEntities, filteredEvents)
-  renderEventFeed(filteredEvents)
+  renderKpis()
+  renderTimeline(state.patches)
+  renderEntityGrid(state.entities)
+  renderDetailPanel(state.entities, state.events)
+  renderEventFeed(state.events)
   renderLatestPatch()
 }
 
@@ -379,23 +435,21 @@ function renderError() {
   `
 }
 
-function renderKpis(filteredEvents, patchStats, visibleEntities) {
+function renderKpis() {
   const kpis = document.getElementById('patch-kpis')
   if (!kpis) return
 
-  const filteredMode = hasActiveFilters()
-  const totalEvents = filteredMode ? filteredEvents.length : toNumber(state.summary.total_events)
-  const totalPatches = filteredMode ? patchStats.length : toNumber(state.summary.total_patches)
-  const valueEvents = filteredMode
-    ? filteredEvents.filter((event) => event.old_value || event.new_value).length
-    : toNumber(state.summary.value_events)
-  const latestDate = latestPatch(patchStats || state.patches)?.posted_at || state.summary.latest_posted_at
+  const totalEvents = toNumber(state.summary.total_events)
+  const totalPatches = toNumber(state.summary.total_patches)
+  const valueEvents = toNumber(state.summary.value_events)
+  const patch = latestPatch(state.patches)
+  const latestDate = patch?.posted_at || state.summary.latest_posted_at
 
   const cards = [
     { label: 'Events', value: NUMBER.format(totalEvents), sub: `${NUMBER.format(totalPatches)} Patches` },
-    { label: 'Entities', value: NUMBER.format(visibleEntities.length || toNumber(state.summary.named_entities)), sub: activeFilterLabel() },
+    { label: 'Entities', value: NUMBER.format(toNumber(state.summary.named_entities)), sub: 'Gesamte Übersicht' },
     { label: 'Werte', value: NUMBER.format(valueEvents), sub: 'Old/New Deltas' },
-    { label: 'Aktuell', value: latestDate ? formatDate(latestDate) : '-', sub: latestPatch(patchStats)?.title || 'Patch Timeline' },
+    { label: 'Aktuell', value: latestDate ? formatDate(latestDate) : '-', sub: patch?.title || 'Patch Timeline' },
   ]
 
   kpis.innerHTML = cards
@@ -453,7 +507,8 @@ function renderTimeline(patches) {
     button.addEventListener('click', () => {
       const patchId = button.dataset.patchId || ''
       state.selectedPatchId = state.selectedPatchId === patchId ? '' : patchId
-      render()
+      state.selectedEntityKey = ''
+      loadEvents()
     })
   })
 }
@@ -498,16 +553,9 @@ function renderEntityGrid(entities) {
   grid.querySelectorAll('[data-entity-key]').forEach((button) => {
     button.addEventListener('click', () => {
       const key = button.dataset.entityKey || ''
-      const entity = visible.find((item) => entityKey(item.entity_type, item.entity_name) === key)
-      if (entity && entity.entity_type === 'hero') {
-        const slug = heroSlug(entity.entity_name)
-        if (HERO_DOCS.has(slug)) {
-          window.location.href = `/patch/hero/${slug}.html`
-          return
-        }
-      }
       state.selectedEntityKey = key
-      render()
+      state.selectedPatchId = ''
+      loadEvents()
     })
   })
 }
@@ -516,9 +564,9 @@ function renderDetailPanel(entities, filteredEvents) {
   const panel = document.getElementById('detail-panel')
   if (!panel) return
 
-  const selected = entities.find((entity) => entityKey(entity.entity_type, entity.entity_name) === state.selectedEntityKey) || entities[0]
+  const selected = entities.find((entity) => entityKey(entity.entity_type, entity.entity_name) === state.selectedEntityKey)
   if (!selected) {
-    panel.innerHTML = '<div class="panel-empty">Keine Detaildaten.</div>'
+    panel.innerHTML = '<div class="panel-empty">Wähle eine Entity für ihre Quellen und Änderungen. Patchauswahl und Suche erscheinen im Änderungsfeed.</div>'
     return
   }
 
@@ -551,7 +599,7 @@ function renderDetailPanel(entities, filteredEvents) {
       <div><span>Mechanik</span><strong>${NUMBER.format(selected.mechanic_events)}</strong><i style="--w:${mechanicShare}%"></i></div>
     </div>
     <div class="detail-latest">
-      ${events.length ? events.map(renderCompactEvent).join('') : renderFallbackLatest(selected)}
+      ${events.length ? events.map(renderCompactEvent).join('') : `<div class="panel-empty">${state.eventsLoading ? 'Änderungen werden geladen.' : state.eventsError ? escapeHtml(state.eventsError) : 'Keine Events im aktuellen Filter.'}</div>`}
     </div>
   `
 }
@@ -569,42 +617,24 @@ function renderCompactEvent(event) {
   `
 }
 
-function renderFallbackLatest(entity) {
-  if (!entity.latest_line) return '<div class="panel-empty">Keine Events im aktuellen Filter.</div>'
-  return `
-    <article class="compact-event">
-      <div>
-        <time datetime="${escapeHtml(entity.latest_posted_at || '')}">${escapeHtml(formatDate(entity.latest_posted_at))}</time>
-        <span class="change-badge is-${escapeHtml(entity.latest_change_type)}">${escapeHtml(CHANGE_LABELS[entity.latest_change_type] || entity.latest_change_type)}</span>
-      </div>
-      <p>${escapeHtml(entity.latest_line)}</p>
-      ${entity.latest_patch_url ? `<a href="${escapeHtml(sanitizeUrl(entity.latest_patch_url))}" target="_blank" rel="noopener">Quelle</a>` : ''}
-    </article>
-  `
-}
-
 function renderEventFeed(events) {
   const feed = document.getElementById('event-feed')
   const count = document.getElementById('event-count')
   if (!feed) return
-
-  let visible = events
-  if (state.selectedPatchId) {
-    visible = visible.filter((event) => event.patch_id === state.selectedPatchId)
+  feed.setAttribute('aria-busy', String(state.eventsLoading))
+  if (count) {
+    count.setAttribute('aria-live', 'polite')
+    count.textContent = `${NUMBER.format(events.length)} Events geladen`
   }
-
-  visible = visible
-    .slice()
-    .sort((left, right) => dateMs(right.posted_at) - dateMs(left.posted_at) || right.line_index - left.line_index)
-
-  if (count) count.textContent = `${NUMBER.format(visible.length)} Events`
-
-  if (!visible.length) {
-    feed.innerHTML = '<div class="panel-empty">Keine Events im Filter.</div>'
-    return
-  }
-
-  feed.innerHTML = visible.slice(0, 90).map(renderEventRow).join('')
+  const empty = state.eventsLoading ? 'Änderungen werden geladen.'
+    : state.timelineAvailable ? 'Keine Events im Filter.' : 'Einzelne Änderungen sind derzeit nicht verfügbar.'
+  const button = state.eventsError ? 'Erneut versuchen' : state.eventsLoading ? 'Wird geladen…' : '50 weitere laden'
+  feed.innerHTML = `
+    ${events.length ? events.map(renderEventRow).join('') : `<div class="panel-empty">${empty}</div>`}
+    ${state.eventsError ? `<p class="panel-empty" role="alert">${escapeHtml(state.eventsError)}</p>` : ''}
+    ${state.nextOffset != null || state.eventsError ? `<button class="button button-primary" type="button" data-load-events ${state.eventsLoading ? 'disabled' : ''}>${button}</button>` : ''}
+  `
+  feed.querySelector('[data-load-events]')?.addEventListener('click', () => loadEvents(state.nextOffset != null))
 }
 
 function renderEventRow(event) {
@@ -648,128 +678,11 @@ function renderLatestPatch() {
   }
 }
 
-function getFilteredEvents() {
-  if (!state.events.length) return []
-  return state.events.filter((event) => {
-    if (state.filters.entityType !== 'all' && event.entity_type !== state.filters.entityType) return false
-    if (state.filters.changeType !== 'all' && event.change_type !== state.filters.changeType) return false
-    if (state.filters.source !== 'all' && event.source_kind !== state.filters.source) return false
-    if (!state.filters.search) return true
-
-    const haystack = [
-      event.patch_title,
-      event.entity_name,
-      event.subject,
-      event.section,
-      event.change_type,
-      event.normalized_line,
-      event.old_value,
-      event.new_value,
-    ]
-      .join(' ')
-      .toLowerCase()
-    return haystack.includes(state.filters.search)
-  })
-}
-
-function buildPatchStats(events) {
-  if (!events.length) return state.patches
-  const map = new Map()
-  events.forEach((event) => {
-    const current = map.get(event.patch_id) || {
-      patch_id: event.patch_id,
-      title: event.patch_title,
-      url: event.url,
-      source_kind: event.source_kind,
-      posted_at: event.posted_at,
-      event_count: 0,
-      hero_events: 0,
-      item_events: 0,
-      ability_events: 0,
-      general_events: 0,
-      buff_events: 0,
-      nerf_events: 0,
-      fix_events: 0,
-      rework_events: 0,
-      value_events: 0,
-      top_entities: [],
-    }
-    current.event_count += 1
-    current[`${event.entity_type}_events`] = (current[`${event.entity_type}_events`] || 0) + 1
-    if (event.change_type === 'buff') current.buff_events += 1
-    if (event.change_type === 'nerf') current.nerf_events += 1
-    if (event.change_type === 'fix') current.fix_events += 1
-    if (event.change_type === 'rework') current.rework_events += 1
-    if (event.old_value || event.new_value) current.value_events += 1
-    map.set(event.patch_id, current)
-  })
-  return [...map.values()].sort((left, right) => dateMs(left.posted_at) - dateMs(right.posted_at))
-}
-
-function buildEntityStats(events) {
-  if (!events.length) return []
-  const map = new Map()
-  events.forEach((event) => {
-    const name = event.entity_name || event.subject || 'General'
-    const key = entityKey(event.entity_type, name)
-    const current = map.get(key) || {
-      entity_type: event.entity_type,
-      entity_name: name,
-      event_count: 0,
-      patch_count: 0,
-      patches: new Set(),
-      first_posted_at: event.posted_at,
-      latest_posted_at: event.posted_at,
-      buff_events: 0,
-      nerf_events: 0,
-      fix_events: 0,
-      mechanic_events: 0,
-      added_events: 0,
-      removed_events: 0,
-      value_events: 0,
-    }
-    current.event_count += 1
-    current.patches.add(event.patch_id)
-    current.patch_count = current.patches.size
-    if (dateMs(event.posted_at) < dateMs(current.first_posted_at)) current.first_posted_at = event.posted_at
-    if (dateMs(event.posted_at) > dateMs(current.latest_posted_at)) current.latest_posted_at = event.posted_at
-    if (event.change_type === 'buff') current.buff_events += 1
-    if (event.change_type === 'nerf') current.nerf_events += 1
-    if (event.change_type === 'fix') current.fix_events += 1
-    if (event.change_type === 'mechanic_change') current.mechanic_events += 1
-    if (event.change_type === 'added') current.added_events += 1
-    if (event.change_type === 'removed') current.removed_events += 1
-    if (event.old_value || event.new_value) current.value_events += 1
-    map.set(key, current)
-  })
-
-  return [...map.values()]
-    .map((entity) => ({ ...entity, patches: undefined }))
-    .sort((left, right) => right.event_count - left.event_count || right.patch_count - left.patch_count || left.entity_name.localeCompare(right.entity_name, 'de'))
-}
-
 function latestPatch(patches) {
   return patches
     .filter((patch) => patch.posted_at)
     .slice()
     .sort((left, right) => dateMs(right.posted_at) - dateMs(left.posted_at))[0]
-}
-
-function activeFilterLabel() {
-  const labels = []
-  if (state.filters.entityType !== 'all') labels.push(ENTITY_LABELS[state.filters.entityType])
-  if (state.filters.changeType !== 'all') labels.push(CHANGE_LABELS[state.filters.changeType])
-  if (state.filters.source !== 'all') labels.push(state.filters.source)
-  return labels.length ? labels.join(' · ') : 'Alle Filter'
-}
-
-function hasActiveFilters() {
-  return Boolean(
-    state.filters.entityType !== 'all' ||
-      state.filters.changeType !== 'all' ||
-      state.filters.source !== 'all' ||
-      state.filters.search,
-  )
 }
 
 function resolveEntityImage(entity) {

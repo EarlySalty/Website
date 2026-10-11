@@ -86,6 +86,27 @@ runtime mode for the Rust backend anymore.
 
 The removed Python backend is no longer available as a runtime fallback.
 
+## Public patch timeline
+
+`GET /api/public/patch-timeline` returns the global `summary`, `patches` and
+`entities` overview, without an `events` array. Each application instance keeps
+one serialized overview. A read-only repeatable-read transaction checks the
+row count, highest ID and sum of row transaction IDs before reusing it. Inserts,
+updates and deletes invalidate the overview; concurrent rebuilds are serialized.
+
+`GET /api/public/patch-timeline/events` returns `events`, `has_more` and
+`next_offset`. Filters: `search` (literal, case-insensitive substring),
+`entity_type`, `change_type`, `source`, `entity` (exact displayed name), and
+`patch` (external patch ID). `limit` defaults to 20 and is clamped to 1–50;
+`offset` defaults to 0. Results are newest first with deterministic tie-breaks.
+Offset pagination applies to the current dataset, so concurrent ingestion can
+shift subsequent pages. Overview totals remain global when the feed is filtered.
+
+Before releasing the updated frontend, add `/api/public/patch-timeline/events`
+to the existing Caddy public-patch matcher that proxies to the website backend.
+Keep the base timeline path and `/api/public/patch-notes` in that matcher.
+The patch-notes endpoint remains unchanged.
+
 ## Cutover Runbook
 
 Pre-review checks:
