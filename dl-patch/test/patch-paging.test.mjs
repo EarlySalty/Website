@@ -43,6 +43,29 @@ test('overview initialization does not override a filter selected while loading'
   assert.equal(run('state.selectedEntityKey'), '')
 })
 
+test('patch-notes fallback rerenders filter and patch changes without fetching events', async () => {
+  const { pending, run } = dashboard()
+  run(`
+    state.timelineAvailable = false
+    applyPatchNotesFallback({ patches: [{ id: 'patch-a', title: 'Patch A', translated_content: '- Change' }] })
+    window.track = { innerHTML: '', querySelectorAll: () => [] }
+    window.feed = { innerHTML: '', setAttribute() {}, querySelector: () => null }
+    document.getElementById = (id) => ({ 'timeline-track': window.track, 'event-feed': window.feed })[id] || null
+    render()
+  `)
+  const fallbackFeed = run('window.feed.innerHTML')
+  assert.match(fallbackFeed, /class="panel-empty"/)
+  run("state.filters.source = 'steam'; window.feed.innerHTML = ''")
+  await run('loadEvents()')
+  assert.equal(run('window.feed.innerHTML'), fallbackFeed)
+  assert.doesNotMatch(run('window.track.innerHTML'), /is-selected/)
+  run("state.selectedPatchId = 'patch-a'")
+  await run('loadEvents()')
+  assert.match(run('window.track.innerHTML'), /class="timeline-bar is-selected"[^>]*data-patch-id="patch-a"/)
+  assert.equal(pending.length, 0)
+  assert.equal(run('state.eventsLoading'), false)
+})
+
 test('selection loads 20 events and appends the next 50 with the same filters', async () => {
   const { pending, run } = dashboard()
   const first = run('loadEvents()')

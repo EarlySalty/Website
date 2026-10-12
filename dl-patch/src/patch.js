@@ -34,7 +34,6 @@ const ENTITY_LABELS = {
   general: 'Systeme',
 }
 
-// Heroes mit gepflegter Balance-Historie-Seite unter /patch/hero/<slug>.html
 const HERO_DOCS = new Set([
   'abrams', 'apollo', 'bebop', 'billy', 'calico', 'celeste', 'drifter', 'dynamo',
   'graves', 'grey-talon', 'haze', 'holliday', 'infernus', 'ivy', 'kelvin', 'lady-geist',
@@ -288,7 +287,11 @@ function normalizeEvents(events) {
 }
 
 async function loadEvents(append = false) {
-  if (!state.timelineAvailable || (append && (state.eventsLoading || state.nextOffset == null))) return
+  if (!state.timelineAvailable) {
+    render()
+    return
+  }
+  if (append && (state.eventsLoading || state.nextOffset == null)) return
   const restoreFocus = Boolean(document.activeElement?.hasAttribute('data-load-events'))
   state.eventsController?.abort()
   const controller = new AbortController()
