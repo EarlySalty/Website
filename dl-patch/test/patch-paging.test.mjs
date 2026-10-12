@@ -35,6 +35,14 @@ function dashboard() {
 
 const event = (id) => ({ id, patch_id: 'patch-a', entity_type: 'hero', entity_name: 'Shiv' })
 
+test('overview initialization does not override a filter selected while loading', () => {
+  const { run } = dashboard()
+  run("state.selectedEntityKey = ''; state.filters.entityType = 'item'; primeSelection()")
+  assert.equal(run('state.selectedEntityKey'), '')
+  run("state.filters.entityType = 'all'; state.filters.search = 'damage'; primeSelection()")
+  assert.equal(run('state.selectedEntityKey'), '')
+})
+
 test('selection loads 20 events and appends the next 50 with the same filters', async () => {
   const { pending, run } = dashboard()
   const first = run('loadEvents()')

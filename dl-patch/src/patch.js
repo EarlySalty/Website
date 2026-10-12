@@ -388,6 +388,8 @@ function syncActiveButtons(selector, value) {
 }
 
 function primeSelection() {
+  const { entityType, changeType, source, search } = state.filters
+  if (entityType !== 'all' || changeType !== 'all' || source !== 'all' || search) return
   const topHero = state.entities.find((entity) => entity.entity_type === 'hero')
   const topEntity = topHero || state.entities[0]
   if (topEntity) {
