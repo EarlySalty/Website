@@ -24,8 +24,8 @@
 body,
 body.deadlock-world {
   background:
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
     #0b0b0b;
   background-size: 36px 36px, 36px 36px, auto;
 }
@@ -34,20 +34,12 @@ body::before {
   opacity: 0;
 }
 
-.deadlock-world .patch-dashboard-hero .world-hero {
-  border-bottom: 1px solid rgba(239, 212, 157, 0.12);
-}
-
 .deadlock-world .patch-dashboard-hero .world-hero::before {
-  background-image:
-    linear-gradient(rgba(201, 168, 106, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 168, 106, 0.06) 1px, transparent 1px);
-  background-size: 36px 36px;
-  mask-image: radial-gradient(ellipse at 30% 40%, black 35%, transparent 85%);
+  background: linear-gradient(90deg, #0b0b0bf0 0%, #0b0b0bb3 34%, #0b0b0b33 62%, transparent 100%);
 }
 
 .deadlock-world .patch-dashboard-hero .world-hero::after {
-  display: none;
+  background: #0b0b0b;
 }
 
 h1,
