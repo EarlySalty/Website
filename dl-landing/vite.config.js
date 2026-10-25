@@ -29,6 +29,7 @@ export default defineConfig({
         blogDeadlockSpiritSlop2026: 'blog/deadlock-spirit-slop-2026/index.html',
         blogDeadlockObjectives2026: 'blog/deadlock-objectives-2026/index.html',
         blogDeadlockGuardianImpact2026: 'blog/deadlock-guardian-impact-2026/index.html',
+        blogTwitchReichweite2026: 'blog/twitch-reichweite-2026/index.html',
       },
     },
   },

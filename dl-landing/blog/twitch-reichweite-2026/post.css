@@ -1,0 +1,35 @@
+@import url('../twitch-szene-2026/post.css');
+
+.bl-table-wrap--text td:not(:first-child) { text-align: left; font-variant-numeric: normal; }
+.bl-table-wrap--text td:first-child { color: var(--bone); min-width: 14rem; }
+.bl-table-wrap--text td:nth-child(2),
+.bl-table-wrap--text td:nth-child(3) { white-space: nowrap; }
+.bl-table-wrap--text.bl-table-wrap--wrap td { white-space: normal; }
+
+.bl-tips {
+  margin: 1.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: tip;
+  background: var(--ink-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.bl-tips li {
+  counter-increment: tip;
+  position: relative;
+  padding: 1.05rem 1.2rem 1.05rem 3.4rem;
+  color: var(--bone-dim);
+  line-height: 1.6;
+}
+.bl-tips li + li { border-top: 1px solid var(--line-soft); }
+.bl-tips li::before {
+  content: counter(tip);
+  position: absolute;
+  left: 1.2rem;
+  top: 1.05rem;
+  font: 600 1.05rem/1.6 Georgia, 'Times New Roman', serif;
+  color: var(--gold, #c9a86a);
+}
+.bl-tips li b { color: var(--bone); font-weight: 600; }
