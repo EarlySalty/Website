@@ -137,17 +137,9 @@ buildTable('raid-bleiben',
   ['Ziel des Raids', 'Raids', 'nach 15 Min.', 'nach 30 Min.', 'nach 60 Min.'],
   RAID.proRaider.map((r) => [r.key, n0(r.raids), s2(r.m15), s2(r.m30), s2(r.m60)]));
 
-renderBars(q('[data-chart="ende"]'), ENDE.zeilen.map((z) => ({
-  key: z.label,
-  label: z.label,
-  value: z.wert,
-  dim: z.placebo,
-  tip: [['nächster Start', `${s1(z.wert)} %`], ['Intervall', `${s1(z.von)} bis ${s1(z.bis)}`]],
-})), { height: 230, ariaLabel: 'Höherer nächster Start nach einem Ende nahe der Spitze, drei Modelle und das Placebo' });
-
 buildTable('ende',
-  ['Vergleich', 'nächster Start', '95-%-Intervall'],
-  ENDE.zeilen.map((z) => [z.label, `${s1(z.wert)} %`, `${s1(z.von)} bis ${s1(z.bis)}`]));
+  ['Vergleich', 'Paare', 'nächster Start', '95-%-Intervall'],
+  ENDE.zeilen.map((z) => [z.label, n0(z.paare), `${s1(z.wert)} %`, `${s1(z.von)} bis ${s1(z.bis)}`]));
 
 renderBars(q('[data-chart="follow-zeit"]'), FOLLOW.zeilen.map((z) => ({
   key: `Minute ${z.key}`,

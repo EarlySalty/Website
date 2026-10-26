@@ -26,7 +26,7 @@ const stillKlein = STILL[0];
 const stillGross = STILL[STILL.length - 1];
 const raidKlein = RAID.proRaider[1];
 const [folRaid, folSonst] = RAID.follows;
-const [endeRoh, endeNiveau, endeVoll, endePlacebo] = ENDE.zeilen;
+const [endeRoh, , endeVoll, endePlacebo] = ENDE.zeilen;
 const spaet = STARTZEIT[STARTZEIT.length - 1];
 const [befehlTitel, discordTitel] = TITEL.zeilen;
 const kurzTitel = TITEL.zeilen[3];
@@ -107,22 +107,33 @@ export const FILL = {
   raidOrganisch: p1(RAID.rueckkehrOrganisch),
   endePaare: n0(ENDE.paare),
   endeKanaele: n0(ENDE.kanaele),
-  endeRoh: d1(endeRoh.wert),
-  endeNiveau: d1(endeNiveau.wert),
-  endeVoll: d1(endeVoll.wert),
-  endeVollIv: `${d1(endeVoll.von)} bis ${d1(endeVoll.bis)}`,
-  endePlacebo: d1(endePlacebo.wert),
-  endePlaceboIv: `${s1(endePlacebo.von)} bis ${s1(endePlacebo.bis)}`,
-  endeGross: d1(ENDE.gross.wert),
+  endeRoh: s1(endeRoh.wert),
+  endeRohIv: iv(endeRoh),
+  endeVoll: s1(endeVoll.wert),
+  endeVollIv: iv(endeVoll),
+  endePlacebo: s1(endePlacebo.wert),
+  endePlaceboIv: iv(endePlacebo),
+  endeGross: s1(ENDE.gross.wert),
+  endeGrossIv: iv(ENDE.gross),
   endeGrossN: n0(ENDE.gross.kanaele),
+  endeLuecke: n0(ENDE.neustartLuecke),
+  endeSchein: d1(ENDE.scheinEffekt),
+  folErfasst: n0(FOLLOW.erfasst),
+  folErfasstKanaele: n0(FOLLOW.erfasstKanaele),
+  folOffline: n0(FOLLOW.offline),
+  folOhneMessung: n0(FOLLOW.ohneMessung),
   folN: n0(FOLLOW.follows),
   folKanaele: n0(FOLLOW.kanaele),
+  folMitMinute: n0(FOLLOW.zeilen.reduce((a, z) => a + z.n, 0)),
+  folOhneMinute: n0(FOLLOW.ohneMinute),
   folMedian: n0(FOLLOW.medianMinute),
   folNach60: p1(FOLLOW.nachStunde1),
   folGesamt: d1(FOLLOW.gesamtJe100),
   folSpitze: d1(FOLLOW.vorSpitzeJe100),
   folErsteMin: d1(Math.min(...FOLLOW.zeilen.slice(0, 5).map((z) => z.wert))),
   folErsteMax: d1(Math.max(...FOLLOW.zeilen.slice(0, 5).map((z) => z.wert))),
+  folSpaetMin: d1(Math.min(...FOLLOW.zeilen.slice(5).map((z) => z.wert))),
+  folSpaetMax: d1(Math.max(...FOLLOW.zeilen.slice(5).map((z) => z.wert))),
   folStill: d1(FOLLOW.stillJe1000),
   folChatter: d1(FOLLOW.chatterJe1000),
   folNie: p1(FOLLOW.nieGechattet),
