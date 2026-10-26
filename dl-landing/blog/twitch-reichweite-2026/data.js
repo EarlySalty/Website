@@ -134,8 +134,6 @@ export const FOLLOW = {
   follows: 1252,
   kanaele: 58,
   ohneMinute: 1,
-  medianMinute: 131,
-  nachStunde1: 72.0,
   gesamtJe100: 2.8,
   vorSpitzeJe100: 11.8,
   zeilen: [

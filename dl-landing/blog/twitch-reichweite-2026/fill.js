@@ -31,6 +31,12 @@ const spaet = STARTZEIT[STARTZEIT.length - 1];
 const [befehlTitel, discordTitel] = TITEL.zeilen;
 const kurzTitel = TITEL.zeilen[3];
 const iv = (z) => `${s1(z.von)} bis ${s1(z.bis)}`;
+const folAb = (z) => parseInt(z.key, 10);
+const folSumme = (zeilen) => zeilen.reduce((a, z) => a + z.n, 0);
+const folMitMinute = folSumme(FOLLOW.zeilen);
+const folStunde1 = FOLLOW.zeilen.filter((z) => folAb(z) < 60);
+const folSpaeter = FOLLOW.zeilen.filter((z) => folAb(z) >= 60);
+const folMedianZeile = FOLLOW.zeilen.find((z, i) => folSumme(FOLLOW.zeilen.slice(0, i + 1)) >= folMitMinute / 2);
 
 export const FILL = {
   stand: datumLang(STAND),
@@ -124,16 +130,16 @@ export const FILL = {
   folOhneMessung: n0(FOLLOW.ohneMessung),
   folN: n0(FOLLOW.follows),
   folKanaele: n0(FOLLOW.kanaele),
-  folMitMinute: n0(FOLLOW.zeilen.reduce((a, z) => a + z.n, 0)),
+  folMitMinute: n0(folMitMinute),
   folOhneMinute: n0(FOLLOW.ohneMinute),
-  folMedian: n0(FOLLOW.medianMinute),
-  folNach60: p1(FOLLOW.nachStunde1),
+  folMedianAb: n0(folAb(folMedianZeile)),
+  folNach60: p1((100 * folSumme(folSpaeter)) / folMitMinute),
   folGesamt: d1(FOLLOW.gesamtJe100),
   folSpitze: d1(FOLLOW.vorSpitzeJe100),
-  folErsteMin: d1(Math.min(...FOLLOW.zeilen.slice(0, 5).map((z) => z.wert))),
-  folErsteMax: d1(Math.max(...FOLLOW.zeilen.slice(0, 5).map((z) => z.wert))),
-  folSpaetMin: d1(Math.min(...FOLLOW.zeilen.slice(5).map((z) => z.wert))),
-  folSpaetMax: d1(Math.max(...FOLLOW.zeilen.slice(5).map((z) => z.wert))),
+  folErsteMin: d1(Math.min(...folStunde1.map((z) => z.wert))),
+  folErsteMax: d1(Math.max(...folStunde1.map((z) => z.wert))),
+  folSpaetMin: d1(Math.min(...folSpaeter.map((z) => z.wert))),
+  folSpaetMax: d1(Math.max(...folSpaeter.map((z) => z.wert))),
   folStill: d1(FOLLOW.stillJe1000),
   folChatter: d1(FOLLOW.chatterJe1000),
   folNie: p1(FOLLOW.nieGechattet),
