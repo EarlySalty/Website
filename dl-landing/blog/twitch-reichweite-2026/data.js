@@ -15,13 +15,13 @@ export const ANKUNFT = {
 };
 
 export const ANLAUF = {
-  sessions: 863,
-  kanaele: 102,
+  sessions: 833,
+  kanaele: 93,
   zeilen: [
-    { key: 'Start', anteil: 18.5, sessions: 863 },
-    { key: 'Minute 5', anteil: 27.9, sessions: 747 },
-    { key: 'Minute 15', anteil: 65.2, sessions: 717 },
-    { key: 'Minute 30', anteil: 82.6, sessions: 691 },
+    { key: 'Start', anteil: 18.4, sessions: 833 },
+    { key: 'Minute 5', anteil: 30.3, sessions: 775 },
+    { key: 'Minute 15', anteil: 65.2, sessions: 745 },
+    { key: 'Minute 30', anteil: 83.8, sessions: 719 },
   ],
 };
 
@@ -37,7 +37,7 @@ export const DAUER = {
   kurzMinusMin: 5,
   kurzMinusMax: 15,
   stunde5Min: 1.17,
-  stunde5Max: 1.24,
+  stunde5Max: 1.25,
   kleinStunde5: 0.95,
 };
 
@@ -80,14 +80,17 @@ export const STILL = [
   { key: '100+', label: 'ab 100 Zuschauer', anteil: 87, chatterJeZuschauer: 0.13 },
 ];
 
+const ERSTE_ANTWORTEN = 78;
+
 export const ANTWORT = {
   frageAntwort2Min: 2.8,
+  ersteAntworten: ERSTE_ANTWORTEN,
   kurzReaktion: 4.7,
   fragen: 34037,
   zeilen: [
     { frage: 'Kommt eine neue Person wieder, wenn der Streamer im Chat auf ihre erste Nachricht antwortet?', ergebnis: '−0,7 Prozentpunkte', intervall: '−6,1 bis +5,3', urteil: 'kein Effekt' },
-    { frage: 'Folgt sie eher, wenn die erste Nachricht überhaupt im Kanal schnell beantwortet wird?', ergebnis: '+11,4 Prozentpunkte', intervall: '+4,1 bis +16,8', urteil: 'Zusammenhang, 81 Antworten' },
-    { frage: 'Folgt sie eher, wenn ihre erste Nachricht im Stream beantwortet wird?', ergebnis: '+2,3 Prozentpunkte', intervall: '−0,2 bis +4,7', urteil: 'knapp, nicht sicher' },
+    { frage: 'Folgt sie eher, wenn die erste Nachricht überhaupt im Kanal schnell beantwortet wird?', ergebnis: '+12,1 Prozentpunkte', intervall: '+3,1 bis +18,1', urteil: `Zusammenhang, ${ERSTE_ANTWORTEN} Antworten` },
+    { frage: 'Folgt sie eher, wenn ihre erste Nachricht im Stream beantwortet wird?', ergebnis: '+2,3 Prozentpunkte', intervall: '−0,3 bis +4,8', urteil: 'knapp, nicht sicher' },
     { frage: 'Schreibt in den nächsten fünf Minuten jemand Neues, wenn der Streamer tippt?', ergebnis: '+1,4 Prozentpunkte', intervall: '−2,3 bis +5,1', urteil: 'kein Effekt' },
     { frage: 'Zieht ein laufender Chat neue Schreiber an?', ergebnis: '+0,0 Prozentpunkte', intervall: '−0,7 bis +0,6', urteil: 'kein Effekt' },
   ],
@@ -105,25 +108,25 @@ export const RAID = {
   stilleNeueJeRaid: 1.0,
   neueChatterJeRaid: 0.12,
   follows: [
-    { key: 'nach Raid', label: '10 Minuten nach einem Raid', wert: 7.7, follows: 62 },
-    { key: 'sonst', label: 'restliche Sendezeit', wert: 2.7, follows: 1190 },
+    { key: 'nach Raid', label: '10 Minuten nach einem Raid', wert: 7.9, follows: 63 },
+    { key: 'sonst', label: 'restliche Sendezeit', wert: 2.7, follows: 1189 },
   ],
   rueckkehrRaid: 22.2,
   rueckkehrOrganisch: 20.9,
 };
 
 export const ENDE = {
-  paare: 3059,
-  kanaele: 74,
+  paare: 3045,
+  kanaele: 73,
   zeilen: [
-    { key: 'roh', label: 'ohne Abgleich', paare: 3059, wert: 1.0, von: -1.1, bis: 3.3 },
-    { key: 'niveau', label: 'Niveau abgeglichen', paare: 3059, wert: 0.7, von: -1.4, bis: 2.6 },
-    { key: 'voll', label: 'plus Länge und Spitze', paare: 3059, wert: 0.7, von: -1.5, bis: 2.5 },
-    { key: 'placebo', label: 'Placebo: vorheriger Start', paare: 3018, wert: -0.6, von: -2.5, bis: 1.7 },
+    { key: 'roh', label: 'ohne Abgleich', paare: 3045, wert: 1.1, von: -1.1, bis: 3.0 },
+    { key: 'niveau', label: 'Niveau abgeglichen', paare: 3045, wert: 0.8, von: -1.4, bis: 2.5 },
+    { key: 'voll', label: 'plus Länge und Spitze', paare: 3045, wert: 0.8, von: -1.5, bis: 2.5 },
+    { key: 'placebo', label: 'Placebo: vorheriger Start', paare: 2993, wert: -0.7, von: -2.7, bis: 1.5 },
   ],
-  gross: { wert: 3.8, von: -0.9, bis: 8.9, kanaele: 13, paare: 422 },
+  gross: { wert: 4.2, von: -0.3, bis: 9.7, kanaele: 13, paare: 418 },
   neustartLuecke: 10,
-  scheinEffekt: 6.4,
+  scheinEffekt: 8.4,
 };
 
 export const FOLLOW = {
@@ -133,24 +136,24 @@ export const FOLLOW = {
   ohneMessung: 26,
   follows: 1252,
   kanaele: 58,
-  ohneMinute: 1,
+  ohneMinute: 0,
   gesamtJe100: 2.8,
-  vorSpitzeJe100: 11.8,
+  vorSpitzeJe100: 11.5,
   zeilen: [
-    { key: '0–10', n: 95, wert: 5.1 },
-    { key: '10–20', n: 66, wert: 8.0 },
-    { key: '20–30', n: 55, wert: 5.6 },
-    { key: '30–45', n: 85, wert: 5.0 },
-    { key: '45–60', n: 78, wert: 4.2 },
-    { key: '60–90', n: 115, wert: 2.9 },
-    { key: '90–120', n: 105, wert: 2.7 },
-    { key: '120–180', n: 172, wert: 2.4 },
-    { key: '180–240', n: 124, wert: 2.1 },
-    { key: '240–360', n: 124, wert: 1.6 },
-    { key: '360+', n: 232, wert: 2.7 },
+    { key: '0–10', n: 60, wert: 12.4 },
+    { key: '10–20', n: 63, wert: 7.3 },
+    { key: '20–30', n: 57, wert: 5.5 },
+    { key: '30–45', n: 88, wert: 4.9 },
+    { key: '45–60', n: 82, wert: 4.2 },
+    { key: '60–90', n: 121, wert: 2.9 },
+    { key: '90–120', n: 110, wert: 2.7 },
+    { key: '120–180', n: 182, wert: 2.4 },
+    { key: '180–240', n: 129, wert: 2.1 },
+    { key: '240–360', n: 125, wert: 1.6 },
+    { key: '360+', n: 235, wert: 2.7 },
   ],
-  stillJe1000: 8.0,
-  chatterJe1000: 73.8,
+  stillJe1000: 10.1,
+  chatterJe1000: 81.2,
   nieGechattet: 35.5,
   geschenkt: { n: 166, chat30: 14.5, resub: 0.0 },
   bezahlt: { n: 132, chat30: 75.8, resub: 37.1 },
