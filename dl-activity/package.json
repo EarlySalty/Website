@@ -10,7 +10,7 @@
     "test": "node scripts/test-patina.mjs"
   },
   "dependencies": {
-    "chart.js": "^4.4.0"
+    "chart.js": "^4.6.1"
   },
   "devDependencies": {
     "vite": "^8.3.0"
