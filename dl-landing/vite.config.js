@@ -1,4 +1,13 @@
 import { defineConfig } from 'vite'
+import { readdirSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+const weeklyRoot = resolve(import.meta.dirname, 'blog/entwicklungsberichte')
+const weeklyInputs = Object.fromEntries(
+  readdirSync(weeklyRoot, { withFileTypes: true })
+    .filter(entry => entry.isDirectory() && /^\d{4}-W\d{2}$/.test(entry.name))
+    .map(entry => [`weekly${entry.name.replace(/\W/g, '')}`, `blog/entwicklungsberichte/${entry.name}/index.html`]),
+)
 
 export default defineConfig({
   base: '/',
@@ -22,6 +31,8 @@ export default defineConfig({
         transparenz: 'transparenz/index.html',
         wohin: 'wohin/index.html',
         blog: 'blog/index.html',
+        communityWeekly: 'blog/entwicklungsberichte/index.html',
+        ...weeklyInputs,
         blogTwitchSzene2026: 'blog/twitch-szene-2026/index.html',
         blogDiscordZukunft: 'blog/discord-zukunft/index.html',
         blogSpamBots2026: 'blog/spam-bots-2026/index.html',

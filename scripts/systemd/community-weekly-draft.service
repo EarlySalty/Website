@@ -1,0 +1,11 @@
+[Unit]
+Description=Generate private reviewed community weekly draft with Claude Haiku
+After=community-weekly-collect.service
+
+[Service]
+Type=oneshot
+UMask=0077
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=/home/nathanael/repos/Website
+ExecStart=/usr/local/bin/node /home/nathanael/repos/Website/scripts/community-weekly.mjs draft
+NoNewPrivileges=yes

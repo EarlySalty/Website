@@ -1,0 +1,10 @@
+[Unit]
+Description=Gather repository and agent task change candidates every Monday
+
+[Timer]
+OnCalendar=Mon *-*-* 08:00:00 Europe/Berlin
+Persistent=true
+Unit=community-weekly-collect.service
+
+[Install]
+WantedBy=timers.target

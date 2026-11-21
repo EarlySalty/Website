@@ -37,6 +37,7 @@ const ENTRIES = [
   { path: '/builds/',                 src: resolve(REPO_ROOT, 'dl-tierlist/index.html') },
   { path: '/transparenz/',            src: resolve(REPO_ROOT, 'dl-landing/transparenz/index.html') },
   { path: '/blog/',                   src: resolve(REPO_ROOT, 'dl-landing/blog/index.html') },
+  { path: '/blog/entwicklungsberichte/', src: resolve(REPO_ROOT, 'dl-landing/blog/entwicklungsberichte/index.html') },
   { path: '/blog/twitch-szene-2026/', src: resolve(REPO_ROOT, 'dl-landing/blog/twitch-szene-2026/index.html') },
   { path: '/faq/',                    src: resolve(DOCS_ROOT, 'site/index.html') },
 ]
@@ -113,6 +114,11 @@ for (const { path, src } of docsEntries()) {
 
 for (const { path, src } of ENTRIES) {
   merged.set(path, lastmodOf(src))
+}
+const weeklyRoot = resolve(REPO_ROOT, 'dl-landing/blog/entwicklungsberichte')
+for (const source of walkHtml(weeklyRoot)) {
+  const rel = source.slice(weeklyRoot.length + 1).replaceAll('\\\\', '/')
+  if (/^\d{4}-W\d{2}\/index\.html$/.test(rel)) merged.set('/blog/entwicklungsberichte/' + rel.slice(0, -'index.html'.length), lastmodOf(source))
 }
 
 for (const path of [...merged.keys()]) {

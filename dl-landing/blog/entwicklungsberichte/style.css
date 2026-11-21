@@ -1,0 +1,22 @@
+.cw-container{width:min(100% - 2.5rem,850px);margin:0 auto;padding:clamp(4rem,9vw,7rem) 0 6rem;color:var(--bone)}
+.cw-container>a{font-size:.85rem;color:var(--gold);text-decoration:none}
+.cw-kicker{margin:1.5rem 0 1rem;color:var(--gold);text-transform:uppercase;letter-spacing:.13em;font-size:.8rem;font-weight:700}
+.cw-container h1{font-family:var(--font-display);font-size:clamp(2.1rem,5vw,3.7rem);line-height:1.13;max-width:19ch;margin:0 0 1.4rem}
+.cw-lead{font-size:clamp(1.08rem,2vw,1.26rem);line-height:1.7;color:var(--bone-dim);max-width:66ch}
+.cw-story{padding:2rem 0;border-top:1px solid var(--line-soft);margin-top:2rem}
+.cw-story h2{font-family:var(--font-display);font-size:clamp(1.35rem,2.5vw,1.8rem);margin:0 0 .9rem;color:var(--bone)}
+.cw-story p{font-size:1.04rem;line-height:1.8;color:var(--bone-dim);max-width:75ch;margin:.7rem 0}
+.cw-story strong{color:var(--bone)}
+.cw-container a{color:var(--gold);text-underline-offset:.2em}
+.cw-story figure{margin:1.7rem 0}
+.cw-story figure img{width:100%;height:auto;border:1px solid var(--line-soft);border-radius:16px;background:var(--panel)}
+.cw-story figcaption{margin-top:.5rem;color:var(--bone-dim);font-size:.85rem}
+.cw-sources{border-top:1px solid var(--line-soft);padding:1.5rem 0;color:var(--bone-dim);font-size:.9rem}
+.cw-sources summary{cursor:pointer}
+.cw-list{display:grid;gap:1.2rem;margin-top:3rem}
+.cw-card{display:block;border:1px solid var(--line-soft);border-radius:15px;background:var(--panel);padding:1.5rem;text-decoration:none}
+.cw-card:hover,.cw-card:focus-visible{border-color:var(--gold-border)}
+.cw-card h2{font-family:var(--font-display);color:var(--bone);font-size:1.35rem;margin:.3rem 0 .5rem}
+.cw-card p{color:var(--bone-dim);margin:0;line-height:1.6}
+.cw-card time{color:var(--gold);font-size:.8rem}
+@media(prefers-reduced-motion:reduce){.cw-card{transition:none}}

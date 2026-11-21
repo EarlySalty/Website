@@ -1,0 +1,10 @@
+[Unit]
+Description=Try private editorial draft every Tuesday after Monday review
+
+[Timer]
+OnCalendar=Tue *-*-* 08:00:00 Europe/Berlin
+Persistent=true
+Unit=community-weekly-draft.service
+
+[Install]
+WantedBy=timers.target

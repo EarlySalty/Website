@@ -1,0 +1,10 @@
+[Unit]
+Description=Gather private weekly community change candidates
+
+[Service]
+Type=oneshot
+UMask=0077
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=/home/nathanael/repos/Website
+ExecStart=/usr/local/bin/node /home/nathanael/repos/Website/scripts/community-weekly.mjs collect
+NoNewPrivileges=yes
