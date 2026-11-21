@@ -215,6 +215,7 @@ function draft(week, folder) {
 function verify(week, folder) {
   const events = existsSync(join(folder, 'events.json')) ? validateEvents(readJson(join(folder, 'events.json')), week) : []
   const progress = existsSync(join(folder, 'progress.json')) ? validateProgress(readJson(join(folder, 'progress.json')), week) : []
+  if (!events.length && !progress.length) throw Error('Cannot render a report without verified changes or progress')
   const draft = readJson(join(folder, 'draft.json'))
   validateDraft(draft, events, week, progress)
   return { events, progress, draft }
